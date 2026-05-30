@@ -1,0 +1,14 @@
+name = "node"
+
+[detect]
+files = ["package.json", "pnpm-workspace.yaml", "tsconfig.json"]
+weight = 10
+
+[commands]
+test = "npm test"
+build = "npm run build"
+lint = "npm run lint"
+typecheck = "npm run typecheck"
+
+[preflight]
+baseline_test_regex = "(\\d+) passing"

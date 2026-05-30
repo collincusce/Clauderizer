@@ -1,0 +1,22 @@
+[clauderizer]
+version = "1"
+size = "standard"
+preflight_checks = ["clean_tree", "tests"]
+
+[host]
+profile = "python"
+
+[paths]
+docs = "docs"
+gameplans = "docs/gameplans"
+
+[modules]
+enabled = ["VISION", "ARCHITECTURE", "DECISIONS", "INVARIANTS", "TESTING", "HARDENING"]
+
+[rituals]
+preflight = true
+cascade = true
+amendments = false
+
+[active_gameplan]
+id = "2026-05-01-bootstrap"

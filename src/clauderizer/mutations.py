@@ -1,0 +1,348 @@
+"""Structured, graph-aware writes — the mutation tools' implementations.
+
+Every function here routes through ``markdown.writer`` (the single mutation
+path) and auto-assigns IDs from what's already in the doc, so frontmatter stays
+valid and numbering never collides. These back the ``cz_add_*`` / ``cz_upsert_*``
+/ ``cz_transition_status`` MCP tools.
+"""
+
+from __future__ import annotations
+
+import re
+from datetime import date as _date
+from pathlib import Path
+
+from . import assets
+from .config import Config
+from .graph import cascade, index
+from .markdown import sections
+from .markdown import writer
+from .model import next_numbered_id
+from .paths import RepoPaths
+
+
+def _today(today: str | None) -> str:
+    return today or _date.today().isoformat()
+
+
+def kebab(name: str) -> str:
+    s = re.sub(r"[^a-zA-Z0-9]+", "-", name.strip().lower())
+    return s.strip("-")
+
+
+# --- gameplans ----------------------------------------------------------------
+
+
+def create_gameplan(
+    paths: RepoPaths,
+    name: str,
+    *,
+    first_phase: str = "Bootstrap",
+    today: str | None = None,
+) -> dict:
+    today = _today(today)
+    gid = f"{today}-{kebab(name)}"
+    gdir = paths.gameplan_dir(gid)
+    sub = {"name": name, "date": today, "first_phase": first_phase}
+    files = []
+    for fname in ("GAMEPLAN.md", "CHAT-HANDOFF-INDEX.md", "PHASE-STATUS.md"):
+        text = assets.render(f"gameplan/{fname}", **sub)
+        path = gdir / fname
+        if writer.create_if_absent(path, text):
+            files.append(str(path))
+    # handoffs/ + _cascade-reports/ + _template/
+    (gdir / "handoffs").mkdir(parents=True, exist_ok=True)
+    reports = gdir / "_cascade-reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    writer.create_if_absent(reports / ".gitkeep", "")
+    tmpl = assets.template_text("gameplan/handoff.md")
+    writer.create_if_absent(gdir / "_template" / "handoff.md", tmpl)
+    return {
+        "ok": True,
+        "gameplan_id": gid,
+        "dir": str(gdir),
+        "files_changed": files,
+        "summary": f"created gameplan {gid}",
+    }
+
+
+# --- append-only numbered logs ------------------------------------------------
+
+
+def _ensure_doc(path: Path, doc_name: str) -> None:
+    if not path.exists():
+        tmpl = assets.doc_template(doc_name)
+        if tmpl is not None:
+            writer.create_if_absent(path, tmpl)
+
+
+def add_decision(
+    paths: RepoPaths,
+    *,
+    title: str,
+    context: str,
+    decision: str,
+    consequences: str,
+    scope: str = "project",
+    gameplan_id: str | None = None,
+    supersedes: str | None = None,
+    today: str | None = None,
+) -> dict:
+    if scope == "gameplan":
+        if not gameplan_id:
+            return {"ok": False, "error": "gameplan scope requires gameplan_id"}
+        path = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
+        prefix, width = "D", 0  # gameplan-internal: D1, D2
+    else:
+        path = paths.doc("DECISIONS")
+        _ensure_doc(path, "DECISIONS")
+        prefix, width = "D", 3  # project-wide: D-001
+
+    text = writer.full_text(path)
+    new_id = next_numbered_id(text, prefix, sep=("" if width == 0 else "-"), width=width)
+    sup = f"\n**Supersedes**: {supersedes}" if supersedes else ""
+    entry = (
+        f"### {new_id} — {title}\n\n"
+        f"**Context**: {context}\n"
+        f"**Decision**: {decision}\n"
+        f"**Consequences**: {consequences}{sup}"
+    )
+    writer.append_to_section(path, "Decisions", entry)
+    return {"ok": True, "id": new_id, "path": str(path),
+            "files_changed": [str(path)], "summary": f"added decision {new_id}"}
+
+
+def add_invariant(
+    paths: RepoPaths, *, text: str, introduced_by: str | None = None
+) -> dict:
+    path = paths.doc("INVARIANTS")
+    _ensure_doc(path, "INVARIANTS")
+    doc = writer.full_text(path)
+    new_id = next_numbered_id(doc, "INVARIANT", sep="-", width=2)
+    intro = f"\n**Introduced by**: {introduced_by}" if introduced_by else ""
+    # First line becomes the title; remainder the body.
+    title = text.strip().split("\n", 1)[0]
+    entry = f"### {new_id} — {title}{intro}\n\n{text.strip()}"
+    writer.append_to_section(path, "Invariants", entry)
+    return {"ok": True, "id": new_id, "path": str(path),
+            "files_changed": [str(path)], "summary": f"added {new_id}"}
+
+
+def add_lesson(
+    paths: RepoPaths, *, gameplan_id: str, text: str, category: str = "Process"
+) -> dict:
+    path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+    full = writer.full_text(path)
+    body = sections.get_section(full, "Accumulated Lessons") or ""
+    nums = [int(m.group(1)) for m in re.finditer(r"\*\*(\d+)\.\*\*", body)]
+    n = (max(nums) + 1) if nums else 1
+    lesson_line = f"**{n}.** {text.strip()}"
+    new_section = _insert_under_category(body, category, lesson_line)
+    writer.upsert_section(path, "Accumulated Lessons", new_section)
+    return {"ok": True, "number": n, "path": str(path),
+            "files_changed": [str(path)], "summary": f"added lesson #{n} ({category})"}
+
+
+def _insert_under_category(section_body: str, category: str, lesson_line: str) -> str:
+    heading = f"### Category: {category}"
+    lines = section_body.splitlines()
+    if heading in section_body:
+        # insert at the end of that category block (before next ### or EOF)
+        start = next(i for i, ln in enumerate(lines) if ln.strip() == heading)
+        end = len(lines)
+        for j in range(start + 1, len(lines)):
+            if lines[j].startswith("### "):
+                end = j
+                break
+        # drop trailing blanks within the block, then append
+        block = lines[start:end]
+        while block and not block[-1].strip():
+            block.pop()
+        block += ["", lesson_line]
+        new_lines = lines[:start] + block + [""] + lines[end:]
+        return re.sub(r"\n{3,}", "\n\n", "\n".join(new_lines)).strip()
+    # category absent: append a new block
+    base = section_body.rstrip()
+    # remove a leading placeholder if present
+    base = re.sub(r"_\(none yet\)_", "", base).rstrip()
+    return f"{base}\n\n{heading}\n\n{lesson_line}".strip()
+
+
+def add_correction(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    phase: str,
+    gameplan_said: str,
+    actually: str,
+    why: str,
+    lesson: str | None = None,
+    category: str = "Process",
+) -> dict:
+    path = paths.gameplan_dir(gameplan_id) / "PHASE-STATUS.md"
+    doc = writer.full_text(path)
+    new_id = next_numbered_id(doc, "C", sep="-", width=2)
+    entry = (
+        f"### {new_id} — Phase {phase}\n\n"
+        f"**Phase**: {phase}\n"
+        f"**What gameplan said**: {gameplan_said}\n"
+        f"**What was actually correct**: {actually}\n"
+        f"**Why**: {why}"
+    )
+    if lesson:
+        entry += f"\n**Lesson**: {lesson}"
+    writer.append_to_section(path, "Corrections Log", entry)
+    files = [str(path)]
+    lesson_result = None
+    if lesson:
+        lesson_result = add_lesson(paths, gameplan_id=gameplan_id, text=lesson, category=category)
+        files += lesson_result["files_changed"]
+    return {"ok": True, "id": new_id, "files_changed": files,
+            "lesson": lesson_result, "summary": f"added correction {new_id}"}
+
+
+def add_phase(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    name: str,
+    goal: str,
+    depends_on_phases: list[str] | None = None,
+) -> dict:
+    gp = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
+    doc = writer.full_text(gp)
+    existing = [int(m.group(1)) for m in re.finditer(r"^###\s+Phase\s+(\d+)", doc, re.M)]
+    n = (max(existing) + 1) if existing else 0
+    deps = ", ".join(depends_on_phases) if depends_on_phases else (f"Phase {n-1}" if n else "nothing")
+    entry = (
+        f"### Phase {n}: {name}\n\n"
+        f"**Goal**: {goal}\n"
+        f"**Depends on**: {deps}.\n\n"
+        f"| Task | Description | Effort |\n|------|-------------|--------|\n"
+        f"| {n}.1 | _(describe)_ | _(est)_ |\n\n"
+        f"**Exit criteria**:\n- [ ] _(verifiable)_"
+    )
+    writer.append_to_section(gp, "Phase Breakdown", entry, level=2)
+    files = [str(gp)]
+    # add a status row to the trackers
+    row = f"| {n} | {name} | ⬜ NOT STARTED | — | — | handoffs/PHASE-{n}-HANDOFF.md |"
+    for fname, heading in (
+        ("CHAT-HANDOFF-INDEX.md", "Phase Status Table"),
+        ("PHASE-STATUS.md", "Phase Status"),
+    ):
+        path = paths.gameplan_dir(gameplan_id) / fname
+        if path.exists():
+            sec = sections.get_section(writer.full_text(path), heading) or ""
+            if f"| {n} |" not in sec:
+                writer.append_to_section(path, heading, row)
+                files.append(str(path))
+    return {"ok": True, "phase": n, "files_changed": files,
+            "summary": f"added Phase {n}: {name}"}
+
+
+def add_amendment(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    title: str,
+    affected_sections: str,
+    affected_phases: str,
+    triggered_by: str,
+    what: str,
+    why: str,
+    today: str | None = None,
+) -> dict:
+    today = _today(today)
+    gp = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
+    doc = writer.full_text(gp)
+    new_id = next_numbered_id(doc, "A", sep="-", width=3)
+    entry = (
+        f"### {new_id} — {title}\n\n"
+        f"- **Date**: {today}\n"
+        f"- **Affected sections in GAMEPLAN.md**: {affected_sections}\n"
+        f"- **Affected phases**: {affected_phases}\n"
+        f"- **Triggered by**: {triggered_by}\n"
+        f"- **What changed**: {what}\n"
+        f"- **Why**: {why}\n"
+        f"- **Cascade report**: _cascade-reports/{today}-{new_id}.md"
+    )
+    writer.append_to_section(gp, "Amendments", entry)
+    return {"ok": True, "id": new_id, "files_changed": [str(gp)],
+            "summary": f"added amendment {new_id}"}
+
+
+# --- entities + status --------------------------------------------------------
+
+_TYPE_DIR = {
+    "subsystem": ("subsystems", "subsys"),
+    "feature": ("features", "feat"),
+    "external-service": ("datasources", "ext"),
+    "capability": ("capabilities", "cap"),
+}
+
+
+def _entity_path(paths: RepoPaths, entity_id: str, type_: str) -> Path:
+    folder, _ = _TYPE_DIR.get(type_, ("entities", ""))
+    slug = entity_id.split(".", 1)[-1]
+    return paths.docs / folder / f"{slug}.md"
+
+
+def upsert_entity(
+    paths: RepoPaths,
+    *,
+    id: str,
+    type: str,
+    version: str | None = None,
+    status: str | None = None,
+    depends_on: list[str] | None = None,
+    fields: dict | None = None,
+    today: str | None = None,
+) -> dict:
+    path = _entity_path(paths, id, type)
+    data: dict = {"id": id, "type": type}
+    if version:
+        data["version"] = version
+    if status:
+        data["status"] = status
+    if depends_on is not None:
+        data["depends_on"] = depends_on
+    data["last_verified"] = _today(today)
+    if fields:
+        data.update(fields)
+    existed = path.exists()
+    body = "" if existed else f"\n# {id.split('.', 1)[-1].replace('-', ' ').title()}\n\n_(describe.)_\n"
+    writer.write_entity(path, data, body=body, preserve_body=True)
+    return {"ok": True, "id": id, "path": str(path), "created": not existed,
+            "files_changed": [str(path)],
+            "summary": f"{'updated' if existed else 'created'} {id}"}
+
+
+def transition_status(
+    paths: RepoPaths,
+    config: Config,
+    *,
+    id: str,
+    to_status: str,
+    run_cascade: bool = True,
+    today: str | None = None,
+) -> dict:
+    graph = index.load_or_rebuild(paths.docs, paths.index_file)
+    entity = graph.get(id)
+    if entity is None:
+        return {"ok": False, "error": f"unknown entity {id}"}
+    from_status = entity.status
+    writer.set_frontmatter_fields(
+        entity.path, {"status": to_status, "last_verified": _today(today)}
+    )
+    result: dict = {
+        "ok": True, "id": id, "from": from_status, "to": to_status,
+        "files_changed": [str(entity.path)],
+        "summary": f"{id}: {from_status} -> {to_status}",
+    }
+    if run_cascade and config.ritual_enabled("cascade") and config.active_gameplan:
+        graph = index.load_or_rebuild(paths.docs, paths.index_file)  # refresh
+        reports_dir = paths.gameplan_dir(config.active_gameplan) / "_cascade-reports"
+        casc = cascade.run(graph, id, f"status {from_status} -> {to_status}", reports_dir)
+        result["cascade"] = casc
+        result["files_changed"].append(casc["report_path"])
+    return result

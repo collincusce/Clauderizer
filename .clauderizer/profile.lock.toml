@@ -1,0 +1,10 @@
+profile = "python"
+
+[commands]
+test = "pytest -q"
+build = ""
+lint = "ruff check ."
+typecheck = "mypy ."
+
+[preflight]
+baseline_test_regex = "(\d+) passed"
