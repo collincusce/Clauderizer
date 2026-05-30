@@ -1,0 +1,16 @@
+name = "generic"
+
+# No marker files — this is the fallback when nothing else matches. Preflight
+# degrades gracefully to git-state checks only (empty commands are skipped).
+[detect]
+files = []
+weight = 0
+
+[commands]
+test = ""
+build = ""
+lint = ""
+typecheck = ""
+
+[preflight]
+baseline_test_regex = ""

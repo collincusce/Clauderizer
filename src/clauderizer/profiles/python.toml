@@ -1,0 +1,14 @@
+name = "python"
+
+[detect]
+files = ["pyproject.toml", "setup.py", "setup.cfg", "requirements.txt"]
+weight = 10
+
+[commands]
+test = "pytest -q"
+build = ""
+lint = "ruff check ."
+typecheck = "mypy ."
+
+[preflight]
+baseline_test_regex = "(\\d+) passed"

@@ -1,0 +1,14 @@
+name = "ruby"
+
+[detect]
+files = ["Gemfile", ".ruby-version", "Rakefile"]
+weight = 10
+
+[commands]
+test = "bundle exec rspec"
+build = ""
+lint = "bundle exec rubocop"
+typecheck = ""
+
+[preflight]
+baseline_test_regex = "(\\d+) examples?"

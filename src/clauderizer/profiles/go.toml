@@ -1,0 +1,14 @@
+name = "go"
+
+[detect]
+files = ["go.mod", "go.sum"]
+weight = 10
+
+[commands]
+test = "go test ./..."
+build = "go build ./..."
+lint = "go vet ./..."
+typecheck = "go build ./..."
+
+[preflight]
+baseline_test_regex = "ok\\s"
