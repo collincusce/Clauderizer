@@ -75,7 +75,41 @@ the agent never hand-mangles your docs.
 
 ---
 
+## Working with gameplans (how you actually drive it)
+
+**You talk to the agent in plain English; Claude does the tool calls.** You almost never
+invoke a `cz_*` tool yourself — the six skills `init` installs auto-trigger on what you say
+(and also work as slash commands, e.g. `/clauderizer-do-phase`). The only thing that's fully
+automatic is the **SessionStart hook**: every session opens with the current status already in
+context, so the agent knows where things stand before you type a word.
+
+The whole lifecycle is just natural language:
+
+| You say… | Skill | What the agent does |
+|---|---|---|
+| *"Plan a gameplan to ship the billing system"* | `new-gameplan` | clarifies the goal, captures real source-of-truth values, then `cz_create_gameplan` → `cz_add_decision` → `cz_add_phase` ×N → writes the Phase 0 handoff |
+| *"Do the next phase"* · *"continue"* · *"work on phase 3"* | `do-phase` | `cz_next_phase_context` → `cz_preflight` (runs your real tests/build) → does the work → records outcomes → `cz_cascade` → `cz_write_handoff` |
+| *"Remember we decided X"* · *"note that…"* · *"that was a mistake, the fix is…"* | `record` | routes to the right `cz_add_decision` / `cz_add_invariant` / `cz_add_lesson` / `cz_add_correction` / `cz_add_finding` |
+| *"Scope changed — add a task for Y"* | `amend` | `cz_add_amendment`, cascading to affected phases |
+| *"Close out the gameplan"* | `close-gameplan` | full cascade, updates project docs, writes a `POST-MORTEM.md` |
+| *"Where are we?"* | — | `cz_status` (or just read what the hook already injected) |
+
+So the day-to-day rhythm is:
+
+```text
+clauderize init                         # once, per repo
+"Plan a gameplan to <your goal>"        # the agent breaks it into phases
+"Do the next phase"                     # …repeat each session until done
+"Remember that <decision/lesson>"       # capture as you go; it propagates forward
+"Close out the gameplan"                # when every phase is done
+```
+
+You steer; Claude keeps the memory, the graph, and the rituals honest between sessions.
+
+---
+
 ## Install
+
 
 ```bash
 pipx install "clauderizer[mcp]"   # regular use (engine + MCP server)
