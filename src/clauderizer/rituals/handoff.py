@@ -54,7 +54,7 @@ def _phase_section(gameplan_text: str, phase_n: str) -> str | None:
     return sections.get_section(gameplan_text, f"Phase {phase_n}") or None
 
 
-def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str) -> dict:
+def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write: bool = True) -> dict:
     index_text = _gameplan_text(paths, gid, "CHAT-HANDOFF-INDEX.md")
     gameplan_text = _gameplan_text(paths, gid, "GAMEPLAN.md")
     lessons_md, lessons_count = collect_lessons(index_text)
@@ -96,11 +96,17 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str) -> dict:
     ]
     text = "\n".join(parts)
     out_path = paths.gameplan_dir(gid) / "handoffs" / f"PHASE-{phase_n}-HANDOFF.md"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(text, encoding="utf-8")
+    if write:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(text, encoding="utf-8")
+        summary = f"wrote handoff for phase {phase_n}: {lessons_count} lessons rolled up"
+    else:
+        summary = f"assembled phase {phase_n} context: {lessons_count} lessons rolled up (not written)"
     return {
         "ok": True,
-        "path": str(out_path),
+        "path": str(out_path) if write else None,
+        "written": write,
+        "handoff_md": text,
         "lessons_rolled_up": lessons_count,
-        "summary": f"wrote handoff for phase {phase_n}: {lessons_count} lessons rolled up",
+        "summary": summary,
     }

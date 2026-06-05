@@ -46,6 +46,8 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 **4.** Make init idempotent via marker blocks, key-scoped JSON merges, and exists-checks — never clobber user content.
 
+**12.** Real-world dogfooding found every high-severity gap in integration/observability, not the core model — keep validating the drop-in on non-native-Linux happy paths.
+
 ### Category: Build
 
 **1.** Keep the core dependency-free: a vendored frontmatter parser beats a PyYAML dep for a drop-in.
@@ -53,3 +55,21 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **2.** FastMCP may not structure deeply-nested tool returns — keep returns shallow; write big artifacts to disk.
 
 **5.** Prefer vendoring a tiny parser over a dependency when portability is the point.
+
+### Category: Observability
+
+**6.** Health checks must verify capability, not just presence: `doctor` now probes that the MCP/hook command is actually executable — a green check on a non-launchable setup is worse than no check.
+
+**11.** Hook failures must surface where the agent can see them: the SessionStart hook now prints errors to stdout (session context), never silently to stderr.
+
+### Category: Integration
+
+**7.** Write-only config is a silent footgun: profile.lock.toml was written but never read; per-project command overrides now overlay the packaged profile via detect.load_for_repo.
+
+**8.** Drop-in wiring must fit non-uvx installs: init now prefers installed console scripts (venv/pipx) and only falls back to uvx, fixing the Windows->WSL/venv path.
+
+**9.** Idempotency must hold across changed inputs, not just identical re-runs: re-running init with a different invocation now REPLACES the SessionStart hook instead of appending a duplicate.
+
+### Category: Design
+
+**10.** Name tools by their effect: a 'context fetch' must not mutate the tree. cz_next_phase_context now assembles the handoff in-memory (write=False) and only cz_write_handoff persists.

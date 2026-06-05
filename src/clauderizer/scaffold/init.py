@@ -19,9 +19,27 @@ from ..markdown import writer
 from ..paths import RepoPaths, resolve
 from ..profiles import detect
 
-# How the dropped-in repo invokes the engine. uvx = zero-install; override with
-# --run-cmd "pipx run clauderizer" or a dev path if preferred.
+# Zero-install fallback when nothing is on PATH. uvx resolves the package on
+# demand. Overridable with --run-cmd "pipx run clauderizer".
 DEFAULT_RUN = ["uvx", "--from", "clauderizer"]
+
+
+def _resolve_invocation(run_cmd: list[str] | None) -> tuple[list[str], list[str]]:
+    """Resolve how this machine should launch the MCP server and the hook.
+
+    Returns ``(mcp_argv, hook_argv)`` as full command lists. When the user passes
+    an explicit ``--run-cmd`` prefix, the entry-point name is appended to it.
+    Otherwise we prefer the installed console scripts (venv/pipx — the common
+    Windows→WSL / venv path that ``uvx``-only wiring used to break), falling back
+    to ``uvx --from clauderizer`` only when nothing is on PATH.
+    """
+    if run_cmd:
+        return [*run_cmd, "clauderizer-mcp"], [*run_cmd, "clauderizer-hook"]
+    mcp = shutil.which("clauderizer-mcp")
+    hook = shutil.which("clauderizer-hook")
+    if mcp and hook:
+        return [mcp], [hook]
+    return [*DEFAULT_RUN, "clauderizer-mcp"], [*DEFAULT_RUN, "clauderizer-hook"]
 
 
 @dataclass
@@ -50,7 +68,7 @@ def init(
     root = root.resolve()
     paths = resolve(root)
     report = InitReport(repo=str(root))
-    run_cmd = run_cmd or DEFAULT_RUN
+    mcp_cmd, hook_cmd = _resolve_invocation(run_cmd)
 
     # 1–2. detect host language
     if profile == "auto":
@@ -114,11 +132,11 @@ def init(
                 report.note(f"skill:{skill_dir.name}", dest_dir / src.name, changed)
 
     # 10. register MCP server (key-scoped merge)
-    changed = _register_mcp(paths.mcp_json, run_cmd)
+    changed = _register_mcp(paths.mcp_json, mcp_cmd)
     report.note(".mcp.json", paths.mcp_json, changed)
 
     # 11. SessionStart hook (merge into .claude/settings.json)
-    changed = _register_hook(root / ".claude" / "settings.json", run_cmd)
+    changed = _register_hook(root / ".claude" / "settings.json", hook_cmd)
     report.note("hook", root / ".claude" / "settings.json", changed)
 
     # 12. gitignore the disposable cache; reindex
@@ -141,7 +159,7 @@ def _rewrite_if_diff(path: Path, content: str) -> bool:
     return True
 
 
-def _register_mcp(mcp_json: Path, run_cmd: list[str]) -> bool:
+def _register_mcp(mcp_json: Path, mcp_cmd: list[str]) -> bool:
     data = {}
     if mcp_json.exists():
         try:
@@ -149,7 +167,7 @@ def _register_mcp(mcp_json: Path, run_cmd: list[str]) -> bool:
         except json.JSONDecodeError:
             data = {}
     servers = data.setdefault("mcpServers", {})
-    entry = {"command": run_cmd[0], "args": [*run_cmd[1:], "clauderizer-mcp"]}
+    entry = {"command": mcp_cmd[0], "args": list(mcp_cmd[1:])}
     if servers.get("clauderizer") == entry:
         return False
     servers["clauderizer"] = entry
@@ -158,24 +176,36 @@ def _register_mcp(mcp_json: Path, run_cmd: list[str]) -> bool:
     return True
 
 
-def _register_hook(settings_json: Path, run_cmd: list[str]) -> bool:
+def _register_hook(settings_json: Path, hook_argv: list[str]) -> bool:
     data = {}
     if settings_json.exists():
         try:
             data = json.loads(settings_json.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             data = {}
-    hook_cmd = " ".join([*run_cmd, "clauderizer-hook"])
+    hook_cmd = " ".join(hook_argv)
     hooks = data.setdefault("hooks", {})
-    sessionstart = hooks.setdefault("SessionStart", [])
-    # already registered?
+    sessionstart = hooks.get("SessionStart", [])
+
+    # Drop ANY existing clauderizer hook entry (matched by the entry-point name),
+    # not just an exact-string match. This makes re-running init with a changed
+    # invocation (e.g. uvx -> venv path) REPLACE the hook instead of appending a
+    # duplicate. Non-clauderizer hooks are preserved untouched.
+    cleaned: list[dict] = []
     for group in sessionstart:
-        for h in group.get("hooks", []):
-            if h.get("command") == hook_cmd:
-                return False
-    sessionstart.append({"hooks": [{"type": "command", "command": hook_cmd}]})
+        kept = [h for h in group.get("hooks", []) if "clauderizer-hook" not in h.get("command", "")]
+        if kept:
+            cleaned.append({**group, "hooks": kept})
+        elif not group.get("hooks"):
+            cleaned.append(group)  # preserve unrelated empty groups verbatim
+    cleaned.append({"hooks": [{"type": "command", "command": hook_cmd}]})
+    hooks["SessionStart"] = cleaned
+
+    new_text = json.dumps(data, indent=2) + "\n"
+    if settings_json.exists() and settings_json.read_text(encoding="utf-8") == new_text:
+        return False
     settings_json.parent.mkdir(parents=True, exist_ok=True)
-    settings_json.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    settings_json.write_text(new_text, encoding="utf-8")
     return True
 
 

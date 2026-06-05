@@ -54,6 +54,36 @@ def load(name: str) -> Profile:
     return profiles.get(name) or profiles["generic"]
 
 
+def load_for_repo(name: str, lock_path: Path | None = None) -> Profile:
+    """Load the packaged profile, then overlay a project-local ``profile.lock.toml``.
+
+    The lock file (written by ``init``) is the project's authoritative source for
+    commands, so a team can pin per-project ``test``/``build``/``lint``/``typecheck``
+    by editing it. Previously the lock was write-only and overrides silently did
+    nothing. Only non-empty values override the packaged defaults.
+    """
+    base = load(name)
+    if lock_path is None or not lock_path.exists():
+        return base
+    try:
+        with lock_path.open("rb") as fh:
+            raw = tomllib.load(fh)
+    except (OSError, tomllib.TOMLDecodeError):
+        return base
+    merged = dict(base.commands)
+    merged.update(
+        {k: str(v) for k, v in raw.get("commands", {}).items() if str(v).strip()}
+    )
+    regex = str(raw.get("preflight", {}).get("baseline_test_regex", "")) or base.baseline_test_regex
+    return Profile(
+        name=str(raw.get("profile", base.name)),
+        detect_files=base.detect_files,
+        weight=base.weight,
+        commands=merged,
+        baseline_test_regex=regex,
+    )
+
+
 def detect(repo_root: Path) -> tuple[Profile, list[str]]:
     """Return ``(best_profile, alternatives)`` for a host repo.
 

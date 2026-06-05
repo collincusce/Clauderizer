@@ -8,7 +8,6 @@ never block a session, so errors degrade to a single warning line.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 from ..config import Config
@@ -27,7 +26,9 @@ def main(argv: list[str] | None = None) -> int:
         bundle = status_bundle.compute(paths, config)
         print(status_bundle.render_digest(bundle, tools=TOOL_NAMES))
     except Exception as exc:  # never break a session
-        print(f"[Clauderizer] status unavailable: {exc}", file=sys.stderr)
+        # Print to STDOUT (not stderr) so the failure is visible in session
+        # context — a silent hook failure is the dangerous kind. Still exit 0.
+        print(f"[Clauderizer] status unavailable: {exc} — run `clauderize doctor`")
     return 0
 
 
