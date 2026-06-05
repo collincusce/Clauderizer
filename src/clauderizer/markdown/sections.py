@@ -75,13 +75,26 @@ def upsert_section(text: str, heading: str, content: str, level: int = 2) -> str
     return rebuilt.rstrip("\n") + "\n"
 
 
+_PLACEHOLDER_RE = re.compile(r"^_\(.*\)_$", re.DOTALL)
+
+
+def _is_placeholder(content: str) -> bool:
+    """True if a section body is only a scaffold placeholder like ``_(add here)_``."""
+    return bool(_PLACEHOLDER_RE.match(content.strip()))
+
+
 def append_to_section(text: str, heading: str, entry: str, level: int = 2) -> str:
-    """Append ``entry`` to the end of a section's existing content."""
+    """Append ``entry`` to the end of a section's existing content.
+
+    A section whose body is empty or just a scaffold placeholder (``_(...)_``) is
+    treated as empty, so the first real entry replaces the placeholder instead of
+    stacking beneath it.
+    """
     existing = get_section(text, heading)
     entry = entry.rstrip("\n")
-    if existing is None:
+    if existing is None or not existing.strip() or _is_placeholder(existing):
         return upsert_section(text, heading, entry, level=level)
-    combined = existing.rstrip("\n") + "\n\n" + entry if existing.strip() else entry
+    combined = existing.rstrip("\n") + "\n\n" + entry
     return upsert_section(text, heading, combined, level=level)
 
 

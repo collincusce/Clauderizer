@@ -2,6 +2,33 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [Unreleased]
+
+### Added
+- `cz_add_finding` / `mutations.add_finding` (alias `add_risk`) — record structured
+  security/audit findings into the append-only `HARDENING.md` tracker.
+- `doctor` now probes that the MCP server **and** SessionStart hook commands are
+  actually executable, not just registered — a green check on a non-launchable
+  setup is worse than no check.
+- `detect.load_for_repo()` overlays a project-local `profile.lock.toml`, so
+  per-project test/build/lint/typecheck overrides take effect (the lock was
+  previously write-only).
+
+### Changed
+- `init` wiring now prefers installed console scripts (venv/pipx) and only falls
+  back to `uvx`, fixing the Windows→WSL / venv drop-in path.
+- Re-running `init` with a changed invocation now **replaces** the SessionStart
+  hook instead of appending a duplicate.
+- `cz_next_phase_context` is side-effect-free: it assembles the handoff in memory
+  (`handoff.assemble(..., write=False)`) and returns it as `handoff_md`; only
+  `cz_write_handoff` persists a file.
+- The first real entry in a doc section now replaces the scaffold `_(…)_`
+  placeholder instead of stacking beneath it.
+
+### Fixed
+- SessionStart hook errors print to stdout (visible in session context) instead
+  of stderr, where silent failure was the dangerous kind.
+
 ## [0.1.0] — 2026-05-30
 
 Initial release. A drop-in, MCP-native successor to the markdown "gameplan

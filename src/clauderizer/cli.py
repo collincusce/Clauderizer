@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -95,7 +97,13 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     check("procedure shipped", paths.procedure_file.exists())
     check("CLAUDE.md stanza", _has_marker(paths.claude_md, "clauderizer"))
     check(".mcp.json registers clauderizer", _mcp_registered(paths.mcp_json))
-    check("SessionStart hook registered", _hook_registered(paths.root / ".claude" / "settings.json"))
+    # Fidelity: registration present is not enough — the command must be launchable.
+    mcp_ok, mcp_detail = _command_runnable(_mcp_command(paths.mcp_json))
+    check("MCP server command runnable", mcp_ok, mcp_detail)
+    settings = paths.root / ".claude" / "settings.json"
+    check("SessionStart hook registered", _hook_registered(settings))
+    hook_ok, hook_detail = _command_runnable(_hook_command(settings))
+    check("SessionStart hook command runnable", hook_ok, hook_detail)
     check("index cache present", paths.index_file.exists())
     # procedure version drift (MAJOR)
     drift = _procedure_drift(paths.procedure_file)
@@ -145,6 +153,53 @@ def _hook_registered(settings: Path) -> bool:
             if "clauderizer-hook" in h.get("command", ""):
                 return True
     return False
+
+
+def _mcp_command(mcp_json: Path) -> list[str] | None:
+    if not mcp_json.exists():
+        return None
+    try:
+        data = json.loads(mcp_json.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    entry = data.get("mcpServers", {}).get("clauderizer")
+    if not entry:
+        return None
+    return [entry.get("command", ""), *entry.get("args", [])]
+
+
+def _hook_command(settings: Path) -> list[str] | None:
+    if not settings.exists():
+        return None
+    try:
+        data = json.loads(settings.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    for group in data.get("hooks", {}).get("SessionStart", []):
+        for h in group.get("hooks", []):
+            cmd = h.get("command", "")
+            if "clauderizer-hook" in cmd:
+                return cmd.split()
+    return None
+
+
+def _command_runnable(argv: list[str] | None) -> tuple[bool, str]:
+    """Can the configured launch command actually be executed on this machine?
+
+    Guards against a green health check on a setup that can't launch (e.g. a
+    ``.mcp.json`` pointing at ``uvx`` that isn't installed, or a dev path that
+    doesn't exist) — a check that's green while the server can't start is worse
+    than no check.
+    """
+    if not argv or not argv[0]:
+        return False, "no clauderizer command registered"
+    exe = argv[0]
+    if shutil.which(exe):
+        return True, exe
+    p = Path(exe)
+    if p.is_file() and os.access(p, os.X_OK):
+        return True, str(p)
+    return False, f"'{exe}' not found on PATH or not executable"
 
 
 def _procedure_drift(procedure_file: Path) -> str | None:

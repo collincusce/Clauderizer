@@ -81,13 +81,13 @@ def build_server():
 
     @mcp.tool()
     def cz_next_phase_context() -> dict:
-        """Assemble everything the next/current phase session needs in one call."""
+        """Assemble everything the next/current phase session needs in one call (read-only: returns the handoff text without writing a file)."""
         paths, config = _ctx()
         bundle = status_bundle.compute(paths, config)
         target = bundle.get("current_phase") or bundle.get("next_phase")
         if not target or not config.active_gameplan:
             return {"ok": False, "summary": "no active/next phase", "status": bundle}
-        result = handoff.assemble(paths, config, config.active_gameplan, target["number"])
+        result = handoff.assemble(paths, config, config.active_gameplan, target["number"], write=False)
         result["phase"] = target
         result["status_summary"] = bundle.get("summary")
         result["next_action"] = bundle.get("next_action")
@@ -118,7 +118,7 @@ def build_server():
     def cz_preflight() -> dict:
         """Run the pre-flight checks (git state + host test/build commands) for real."""
         paths, config = _ctx()
-        profile = detect.load(config.host_profile)
+        profile = detect.load_for_repo(config.host_profile, paths.profile_lock)
         return preflight.run(paths, config, profile).to_dict()
 
     @mcp.tool()
