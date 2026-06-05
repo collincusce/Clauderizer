@@ -114,6 +114,50 @@ session.
 
 ---
 
+## Quickstart: into an existing project
+
+Already have a codebase? Clauderizer drops in without disturbing it — `init` is idempotent and
+never clobbers your files: it adds a marker stanza to an existing `CLAUDE.md`, key-merges
+`.mcp.json`, and skips any doc that already exists.
+
+**1. Clauderize the repo.** Run it on a clean working tree (or a fresh branch) so the change is
+easy to review:
+
+```bash
+cd my-existing-repo
+uvx clauderize init --size standard     # auto-detects node / python / go / ruby
+clauderize doctor                       # confirm it's wired AND runnable
+```
+
+Because your project already has a language, pre-flight runs your **real** test/build/lint
+commands from the start (tweak them in `.clauderizer/profile.lock.toml` if your repo is
+non-standard). Commit this diff on its own branch/commit so adopting Clauderizer is a clean,
+reviewable change in your history.
+
+**2. Open a Claude Code session.** The hook injects status (no gameplan yet).
+
+**3. (Recommended) Seed memory from what already exists** — so the graph reflects reality before
+you build on it:
+
+> *Before we plan anything, skim this codebase and seed Clauderizer's memory: capture the major
+> subsystems as entities, the load-bearing decisions and invariants you can infer, and the real
+> baseline (current test count, language/framework versions) as source-of-truth. Don't change
+> any code — just record.*
+
+**4. Plan your first initiative** — the first prompt points at a feature or change *on top of*
+the existing code:
+
+> *Plan a gameplan to **\<the initiative, e.g. "add OAuth login"\>**. This is an existing
+> **\<stack\>** codebase — read the relevant code first, capture source-of-truth values, record
+> the key decisions, and break it into session-sized phases with verifiable exit criteria. Show
+> me the plan before we execute.*
+
+Then, as always:
+
+> *Do the next phase.*
+
+---
+
 ## Working with gameplans (how you actually drive it)
 
 **You talk to the agent in plain English; Claude does the tool calls.** You almost never
