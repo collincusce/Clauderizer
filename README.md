@@ -75,6 +75,45 @@ the agent never hand-mangles your docs.
 
 ---
 
+## Quickstart: from an empty folder
+
+Brand-new project with nothing in it — not even Clauderizer installed? Three steps.
+
+**1. Make the repo and clauderize it.** `uvx` runs Clauderizer without installing anything:
+
+```bash
+mkdir my-project && cd my-project
+git init                                # recommended — pre-flight uses git
+uvx clauderize init --size standard     # scaffolds docs/, CLAUDE.md, skills, MCP server, hook
+```
+
+> No language to detect yet, so the host profile starts as `generic`. Once your first phase
+> adds a `package.json` / `pyproject.toml` / `go.mod` / `Gemfile`, just re-run
+> `clauderize init` (it's idempotent) and the profile switches to the real one, enabling
+> pre-flight tests.
+
+**2. Open a Claude Code session in the folder.** The SessionStart hook greets the agent with
+the (currently empty) status automatically — no setup prompt needed.
+
+**3. Write the very first prompt.** Point the agent at the goal and let it build the plan:
+
+> *Plan a gameplan to **\<one sentence: what you're building\>**. It's a brand-new
+> **\<stack, e.g. "TypeScript + Vite"\>** project with nothing in it yet. Ask me whatever you
+> need to pin down scope, then create the gameplan: capture the key decisions and break it
+> into session-sized phases — start with a phase that scaffolds the project. Show me the plan
+> before we execute.*
+
+That fires the `new-gameplan` skill: the agent clarifies scope with you, records the decisions,
+lays out the phases, and writes the Phase 0 handoff. From there every session is just:
+
+> *Do the next phase.*
+
+Phase 0 typically scaffolds the project itself, so by the time it's done you have a real,
+building codebase tracked by a real plan — and the memory to resume it cleanly in any future
+session.
+
+---
+
 ## Working with gameplans (how you actually drive it)
 
 **You talk to the agent in plain English; Claude does the tool calls.** You almost never
