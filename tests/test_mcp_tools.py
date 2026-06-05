@@ -42,8 +42,8 @@ def test_all_tools_are_discoverable(temp_repo):
     expected = {
         "cz_status", "cz_next_phase_context", "cz_graph_query", "cz_preflight",
         "cz_cascade", "cz_write_handoff", "cz_upsert_entity", "cz_transition_status",
-        "cz_add_decision", "cz_add_invariant", "cz_add_lesson", "cz_add_correction",
-        "cz_create_gameplan", "cz_add_phase", "cz_add_amendment",
+        "cz_add_decision", "cz_add_invariant", "cz_add_finding", "cz_add_lesson",
+        "cz_add_correction", "cz_create_gameplan", "cz_add_phase", "cz_add_amendment",
     }
     assert expected <= names
 
@@ -80,6 +80,19 @@ def test_cz_add_decision_then_query(temp_repo):
             "title": "Adopt X", "context": "c", "decision": "d", "consequences": "e",
         })
         assert added["id"] == "D-002"
+
+
+def test_cz_add_finding(temp_repo):
+    with _chdir(temp_repo):
+        server = build_server()
+        added = _call(server, "cz_add_finding", {
+            "title": "Sample finding via MCP", "severity": "CRITICAL",
+            "impact": "example impact text", "invariant": "INVARIANT-01",
+        })
+    assert added["id"] == "H-01"
+    text = (temp_repo / "docs" / "HARDENING.md").read_text()
+    assert "### H-01 — Sample finding via MCP" in text
+    assert "**Severity**: CRITICAL" in text
 
 
 def test_cz_transition_status_fires_cascade(temp_repo):

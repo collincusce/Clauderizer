@@ -192,6 +192,36 @@ def build_server():
         return mutations.add_invariant(paths, text=text, introduced_by=introduced_by or None)
 
     @mcp.tool()
+    def cz_add_finding(
+        title: str,
+        severity: str,
+        impact: str,
+        affected: str = "",
+        invariant: str = "",
+        preconditions: str = "",
+        root_cause: str = "",
+        reproduction: str = "",
+        recommendation: str = "",
+        regression_tests: str = "",
+        status: str = "open",
+    ) -> dict:
+        """Append a security finding (H-NN) to the append-only HARDENING risk tracker (a.k.a. add_risk).
+
+        Records a structured audit finding: severity + impact are always captured;
+        supply affected code, the invariant violated, exploit preconditions, root
+        cause, a safe reproduction, the recommended fix, and regression tests as
+        available. Findings are append-only — resolve by updating status, not deleting.
+        """
+        paths, _ = _ctx()
+        return mutations.add_finding(
+            paths, title=title, severity=severity, impact=impact,
+            affected=affected, invariant=invariant, preconditions=preconditions,
+            root_cause=root_cause, reproduction=reproduction,
+            recommendation=recommendation, regression_tests=regression_tests,
+            status=status,
+        )
+
+    @mcp.tool()
     def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "") -> dict:
         """Add an accumulated lesson (rolls into every future handoff)."""
         paths, config = _ctx()
