@@ -51,6 +51,39 @@ def test_add_invariant_autonumbers(temp_repo):
     assert "Never call trade APIs" in paths.doc("INVARIANTS").read_text()
 
 
+def test_add_finding_autonumbers_and_renders_fields(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    # fixture has no HARDENING.md yet -> created from template, first id is H-01
+    r1 = M.add_finding(
+        paths, title="Sample finding one", severity="HIGH",
+        impact="example impact text", invariant="INVARIANT-02",
+        affected="src/example.py:handler", recommendation="apply the documented fix",
+        today="2026-06-05",
+    )
+    assert r1["id"] == "H-01"
+    r2 = M.add_finding(paths, title="Sample finding two", severity="MEDIUM",
+                       impact="another example impact", today="2026-06-05")
+    assert r2["id"] == "H-02"
+    text = paths.doc("HARDENING").read_text()
+    assert "### H-01 — Sample finding one" in text
+    assert "### H-02 — Sample finding two" in text
+    assert "**Severity**: HIGH" in text
+    assert "**Status**: open (2026-06-05)" in text
+    assert "**Affected**: src/example.py:handler" in text
+    assert "**Invariant violated**: INVARIANT-02" in text
+    # optional fields are omitted when not supplied
+    assert "**Root cause**" not in text
+    h2_block = text.split("### H-02")[1]
+    assert "**Affected**" not in h2_block  # H-02 supplied no affected code
+
+
+def test_add_finding_is_aliased_as_add_risk(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    assert M.add_risk is M.add_finding
+    r = M.add_risk(paths, title="x", severity="LOW", impact="y", today="2026-06-05")
+    assert r["id"] == "H-01"
+
+
 def test_add_lesson_new_and_existing_category(temp_repo):
     paths, _ = _ctx(temp_repo)
     r1 = M.add_lesson(paths, gameplan_id=GID, text="run preflight first", category="Process")

@@ -128,6 +128,62 @@ def add_invariant(
             "files_changed": [str(path)], "summary": f"added {new_id}"}
 
 
+def add_finding(
+    paths: RepoPaths,
+    *,
+    title: str,
+    severity: str,
+    impact: str,
+    affected: str = "",
+    invariant: str = "",
+    preconditions: str = "",
+    root_cause: str = "",
+    reproduction: str = "",
+    recommendation: str = "",
+    regression_tests: str = "",
+    status: str = "open",
+    today: str | None = None,
+) -> dict:
+    """Append a security finding (``H-NN``) to the append-only HARDENING tracker.
+
+    Also exported as :func:`add_risk`. HARDENING.md is a permanent audit trail:
+    findings are append-only and "resolved" by updating their status + a date,
+    never deleted. ``severity`` and ``impact`` are always recorded; the richer
+    audit fields (affected code, the invariant violated, exploit preconditions,
+    root cause, a safe reproduction, the recommended fix, regression tests) are
+    rendered only when supplied, so a finding can be logged fast then enriched.
+    """
+    path = paths.doc("HARDENING")
+    _ensure_doc(path, "HARDENING")
+    doc = writer.full_text(path)
+    new_id = next_numbered_id(doc, "H", sep="-", width=2)
+    fields = [
+        ("Severity", severity, True),
+        ("Status", f"{status.strip()} ({_today(today)})", True),
+        ("Affected", affected, False),
+        ("Invariant violated", invariant, False),
+        ("Preconditions", preconditions, False),
+        ("Impact", impact, True),
+        ("Root cause", root_cause, False),
+        ("Reproduction", reproduction, False),
+        ("Recommended fix", recommendation, False),
+        ("Regression tests", regression_tests, False),
+    ]
+    body = "\n".join(
+        f"- **{label}**: {str(value).strip()}"
+        for label, value, required in fields
+        if required or str(value).strip()
+    )
+    entry = f"### {new_id} — {title.strip()}\n\n{body}"
+    writer.append_to_section(path, "Risks", entry)
+    return {"ok": True, "id": new_id, "path": str(path),
+            "files_changed": [str(path)], "summary": f"added finding {new_id} ({severity.strip()})"}
+
+
+# ``cz_add_risk`` is an accepted alias for the same operation.
+add_risk = add_finding
+
+
 def add_lesson(
     paths: RepoPaths, *, gameplan_id: str, text: str, category: str = "Process"
 ) -> dict:
