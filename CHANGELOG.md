@@ -2,6 +2,14 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.2.1] — 2026-06-05
+
+### Fixed
+- Require **Python ≥ 3.11**. The engine uses the stdlib `tomllib`, which only
+  exists from 3.11, so 0.2.0 crashed on import under 3.10 despite advertising
+  `>=3.10`. Corrected `requires-python`, classifiers, and the CI matrix. (Keeps
+  the zero-runtime-dependency promise rather than pulling in a `tomli` backport.)
+
 ## [0.2.0] — 2026-06-05
 
 First release published to PyPI.
