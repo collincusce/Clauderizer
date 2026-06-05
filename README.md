@@ -1,5 +1,10 @@
 # Clauderizer
 
+[![PyPI](https://img.shields.io/pypi/v/clauderizer.svg)](https://pypi.org/project/clauderizer/)
+[![Python](https://img.shields.io/pypi/pyversions/clauderizer.svg)](https://pypi.org/project/clauderizer/)
+[![Tests](https://github.com/collincusce/Clauderizer/actions/workflows/test.yml/badge.svg)](https://github.com/collincusce/Clauderizer/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ### Durable, structured memory for AI agents — drop it into any repo in one command.
 
 ```bash
