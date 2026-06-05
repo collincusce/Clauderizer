@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clauderizer"
-version = "0.2.0"
+version = "0.2.1"
 description = "Drop-in, MCP-native working memory for AI agents: gameplans, phases, a dependency graph, and post-hoc cascade — over plain markdown."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Clauderizer contributors" }]
 keywords = ["claude", "mcp", "agents", "planning", "gameplan", "memory"]
@@ -16,7 +16,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
