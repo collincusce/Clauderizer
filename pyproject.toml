@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clauderizer"
-version = "0.1.0"
+version = "0.2.0"
 description = "Drop-in, MCP-native working memory for AI agents: gameplans, phases, a dependency graph, and post-hoc cascade — over plain markdown."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -38,16 +38,16 @@ clauderizer-mcp = "clauderizer.mcp_server:main"
 clauderizer-hook = "clauderizer.hook.sessionstart:main"
 
 [project.urls]
-Homepage = "https://github.com/collincusce/clauderizer"
-Source = "https://github.com/collincusce/clauderizer"
+Homepage = "https://github.com/collincusce/Clauderizer"
+Source = "https://github.com/collincusce/Clauderizer"
+Issues = "https://github.com/collincusce/Clauderizer/issues"
+Changelog = "https://github.com/collincusce/Clauderizer/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
+# `packages` already bundles every file under src/clauderizer — including the
+# templates/, profiles/, and skills/ data dirs — so no force-include is needed
+# (and adding one collides with `packages`, breaking the wheel build).
 packages = ["src/clauderizer"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"src/clauderizer/templates" = "clauderizer/templates"
-"src/clauderizer/profiles" = "clauderizer/profiles"
-"src/clauderizer/skills" = "clauderizer/skills"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -290,6 +290,17 @@ uv pip install -e ".[mcp,dev]"
 pytest
 ```
 
+### Releasing (maintainers)
+
+Publishing is automated and tokenless via **PyPI Trusted Publishing** (OIDC) — no secrets stored.
+
+One-time setup on PyPI → the `clauderizer` project → *Publishing* → add a trusted publisher:
+owner `collincusce`, repo `Clauderizer`, workflow `publish.yml`, environment `pypi`.
+
+Then for each release: bump `version` in `pyproject.toml` + `__version__`, update the CHANGELOG,
+and **cut a GitHub Release**. The `publish.yml` workflow builds, runs `twine check`, and uploads
+to PyPI automatically. (`uv build` locally to sanity-check first.)
+
 ## License
 
 MIT.

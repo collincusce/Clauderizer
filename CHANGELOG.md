@@ -2,7 +2,16 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [Unreleased]
+## [0.2.0] — 2026-06-05
+
+First release published to PyPI.
+
+### Packaging
+- Fixed the wheel build: removed a `force-include` table that collided with
+  `packages`, which broke `uv build` / `python -m build`. The `templates/`,
+  `profiles/`, and `skills/` data dirs are bundled via `packages` and verified
+  present in the wheel.
+- Core install is dependency-free; the MCP server is the `clauderizer[mcp]` extra.
 
 ### Added
 - `cz_add_finding` / `mutations.add_finding` (alias `add_risk`) — record structured

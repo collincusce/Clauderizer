@@ -1,0 +1,41 @@
+name: Publish to PyPI
+
+# Publishes when you cut a GitHub Release. Uses PyPI Trusted Publishing (OIDC) —
+# no API token or secret is stored anywhere. Configure the trusted publisher once
+# on PyPI (see "Publishing" in the README): project `clauderizer`, owner
+# `collincusce`, repo `Clauderizer`, workflow `publish.yml`, environment `pypi`.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv build
+      - run: uvx twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/clauderizer
+    permissions:
+      id-token: write   # required for Trusted Publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
