@@ -165,6 +165,20 @@ def build_server():
                                    depends_on_phases=depends_on_phases)
 
     @mcp.tool()
+    def cz_transition_phase(phase_n: str, to_status: str, gameplan_id: str = "") -> dict:
+        """Advance a phase's lifecycle status so cz_status reflects reality.
+
+        to_status: not_started | ready | in_progress | complete | blocked | failed
+        (aliases like start/done/block accepted). Stamps Started/Completed dates.
+        Use this at phase boundaries — it's the blessed write for phase status, which
+        otherwise has no tool and freezes cz_status at the first phase.
+        """
+        paths, config = _ctx()
+        gid = gameplan_id or config.active_gameplan
+        return mutations.transition_phase(paths, gameplan_id=gid, phase_n=phase_n,
+                                           to_status=to_status)
+
+    @mcp.tool()
     def cz_add_amendment(title: str, affected_sections: str, affected_phases: str,
                          triggered_by: str, what: str, why: str, gameplan_id: str = "") -> dict:
         """Record a first-class amendment (A-NNN) to a started gameplan."""
@@ -220,6 +234,18 @@ def build_server():
             recommendation=recommendation, regression_tests=regression_tests,
             status=status,
         )
+
+    @mcp.tool()
+    def cz_resolve_finding(finding_id: str, status: str = "resolved", note: str = "") -> dict:
+        """Update a finding's status + dated resolution note in HARDENING (append-only).
+
+        The tracker's policy is "mark resolved with a date, never delete" — this is the
+        blessed write for that, instead of a forbidden hand-edit. e.g.
+        cz_resolve_finding("H-03", "resolved", "owner confirmed 3-of-5 Safe").
+        """
+        paths, _ = _ctx()
+        return mutations.resolve_finding(paths, finding_id=finding_id, status=status,
+                                         note=note or None)
 
     @mcp.tool()
     def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "") -> dict:

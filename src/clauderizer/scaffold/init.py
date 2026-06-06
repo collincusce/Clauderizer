@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -35,10 +36,19 @@ def _resolve_invocation(run_cmd: list[str] | None) -> tuple[list[str], list[str]
     """
     if run_cmd:
         return [*run_cmd, "clauderizer-mcp"], [*run_cmd, "clauderizer-hook"]
-    mcp = shutil.which("clauderizer-mcp")
-    hook = shutil.which("clauderizer-hook")
-    if mcp and hook:
-        return [mcp], [hook]
+    # Prefer the console scripts that sit next to the *running* interpreter — the
+    # most reliable hit for a venv/pipx install, even when that bin dir isn't on
+    # PATH (the Windows→WSL / unactivated-venv case shutil.which misses). Fall back
+    # to PATH lookup, then to zero-install uvx.
+    bindir = Path(sys.executable).parent
+    mcp = bindir / "clauderizer-mcp"
+    hook = bindir / "clauderizer-hook"
+    if mcp.exists() and hook.exists():
+        return [str(mcp)], [str(hook)]
+    which_mcp = shutil.which("clauderizer-mcp")
+    which_hook = shutil.which("clauderizer-hook")
+    if which_mcp and which_hook:
+        return [which_mcp], [which_hook]
     return [*DEFAULT_RUN, "clauderizer-mcp"], [*DEFAULT_RUN, "clauderizer-hook"]
 
 
@@ -57,6 +67,16 @@ class InitReport:
             self.changed.append(str(path))
 
 
+# A "docs"/"audit" workflow accumulates deliverables across phases, so a dirty
+# tree and a missing host test runner are normal — these checks become advisory
+# (still shown, never fatal) instead of crying wolf on every resume.
+WORKFLOW_ADVISORY = {
+    "code": [],
+    "docs": ["clean_tree", "branch_base", "branch_creation"],
+    "audit": ["clean_tree", "branch_base", "branch_creation", "tests"],
+}
+
+
 def init(
     root: Path,
     *,
@@ -64,6 +84,7 @@ def init(
     profile: str = "auto",
     gameplan: str | None = None,
     run_cmd: list[str] | None = None,
+    workflow: str = "code",
 ) -> InitReport:
     root = root.resolve()
     paths = resolve(root)
@@ -79,6 +100,7 @@ def init(
 
     # 3. size -> default config
     defaults = Config.for_size(size, host_profile=prof.name)
+    defaults.preflight_advisory = list(WORKFLOW_ADVISORY.get(workflow, []))
     report.size = size
 
     # 4. config.toml (merge missing on re-run)
@@ -92,8 +114,10 @@ def init(
     )
     report.note("config", paths.config_file, changed)
 
-    # 5. profile.lock.toml
-    changed = _rewrite_if_diff(paths.profile_lock, prof.to_lock_toml())
+    # 5. profile.lock.toml — write once, then PRESERVE. It's the project's editable
+    # per-project command override (read back by detect.load_for_repo); regenerating
+    # it on every run would clobber those edits. Delete it to re-derive from a profile.
+    changed = writer.create_if_absent(paths.profile_lock, prof.to_lock_toml())
     report.note("profile.lock", paths.profile_lock, changed)
 
     # 6. scaffold docs (enabled modules only; never clobber)

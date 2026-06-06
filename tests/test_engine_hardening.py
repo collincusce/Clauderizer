@@ -103,17 +103,25 @@ def test_resolve_invocation_explicit_prefix():
     assert hook == ["uvx", "--from", "clauderizer", "clauderizer-hook"]
 
 
-def test_resolve_invocation_prefers_installed_scripts(monkeypatch):
-    monkeypatch.setattr(scaffold_init.shutil, "which", lambda name: f"/venv/bin/{name}")
+def test_resolve_invocation_prefers_scripts_next_to_interpreter(monkeypatch, tmp_path):
+    # scripts sitting next to the running interpreter win — the reliable venv hit,
+    # even when shutil.which would miss (bin dir off PATH).
+    (tmp_path / "clauderizer-mcp").write_text("")
+    (tmp_path / "clauderizer-hook").write_text("")
+    monkeypatch.setattr(scaffold_init.sys, "executable", str(tmp_path / "python"))
+    monkeypatch.setattr(scaffold_init.shutil, "which", lambda name: None)  # PATH misses
     mcp, hook = _resolve_invocation(None)
-    assert mcp == ["/venv/bin/clauderizer-mcp"]
-    assert hook == ["/venv/bin/clauderizer-hook"]
+    assert mcp == [str(tmp_path / "clauderizer-mcp")]
+    assert hook == [str(tmp_path / "clauderizer-hook")]
 
 
-def test_resolve_invocation_falls_back_to_uvx(monkeypatch):
+def test_resolve_invocation_falls_back_to_path_then_uvx(monkeypatch, tmp_path):
+    # nothing next to the interpreter -> PATH lookup, then uvx.
+    monkeypatch.setattr(scaffold_init.sys, "executable", str(tmp_path / "python"))
+    monkeypatch.setattr(scaffold_init.shutil, "which", lambda name: f"/venv/bin/{name}")
+    assert _resolve_invocation(None)[0] == ["/venv/bin/clauderizer-mcp"]
     monkeypatch.setattr(scaffold_init.shutil, "which", lambda name: None)
-    mcp, _hook = _resolve_invocation(None)
-    assert mcp == ["uvx", "--from", "clauderizer", "clauderizer-mcp"]
+    assert _resolve_invocation(None)[0] == ["uvx", "--from", "clauderizer", "clauderizer-mcp"]
 
 
 # --- #1 doctor command executability -----------------------------------------

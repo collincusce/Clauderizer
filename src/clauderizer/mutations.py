@@ -184,6 +184,48 @@ def add_finding(
 add_risk = add_finding
 
 
+def resolve_finding(paths: RepoPaths, *, finding_id: str, status: str = "resolved",
+                    note: str | None = None, today: str | None = None) -> dict:
+    """Update a finding's status (and an optional dated resolution note) in place.
+
+    HARDENING is append-only — findings are "resolved by updating status + a date,
+    never deleted". Without this, doing so means a forbidden hand-edit of a tracked
+    log. Updates the ``**Status**`` line of the ``H-NN`` block and upserts a
+    ``**Resolution**`` line; the entry itself is never removed.
+    """
+    path = paths.doc("HARDENING")
+    text = writer.full_text(path)
+    sec = sections.get_section(text, "Risks")
+    if sec is None or f"### {finding_id} " not in sec:
+        return {"ok": False, "summary": f"finding {finding_id} not found in HARDENING.md"}
+    today = _today(today)
+    lines = sec.splitlines()
+    start = next(i for i, ln in enumerate(lines) if ln.startswith(f"### {finding_id} "))
+    end = next((j for j in range(start + 1, len(lines)) if lines[j].startswith("### ")),
+               len(lines))
+    block = lines[start:end]
+    new_status = f"- **Status**: {status.strip()} ({today})"
+    res_line = f"- **Resolution**: {note.strip()}" if note else None
+    new_block, did_status, did_res = [], False, False
+    for ln in block:
+        st = ln.strip()
+        if st.startswith("- **Status**:"):
+            new_block.append(new_status); did_status = True
+        elif st.startswith("- **Resolution**:") and res_line:
+            new_block.append(res_line); did_res = True
+        else:
+            new_block.append(ln)
+    if not did_status:
+        new_block.insert(1, new_status)
+    if res_line and not did_res:
+        while new_block and not new_block[-1].strip():
+            new_block.pop()
+        new_block.append(res_line)
+    writer.upsert_section(path, "Risks", "\n".join(lines[:start] + new_block + lines[end:]))
+    return {"ok": True, "id": finding_id, "path": str(path), "files_changed": [str(path)],
+            "summary": f"{finding_id} → {status.strip()}"}
+
+
 def add_lesson(
     paths: RepoPaths, *, gameplan_id: str, text: str, category: str = "Process"
 ) -> dict:
@@ -294,6 +336,81 @@ def add_phase(
                 files.append(str(path))
     return {"ok": True, "phase": n, "files_changed": files,
             "summary": f"added Phase {n}: {name}"}
+
+
+# Phase status lives in the markdown phase tables (not the entity graph), so it
+# needs its own blessed mutation — without this, advancing a phase means a
+# forbidden hand-edit, and cz_status freezes at "Phase 0" on finished work.
+_PHASE_DISPLAY = {
+    "not_started": "⬜ NOT STARTED",
+    "ready": "🟢 READY",
+    "in_progress": "🟡 IN PROGRESS",
+    "complete": "✅ COMPLETE",
+    "blocked": "⚠️ BLOCKED",
+    "failed": "🔴 FAILED",
+}
+_PHASE_ALIASES = {
+    "start": "in_progress", "started": "in_progress", "active": "in_progress",
+    "wip": "in_progress", "begin": "in_progress",
+    "done": "complete", "completed": "complete", "finish": "complete", "finished": "complete",
+    "todo": "not_started", "pending": "not_started", "block": "blocked", "fail": "failed",
+}
+
+
+def _set_phase_row(path, heading: str, phase_n: str, display: str, norm: str,
+                   today: str) -> bool:
+    """Rewrite the status (and dates) of one phase row in a tracker table."""
+    text = writer.full_text(path)
+    sec = sections.get_section(text, heading)
+    if sec is None:
+        return False
+    out, changed = [], False
+    for line in sec.splitlines():
+        s = line.strip()
+        if s.startswith("|"):
+            cells = [c.strip() for c in s.strip("|").split("|")]
+            if len(cells) >= 6 and cells[0] == phase_n:
+                cells[2] = display
+                if norm in ("in_progress", "complete") and cells[3] in ("—", ""):
+                    cells[3] = today
+                if norm == "complete":
+                    cells[4] = today
+                rebuilt = "| " + " | ".join(cells) + " |"
+                if rebuilt != s:
+                    line, changed = rebuilt, True
+        out.append(line)
+    if changed:
+        writer.upsert_section(path, heading, "\n".join(out))
+    return changed
+
+
+def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
+                     to_status: str, today: str | None = None) -> dict:
+    """Move a phase's lifecycle status in the gameplan trackers.
+
+    ``to_status`` accepts the normalized words (not_started, ready, in_progress,
+    complete, blocked, failed) or friendly aliases (start, done, block, …).
+    Starting/completing stamps the Started/Completed dates. This is the write
+    that keeps ``cz_status`` / ``cz_next_phase_context`` honest.
+    """
+    norm = _PHASE_ALIASES.get(to_status.strip().lower(), to_status.strip().lower())
+    if norm not in _PHASE_DISPLAY:
+        return {"ok": False,
+                "summary": f"unknown phase status {to_status!r}; use one of: "
+                           f"{', '.join(_PHASE_DISPLAY)}"}
+    today = _today(today)
+    display = _PHASE_DISPLAY[norm]
+    files: list[str] = []
+    for fname, heading in (("CHAT-HANDOFF-INDEX.md", "Phase Status Table"),
+                           ("PHASE-STATUS.md", "Phase Status")):
+        path = paths.gameplan_dir(gameplan_id) / fname
+        if path.exists() and _set_phase_row(path, heading, str(phase_n), display, norm, today):
+            files.append(str(path))
+    if not files:
+        return {"ok": False,
+                "summary": f"phase {phase_n} not found (or already {norm}) in trackers"}
+    return {"ok": True, "phase": str(phase_n), "to_status": norm,
+            "files_changed": files, "summary": f"Phase {phase_n} → {norm}"}
 
 
 def add_amendment(

@@ -81,10 +81,16 @@ def run(
     root = paths.root
     result = PreflightResult()
     enabled = config.preflight_checks or ["clean_tree", "tests"]
+    advisory = set(config.preflight_advisory or [])
     n = 0
 
     def add(name: str, status: str, detail: str = "") -> None:
         nonlocal n
+        # An advisory check is informational: a failure is downgraded to "warn"
+        # and never fails preflight — so a docs/audit workflow can keep e.g.
+        # clean_tree visible without crying wolf (a dirty tree is normal there).
+        if status == "fail" and name in advisory:
+            status, detail = "warn", f"(advisory) {detail}"
         n += 1
         result.checks.append(Check(n, name, status, detail))
         if status == "fail":

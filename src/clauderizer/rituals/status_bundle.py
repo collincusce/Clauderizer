@@ -35,6 +35,30 @@ def _baseline_tests(index_text: str) -> str | None:
     return m.group(1) if m else None
 
 
+def _drift_warnings(paths: RepoPaths, rows: list) -> list[str]:
+    """Surface the most common silent drift: phases marked complete while graph
+    entities are still 'planned' (the status-transition step was skipped).
+
+    Conservative on purpose — it only fires when there *is* completed work AND
+    untouched entities, so it informs without crying wolf. Best-effort; never raises.
+    """
+    completed = [r for r in rows if r.status == "complete"]
+    if not completed:
+        return []
+    try:
+        from ..graph import index
+        planned = [e.id for e in index.build(paths.docs).all()
+                   if getattr(e, "status", None) == "planned"]
+    except Exception:
+        return []
+    if not planned:
+        return []
+    sample = ", ".join(planned[:3]) + ("…" if len(planned) > 3 else "")
+    noun = "entity" if len(planned) == 1 else "entities"
+    return [f"{len(planned)} {noun} still 'planned' while {len(completed)} phase(s) "
+            f"complete ({sample}) — cz_transition_status to reconcile."]
+
+
 def compute(paths: RepoPaths, config: Config) -> dict:
     gid = config.active_gameplan
     bundle: dict = {
@@ -48,6 +72,7 @@ def compute(paths: RepoPaths, config: Config) -> dict:
         "baseline_tests": None,
         "pending_cascades": [],
         "blockers": [],
+        "drift": [],
     }
     if not gid:
         bundle["summary"] = "No active gameplan. Use cz_create_gameplan to start one."
@@ -73,6 +98,7 @@ def compute(paths: RepoPaths, config: Config) -> dict:
         if nxt:
             bundle["next_phase"] = {"number": nxt.number, "name": nxt.name}
         bundle["blockers"] = [r.name for r in rows if r.status == "blocked"]
+        bundle["drift"] = _drift_warnings(paths, rows)
 
     bundle["pending_cascades"] = _pending_cascades(gdir / "_cascade-reports")
 
@@ -111,6 +137,8 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
     lines.append(f"Pending cascades: {len(pc)}." + (f" {', '.join(pc)}" if pc else ""))
     if bundle.get("blockers"):
         lines.append("Blocked: " + ", ".join(bundle["blockers"]))
+    for warn in bundle.get("drift") or []:
+        lines.append(f"⚠ Drift: {warn}")
     lines.append(f"Next: {bundle.get('next_action', '')}")
     if tools:
         lines.append("Tools: " + ", ".join(tools))
