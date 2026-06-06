@@ -16,9 +16,11 @@ TOOL_NAMES = [
     "cz_add_decision",
     "cz_add_invariant",
     "cz_add_finding",
+    "cz_resolve_finding",
     "cz_add_lesson",
     "cz_add_correction",
     "cz_create_gameplan",
     "cz_add_phase",
+    "cz_transition_phase",
     "cz_add_amendment",
 ]

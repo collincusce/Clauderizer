@@ -42,6 +42,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         profile=args.profile,
         gameplan=args.gameplan,
         run_cmd=run_cmd,
+        workflow=args.workflow,
     )
     print(f"Clauderized {report.repo}")
     print(f"  size={report.size}  host profile={report.host_profile}")
@@ -228,6 +229,8 @@ def build_parser() -> argparse.ArgumentParser:
     pi.add_argument("--gameplan", default=None, help="also create a first gameplan with this name")
     pi.add_argument("--run-cmd", default=None,
                     help="how the repo invokes the engine (default: 'uvx --from clauderizer')")
+    pi.add_argument("--workflow", choices=["code", "docs", "audit"], default="code",
+                    help="docs/audit make clean_tree (and test) checks advisory, not fatal")
     pi.add_argument("-v", "--verbose", action="store_true")
     pi.set_defaults(func=cmd_init)
 

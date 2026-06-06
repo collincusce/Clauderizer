@@ -2,6 +2,34 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.3.0] — 2026-06-05
+
+Fixes the **state-mutation surface** — the gaps a second dogfooding session found
+where structured state drifted because the blessed write was missing or destructive.
+
+### Added
+- **`cz_transition_phase`** — phases finally get a lifecycle write
+  (not_started/ready/in_progress/complete/blocked/failed, with aliases + auto-dated
+  Started/Completed). Without it, `cz_status` froze at "Phase 0" on finished work
+  because nothing could advance a phase. The single highest-leverage fix.
+- **`cz_resolve_finding`** — update a finding's status + dated resolution note in
+  `HARDENING.md`, satisfying its own "mark resolved, never delete" policy through a
+  blessed path instead of a forbidden hand-edit.
+- **Drift hint** — `cz_status` / the SessionStart digest now flag entities still
+  `planned` while phases are complete ("⚠ Drift: … cz_transition_status to reconcile").
+  Conservative: fires only when there's completed work *and* untouched entities.
+- **`init --workflow {code,docs,audit}`** + `preflight_advisory` config — makes
+  `clean_tree` (and, for audits, `tests`) advisory rather than fatal, so a
+  deliverable-accumulating workflow stops failing preflight on every resume.
+
+### Fixed
+- `init` resolves the engine command from the **running interpreter's bin dir**
+  (`sys.executable`) before falling back to PATH/uvx — reliable for venv/WSL even
+  when the bin dir isn't on PATH.
+- `init` **no longer clobbers `profile.lock.toml`** on re-run — per-project command
+  overrides (read back by `detect.load_for_repo`) are preserved. Delete the lock to
+  re-derive it.
+
 ## [0.2.1] — 2026-06-05
 
 ### Fixed

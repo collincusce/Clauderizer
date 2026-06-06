@@ -84,6 +84,7 @@ class Config:
     modules: list[str] = field(default_factory=list)
     rituals: dict[str, bool] = field(default_factory=dict)
     preflight_checks: list[str] = field(default_factory=list)
+    preflight_advisory: list[str] = field(default_factory=list)
     active_gameplan: str | None = None
 
     @classmethod
@@ -119,6 +120,7 @@ class Config:
             modules=list(modules.get("enabled", [])),
             rituals={k: bool(v) for k, v in rituals.items()},
             preflight_checks=list(cz.get("preflight_checks", [])),
+            preflight_advisory=list(cz.get("preflight_advisory", [])),
             active_gameplan=(active.get("id") or None),
         )
 
@@ -128,6 +130,7 @@ class Config:
             f'version = "{self.version}"',
             f'size = "{self.size}"',
             _toml_kv("preflight_checks", self.preflight_checks),
+            _toml_kv("preflight_advisory", self.preflight_advisory),
             "",
             "[host]",
             f'profile = "{self.host_profile}"',
@@ -171,5 +174,6 @@ def merge_missing(existing: Config, defaults: Config) -> Config:
         modules=existing.modules or defaults.modules,
         rituals=existing.rituals or defaults.rituals,
         preflight_checks=existing.preflight_checks or defaults.preflight_checks,
+        preflight_advisory=existing.preflight_advisory or defaults.preflight_advisory,
         active_gameplan=existing.active_gameplan or defaults.active_gameplan,
     )
