@@ -1,8 +1,12 @@
 {
   "mcpServers": {
     "clauderizer": {
-      "command": "/home/ccusce/Clauderizer/.venv/bin/clauderizer-mcp",
-      "args": []
+      "command": "wsl.exe",
+      "args": [
+        "-d",
+        "ubuntu",
+        "/home/ccusce/Clauderizer/.venv/bin/clauderizer-mcp"
+      ]
     }
   }
 }

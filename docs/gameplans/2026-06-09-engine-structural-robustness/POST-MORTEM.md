@@ -139,3 +139,68 @@ Collected in real time across the cold-start recovery and all four phases:
   project-scope lesson consolidation past ~20 entries.
 - `cz_add_amendment`'s unconditional cascade-report pointer (Procedure
   Improvements above).
+
+## Addendum — second live test, same day (Windows-host cold start of the repaired wiring)
+
+> Author: Claude Code session (Windows host, Fable 5), 2026-06-09, post-release.
+> Scope: first cold-start of the repaired wiring; 0.6.0 surface exercised over the
+> real MCP protocol; findings recorded as H-04 and gameplan lesson #4.
+
+**The live test failed exactly as H-01 warned, one layer up (H-04).** The repaired
+wiring (WSL venv console scripts) turned out to be host-scoped: a Windows-host
+session over \\wsl.localhost spawned neither hook nor MCP server — no digest, no
+cz_* tools, no breadcrumb — while `clauderize doctor` inside WSL reported 13/13
+green, identity checks included. Repaired this session: both wiring files
+hand-rewritten to wsl.exe-shimmed console scripts and verified from the Windows
+side (hook emits the digest; the server answers initialize/tools_list/tools_call
+with all 24 tools over stdio). `clauderize init` could not write that wiring
+itself: `--run-cmd 'wsl.exe -d ubuntu <venv>/bin/clauderize'` composes
+`clauderize clauderizer-mcp` — an invalid subcommand, exit 2. Recorded as H-04
+(mitigated; residuals: init composition, doctor host-blindness, no native
+mid-session attach).
+
+**0.6.0 surface, exercised over the real MCP protocol** (stdio JSON-RPC probe;
+the harness cannot attach a repaired server mid-session, so the probe drives the
+same tool layer it would — a fidelity step up from the first session's
+`mutations.*` shim):
+
+- Memory gauge: digest and status render `(handoff n/a: gameplan complete)`
+  (H-03 fix) and the counts reconcile with the docs — 2 active → 3 after lesson
+  #4, 1 promoted, 6 project.
+- Doctor identity checks: both green, certifying 0.6.0.
+- `cz_add_finding` / `cz_add_lesson` allocated H-04 and lesson **4.** correctly
+  through prose dense with H-01/L-06 mentions — Phase 0's anchored numbering
+  proving itself on hostile live documents.
+- `cz_add_output` / `cz_add_phase_summary` byte-identical upserts:
+  content-idempotent (no git diff) but the results still say `action: updated` /
+  `replaced: true` with `files_changed` — idempotency holds yet is not observable
+  from the result shape; a `changed: false` field would close that.
+- `cz_transition_phase` same-status: `ok:false "phase 3 not found (or already
+  complete)"` — friction #4's ambiguity reproduced verbatim over MCP. The header
+  write-backs were deliberately not re-exercised (it would mean falsifying a
+  complete gameplan's status); their on-disk results from close-out stand as the
+  evidence.
+
+**Second friction log:**
+
+1. The harness enumerates MCP servers once, at session start: even with
+   .mcp.json repaired mid-session, native cz_* tools never attach (ToolSearch
+   re-check negative). A restart is the unavoidable last mile of any wiring
+   repair — wiring docs and breadcrumbs should say so.
+2. PowerShell 5.1 ↔ wsl.exe remains a quoting/encoding minefield: nested-quote
+   mangling, a BOM injected when piping native→native, and the MCP server's
+   stderr logging interleaving with output. Script files + JSON args files beat
+   one-liners every time — the probe pattern (`/tmp/mcp_probe.py` +
+   `/tmp/args_*.json`) is the reusable shape, and one more argument for CLI
+   parity in the `clauderize ops <file>` form.
+3. This gameplan's own index still carries the pre-0.6.0 Ending Protocol text
+   ("Update PHASE-STATUS.md…") while the template now names the blessed writes —
+   lesson #3's backfill asymmetry, second instance.
+4. Open-thread drift: **0.6.0 is already on PyPI** (releases …, 0.5.0, 0.6.0 —
+   presumably the v0.6.0 tag push). The "Publish 0.6.0" thread is half-stale;
+   what remains is proving doctor's identity check catches a stale uvx wiring.
+5. What felt good: the cold-start recovery needed zero user input — the digest,
+   the cz_* reads, and the docs they point at reconstructed the phases, the
+   D3–D9 numbering story, L-01..L-06, H-01's residue, and the open threads, with
+   every claim re-verified live (139 tests, 24 tools, 13 checks, gauge
+   arithmetic).

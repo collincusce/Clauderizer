@@ -65,6 +65,8 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 **1.** An engine that owns a toolchain must resolve bare profile commands against its own interpreter's bin directory before PATH - shell activation can never be assumed.
 
+**4.** Launch wiring is host-scoped state: a command is only proven runnable by spawning it from the host that owns the sessions. A 13/13-green doctor inside WSL said nothing about the Windows host one UNC path away (H-04) - capability checks (L-02) must name, and test from, their host-of-record.
+
 ### Category: Design
 
 **2.** A writer's round-trip through its own parser is necessary but not sufficient: tests must also assert render-validity for external readers (contiguous table blocks) - the engine read its own fractured tables fine for two whole gameplans. (promoted 2026-06-09: L-06)

@@ -43,3 +43,30 @@ resolved with a date instead. This is a permanent audit trail. Numbered `H-NN`.
 - **Recommended fix**: Size a synthetic close-out bundle (project lessons + decisions still ride into the next gameplan), or render an explicit 'handoff size n/a - gameplan complete' so the absence is explained rather than silent
 - **Regression tests**: None yet
 - **Resolution**: 0.6.0 Phase 2: completed-gameplan digest renders '(handoff n/a: gameplan complete)' instead of silently dropping the size.
+
+### H-04 — Repaired wiring was host-scoped: Windows-host session cold-started with no digest and no cz_* tools while doctor reported 13/13 green
+
+- **Severity**: high
+- **Status**: mitigated (2026-06-09)
+- **Affected**: .mcp.json; .claude/settings.json; scaffold init --run-cmd composition; doctor launchability checks (host-blind)
+- **Invariant violated**: L-02 one layer up again: capability was verified, but in the wrong environment - a runnability check is only as good as the host it spawns from
+- **Preconditions**: Session host (Windows Claude Code over \\wsl.localhost) differs from engine host (WSL venv); wiring written as WSL-native absolute paths
+- **Impact**: On the Windows host (this machine's primary session entry point, repo opened via \\wsl.localhost UNC), the SessionStart hook and MCP server commands were WSL-native venv paths Windows cannot exec: no [Clauderizer] digest, no cz_* tools, no in-session breadcrumb - H-01's exact impact, reintroduced one layer up by the H-01 fix itself. Meanwhile clauderize doctor, running inside WSL, certified the same wiring runnable (13/13 green), so the health check actively misled for the host that consumes sessions.
+- **Root cause**: init writes one wiring for one host and has no host-of-record concept. A composition bug compounds it: init --run-cmd 'wsl.exe -d ubuntu <venv>/bin/clauderize' appends the console-script name as a CLI argument, producing 'clauderize clauderizer-mcp' / 'clauderize clauderizer-hook' - invalid subcommands argparse rejects (exit 2) - so init cannot express split-host wiring at all
+- **Reproduction**: From Windows: open a session on the UNC repo with WSL-native wiring -> no digest, no tools, doctor (in WSL) all green. Composition bug: clauderize init --run-cmd 'wsl.exe -d ubuntu /home/ccusce/Clauderizer/.venv/bin/clauderize', then echo '{}' | wsl.exe -d ubuntu /home/ccusce/Clauderizer/.venv/bin/clauderize clauderizer-hook -> exit 2 invalid choice
+- **Recommended fix**: init: accept a session-host-of-record (e.g. --session-host windows-wsl) and compose wsl.exe-shimmed console-script wiring (command/args split for .mcp.json, single command string for the hook); doctor: spawn the wiring's exact commands from the recorded session host, or at minimum flag a host mismatch instead of certifying from the wrong side; until then the two wiring files are hand-maintained
+- **Regression tests**: None yet - candidate: init round-trip test asserting that for any --run-cmd form, the composed wiring argv is accepted by the binary it names (spawn with --help)
+- **Resolution**: Wiring hand-fixed to wsl.exe-shimmed console scripts (.mcp.json command 'wsl.exe' with args split; hook as one command string) and verified from the Windows host: hook emits the digest, MCP server answers initialize/tools_list/tools_call with all 24 tools over stdio. Residual: init still cannot compose this wiring (files are hand-maintained), doctor remains host-blind, and a mid-session wiring repair cannot attach native cz_* tools - the harness enumerates MCP servers only at session start, so a restart is required for the fix to fully land.
+
+### H-05 — No write lock on tracked docs: concurrent sessions on one repo can silently lose updates or duplicate IDs
+
+- **Severity**: medium
+- **Status**: open (2026-06-09)
+- **Affected**: mutations.py (all 18 public write functions); .clauderizer index cache; any multi-window or multi-agent workflow on one repo
+- **Invariant violated**: Append-only trackers assume appends are serialized; numbering assumes allocation+write is atomic
+- **Preconditions**: Two writer processes (MCP servers, future CLI ops, or shims) mutating the same repo concurrently; sub-second collision window per write
+- **Impact**: Every mutation is read-modify-write on markdown with no inter-process lock (verified: no flock/lockfile/mutex anywhere in src/clauderizer; the only 'lock' is profile.lock.toml, a pin file). Two sessions - or one session plus a subagent - mutating the same repo in the same window can last-writer-wins erase each other's appends, and two concurrent ID allocations (H-NN, L-NN, D-k, A-NNN) can both compute the same next number. Cross-project concurrency is unaffected: state is per-repo by construction (server per session, repo = spawn cwd).
+- **Root cause**: The engine assumes one interactive session per repo, but stdio MCP spawns one server process per session - the assumption breaks the moment a second window or subagent opens the same project
+- **Reproduction**: Open two sessions on one repo and fire cz_add_lesson in both within the same second; inspect numbering and the lessons section for a lost append or duplicate number
+- **Recommended fix**: Advisory lock in the single mutation path (D-007 makes it one choke point): e.g. .clauderizer/write.lock created O_EXCL with a stale-lock timeout, held per mutation. Covers MCP, CLI ops, and shims uniformly; read tools stay lock-free (L-03). Until then: one writer session per repo at a time; reads are always safe; git history is the recovery backstop. Candidate task for the agent-autonomy gameplan Phase 0 alongside clauderize ops
+- **Regression tests**: None yet - candidate: N concurrent add_lesson processes against one repo yield N distinct sequential numbers and N surviving entries
