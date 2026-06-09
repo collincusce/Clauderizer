@@ -64,17 +64,32 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
     return gauge
 
 
+# A report name is date + entity + optional zero-padded sequence; legacy
+# unsuffixed names count as sequence 0, so they order before the -01 written
+# beside them (chronological truth, even though '.' sorts after '-').
+_REPORT_NAME_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})-(.*?)(?:-(\d{2,}))?\.md$")
+
+
+def report_sort_key(name: str) -> tuple[str, int, str]:
+    m = _REPORT_NAME_RE.match(name)
+    if not m:
+        return ("", 0, name)
+    return (m.group(1), int(m.group(3) or 0), name)
+
+
 def pending_cascades(reports_dir: Path) -> list[str]:
     """Reports whose 'Updates applied' section still holds the placeholder.
 
     A cascade is 'pending' until the agent records what it actually changed.
     This predicate is the single definition of "pending" — the status digest,
     the cascade_hygiene preflight check, and resolve_cascade all share it.
+    Ordered chronologically (date, then same-day sequence), so the last entry
+    is the newest — what resolve_cascade's report default targets.
     """
     pending = []
     if not reports_dir.exists():
         return pending
-    for report in sorted(reports_dir.glob("*.md")):
+    for report in sorted(reports_dir.glob("*.md"), key=lambda p: report_sort_key(p.name)):
         text = report.read_text(encoding="utf-8")
         if "_(fill in concrete edits" in text or "_needs review_" in text:
             pending.append(report.name)

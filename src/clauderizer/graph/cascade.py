@@ -9,6 +9,7 @@ that keeps cascade honest rather than faking automation.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -81,10 +82,28 @@ def render_report(
     return "\n".join(lines)
 
 
-def report_filename(entity_id: str, now: datetime | None = None) -> str:
+def report_filename(entity_id: str, now: datetime | None = None,
+                    reports_dir: Path | None = None) -> str:
+    """Name a cascade report: ``YYYY-MM-DD-<entity>-NN.md``.
+
+    The zero-padded ``-NN`` sequence disambiguates same-day cascades of one
+    entity, which previously overwrote each other silently (gameplan D4 of
+    engine-structural-robustness; discipline-seams lesson #5). The sequence —
+    never a timestamp — keeps names deterministic and lexicographically
+    chronological within a day. Legacy unsuffixed reports keep their names
+    and count as sequence 0, so the next report beside one is ``-01``.
+    """
     now = now or datetime.now(timezone.utc)
     safe = entity_id.replace("/", "-").replace(" ", "-")
-    return f"{now.strftime('%Y-%m-%d')}-{safe}.md"
+    stem = f"{now.strftime('%Y-%m-%d')}-{safe}"
+    seq = 1
+    if reports_dir is not None and reports_dir.exists():
+        pat = re.compile(rf"^{re.escape(stem)}(?:-(\d+))?\.md$")
+        for p in reports_dir.iterdir():
+            m = pat.match(p.name)
+            if m:
+                seq = max(seq, int(m.group(1) or 0) + 1)
+    return f"{stem}-{seq:02d}.md"
 
 
 def run(
@@ -105,7 +124,7 @@ def run(
     report_md = render_report(graph, entity_id, transition, now=now, phase=phase)
     direct = query.dependents(graph, entity_id)
     transitive = [d for d in query.transitive_dependents(graph, entity_id) if d not in direct]
-    path = reports_dir / report_filename(entity_id, now)
+    path = reports_dir / report_filename(entity_id, now, reports_dir)
     written = False
     if not dry_run:
         reports_dir.mkdir(parents=True, exist_ok=True)
