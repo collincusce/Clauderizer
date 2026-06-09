@@ -29,7 +29,8 @@ def collect_lessons(index_text: str) -> tuple[str, int]:
     """Return ``(rolled_up_markdown, count)`` of still-relevant lessons.
 
     Preserves the category sub-headings; drops any lesson line marked
-    ``(obsolete)`` or wrapped in ``~~strikethrough~~``.
+    ``(obsolete …)`` (the marker ``cz_obsolete_lesson`` writes, with or without
+    a date/reason) or wrapped in ``~~strikethrough~~``.
     """
     sec = sections.get_section(index_text, "Accumulated Lessons")
     if not sec:
@@ -39,7 +40,7 @@ def collect_lessons(index_text: str) -> tuple[str, int]:
     for line in sec.splitlines():
         stripped = line.strip()
         if _LESSON_LINE.match(stripped):
-            if "(obsolete)" in stripped.lower() or stripped.startswith("~~"):
+            if "(obsolete" in stripped.lower() or stripped.startswith("~~"):
                 continue
             count += 1
             out_lines.append(line)

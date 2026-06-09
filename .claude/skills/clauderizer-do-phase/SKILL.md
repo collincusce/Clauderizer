@@ -9,8 +9,8 @@ description: Execute or continue the current gameplan phase end-to-end — pre-f
 2. Call `cz_preflight`. If any enabled check fails, STOP and report — do not write code.
 3. Execute the phase tasks. Honor every rule in `CLAUDE.md` and the accumulated lessons.
 4. Closing protocol:
-   - Record outcomes: `cz_add_correction` for any divergence; `cz_add_lesson` for anything generalizable.
+   - Record outcomes: `cz_add_correction` for any divergence; `cz_add_lesson` for anything generalizable; `cz_obsolete_lesson` for lessons this phase made irrelevant.
    - For each subsystem/feature whose state changed, `cz_transition_status` (this fires cascade automatically when enabled).
-   - For any other tracked edit, run `cz_cascade` and fill in the report's "needs review" verdicts.
+   - For any other tracked edit, run `cz_cascade`, then record the verdicts with `cz_resolve_cascade` (never hand-edit the report).
    - `cz_write_handoff` for the next phase.
    - Run exit verification (the host test/build commands) and report the final count.

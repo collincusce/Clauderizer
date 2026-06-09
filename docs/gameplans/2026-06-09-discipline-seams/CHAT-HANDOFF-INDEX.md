@@ -27,7 +27,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Blessed cascade resolution & lesson obsolescence | ⬜ READY | — | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Blessed cascade resolution & lesson obsolescence | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -46,4 +46,6 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-_(none yet)_
+### Category: Design
+
+**1.** Auto-numbering must not count IDs that only appear in scaffold placeholder prose — strip placeholders before scanning, or use ID patterns anchored to heading lines.

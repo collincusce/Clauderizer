@@ -15,10 +15,12 @@ from ..paths import RepoPaths
 from . import _tables
 
 
-def _pending_cascades(reports_dir: Path) -> list[str]:
+def pending_cascades(reports_dir: Path) -> list[str]:
     """Reports whose 'Updates applied' section still holds the placeholder.
 
     A cascade is 'pending' until the agent records what it actually changed.
+    This predicate is the single definition of "pending" — the status digest,
+    the cascade_hygiene preflight check, and resolve_cascade all share it.
     """
     pending = []
     if not reports_dir.exists():
@@ -28,6 +30,10 @@ def _pending_cascades(reports_dir: Path) -> list[str]:
         if "_(fill in concrete edits" in text or "_needs review_" in text:
             pending.append(report.name)
     return pending
+
+
+# Backward-compatible alias (pre-0.4 name).
+_pending_cascades = pending_cascades
 
 
 def _baseline_tests(index_text: str) -> str | None:

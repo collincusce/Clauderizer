@@ -266,6 +266,126 @@ def _insert_under_category(section_body: str, category: str, lesson_line: str) -
     return f"{base}\n\n{heading}\n\n{lesson_line}".strip()
 
 
+def obsolete_lesson(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    number: int | str,
+    reason: str | None = None,
+    today: str | None = None,
+) -> dict:
+    """Mark lesson ``number`` obsolete in Accumulated Lessons — never delete it.
+
+    The index header documents the convention ("mark with '(obsolete)' rather
+    than deleting") and the handoff roll-up prunes marked lessons; this is the
+    blessed write for that marker, so pruning no longer means a forbidden
+    hand-edit of a tracked log. Idempotent: re-marking is a no-op.
+    """
+    path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+    full = writer.full_text(path)
+    body = sections.get_section(full, "Accumulated Lessons")
+    if body is None:
+        return {"ok": False, "summary": "no Accumulated Lessons section found"}
+    prefix = f"**{number}.**"
+    lines = body.splitlines()
+    idx = next((i for i, ln in enumerate(lines) if ln.strip().startswith(prefix)), None)
+    if idx is None:
+        return {"ok": False, "summary": f"lesson #{number} not found"}
+    if "(obsolete" in lines[idx].lower():
+        return {"ok": True, "number": int(number), "already_obsolete": True,
+                "files_changed": [], "summary": f"lesson #{number} already obsolete"}
+    marker = f"(obsolete {_today(today)}" + (f": {reason.strip()})" if reason else ")")
+    lines[idx] = f"{lines[idx].rstrip()} {marker}"
+    writer.upsert_section(path, "Accumulated Lessons", "\n".join(lines))
+    return {"ok": True, "number": int(number), "already_obsolete": False,
+            "files_changed": [str(path)],
+            "summary": f"lesson #{number} marked obsolete"}
+
+
+_NEEDS_REVIEW = "_needs review_"
+_APPLIED_PLACEHOLDER = "_(fill in concrete edits"
+
+
+def resolve_cascade(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    report: str = "",
+    verdicts: dict[str, str] | None = None,
+    updates_applied: str = "",
+    updates_deferred: str = "",
+) -> dict:
+    """Fill a cascade report's verdicts — the blessed write that unblocks
+    ``cascade_hygiene``.
+
+    The cascade engine writes each dependent as "checked: _needs review_" and
+    leaves placeholder sections; deciding what was actually affected is the
+    agent's job, and this records those decisions without a hand-edit.
+    ``verdicts`` maps entity id -> what was done ("no change needed", "updated
+    pin to ^2.0.0", …). ``report`` defaults to the most recent pending report.
+    Partial resolution is fine: the report stays pending until no placeholder
+    remains (same predicate cz_status and preflight use).
+    """
+    from .rituals.status_bundle import pending_cascades
+
+    reports_dir = paths.gameplan_dir(gameplan_id) / "_cascade-reports"
+    if report:
+        name = report if report.endswith(".md") else f"{report}.md"
+        path = reports_dir / name
+        if not path.exists():
+            return {"ok": False, "summary": f"cascade report {name} not found"}
+    else:
+        pending = pending_cascades(reports_dir)
+        if not pending:
+            return {"ok": False, "summary": "no pending cascade reports"}
+        path = reports_dir / pending[-1]
+
+    files_changed: list[str] = []
+    resolved: list[str] = []
+    already: list[str] = []
+    seen_ids: set[str] = set()
+    if verdicts:
+        body = sections.get_section(writer.full_text(path), "Affected entities") or ""
+        lines = body.splitlines()
+        for i, ln in enumerate(lines):
+            m = re.match(r"\s*-\s+\*\*(.+?)\*\*", ln)
+            if not m:
+                continue
+            eid = m.group(1)
+            seen_ids.add(eid)
+            if eid not in verdicts:
+                continue
+            if _NEEDS_REVIEW in ln:
+                lines[i] = ln.replace(_NEEDS_REVIEW, verdicts[eid].strip())
+                resolved.append(eid)
+            else:
+                already.append(eid)
+        if resolved:
+            writer.upsert_section(path, "Affected entities", "\n".join(lines))
+    unknown = sorted(set(verdicts or {}) - seen_ids)
+
+    if updates_applied.strip():
+        writer.upsert_section(path, "Updates applied", updates_applied.strip())
+    if updates_deferred.strip():
+        writer.upsert_section(path, "Updates deferred", updates_deferred.strip())
+    if resolved or updates_applied.strip() or updates_deferred.strip():
+        files_changed.append(str(path))
+
+    text = writer.full_text(path)
+    still_pending = _NEEDS_REVIEW in text or _APPLIED_PLACEHOLDER in text
+    state = "still pending" if still_pending else "resolved"
+    return {
+        "ok": True,
+        "report": path.name,
+        "resolved": resolved,
+        "already_resolved": already,
+        "unknown_ids": unknown,
+        "pending": still_pending,
+        "files_changed": files_changed,
+        "summary": f"cascade report {path.name}: {len(resolved)} verdict(s) recorded, {state}",
+    }
+
+
 def add_correction(
     paths: RepoPaths,
     *,

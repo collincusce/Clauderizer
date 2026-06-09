@@ -109,6 +109,89 @@ def test_add_correction_promotes_lesson(temp_repo):
     assert "### C-02 — Phase 1" in status
 
 
+def test_resolve_cascade_records_verdicts_and_unpends(temp_repo):
+    from pathlib import Path
+
+    from clauderizer.rituals.status_bundle import pending_cascades
+
+    paths, config = _ctx(temp_repo)
+    r = M.transition_status(paths, config, id="subsys.auth", to_status="completed")
+    report = Path(r["cascade"]["report_path"])
+    reports_dir = report.parent
+    assert report.name in pending_cascades(reports_dir)
+
+    res = M.resolve_cascade(
+        paths, gameplan_id=GID,
+        verdicts={"feat.login": "no change needed (login does not pin a version)"},
+        updates_applied="None required — verified feat.login docs still accurate.",
+    )
+    assert res["ok"] and res["resolved"] == ["feat.login"]
+    assert res["pending"] is False
+    assert report.name not in pending_cascades(reports_dir)
+    text = report.read_text()
+    assert "_needs review_" not in text
+    assert "no change needed (login does not pin a version)" in text
+    assert "_(fill in concrete edits" not in text
+
+
+def test_resolve_cascade_partial_resolution_stays_pending(temp_repo):
+    from clauderizer.rituals.status_bundle import pending_cascades
+
+    paths, config = _ctx(temp_repo)
+    r = M.transition_status(paths, config, id="subsys.auth", to_status="completed")
+    reports_dir = paths.gameplan_dir(GID) / "_cascade-reports"
+
+    # verdict recorded but Updates applied still a placeholder -> pending
+    res1 = M.resolve_cascade(paths, gameplan_id=GID,
+                             verdicts={"feat.login": "no change needed"})
+    assert res1["ok"] and res1["pending"] is True
+    assert pending_cascades(reports_dir)
+
+    # second call finishes the job; the verdict is reported as already resolved
+    res2 = M.resolve_cascade(paths, gameplan_id=GID,
+                             verdicts={"feat.login": "no change needed"},
+                             updates_applied="nothing to edit")
+    assert res2["already_resolved"] == ["feat.login"]
+    assert res2["pending"] is False
+    assert not pending_cascades(reports_dir)
+
+
+def test_resolve_cascade_unknown_ids_and_missing_report(temp_repo):
+    paths, config = _ctx(temp_repo)
+    assert M.resolve_cascade(paths, gameplan_id=GID, report="nope")["ok"] is False
+    # no pending reports at all
+    assert M.resolve_cascade(paths, gameplan_id=GID)["ok"] is False
+    M.transition_status(paths, config, id="subsys.auth", to_status="completed")
+    res = M.resolve_cascade(paths, gameplan_id=GID,
+                            verdicts={"feat.ghost": "n/a"},
+                            updates_applied="none")
+    assert res["unknown_ids"] == ["feat.ghost"]
+    assert res["resolved"] == []
+
+
+def test_obsolete_lesson_marks_prunes_and_is_idempotent(temp_repo):
+    from clauderizer.rituals import handoff
+
+    paths, _ = _ctx(temp_repo)
+    idx_path = paths.gameplan_dir(GID) / "CHAT-HANDOFF-INDEX.md"
+    _, before_count = handoff.collect_lessons(idx_path.read_text())
+    assert before_count == 3  # fixture has lessons 1-3
+
+    r1 = M.obsolete_lesson(paths, gameplan_id=GID, number=2,
+                           reason="cascade is now tool-resolved", today="2026-06-09")
+    assert r1["ok"] and r1["already_obsolete"] is False
+    text = idx_path.read_text()
+    # the line is marked, not deleted
+    assert "**2.** Cascade is post-hoc, not predictive. (obsolete 2026-06-09: cascade is now tool-resolved)" in text
+    rolled, after_count = handoff.collect_lessons(text)
+    assert after_count == 2
+    assert "post-hoc, not predictive" not in rolled
+
+    r2 = M.obsolete_lesson(paths, gameplan_id=GID, number=2)
+    assert r2["already_obsolete"] is True and r2["files_changed"] == []
+    assert M.obsolete_lesson(paths, gameplan_id=GID, number=99)["ok"] is False
+
+
 def test_add_phase_appends_and_rows(temp_repo):
     paths, _ = _ctx(temp_repo)
     r = M.add_phase(paths, gameplan_id=GID, name="Polish", goal="make it shine")

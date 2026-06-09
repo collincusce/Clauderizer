@@ -136,6 +136,29 @@ def build_server():
         return res
 
     @mcp.tool()
+    def cz_resolve_cascade(verdicts: dict[str, str] | None = None,
+                           updates_applied: str = "", updates_deferred: str = "",
+                           report: str = "", gameplan_id: str = "") -> dict:
+        """Record the verdicts for a cascade report's "needs review" dependents.
+
+        After cz_cascade flags dependents, decide each one and record it here —
+        verdicts maps entity id -> what was done ("no change needed", "updated
+        pin to ^2.0.0", …); updates_applied summarizes the concrete edits.
+        report defaults to the most recent pending report. The report stays
+        "pending" (blocking the cascade_hygiene preflight check) until every
+        placeholder is resolved. This is the blessed write — never hand-edit
+        cascade reports.
+        """
+        paths, config = _ctx()
+        gid = gameplan_id or config.active_gameplan
+        if not gid:
+            return {"ok": False, "error": "no gameplan specified or active"}
+        return mutations.resolve_cascade(paths, gameplan_id=gid, report=report,
+                                         verdicts=verdicts,
+                                         updates_applied=updates_applied,
+                                         updates_deferred=updates_deferred)
+
+    @mcp.tool()
     def cz_write_handoff(phase_n: str, gameplan_id: str = "") -> dict:
         """Assemble the cumulative, self-contained handoff for a phase."""
         paths, config = _ctx()
@@ -253,6 +276,22 @@ def build_server():
         paths, config = _ctx()
         gid = gameplan_id or config.active_gameplan
         return mutations.add_lesson(paths, gameplan_id=gid, text=text, category=category)
+
+    @mcp.tool()
+    def cz_obsolete_lesson(number: int, reason: str = "", gameplan_id: str = "") -> dict:
+        """Mark an accumulated lesson obsolete so future handoffs stop carrying it.
+
+        Appends the documented "(obsolete <date>: <reason>)" marker to lesson
+        <number> in CHAT-HANDOFF-INDEX — the line stays in the log (append-only
+        memory), but the handoff roll-up prunes it. Idempotent. This is the
+        blessed write for pruning; never hand-edit the lessons list.
+        """
+        paths, config = _ctx()
+        gid = gameplan_id or config.active_gameplan
+        if not gid:
+            return {"ok": False, "error": "no gameplan specified or active"}
+        return mutations.obsolete_lesson(paths, gameplan_id=gid, number=number,
+                                         reason=reason or None)
 
     @mcp.tool()
     def cz_add_correction(phase: str, gameplan_said: str, actually: str, why: str,
