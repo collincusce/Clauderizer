@@ -109,6 +109,167 @@ def test_add_correction_promotes_lesson(temp_repo):
     assert "### C-02 — Phase 1" in status
 
 
+def test_resolve_cascade_records_verdicts_and_unpends(temp_repo):
+    from pathlib import Path
+
+    from clauderizer.rituals.status_bundle import pending_cascades
+
+    paths, config = _ctx(temp_repo)
+    r = M.transition_status(paths, config, id="subsys.auth", to_status="completed")
+    report = Path(r["cascade"]["report_path"])
+    reports_dir = report.parent
+    assert report.name in pending_cascades(reports_dir)
+
+    res = M.resolve_cascade(
+        paths, gameplan_id=GID,
+        verdicts={"feat.login": "no change needed (login does not pin a version)"},
+        updates_applied="None required — verified feat.login docs still accurate.",
+    )
+    assert res["ok"] and res["resolved"] == ["feat.login"]
+    assert res["pending"] is False
+    assert report.name not in pending_cascades(reports_dir)
+    text = report.read_text()
+    assert "_needs review_" not in text
+    assert "no change needed (login does not pin a version)" in text
+    assert "_(fill in concrete edits" not in text
+
+
+def test_resolve_cascade_partial_resolution_stays_pending(temp_repo):
+    from clauderizer.rituals.status_bundle import pending_cascades
+
+    paths, config = _ctx(temp_repo)
+    r = M.transition_status(paths, config, id="subsys.auth", to_status="completed")
+    reports_dir = paths.gameplan_dir(GID) / "_cascade-reports"
+
+    # verdict recorded but Updates applied still a placeholder -> pending
+    res1 = M.resolve_cascade(paths, gameplan_id=GID,
+                             verdicts={"feat.login": "no change needed"})
+    assert res1["ok"] and res1["pending"] is True
+    assert pending_cascades(reports_dir)
+
+    # second call finishes the job; the verdict is reported as already resolved
+    res2 = M.resolve_cascade(paths, gameplan_id=GID,
+                             verdicts={"feat.login": "no change needed"},
+                             updates_applied="nothing to edit")
+    assert res2["already_resolved"] == ["feat.login"]
+    assert res2["pending"] is False
+    assert not pending_cascades(reports_dir)
+
+
+def test_resolve_cascade_unknown_ids_and_missing_report(temp_repo):
+    paths, config = _ctx(temp_repo)
+    assert M.resolve_cascade(paths, gameplan_id=GID, report="nope")["ok"] is False
+    # no pending reports at all
+    assert M.resolve_cascade(paths, gameplan_id=GID)["ok"] is False
+    M.transition_status(paths, config, id="subsys.auth", to_status="completed")
+    res = M.resolve_cascade(paths, gameplan_id=GID,
+                            verdicts={"feat.ghost": "n/a"},
+                            updates_applied="none")
+    assert res["unknown_ids"] == ["feat.ghost"]
+    assert res["resolved"] == []
+
+
+def test_obsolete_lesson_marks_prunes_and_is_idempotent(temp_repo):
+    from clauderizer.rituals import handoff
+
+    paths, _ = _ctx(temp_repo)
+    idx_path = paths.gameplan_dir(GID) / "CHAT-HANDOFF-INDEX.md"
+    _, before_count = handoff.collect_lessons(idx_path.read_text())
+    assert before_count == 3  # fixture has lessons 1-3
+
+    r1 = M.obsolete_lesson(paths, gameplan_id=GID, number=2,
+                           reason="cascade is now tool-resolved", today="2026-06-09")
+    assert r1["ok"] and r1["already_obsolete"] is False
+    text = idx_path.read_text()
+    # the line is marked, not deleted
+    assert "**2.** Cascade is post-hoc, not predictive. (obsolete 2026-06-09: cascade is now tool-resolved)" in text
+    rolled, after_count = handoff.collect_lessons(text)
+    assert after_count == 2
+    assert "post-hoc, not predictive" not in rolled
+
+    r2 = M.obsolete_lesson(paths, gameplan_id=GID, number=2)
+    assert r2["already_obsolete"] is True and r2["files_changed"] == []
+    assert M.obsolete_lesson(paths, gameplan_id=GID, number=99)["ok"] is False
+
+
+def test_consolidate_lessons_shrinks_rollup_keeps_log(temp_repo):
+    from clauderizer.rituals import handoff
+
+    paths, _ = _ctx(temp_repo)
+    idx_path = paths.gameplan_dir(GID) / "CHAT-HANDOFF-INDEX.md"
+    r = M.consolidate_lessons(
+        paths, gameplan_id=GID, numbers=[1, 2],
+        text="Markdown is canonical and cascade reconciles it post-hoc.",
+        category="Process", today="2026-06-09",
+    )
+    assert r["ok"] and r["number"] == 4 and r["consolidated"] == [1, 2]
+    text = idx_path.read_text()
+    # sources stay in the log, marked with the trail
+    assert "**1.** Markdown is canonical; the index is disposable. (obsolete 2026-06-09: consolidated into #4)" in text
+    assert "consolidated into #4" in text.split("**2.**")[1].splitlines()[0]
+    # roll-up shrank: 3 originals -> 1 survivor (#3) + 1 synthesized (#4)
+    rolled, count = handoff.collect_lessons(text)
+    assert count == 2
+    assert "cascade reconciles it post-hoc" in rolled
+
+
+def test_consolidate_lessons_validates_before_writing(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    idx_path = paths.gameplan_dir(GID) / "CHAT-HANDOFF-INDEX.md"
+    before = idx_path.read_text()
+    # missing source
+    r = M.consolidate_lessons(paths, gameplan_id=GID, numbers=[1, 99], text="x")
+    assert r["ok"] is False and "#99 not found" in r["summary"]
+    # fewer than two distinct sources (duplicates collapse)
+    r = M.consolidate_lessons(paths, gameplan_id=GID, numbers=[1, 1], text="x")
+    assert r["ok"] is False
+    assert idx_path.read_text() == before  # nothing was written
+    # already-consolidated source is rejected on a second pass
+    M.consolidate_lessons(paths, gameplan_id=GID, numbers=[1, 2], text="merged")
+    r = M.consolidate_lessons(paths, gameplan_id=GID, numbers=[2, 3], text="again")
+    assert r["ok"] is False and "already obsolete/promoted" in r["summary"]
+
+
+def test_promote_lesson_round_trip(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    r = M.promote_lesson(paths, gameplan_id=GID, number=3, today="2026-06-09")
+    assert r["ok"] and r["id"] == "L-01"
+    assert r["category"] == "Testing"  # derived from the source category block
+    ldoc = paths.doc("LESSONS").read_text()
+    assert "# Distilled Lessons" in ldoc  # created on demand from the template
+    assert "**L-01.** Keep fixtures small and hand-verifiable. *(from 2026-05-01-bootstrap)*" in ldoc
+    assert "### Category: Testing" in ldoc
+    # source line marked, not deleted
+    idx = (paths.gameplan_dir(GID) / "CHAT-HANDOFF-INDEX.md").read_text()
+    assert "**3.** Keep fixtures small and hand-verifiable. (promoted 2026-06-09: L-01)" in idx
+    # re-promoting or promoting a marked lesson is rejected
+    assert M.promote_lesson(paths, gameplan_id=GID, number=3)["ok"] is False
+    assert M.promote_lesson(paths, gameplan_id=GID, number=42)["ok"] is False
+
+
+def test_promote_lesson_with_distilled_text_and_category(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    r = M.promote_lesson(paths, gameplan_id=GID, number=1,
+                         text="Markdown is the source of truth; caches are disposable.",
+                         category="Architecture", today="2026-06-09")
+    assert r["id"] == "L-01" and r["category"] == "Architecture"
+    ldoc = paths.doc("LESSONS").read_text()
+    assert "**L-01.** Markdown is the source of truth; caches are disposable." in ldoc
+
+
+def test_obsolete_project_lesson_by_l_id(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    M.promote_lesson(paths, gameplan_id=GID, number=3, today="2026-06-09")
+    r = M.obsolete_lesson(paths, gameplan_id=GID, number="L-01",
+                          reason="superseded by testing guide", today="2026-06-10")
+    assert r["ok"] and r["number"] == "L-01"
+    ldoc = paths.doc("LESSONS").read_text()
+    assert "(obsolete 2026-06-10: superseded by testing guide)" in ldoc
+    assert "Keep fixtures small" in ldoc  # never deleted
+    assert M.obsolete_lesson(paths, gameplan_id=GID, number="L-01")["already_obsolete"] is True
+    assert M.obsolete_lesson(paths, gameplan_id=GID, number="L-09")["ok"] is False
+
+
 def test_add_phase_appends_and_rows(temp_repo):
     paths, _ = _ctx(temp_repo)
     r = M.add_phase(paths, gameplan_id=GID, name="Polish", goal="make it shine")

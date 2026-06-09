@@ -116,7 +116,12 @@ def build_server():
 
     @mcp.tool()
     def cz_preflight() -> dict:
-        """Run the pre-flight checks (git state + host test/build commands) for real."""
+        """Run the pre-flight checks (git state + host test/build commands) for real.
+
+        A green test run with a measured count also refreshes the active
+        gameplan's tracked baseline ("Current baseline test count"), so the
+        status digest can't go stale on it.
+        """
         paths, config = _ctx()
         profile = detect.load_for_repo(config.host_profile, paths.profile_lock)
         return preflight.run(paths, config, profile).to_dict()
@@ -134,6 +139,29 @@ def build_server():
         # back through the tool result (keeps the return shallow + JSON-clean).
         res.pop("report_md", None)
         return res
+
+    @mcp.tool()
+    def cz_resolve_cascade(verdicts: dict[str, str] | None = None,
+                           updates_applied: str = "", updates_deferred: str = "",
+                           report: str = "", gameplan_id: str = "") -> dict:
+        """Record the verdicts for a cascade report's "needs review" dependents.
+
+        After cz_cascade flags dependents, decide each one and record it here —
+        verdicts maps entity id -> what was done ("no change needed", "updated
+        pin to ^2.0.0", …); updates_applied summarizes the concrete edits.
+        report defaults to the most recent pending report. The report stays
+        "pending" (blocking the cascade_hygiene preflight check) until every
+        placeholder is resolved. This is the blessed write — never hand-edit
+        cascade reports.
+        """
+        paths, config = _ctx()
+        gid = gameplan_id or config.active_gameplan
+        if not gid:
+            return {"ok": False, "error": "no gameplan specified or active"}
+        return mutations.resolve_cascade(paths, gameplan_id=gid, report=report,
+                                         verdicts=verdicts,
+                                         updates_applied=updates_applied,
+                                         updates_deferred=updates_deferred)
 
     @mcp.tool()
     def cz_write_handoff(phase_n: str, gameplan_id: str = "") -> dict:
@@ -253,6 +281,59 @@ def build_server():
         paths, config = _ctx()
         gid = gameplan_id or config.active_gameplan
         return mutations.add_lesson(paths, gameplan_id=gid, text=text, category=category)
+
+    @mcp.tool()
+    def cz_consolidate_lessons(numbers: list[int], text: str, category: str = "Process",
+                               gameplan_id: str = "") -> dict:
+        """Synthesize several overlapping lessons into one (anti-bloat, D-009).
+
+        Adds <text> as a new lesson and marks each source lesson
+        "(obsolete: consolidated into #N)" — every future handoff carries one
+        line instead of many, and the log keeps the full audit trail. Use when
+        the accumulated lessons start repeating themselves.
+        """
+        paths, config = _ctx()
+        gid = gameplan_id or config.active_gameplan
+        if not gid:
+            return {"ok": False, "error": "no gameplan specified or active"}
+        return mutations.consolidate_lessons(paths, gameplan_id=gid, numbers=list(numbers),
+                                             text=text, category=category)
+
+    @mcp.tool()
+    def cz_obsolete_lesson(number: str, reason: str = "", gameplan_id: str = "") -> dict:
+        """Mark a lesson obsolete so future handoffs stop carrying it.
+
+        Appends the documented "(obsolete <date>: <reason>)" marker — the line
+        stays in the log (append-only memory), but the handoff roll-up prunes
+        it. Idempotent. number is a gameplan lesson ("4") or a project lesson
+        id ("L-04", curating docs/LESSONS.md). This is the blessed write for
+        pruning; never hand-edit the lessons list.
+        """
+        paths, config = _ctx()
+        gid = gameplan_id or config.active_gameplan
+        if not gid:
+            return {"ok": False, "error": "no gameplan specified or active"}
+        return mutations.obsolete_lesson(paths, gameplan_id=gid, number=number,
+                                         reason=reason or None)
+
+    @mcp.tool()
+    def cz_promote_lesson(number: str, text: str = "", category: str = "",
+                          gameplan_id: str = "") -> dict:
+        """Promote a gameplan lesson into the project-level docs/LESSONS.md.
+
+        For lessons that should outlive this gameplan: the lesson gets an L-NN
+        entry with provenance in a compact project doc that every future
+        handoff carries (across gameplans). The source line is marked
+        "(promoted <date>: L-NN)" and stops rolling up individually. Optional
+        text rewrites the wording (promotion is a chance to distill); category
+        defaults to the source lesson's. Typical moment: gameplan close-out.
+        """
+        paths, config = _ctx()
+        gid = gameplan_id or config.active_gameplan
+        if not gid:
+            return {"ok": False, "error": "no gameplan specified or active"}
+        return mutations.promote_lesson(paths, gameplan_id=gid, number=number,
+                                        text=text or None, category=category or None)
 
     @mcp.tool()
     def cz_add_correction(phase: str, gameplan_said: str, actually: str, why: str,

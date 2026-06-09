@@ -266,6 +266,235 @@ def _insert_under_category(section_body: str, category: str, lesson_line: str) -
     return f"{base}\n\n{heading}\n\n{lesson_line}".strip()
 
 
+def obsolete_lesson(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    number: int | str,
+    reason: str | None = None,
+    today: str | None = None,
+) -> dict:
+    """Mark lesson ``number`` obsolete — never delete it.
+
+    The index header documents the convention ("mark with '(obsolete)' rather
+    than deleting") and the handoff roll-up prunes marked lessons; this is the
+    blessed write for that marker, so pruning no longer means a forbidden
+    hand-edit of a tracked log. Idempotent: re-marking is a no-op.
+
+    ``number`` may be a gameplan lesson number (``4``) or a project lesson id
+    (``L-04``), curating ``docs/LESSONS.md`` with the same rules.
+    """
+    n = str(number).strip()
+    if n.upper().startswith("L-"):
+        n = n.upper()
+        path = paths.doc("LESSONS")
+        section, label = "Lessons", f"project lesson {n}"
+    else:
+        path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+        section, label = "Accumulated Lessons", f"lesson #{n}"
+    body = sections.get_section(writer.full_text(path), section)
+    if body is None:
+        return {"ok": False, "summary": f"no {section} section found"}
+    prefix = f"**{n}.**"
+    lines = body.splitlines()
+    idx = next((i for i, ln in enumerate(lines) if ln.strip().startswith(prefix)), None)
+    if idx is None:
+        return {"ok": False, "summary": f"{label} not found"}
+    if "(obsolete" in lines[idx].lower():
+        return {"ok": True, "number": n, "already_obsolete": True,
+                "files_changed": [], "summary": f"{label} already obsolete"}
+    marker = f"(obsolete {_today(today)}" + (f": {reason.strip()})" if reason else ")")
+    lines[idx] = f"{lines[idx].rstrip()} {marker}"
+    writer.upsert_section(path, section, "\n".join(lines))
+    return {"ok": True, "number": n, "already_obsolete": False,
+            "files_changed": [str(path)],
+            "summary": f"{label} marked obsolete"}
+
+
+def promote_lesson(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    number: int | str,
+    text: str | None = None,
+    category: str | None = None,
+    today: str | None = None,
+) -> dict:
+    """Promote a gameplan lesson into the project-level ``docs/LESSONS.md``.
+
+    The enduring half of D-009: lessons that should outlive their gameplan get
+    an ``L-NN`` entry (with provenance) in a compact project doc that every
+    future handoff carries; the source line is marked ``(promoted <date>: L-NN)``
+    and stops rolling up individually, so nothing is carried twice. ``text``
+    overrides the wording (promotion is a chance to distill); ``category``
+    defaults to the source lesson's category block.
+    """
+    n = str(number).strip()
+    idx_path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+    body = sections.get_section(writer.full_text(idx_path), "Accumulated Lessons")
+    if body is None:
+        return {"ok": False, "summary": "no Accumulated Lessons section found"}
+    prefix = f"**{n}.**"
+    lines = body.splitlines()
+    pos = next((i for i, ln in enumerate(lines) if ln.strip().startswith(prefix)), None)
+    if pos is None:
+        return {"ok": False, "summary": f"lesson #{n} not found"}
+    line = lines[pos].strip()
+    if "(obsolete" in line.lower() or "(promoted" in line.lower():
+        return {"ok": False, "summary": f"lesson #{n} is already obsolete/promoted"}
+    if category is None:
+        category = next(
+            (lines[j].strip().removeprefix("### Category:").strip()
+             for j in range(pos, -1, -1) if lines[j].strip().startswith("### Category:")),
+            "Process",
+        )
+    lesson_text = (text or line[len(prefix):]).strip()
+
+    ldoc = paths.doc("LESSONS")
+    _ensure_doc(ldoc, "LESSONS")
+    new_id = next_numbered_id(writer.full_text(ldoc), "L", sep="-", width=2)
+    entry = f"**{new_id}.** {lesson_text} *(from {gameplan_id})*"
+    lessons_body = sections.get_section(writer.full_text(ldoc), "Lessons") or ""
+    writer.upsert_section(ldoc, "Lessons", _insert_under_category(lessons_body, category, entry))
+
+    lines[pos] = f"{lines[pos].rstrip()} (promoted {_today(today)}: {new_id})"
+    writer.upsert_section(idx_path, "Accumulated Lessons", "\n".join(lines))
+    return {"ok": True, "id": new_id, "number": n, "category": category,
+            "files_changed": [str(ldoc), str(idx_path)],
+            "summary": f"lesson #{n} promoted to {new_id} ({category})"}
+
+
+def consolidate_lessons(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    numbers: list[int | str],
+    text: str,
+    category: str = "Process",
+    today: str | None = None,
+) -> dict:
+    """Synthesize several lessons into one — the anti-bloat write (D-009).
+
+    Adds ``text`` as a new lesson, then marks every source lesson
+    ``(obsolete <date>: consolidated into #N)``. Nothing is deleted: the
+    handoff roll-up shrinks by ``len(numbers) - 1`` while the log keeps the
+    full trail. All sources are validated before anything is written.
+    """
+    uniq = list(dict.fromkeys(str(n) for n in numbers))
+    if len(uniq) < 2:
+        return {"ok": False, "summary": "consolidation needs at least two distinct lessons"}
+    path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+    body = sections.get_section(writer.full_text(path), "Accumulated Lessons") or ""
+    lines = body.splitlines()
+    problems = []
+    for n in uniq:
+        line = next((ln for ln in lines if ln.strip().startswith(f"**{n}.**")), None)
+        if line is None:
+            problems.append(f"#{n} not found")
+        elif "(obsolete" in line.lower() or "(promoted" in line.lower():
+            problems.append(f"#{n} already obsolete/promoted")
+    if problems:
+        return {"ok": False, "summary": "cannot consolidate: " + "; ".join(problems)}
+
+    added = add_lesson(paths, gameplan_id=gameplan_id, text=text.strip(), category=category)
+    new_n = added["number"]
+    files = list(added["files_changed"])
+    for n in uniq:
+        obsolete_lesson(paths, gameplan_id=gameplan_id, number=n,
+                        reason=f"consolidated into #{new_n}", today=today)
+    return {
+        "ok": True,
+        "number": new_n,
+        "consolidated": [int(n) for n in uniq],
+        "files_changed": files,
+        "summary": f"consolidated lessons {', '.join('#' + n for n in uniq)} into #{new_n}",
+    }
+
+
+_NEEDS_REVIEW = "_needs review_"
+_APPLIED_PLACEHOLDER = "_(fill in concrete edits"
+
+
+def resolve_cascade(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    report: str = "",
+    verdicts: dict[str, str] | None = None,
+    updates_applied: str = "",
+    updates_deferred: str = "",
+) -> dict:
+    """Fill a cascade report's verdicts — the blessed write that unblocks
+    ``cascade_hygiene``.
+
+    The cascade engine writes each dependent as "checked: _needs review_" and
+    leaves placeholder sections; deciding what was actually affected is the
+    agent's job, and this records those decisions without a hand-edit.
+    ``verdicts`` maps entity id -> what was done ("no change needed", "updated
+    pin to ^2.0.0", …). ``report`` defaults to the most recent pending report.
+    Partial resolution is fine: the report stays pending until no placeholder
+    remains (same predicate cz_status and preflight use).
+    """
+    from .rituals.status_bundle import pending_cascades
+
+    reports_dir = paths.gameplan_dir(gameplan_id) / "_cascade-reports"
+    if report:
+        name = report if report.endswith(".md") else f"{report}.md"
+        path = reports_dir / name
+        if not path.exists():
+            return {"ok": False, "summary": f"cascade report {name} not found"}
+    else:
+        pending = pending_cascades(reports_dir)
+        if not pending:
+            return {"ok": False, "summary": "no pending cascade reports"}
+        path = reports_dir / pending[-1]
+
+    files_changed: list[str] = []
+    resolved: list[str] = []
+    already: list[str] = []
+    seen_ids: set[str] = set()
+    if verdicts:
+        body = sections.get_section(writer.full_text(path), "Affected entities") or ""
+        lines = body.splitlines()
+        for i, ln in enumerate(lines):
+            m = re.match(r"\s*-\s+\*\*(.+?)\*\*", ln)
+            if not m:
+                continue
+            eid = m.group(1)
+            seen_ids.add(eid)
+            if eid not in verdicts:
+                continue
+            if _NEEDS_REVIEW in ln:
+                lines[i] = ln.replace(_NEEDS_REVIEW, verdicts[eid].strip())
+                resolved.append(eid)
+            else:
+                already.append(eid)
+        if resolved:
+            writer.upsert_section(path, "Affected entities", "\n".join(lines))
+    unknown = sorted(set(verdicts or {}) - seen_ids)
+
+    if updates_applied.strip():
+        writer.upsert_section(path, "Updates applied", updates_applied.strip())
+    if updates_deferred.strip():
+        writer.upsert_section(path, "Updates deferred", updates_deferred.strip())
+    if resolved or updates_applied.strip() or updates_deferred.strip():
+        files_changed.append(str(path))
+
+    text = writer.full_text(path)
+    still_pending = _NEEDS_REVIEW in text or _APPLIED_PLACEHOLDER in text
+    state = "still pending" if still_pending else "resolved"
+    return {
+        "ok": True,
+        "report": path.name,
+        "resolved": resolved,
+        "already_resolved": already,
+        "unknown_ids": unknown,
+        "pending": still_pending,
+        "files_changed": files_changed,
+        "summary": f"cascade report {path.name}: {len(resolved)} verdict(s) recorded, {state}",
+    }
+
+
 def add_correction(
     paths: RepoPaths,
     *,

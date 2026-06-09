@@ -59,7 +59,9 @@ def test_assemble_write_false_is_side_effect_free(temp_repo):
     res = handoff.assemble(paths, config, "2026-05-01-bootstrap", "99", write=False)
     assert res["written"] is False
     assert res["path"] is None
-    assert res["handoff_md"].startswith("# Phase 99 Handoff")
+    # the merged view opens with the engine's marker block (D-008)
+    assert res["handoff_md"].startswith("<!-- clauderizer:handoff:start -->")
+    assert "# Phase 99 Handoff" in res["handoff_md"]
     handoff_file = paths.gameplan_dir("2026-05-01-bootstrap") / "handoffs" / "PHASE-99-HANDOFF.md"
     assert not handoff_file.exists()  # nothing written
 

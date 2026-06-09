@@ -6,7 +6,13 @@ description: Close out a completed (or explicitly deferred) gameplan. Use when a
 # Close a gameplan
 
 1. Confirm every phase is complete or explicitly deferred (`cz_status`).
-2. Run a full cascade pass; resolve any pending reports.
-3. Update project-level docs (CHANGELOG, ARCHITECTURE, REQUIREMENTS) to reflect final state.
-4. Write a `POST-MORTEM.md` in the gameplan dir: what worked, what didn't (with root causes), and concrete improvements to the procedure. This is where the system itself gets better.
-5. Leave the gameplan directory on disk (nothing is deleted) and clear/replace `active_gameplan` in `.clauderizer/config.toml`.
+2. Run a full cascade pass; resolve any pending reports with `cz_resolve_cascade`.
+3. **Curate the lessons** — this is where memory earns its keep:
+   - `cz_promote_lesson` the few that should outlive this gameplan (they land in
+     `docs/LESSONS.md` and ride in every future handoff, across gameplans).
+     Promotion is a chance to distill: pass `text` to tighten the wording.
+   - `cz_consolidate_lessons` overlapping ones first, then promote the synthesis.
+   - The rest stay archived with the closed gameplan — promote deliberately, not in bulk.
+4. Update project-level docs (CHANGELOG, ARCHITECTURE, REQUIREMENTS) to reflect final state.
+5. Write a `POST-MORTEM.md` in the gameplan dir: what worked, what didn't (with root causes), and concrete improvements to the procedure. This is where the system itself gets better.
+6. Leave the gameplan directory on disk (nothing is deleted) and clear/replace `active_gameplan` in `.clauderizer/config.toml`.
