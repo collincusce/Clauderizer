@@ -19,6 +19,8 @@
 
 **L-03.** Name tools by their effect: a context fetch must never mutate the tree. *(from 2026-05-30-clauderizer-v1-bootstrap)*
 
+**L-05.** Every tracked write needs a CLI-reachable fallback: an MCP-only mutation surface deadlocks any session whose server cannot connect, stranding exactly the sessions that most need to record what broke. *(from 2026-06-09-context-economics)*
+
 ### Category: Integration
 
 **L-04.** Every file the engine writes must round-trip through its own parser in tests; never swallow config parse errors silently. *(from 2026-06-09-discipline-seams)*

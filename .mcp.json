@@ -1,12 +1,8 @@
 {
   "mcpServers": {
     "clauderizer": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "clauderizer",
-        "clauderizer-mcp"
-      ]
+      "command": "/home/ccusce/Clauderizer/.venv/bin/clauderizer-mcp",
+      "args": []
     }
   }
 }

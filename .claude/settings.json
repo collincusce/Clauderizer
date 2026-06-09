@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uvx --from clauderizer clauderizer-hook"
+            "command": "/home/ccusce/Clauderizer/.venv/bin/clauderizer-hook"
           }
         ]
       }

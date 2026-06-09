@@ -46,4 +46,8 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-_(none yet)_
+**2.** Source-of-truth captures rot without a reconciler: a capture recorded 'venv Python 3.11.15' while the live venv is 3.12, and pip metadata reported engine 0.3.0 while the source is 0.5.0. Any capture a future session relies on needs the preflight-write-back treatment or an explicit point-in-time caveat.
+
+### Category: Design
+
+**1.** An MCP-only write surface strands sessions where the server cannot connect: wiring broke on this host and every tracked write became unreachable mid-session - tracked writes need a CLI-reachable path or a documented fallback. (promoted 2026-06-09: L-05)
