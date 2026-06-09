@@ -1,7 +1,7 @@
 ---
 id: subsys.rituals
 type: subsystem
-version: 0.3.0
+version: 0.4.0
 status: completed
 depends_on:
   - subsys.graph@^0.1.0

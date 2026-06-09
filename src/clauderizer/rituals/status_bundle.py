@@ -11,8 +11,57 @@ import re
 from pathlib import Path
 
 from ..config import Config
+from ..markdown import sections
 from ..paths import RepoPaths
 from . import _tables
+
+# Above this many active lessons, the digest nudges toward consolidation (D-009
+# is pressure + visibility, not caps — nothing is ever auto-pruned). A documented
+# constant for now; promote it to config if real projects need different lines.
+ACTIVE_LESSONS_WARN = 12
+
+_LESSON_LINE_RE = re.compile(r"\*\*\d+\.\*\*")
+
+
+def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
+    """Measure the cumulative memory so bloat is a visible state, not a silent one.
+
+    Counts the gameplan's lessons by state, the distilled project lessons, and
+    estimates the assembled handoff bundle size (chars/4 ≈ tokens).
+    """
+    active = obsolete = promoted = 0
+    sec = sections.get_section(index_text, "Accumulated Lessons") or ""
+    for line in sec.splitlines():
+        s = line.strip()
+        if _LESSON_LINE_RE.match(s):
+            low = s.lower()
+            if "(promoted" in low:
+                promoted += 1
+            elif "(obsolete" in low or s.startswith("~~"):
+                obsolete += 1
+            else:
+                active += 1
+    project = 0
+    lessons_doc = paths.doc("LESSONS")
+    if lessons_doc.exists():
+        from .handoff import collect_project_lessons
+
+        _, project = collect_project_lessons(lessons_doc.read_text(encoding="utf-8"))
+    gauge = {
+        "active_lessons": active,
+        "obsolete_lessons": obsolete,
+        "promoted_lessons": promoted,
+        "project_lessons": project,
+        "handoff_est_tokens": None,
+        "warning": None,
+    }
+    if active > ACTIVE_LESSONS_WARN:
+        gauge["warning"] = (
+            f"{active} active lessons (> {ACTIVE_LESSONS_WARN}) — every handoff "
+            f"carries all of them. cz_consolidate_lessons the overlapping, "
+            f"cz_promote_lesson the enduring, cz_obsolete_lesson the stale."
+        )
+    return gauge
 
 
 def pending_cascades(reports_dir: Path) -> list[str]:
@@ -79,6 +128,7 @@ def compute(paths: RepoPaths, config: Config) -> dict:
         "pending_cascades": [],
         "blockers": [],
         "drift": [],
+        "memory": None,
     }
     if not gid:
         bundle["summary"] = "No active gameplan. Use cz_create_gameplan to start one."
@@ -88,6 +138,8 @@ def compute(paths: RepoPaths, config: Config) -> dict:
     index_file = gdir / "CHAT-HANDOFF-INDEX.md"
     status_file = gdir / "PHASE-STATUS.md"
     source = index_file if index_file.exists() else status_file
+    index_text = index_file.read_text(encoding="utf-8") if index_file.exists() else ""
+    bundle["memory"] = _memory_gauge(paths, config, index_text)
     if source.exists():
         text = source.read_text(encoding="utf-8")
         rows = _tables.parse_phase_table(text)
@@ -110,6 +162,16 @@ def compute(paths: RepoPaths, config: Config) -> dict:
 
     cur = bundle["current_phase"]
     nxt = bundle["next_phase"]
+    target = cur or nxt
+    if target:
+        # Size what the next session would actually load (in-memory; no write).
+        from . import handoff as handoff_mod
+
+        try:
+            ctx = handoff_mod.assemble(paths, config, gid, target["number"], write=False)
+            bundle["memory"]["handoff_est_tokens"] = len(ctx["handoff_md"]) // 4
+        except Exception:
+            pass  # the gauge is best-effort; never break the digest
     total = len(bundle["phases"])
     if cur:
         bundle["summary"] = (
@@ -146,6 +208,16 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
     )
     if bundle.get("baseline_tests"):
         lines.append(f"Baseline: {bundle['baseline_tests']} tests.")
+    mem = bundle.get("memory")
+    if mem:
+        tok = mem.get("handoff_est_tokens")
+        lines.append(
+            f"Memory: {mem['active_lessons']} active lessons, "
+            f"{mem['project_lessons']} project"
+            + (f" (~{tok} tok handoff)." if tok else ".")
+        )
+        if mem.get("warning"):
+            lines.append(f"⚠ Memory: {mem['warning']}")
     pc = bundle.get("pending_cascades") or []
     lines.append(f"Pending cascades: {len(pc)}." + (f" {', '.join(pc)}" if pc else ""))
     if bundle.get("blockers"):

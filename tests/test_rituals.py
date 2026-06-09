@@ -278,6 +278,47 @@ def test_preflight_write_back_tolerates_missing_baseline_line(temp_repo):
     assert result.passed is True  # absence of the line is not an error
 
 
+def test_memory_gauge_counts_states_and_sizes_handoff(temp_repo):
+    from clauderizer import mutations as M
+
+    paths, config = _paths_and_config(temp_repo)
+    gid = "2026-05-01-bootstrap"
+    M.promote_lesson(paths, gameplan_id=gid, number=3, today="2026-06-09")
+    M.obsolete_lesson(paths, gameplan_id=gid, number=2, today="2026-06-09")
+    bundle = status_bundle.compute(paths, config)
+    mem = bundle["memory"]
+    assert mem["active_lessons"] == 1
+    assert mem["obsolete_lessons"] == 1
+    assert mem["promoted_lessons"] == 1
+    assert mem["project_lessons"] == 1
+    assert mem["handoff_est_tokens"] > 0
+    assert mem["warning"] is None
+    digest = status_bundle.render_digest(bundle, tools=[])
+    assert "Memory: 1 active lessons, 1 project" in digest
+    assert "⚠ Memory" not in digest
+
+
+def test_memory_gauge_warns_past_threshold(temp_repo):
+    from clauderizer import mutations as M
+
+    paths, config = _paths_and_config(temp_repo)
+    gid = "2026-05-01-bootstrap"
+    for i in range(status_bundle.ACTIVE_LESSONS_WARN):  # 3 fixture + 12 = 15 active
+        M.add_lesson(paths, gameplan_id=gid, text=f"filler lesson {i}", category="Process")
+    bundle = status_bundle.compute(paths, config)
+    mem = bundle["memory"]
+    assert mem["active_lessons"] == 15
+    assert "cz_consolidate_lessons" in mem["warning"]
+    digest = status_bundle.render_digest(bundle, tools=[])
+    assert "⚠ Memory: 15 active lessons" in digest
+    # consolidation is the way back under the line
+    M.consolidate_lessons(paths, gameplan_id=gid,
+                          numbers=list(range(4, 16)), text="all the filler, distilled")
+    bundle = status_bundle.compute(paths, config)
+    assert bundle["memory"]["active_lessons"] == 4
+    assert bundle["memory"]["warning"] is None
+
+
 def test_status_bundle_reports_completed_gameplan(temp_repo):
     from clauderizer import mutations as M
 

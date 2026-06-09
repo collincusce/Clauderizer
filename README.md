@@ -250,6 +250,11 @@ setup is worse than no check).
   assembled from one canonical list, so phase N+3 never repeats a mistake phase N already solved.
 - **Append-only memory** — decisions, invariants, hardening findings, incidents, corrections,
   and lessons are never deleted, only superseded. A permanent audit trail.
+- **Consolidation pressure, not caps** — cumulative memory could otherwise crowd out the
+  context window it serves. Overlapping lessons get synthesized (`cz_consolidate_lessons`),
+  enduring ones promoted to a compact `docs/LESSONS.md` that rides in every future handoff
+  across gameplans (`cz_promote_lesson`), and the status digest carries a memory gauge that
+  warns when the active-lesson count crosses the line. Nothing is ever auto-deleted.
 
 ## CLI
 
@@ -265,9 +270,10 @@ clauderize mcp               # launch the MCP server (stdio)
 ## MCP surface
 
 **Read** · `cz_status` · `cz_next_phase_context` · `cz_graph_query`
-**Rituals** · `cz_preflight` · `cz_cascade` · `cz_write_handoff`
+**Rituals** · `cz_preflight` · `cz_cascade` · `cz_resolve_cascade` · `cz_write_handoff`
 **Mutations** · `cz_create_gameplan` · `cz_add_phase` · `cz_transition_phase` · `cz_add_amendment`
 · `cz_add_decision` · `cz_add_invariant` · `cz_add_finding` · `cz_resolve_finding` · `cz_add_lesson`
+· `cz_obsolete_lesson` · `cz_consolidate_lessons` · `cz_promote_lesson`
 · `cz_add_correction` · `cz_upsert_entity` · `cz_transition_status`
 **Resources** · `clauderizer://status` · `clauderizer://procedure` · `clauderizer://entity/{id}`
 

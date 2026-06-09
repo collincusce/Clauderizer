@@ -2,6 +2,34 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.5.0] — 2026-06-09
+
+Closes review finding 5 (**context economics**): cumulative memory grew
+monotonically — handoffs carried every lesson forever, lessons died with their
+gameplan at close, and nothing measured the bundle. Per ADR D-009 the answer is
+consolidation *pressure*, never caps: three blessed writes plus visibility, with
+the audit trail intact.
+
+### Added
+- **`cz_consolidate_lessons`** — synthesize N overlapping lessons into one; each
+  source is marked `(obsolete: consolidated into #N)` and every future handoff
+  carries one line instead of many. All sources validated before anything is
+  written.
+- **`cz_promote_lesson`** — promote an enduring lesson into a compact,
+  on-demand `docs/LESSONS.md` as an `L-NN` entry with provenance; the source is
+  marked `(promoted <date>: L-NN)` and stops rolling up individually. Handoffs
+  gain a "Project Lessons (distilled)" section that rides **across gameplans** —
+  lessons finally outlive the gameplan that learned them.
+- **Memory gauge** — `cz_status` / the SessionStart digest report
+  `Memory: N active lessons, M project (~K tok handoff)` and nudge toward
+  consolidate/promote/obsolete past `ACTIVE_LESSONS_WARN` (12, a documented
+  constant). Bloat is a visible state, not a silent failure mode.
+- `cz_obsolete_lesson` accepts `L-NN` ids, so the project list is curated with
+  the same rules (its `number` parameter is now a string).
+- Close-gameplan skill: a lesson-curation step (consolidate, then promote
+  deliberately — not in bulk); do-phase nudges consolidation when the list
+  repeats itself.
+
 ## [0.4.0] — 2026-06-09
 
 Closes the **discipline seams** from the 2026-06-09 external review: the places

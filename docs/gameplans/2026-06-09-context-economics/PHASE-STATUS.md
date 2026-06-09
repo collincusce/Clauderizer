@@ -11,7 +11,7 @@
 
 | 1 | Lesson promotion & project LESSONS.md | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
 
-| 2 | Memory gauge | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Memory gauge | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
 
 ## Outputs Registry
 
