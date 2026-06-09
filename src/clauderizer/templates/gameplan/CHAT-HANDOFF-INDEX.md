@@ -17,9 +17,11 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 ## Ending Protocol
 
-1. Update PHASE-STATUS.md (status + outputs + corrections).
-2. `cz_add_lesson` for anything new.
-3. `cz_transition_status` on touched entities (fires cascade).
+1. `cz_transition_phase` the finished phase to complete.
+2. `cz_add_output` each concrete produced value; `cz_add_phase_summary` the recap;
+   `cz_add_correction` / `cz_add_lesson` as earned.
+3. `cz_transition_status` on touched entities (fires cascade); `cz_resolve_cascade`
+   the verdicts.
 4. `cz_write_handoff` for the next phase.
 5. Run exit verification; report the test count.
 

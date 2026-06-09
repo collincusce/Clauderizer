@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 from ..config import Config
-from ..markdown import sections
+from ..markdown import lesson_state, sections
 from ..paths import RepoPaths
 from . import _tables
 
@@ -34,10 +34,10 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
     for line in sec.splitlines():
         s = line.strip()
         if _LESSON_LINE_RE.match(s):
-            low = s.lower()
-            if "(promoted" in low:
+            state, _ = lesson_state.parse_state(s)
+            if state == lesson_state.PROMOTED:
                 promoted += 1
-            elif "(obsolete" in low or s.startswith("~~"):
+            elif state == lesson_state.OBSOLETE:
                 obsolete += 1
             else:
                 active += 1

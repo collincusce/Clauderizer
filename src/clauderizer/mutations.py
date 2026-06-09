@@ -15,6 +15,7 @@ from pathlib import Path
 from . import assets
 from .config import Config
 from .graph import cascade, index
+from .markdown import lesson_state
 from .markdown import sections
 from .markdown import tables
 from .markdown import writer
@@ -303,11 +304,11 @@ def obsolete_lesson(
     idx = next((i for i, ln in enumerate(lines) if ln.strip().startswith(prefix)), None)
     if idx is None:
         return {"ok": False, "summary": f"{label} not found"}
-    if "(obsolete" in lines[idx].lower():
+    if lesson_state.parse_state(lines[idx])[0] == lesson_state.OBSOLETE:
         return {"ok": True, "number": n, "already_obsolete": True,
                 "files_changed": [], "summary": f"{label} already obsolete"}
-    marker = f"(obsolete {_today(today)}" + (f": {reason.strip()})" if reason else ")")
-    lines[idx] = f"{lines[idx].rstrip()} {marker}"
+    lines[idx] = lesson_state.mark(lines[idx], "obsolete", _today(today),
+                                   (reason or "").strip())
     writer.upsert_section(path, section, "\n".join(lines))
     return {"ok": True, "number": n, "already_obsolete": False,
             "files_changed": [str(path)],
@@ -343,7 +344,7 @@ def promote_lesson(
     if pos is None:
         return {"ok": False, "summary": f"lesson #{n} not found"}
     line = lines[pos].strip()
-    if "(obsolete" in line.lower() or "(promoted" in line.lower():
+    if not lesson_state.is_active(line):
         return {"ok": False, "summary": f"lesson #{n} is already obsolete/promoted"}
     if category is None:
         category = next(
@@ -360,7 +361,7 @@ def promote_lesson(
     lessons_body = sections.get_section(writer.full_text(ldoc), "Lessons") or ""
     writer.upsert_section(ldoc, "Lessons", _insert_under_category(lessons_body, category, entry))
 
-    lines[pos] = f"{lines[pos].rstrip()} (promoted {_today(today)}: {new_id})"
+    lines[pos] = lesson_state.mark(lines[pos], "promoted", _today(today), new_id)
     writer.upsert_section(idx_path, "Accumulated Lessons", "\n".join(lines))
     return {"ok": True, "id": new_id, "number": n, "category": category,
             "files_changed": [str(ldoc), str(idx_path)],
@@ -394,7 +395,7 @@ def consolidate_lessons(
         line = next((ln for ln in lines if ln.strip().startswith(f"**{n}.**")), None)
         if line is None:
             problems.append(f"#{n} not found")
-        elif "(obsolete" in line.lower() or "(promoted" in line.lower():
+        elif not lesson_state.is_active(line):
             problems.append(f"#{n} already obsolete/promoted")
     if problems:
         return {"ok": False, "summary": "cannot consolidate: " + "; ".join(problems)}
