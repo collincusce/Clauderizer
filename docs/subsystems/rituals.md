@@ -2,7 +2,7 @@
 id: subsys.rituals
 type: subsystem
 version: 0.4.0
-status: completed
+status: active
 depends_on:
   - subsys.graph@^0.1.0
   - subsys.markdown-core@^0.1.0

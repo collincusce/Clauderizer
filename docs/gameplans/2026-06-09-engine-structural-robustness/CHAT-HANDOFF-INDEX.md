@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 0
+**Current baseline test count**: 122
 
 ## Ending Protocol
 
@@ -27,15 +27,12 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Structural numbering and table writes | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Structural numbering and table writes | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
+| 1 | Collision-proof cascade reports | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 2 | Bless the remaining tracked surfaces | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 3 | Structural lesson state and 0.6.0 release | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
-
-| 1 | Collision-proof cascade reports | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
-
-| 2 | Bless the remaining tracked surfaces | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
-
-| 3 | Structural lesson state and 0.6.0 release | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 ## Per-Phase Completion Summaries
 
@@ -51,3 +48,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Integration
 
 **1.** An engine that owns a toolchain must resolve bare profile commands against its own interpreter's bin directory before PATH - shell activation can never be assumed.
+
+### Category: Design
+
+**2.** A writer's round-trip through its own parser is necessary but not sufficient: tests must also assert render-validity for external readers (contiguous table blocks) - the engine read its own fractured tables fine for two whole gameplans.

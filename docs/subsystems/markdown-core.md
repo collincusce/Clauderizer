@@ -2,7 +2,7 @@
 id: subsys.markdown-core
 type: subsystem
 version: 0.2.0
-status: completed
+status: active
 depends_on:
 last_verified: 2026-06-09
 ---
