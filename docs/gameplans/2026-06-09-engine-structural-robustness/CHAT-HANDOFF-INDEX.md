@@ -1,7 +1,7 @@
 # Chat Handoff Index — Engine Structural Robustness
 
 > Last updated: 2026-06-09
-> Status: Phase 0 ready
+> Status: Phase 3 of 4 in progress
 
 ## How This Works
 
@@ -29,14 +29,24 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Structural numbering and table writes | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Collision-proof cascade reports | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Bless the remaining tracked surfaces | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Structural lesson state and 0.6.0 release | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 2 | Bless the remaining tracked surfaces | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
+| 3 | Structural lesson state and 0.6.0 release | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
 ## Per-Phase Completion Summaries
 
-_(None yet.)_
+### Phase 0 — completed 2026-06-09
+
+Entry-anchored ID numbering (scaffold prose and cross-references inert; the D3..D9-with-phantom-D6 bug reproduced and fixed) and structural table writes: markdown/tables.py rebuilds tracker table blocks contiguously on every blessed touch, healing all six fractured trackers on disk with no migration. A-001 mid-phase: preflight profile commands now run with the engine interpreter's bin dir leading PATH ('pytest: not found' on the venv-wired engine). Tests 109 -> 122.
+
+### Phase 1 — completed 2026-06-09
+
+Cascade report filenames carry a zero-padded -NN sequence per date+entity (D4); pending_cascades orders chronologically (legacy unsuffixed names rank as sequence 0), so resolve's 'latest pending' default is truly newest. Demonstrated live: Phase 0's legacy-named subsys.rituals report and this phase's -01 coexist where the old code silently overwrote. Tests 122 -> 127.
+
+### Phase 2 — completed 2026-06-09
+
+The last hand-edit surfaces got blessed writes: cz_add_output (Outputs Registry, per-key upsert), cz_add_phase_summary (per-phase block replace), and D7 header write-backs on every phase mutation (> Status: / > Last updated: across both trackers plus GAMEPLAN.md). Doctor gained the D9 identity checks (stale metadata; dogfooding skew) and the digest now explains the missing handoff size at gameplan close (H-03). The CLAUDE.md stanza names the CLI fallback (H-01's missing breadcrumb). This very close-out is the exit criterion: outputs and summaries above were recorded through the new tools. Tests 127 -> 134.
 
 ## Accumulated Lessons
 
@@ -44,6 +54,8 @@ _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
 obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
+
+**3.** Self-healing write-backs only fire on mutation: artifacts that stopped mutating (closed gameplans) need a one-time blessed backfill whenever a new write-back lands, or their rot outlives the fix.
 
 ### Category: Integration
 

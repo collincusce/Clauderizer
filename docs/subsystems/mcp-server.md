@@ -2,7 +2,7 @@
 id: subsys.mcp-server
 type: subsystem
 version: 0.3.0
-status: completed
+status: active
 depends_on:
   - subsys.graph@^0.1.0
   - subsys.rituals@^0.1.0

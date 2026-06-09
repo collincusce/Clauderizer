@@ -9,12 +9,32 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Structural numbering and table writes | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Collision-proof cascade reports | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Bless the remaining tracked surfaces | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Structural lesson state and 0.6.0 release | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 2 | Bless the remaining tracked surfaces | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
+| 3 | Structural lesson state and 0.6.0 release | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
 
-_(Concrete values produced by completed phases that later phases need.)_
+### Phase 0 Outputs
+
+```
+BASELINE_AFTER_PHASE: 122 tests
+TRACKERS_HEALED: 6 (both closed gameplans' index+status, plus this gameplan's own pair)
+```
+
+### Phase 1 Outputs
+
+```
+BASELINE_AFTER_PHASE: 127 tests
+COLLISION_DEMO: _cascade-reports/2026-06-09-subsys.rituals.md and ...rituals-01.md coexist
+```
+
+### Phase 2 Outputs
+
+```
+BASELINE_AFTER_PHASE: 134 tests
+MCP_TOOLS: 24 (added cz_add_output, cz_add_phase_summary)
+DOCTOR_CHECKS: 13, all green incl. the two D9 identity checks
+```
 
 ## Corrections Log
 
