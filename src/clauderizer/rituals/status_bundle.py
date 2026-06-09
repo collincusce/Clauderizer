@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 from ..config import Config
-from ..markdown import sections
+from ..markdown import lesson_state, sections
 from ..paths import RepoPaths
 from . import _tables
 
@@ -34,10 +34,10 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
     for line in sec.splitlines():
         s = line.strip()
         if _LESSON_LINE_RE.match(s):
-            low = s.lower()
-            if "(promoted" in low:
+            state, _ = lesson_state.parse_state(s)
+            if state == lesson_state.PROMOTED:
                 promoted += 1
-            elif "(obsolete" in low or s.startswith("~~"):
+            elif state == lesson_state.OBSOLETE:
                 obsolete += 1
             else:
                 active += 1
@@ -64,17 +64,32 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
     return gauge
 
 
+# A report name is date + entity + optional zero-padded sequence; legacy
+# unsuffixed names count as sequence 0, so they order before the -01 written
+# beside them (chronological truth, even though '.' sorts after '-').
+_REPORT_NAME_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})-(.*?)(?:-(\d{2,}))?\.md$")
+
+
+def report_sort_key(name: str) -> tuple[str, int, str]:
+    m = _REPORT_NAME_RE.match(name)
+    if not m:
+        return ("", 0, name)
+    return (m.group(1), int(m.group(3) or 0), name)
+
+
 def pending_cascades(reports_dir: Path) -> list[str]:
     """Reports whose 'Updates applied' section still holds the placeholder.
 
     A cascade is 'pending' until the agent records what it actually changed.
     This predicate is the single definition of "pending" — the status digest,
     the cascade_hygiene preflight check, and resolve_cascade all share it.
+    Ordered chronologically (date, then same-day sequence), so the last entry
+    is the newest — what resolve_cascade's report default targets.
     """
     pending = []
     if not reports_dir.exists():
         return pending
-    for report in sorted(reports_dir.glob("*.md")):
+    for report in sorted(reports_dir.glob("*.md"), key=lambda p: report_sort_key(p.name)):
         text = report.read_text(encoding="utf-8")
         if "_(fill in concrete edits" in text or "_needs review_" in text:
             pending.append(report.name)
@@ -190,6 +205,9 @@ def compute(paths: RepoPaths, config: Config) -> dict:
             "Close out the gameplan (post-mortem, final cascade), or "
             "cz_create_gameplan to start the next initiative."
         )
+        # No next phase means no handoff to size — say so instead of silently
+        # dropping the figure the CHANGELOG promises (H-03).
+        bundle["memory"]["handoff_note"] = "n/a: gameplan complete"
     else:
         bundle["summary"] = f"Gameplan {gid}: no in-progress or ready phase found."
         bundle["next_action"] = "Review the gameplan or cz_add_phase."
@@ -211,10 +229,16 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
     mem = bundle.get("memory")
     if mem:
         tok = mem.get("handoff_est_tokens")
+        note = mem.get("handoff_note")
+        if tok:
+            suffix = f" (~{tok} tok handoff)."
+        elif note:
+            suffix = f" (handoff {note})."
+        else:
+            suffix = "."
         lines.append(
             f"Memory: {mem['active_lessons']} active lessons, "
-            f"{mem['project_lessons']} project"
-            + (f" (~{tok} tok handoff)." if tok else ".")
+            f"{mem['project_lessons']} project" + suffix
         )
         if mem.get("warning"):
             lines.append(f"⚠ Memory: {mem['warning']}")

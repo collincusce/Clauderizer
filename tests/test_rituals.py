@@ -48,9 +48,11 @@ def test_handoff_prunes_obsolete_lessons(temp_repo):
     paths, config = _paths_and_config(temp_repo)
     idx = paths.gameplan_dir("2026-05-01-bootstrap") / "CHAT-HANDOFF-INDEX.md"
     text = idx.read_text(encoding="utf-8")
+    # D8: the obsolescence marker is line-final (the only form the blessed
+    # write produces); a leading "(obsolete)" with text after it is just text.
     text = text.replace(
         "**3.** Keep fixtures small and hand-verifiable.",
-        "**3.** Keep fixtures small and hand-verifiable.\n\n**4.** (obsolete) old advice.",
+        "**3.** Keep fixtures small and hand-verifiable.\n\n**4.** old advice. (obsolete 2026-06-01)",
     )
     idx.write_text(text, encoding="utf-8")
     result = handoff.assemble(paths, config, "2026-05-01-bootstrap", "2")

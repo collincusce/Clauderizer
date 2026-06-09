@@ -1,8 +1,8 @@
 ---
 id: subsys.scaffold
 type: subsystem
-version: 0.2.0
-status: completed
+version: 0.3.0
+status: active
 depends_on:
   - subsys.markdown-core@^0.1.0
   - subsys.profiles@^0.1.0

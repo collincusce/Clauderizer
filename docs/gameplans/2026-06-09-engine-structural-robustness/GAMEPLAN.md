@@ -1,7 +1,7 @@
 # Engine Structural Robustness Gameplan
 
 > Created: 2026-06-09
-> Status: Planning
+> Status: Complete
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -57,7 +57,15 @@ Captured 2026-06-09 from the live repo (authority over the gameplan body):
 
 ## Amendments
 
-_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+### A-001 — Preflight resolves profile commands against the engine's interpreter environment
+
+- **Date**: 2026-06-09
+- **Affected sections in GAMEPLAN.md**: Phase Breakdown (Phase 0 task table, exit criteria)
+- **Affected phases**: 0
+- **Triggered by**: Phase 0 preflight failure on this repo: tests check ran `pytest` and got 'pytest: not found' while .venv/bin/pytest exists
+- **What changed**: Add task 0.6: preflight's default runner prepends the running interpreter's bin directory to PATH for profile commands, so a venv-installed engine finds its own toolchain without shell activation.
+- **Why**: The repaired wiring launches the engine by absolute venv path with no activation; profile commands resolve against the inherited PATH and miss the engine's own environment - the same capability-gap class as H-01, one layer down.
+- **Cascade report**: _cascade-reports/2026-06-09-A-001.md
 
 ## Decisions
 
@@ -117,6 +125,7 @@ contiguous table block — closes the C-01 thread and H-02.
 | 0.3 | `mutations.add_phase` + `_set_phase_row` route rows through the table writer, so any blessed touch heals a broken tracker | 1h |
 | 0.4 | Tests: numbering regressions (template placeholder prose; the cross-reference D6 skip; heading + bold anchors across D/A/C/H/INVARIANT/L series), table healing from a fixture replicating today's broken layout, apply-twice idempotency | 2h |
 | 0.5 | Dogfood: blessed touches heal this gameplan's own trackers and the four older broken docs; verify rendered tables are contiguous | 0.5h |
+| 0.6 | (A-001) preflight's default runner prepends the running interpreter's bin dir to PATH, so profile commands resolve in the engine's own environment without activation | 1h |
 
 **Exit criteria**:
 - [ ] A fresh scaffold's first decision numbers D1 with placeholder prose present; a decision whose text cites another gameplan's D6 does not shift numbering

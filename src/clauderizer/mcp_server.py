@@ -346,6 +346,40 @@ def build_server():
                                         why=why, lesson=lesson or None)
 
     @mcp.tool()
+    def cz_add_output(phase: str, key: str, value: str, gameplan_id: str = "") -> dict:
+        """Record a concrete value a phase produced into the Outputs Registry.
+
+        The registry (PHASE-STATUS.md) is the cross-phase memory for real
+        captured values — ids, counts, paths, endpoints — so later phases read
+        them instead of guessing or interrupting the user. Upserting the same
+        key updates it in place. This is the blessed write; never hand-edit
+        the registry.
+        """
+        paths, config = _ctx()
+        gid = gameplan_id or config.active_gameplan
+        if not gid:
+            return {"ok": False, "error": "no gameplan specified or active"}
+        return mutations.add_output(paths, gameplan_id=gid, phase=str(phase),
+                                    key=key, value=value)
+
+    @mcp.tool()
+    def cz_add_phase_summary(phase: str, text: str, gameplan_id: str = "") -> dict:
+        """Record the 1–2 paragraph completion summary for a finished phase.
+
+        Lands under "Per-Phase Completion Summaries" in the handoff index —
+        the at-a-glance record of what each phase actually shipped (stuck at
+        its scaffold placeholder until this write existed). Re-recording a
+        phase's summary replaces it. Typical moment: right after
+        cz_transition_phase(..., "complete").
+        """
+        paths, config = _ctx()
+        gid = gameplan_id or config.active_gameplan
+        if not gid:
+            return {"ok": False, "error": "no gameplan specified or active"}
+        return mutations.add_phase_summary(paths, gameplan_id=gid, phase=str(phase),
+                                           text=text)
+
+    @mcp.tool()
     def cz_upsert_entity(id: str, type: str, version: str = "", status: str = "",
                          depends_on: list[str] | None = None,
                          fields: dict[str, Any] | None = None) -> dict:

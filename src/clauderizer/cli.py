@@ -109,6 +109,19 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     # A lock that doesn't parse is silently ignored by load_for_repo — surface it.
     lock_err = _lock_parse_error(paths.profile_lock)
     check("profile.lock.toml parses", lock_err is None, lock_err or "")
+    # Engine identity (D9): the code that runs must be the code you see.
+    meta_v = _metadata_version()
+    check("engine metadata matches source version",
+          meta_v is None or meta_v == __version__,
+          f"dist-info reports {meta_v}, running source is {__version__} — "
+          f"stale install metadata; reinstall (pip install -e . for a checkout)")
+    repo_v = _engine_repo_version(paths.root)
+    if repo_v is not None:
+        check("running engine matches this repo's engine source",
+              repo_v == __version__,
+              f"repo pyproject declares {repo_v}, running engine is {__version__} — "
+              f"the wiring executes a different build than this repo's code "
+              f"(stale uvx/pipx cache?)")
     # procedure version drift (MAJOR)
     drift = _procedure_drift(paths.procedure_file)
     check("procedure version compatible", drift is None, drift or "")
@@ -204,6 +217,45 @@ def _command_runnable(argv: list[str] | None) -> tuple[bool, str]:
     if p.is_file() and os.access(p, os.X_OK):
         return True, str(p)
     return False, f"'{exe}' not found on PATH or not executable"
+
+
+def _metadata_version() -> str | None:
+    """Version the installed dist-info claims — ``None`` when not installed.
+
+    An editable install's metadata freezes at install time; observed live on
+    this repo as pip reporting 0.3.0 while the source ran 0.5.0 (H-01/H-03
+    session). A mismatch means version-reporting surfaces lie.
+    """
+    try:
+        from importlib.metadata import version
+
+        return version("clauderizer")
+    except Exception:
+        return None
+
+
+def _engine_repo_version(root: Path) -> str | None:
+    """The repo's own engine version, when the repo IS the clauderizer source.
+
+    Returns ``None`` for ordinary clauderized repos. For the dogfooding case it
+    lets doctor catch "the hook/MCP wiring runs an older build than the code
+    you're editing" — a stale uvx/pipx cache, the exact skew a green
+    launchability check can't see.
+    """
+    pp = root / "pyproject.toml"
+    if not pp.exists():
+        return None
+    import tomllib
+
+    try:
+        data = tomllib.loads(pp.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    project = data.get("project") or {}
+    if project.get("name") != "clauderizer":
+        return None
+    v = project.get("version")
+    return str(v) if v else None
 
 
 def _lock_parse_error(lock_path: Path) -> str | None:

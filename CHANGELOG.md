@@ -2,6 +2,61 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.6.0] — 2026-06-09
+
+Closes the **engine-robustness cluster** from the two prior post-mortems plus
+the cold-start findings H-01..H-03. The through-line is *structure over
+substrings*: every defect came from the engine writing or reading markdown by
+line/substring heuristics — tables appended as paragraphs, IDs counted in
+prose, lesson state inferred from anywhere-in-line markers.
+
+### Added
+- **`cz_add_output`** — blessed write for the PHASE-STATUS **Outputs Registry**
+  (per-phase fenced blocks; same-key upserts rewrite in place). The registry
+  had sat at its scaffold placeholder through two closed gameplans for want of
+  this write.
+- **`cz_add_phase_summary`** — blessed write for the index's **Per-Phase
+  Completion Summaries** (one block per phase; re-recording replaces it).
+- **Tracker header write-backs** — `cz_transition_phase` / `cz_add_phase` now
+  refresh `> Status:` / `> Last updated:` on both trackers and GAMEPLAN.md's
+  `Status` (Planning → Executing → Complete) from the live phase table. Both
+  closed gameplans had read "Phase 0 ready" since the day they finished.
+- **`doctor` engine-identity checks** — installed dist-info must match the
+  running source `__version__` (caught live: an editable install reporting
+  0.3.0 under 0.5.0 source), and when the repo *is* the clauderizer source,
+  the running engine must match the repo's pyproject version (stale uvx/pipx
+  cache while dogfooding).
+- **CLI fallback breadcrumb** — the CLAUDE.md stanza now says what to do when
+  the `cz_*` tools are absent: `clauderize doctor` / `clauderize status`
+  (a cold session previously couldn't tell broken wiring from no Clauderizer).
+
+### Changed
+- **Anchored ID numbering** — `next_numbered_id` counts only entry anchors
+  (`### <ID> —` headings, `**<ID>.**` bold entries). Scaffold placeholder
+  prose and cross-references no longer shift sequences (one gameplan's
+  decisions had numbered D3..D9, skipping D6, because template prose and a
+  citation of another gameplan's D6 were counted).
+- **Structural table writes** — tracker phase rows go through a table-aware
+  writer (`markdown/tables.py`) that rebuilds the block contiguously on every
+  blessed touch; trackers fractured by the old paragraph-append healed in
+  place, no migration script. Rendered markdown is valid for humans again,
+  not just for the engine's own tolerant parser.
+- **Collision-proof cascade reports** — filenames carry a zero-padded `-NN`
+  sequence per date+entity (never timestamps), so same-day cascades of one
+  entity coexist instead of silently overwriting; `pending_cascades` orders
+  chronologically (legacy unsuffixed names rank as sequence 0).
+- **Lesson state is a grammar, not a substring** — one parser
+  (`markdown/lesson_state.py`) reads the trailing `(obsolete …)` /
+  `(promoted …)` markers (or legacy `~~strikethrough~~`); the gauge, handoff
+  roll-ups, and obsolete/promote/consolidate all share it. A lesson whose
+  *text* mentions "(obsolete" counts as active everywhere.
+- **Preflight runs profile commands in the engine's own environment** — the
+  running interpreter's bin dir leads PATH, so a venv-installed engine finds
+  its own pytest/ruff without shell activation (`pytest: not found` observed
+  live on a venv-wired engine).
+- A completed gameplan's digest says `(handoff n/a: gameplan complete)`
+  instead of silently dropping the promised size estimate.
+
 ## [0.5.0] — 2026-06-09
 
 Closes review finding 5 (**context economics**): cumulative memory grew

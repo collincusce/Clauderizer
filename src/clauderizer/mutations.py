@@ -15,7 +15,9 @@ from pathlib import Path
 from . import assets
 from .config import Config
 from .graph import cascade, index
+from .markdown import lesson_state
 from .markdown import sections
+from .markdown import tables
 from .markdown import writer
 from .model import next_numbered_id
 from .paths import RepoPaths
@@ -232,7 +234,9 @@ def add_lesson(
     path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
     full = writer.full_text(path)
     body = sections.get_section(full, "Accumulated Lessons") or ""
-    nums = [int(m.group(1)) for m in re.finditer(r"\*\*(\d+)\.\*\*", body)]
+    # Line-anchored like next_numbered_id: a lesson *text* mentioning "**3.**"
+    # must not shift the sequence.
+    nums = [int(m.group(1)) for m in re.finditer(r"^\s*\*\*(\d+)\.\*\*", body, re.M)]
     n = (max(nums) + 1) if nums else 1
     lesson_line = f"**{n}.** {text.strip()}"
     new_section = _insert_under_category(body, category, lesson_line)
@@ -300,11 +304,11 @@ def obsolete_lesson(
     idx = next((i for i, ln in enumerate(lines) if ln.strip().startswith(prefix)), None)
     if idx is None:
         return {"ok": False, "summary": f"{label} not found"}
-    if "(obsolete" in lines[idx].lower():
+    if lesson_state.parse_state(lines[idx])[0] == lesson_state.OBSOLETE:
         return {"ok": True, "number": n, "already_obsolete": True,
                 "files_changed": [], "summary": f"{label} already obsolete"}
-    marker = f"(obsolete {_today(today)}" + (f": {reason.strip()})" if reason else ")")
-    lines[idx] = f"{lines[idx].rstrip()} {marker}"
+    lines[idx] = lesson_state.mark(lines[idx], "obsolete", _today(today),
+                                   (reason or "").strip())
     writer.upsert_section(path, section, "\n".join(lines))
     return {"ok": True, "number": n, "already_obsolete": False,
             "files_changed": [str(path)],
@@ -340,7 +344,7 @@ def promote_lesson(
     if pos is None:
         return {"ok": False, "summary": f"lesson #{n} not found"}
     line = lines[pos].strip()
-    if "(obsolete" in line.lower() or "(promoted" in line.lower():
+    if not lesson_state.is_active(line):
         return {"ok": False, "summary": f"lesson #{n} is already obsolete/promoted"}
     if category is None:
         category = next(
@@ -357,7 +361,7 @@ def promote_lesson(
     lessons_body = sections.get_section(writer.full_text(ldoc), "Lessons") or ""
     writer.upsert_section(ldoc, "Lessons", _insert_under_category(lessons_body, category, entry))
 
-    lines[pos] = f"{lines[pos].rstrip()} (promoted {_today(today)}: {new_id})"
+    lines[pos] = lesson_state.mark(lines[pos], "promoted", _today(today), new_id)
     writer.upsert_section(idx_path, "Accumulated Lessons", "\n".join(lines))
     return {"ok": True, "id": new_id, "number": n, "category": category,
             "files_changed": [str(ldoc), str(idx_path)],
@@ -391,7 +395,7 @@ def consolidate_lessons(
         line = next((ln for ln in lines if ln.strip().startswith(f"**{n}.**")), None)
         if line is None:
             problems.append(f"#{n} not found")
-        elif "(obsolete" in line.lower() or "(promoted" in line.lower():
+        elif not lesson_state.is_active(line):
             problems.append(f"#{n} already obsolete/promoted")
     if problems:
         return {"ok": False, "summary": "cannot consolidate: " + "; ".join(problems)}
@@ -409,6 +413,102 @@ def consolidate_lessons(
         "files_changed": files,
         "summary": f"consolidated lessons {', '.join('#' + n for n in uniq)} into #{new_n}",
     }
+
+
+def add_output(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    phase: str,
+    key: str,
+    value: str,
+) -> dict:
+    """Record a concrete produced value in the PHASE-STATUS Outputs Registry.
+
+    The registry is the cross-phase memory for real captured values (ids,
+    counts, paths) — the anti-pattern-#9 fix, finally a blessed write. One
+    fenced block per phase; upserting an existing key rewrites its line, so
+    corrections never stack.
+    """
+    path = paths.gameplan_dir(gameplan_id) / "PHASE-STATUS.md"
+    if not path.exists():
+        return {"ok": False, "summary": f"no PHASE-STATUS.md for {gameplan_id}"}
+    body = sections.get_section(writer.full_text(path), "Outputs Registry")
+    if body is None:
+        return {"ok": False, "summary": "no Outputs Registry section"}
+    key, value = key.strip(), str(value).strip()
+    sub = f"### Phase {phase} Outputs"
+    lines = [] if (not body.strip() or sections.is_placeholder(body)) else body.splitlines()
+    h = next((i for i, ln in enumerate(lines) if ln.strip() == sub), None)
+    action = "recorded"
+    if h is None:
+        if lines:
+            lines.append("")
+        lines += [sub, "", "```", f"{key}: {value}", "```"]
+    else:
+        nxt = next((i for i in range(h + 1, len(lines)) if lines[i].startswith("### ")),
+                   len(lines))
+        o = next((i for i in range(h + 1, nxt) if lines[i].strip().startswith("```")), None)
+        if o is None:
+            lines[h + 1:h + 1] = ["", "```", f"{key}: {value}", "```"]
+        else:
+            c = next((i for i in range(o + 1, nxt) if lines[i].strip().startswith("```")), None)
+            if c is None:
+                c = nxt
+                lines.insert(c, "```")
+            for i in range(o + 1, c):
+                if lines[i].split(":", 1)[0].strip() == key:
+                    lines[i] = f"{key}: {value}"
+                    action = "updated"
+                    break
+            else:
+                lines.insert(c, f"{key}: {value}")
+    writer.upsert_section(path, "Outputs Registry", "\n".join(lines))
+    return {"ok": True, "phase": str(phase), "key": key, "action": action,
+            "files_changed": [str(path)],
+            "summary": f"output {key} {action} for phase {phase}"}
+
+
+def add_phase_summary(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    phase: str,
+    text: str,
+    today: str | None = None,
+) -> dict:
+    """Record a phase's completion summary in the handoff index.
+
+    One block per phase under "Per-Phase Completion Summaries" — the
+    at-a-glance record of what each phase actually shipped, previously stuck
+    at its scaffold placeholder for want of a blessed write. Re-recording a
+    phase's summary replaces its block.
+    """
+    path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+    if not path.exists():
+        return {"ok": False, "summary": f"no CHAT-HANDOFF-INDEX.md for {gameplan_id}"}
+    body = sections.get_section(writer.full_text(path), "Per-Phase Completion Summaries")
+    if body is None:
+        return {"ok": False, "summary": "no Per-Phase Completion Summaries section"}
+    block = f"### Phase {phase} — completed {_today(today)}\n\n{text.strip()}"
+    replaced = False
+    if not body.strip() or sections.is_placeholder(body):
+        new_body = block
+    else:
+        lines = body.splitlines()
+        pat = re.compile(rf"^###\s+Phase\s+{re.escape(str(phase))}\b")
+        start = next((i for i, ln in enumerate(lines) if pat.match(ln.strip())), None)
+        if start is None:
+            new_body = body.rstrip() + "\n\n" + block
+        else:
+            end = next((j for j in range(start + 1, len(lines))
+                        if lines[j].startswith("### ")), len(lines))
+            new_body = "\n".join(lines[:start] + block.splitlines() + lines[end:])
+            replaced = True
+    writer.upsert_section(path, "Per-Phase Completion Summaries", new_body)
+    return {"ok": True, "phase": str(phase), "replaced": replaced,
+            "files_changed": [str(path)],
+            "summary": f"phase {phase} summary {'replaced' if replaced else 'recorded'}"}
 
 
 _NEEDS_REVIEW = "_needs review_"
@@ -551,19 +651,18 @@ def add_phase(
     )
     writer.append_to_section(gp, "Phase Breakdown", entry, level=2)
     files = [str(gp)]
-    # add a status row to the trackers
+    # add a status row to the trackers — through the table-aware write, so the
+    # row joins the table block instead of fracturing it (H-02 / gameplan D3)
     row = f"| {n} | {name} | ⬜ NOT STARTED | — | — | handoffs/PHASE-{n}-HANDOFF.md |"
     for fname, heading in (
         ("CHAT-HANDOFF-INDEX.md", "Phase Status Table"),
         ("PHASE-STATUS.md", "Phase Status"),
     ):
         path = paths.gameplan_dir(gameplan_id) / fname
-        if path.exists():
-            sec = sections.get_section(writer.full_text(path), heading) or ""
-            if f"| {n} |" not in sec:
-                writer.append_to_section(path, heading, row)
-                files.append(str(path))
-    return {"ok": True, "phase": n, "files_changed": files,
+        if path.exists() and writer.upsert_table_row(path, heading, row):
+            files.append(str(path))
+    files += _refresh_tracker_headers(paths, gameplan_id, _today(None))
+    return {"ok": True, "phase": n, "files_changed": list(dict.fromkeys(files)),
             "summary": f"added Phase {n}: {name}"}
 
 
@@ -588,29 +687,86 @@ _PHASE_ALIASES = {
 
 def _set_phase_row(path, heading: str, phase_n: str, display: str, norm: str,
                    today: str) -> bool:
-    """Rewrite the status (and dates) of one phase row in a tracker table."""
+    """Rewrite the status (and dates) of one phase row in a tracker table.
+
+    The rewritten section is re-normalized into a contiguous table block
+    (gameplan D3), so a tracker fractured by historical paragraph appends
+    heals on any blessed touch — including a same-status transition.
+    """
     text = writer.full_text(path)
     sec = sections.get_section(text, heading)
     if sec is None:
         return False
-    out, changed = [], False
+    out, found = [], False
     for line in sec.splitlines():
         s = line.strip()
         if s.startswith("|"):
             cells = [c.strip() for c in s.strip("|").split("|")]
             if len(cells) >= 6 and cells[0] == phase_n:
+                found = True
                 cells[2] = display
                 if norm in ("in_progress", "complete") and cells[3] in ("—", ""):
                     cells[3] = today
                 if norm == "complete":
                     cells[4] = today
-                rebuilt = "| " + " | ".join(cells) + " |"
-                if rebuilt != s:
-                    line, changed = rebuilt, True
+                line = "| " + " | ".join(cells) + " |"
         out.append(line)
-    if changed:
-        writer.upsert_section(path, heading, "\n".join(out))
-    return changed
+    if not found:
+        return False
+    new_sec = tables.normalize("\n".join(out))
+    if new_sec == sec:
+        return False
+    writer.upsert_section(path, heading, new_sec)
+    return True
+
+
+def _refresh_tracker_headers(paths: RepoPaths, gameplan_id: str, today: str) -> list[str]:
+    """Write the tracker header lines back from the live phase table (D7).
+
+    ``> Status:`` and ``> Last updated:`` rotted on two closed gameplans
+    because no blessed write owned them. Every phase mutation now refreshes
+    them — the same self-healing the baseline test count got in
+    discipline-seams D5, generalized.
+    """
+    from .rituals import _tables
+
+    gdir = paths.gameplan_dir(gameplan_id)
+    src = next((gdir / n for n in ("CHAT-HANDOFF-INDEX.md", "PHASE-STATUS.md")
+                if (gdir / n).exists()), None)
+    rows = _tables.parse_phase_table(writer.full_text(src)) if src else []
+    total = len(rows)
+    cur = next((r for r in rows if r.status == "in_progress"), None)
+    nxt = next((r for r in rows if r.status in ("ready", "not_started")), None)
+    if not total:
+        tracker = "Planning"
+    elif all(r.status == "complete" for r in rows):
+        tracker = f"All {total} phases complete"
+    elif cur:
+        tracker = f"Phase {cur.number} of {total} in progress"
+    elif nxt:
+        tracker = f"Phase {nxt.number} ready"
+    else:
+        tracker = "Executing"
+    started = ("in_progress", "complete", "blocked", "failed")
+    if total and all(r.status == "complete" for r in rows):
+        gp_status = "Complete"
+    elif any(r.status in started for r in rows):
+        gp_status = "Executing"
+    else:
+        gp_status = "Planning"
+    files: list[str] = []
+    for fname in ("CHAT-HANDOFF-INDEX.md", "PHASE-STATUS.md"):
+        p = gdir / fname
+        if not p.exists():
+            continue
+        changed_status = writer.set_blockquote_field(p, "Status", tracker)
+        changed_date = writer.set_blockquote_field(p, "Last updated", today)
+        if changed_status or changed_date:
+            files.append(str(p))
+    gp = gdir / "GAMEPLAN.md"
+    if gp.exists() and writer.set_blockquote_field(gp, "Status", gp_status):
+        files.append(str(gp))
+    return files
 
 
 def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
@@ -638,8 +794,10 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
     if not files:
         return {"ok": False,
                 "summary": f"phase {phase_n} not found (or already {norm}) in trackers"}
+    files += _refresh_tracker_headers(paths, gameplan_id, today)
     return {"ok": True, "phase": str(phase_n), "to_status": norm,
-            "files_changed": files, "summary": f"Phase {phase_n} → {norm}"}
+            "files_changed": list(dict.fromkeys(files)),
+            "summary": f"Phase {phase_n} → {norm}"}
 
 
 def add_amendment(

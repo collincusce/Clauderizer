@@ -25,7 +25,8 @@ def test_run_writes_report_file(temp_repo):
         g, "subsys.auth", "status active -> completed", reports_dir, now=FIXED
     )
     assert result["written"] is True
-    out = reports_dir / "2026-05-02-subsys.auth.md"
+    # D4 (engine-structural-robustness): report names carry a -NN sequence
+    out = reports_dir / "2026-05-02-subsys.auth-01.md"
     assert out.exists()
     assert "feat.login" in out.read_text(encoding="utf-8")
     assert result["direct"] == ["feat.login"]

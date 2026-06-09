@@ -143,8 +143,16 @@ def next_numbered_id(text: str, prefix: str, *, sep: str = "-", width: int = 3) 
     e.g. ``next_numbered_id(doc, "D")`` over a doc containing ``D-001``, ``D-002``
     returns ``D-003``. Padding width matches ``width`` (set ``width=0`` for the
     bare ``D1``/``C2`` gameplan-internal style).
+
+    Only IDs at *entry anchors* count: ``### <ID> — …`` headings and
+    ``**<ID>.**`` bold log entries at line start. Mentions inside prose —
+    scaffold placeholders ("D1, D2, …") or cross-references to another
+    document's IDs — never shift the sequence (C-01 of discipline-seams; the
+    engine-structural-robustness gameplan's own decisions skipped D6 because a
+    decision's text cited another gameplan's D6).
     """
-    pat = re.compile(rf"\b{re.escape(prefix)}{re.escape(sep)}(\d+)\b")
-    nums = [int(m.group(1)) for m in pat.finditer(text)]
+    core = rf"{re.escape(prefix)}{re.escape(sep)}(\d+)"
+    pat = re.compile(rf"^(?:#{{1,6}}\s+{core}\b|\s*\*\*{core}\.\*\*)", re.M)
+    nums = [int(m.group(1) or m.group(2)) for m in pat.finditer(text)]
     nxt = (max(nums) + 1) if nums else 1
     return f"{prefix}{sep}{nxt:0{width}d}" if width else f"{prefix}{sep}{nxt}"

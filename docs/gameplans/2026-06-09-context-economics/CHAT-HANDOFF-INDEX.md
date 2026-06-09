@@ -1,7 +1,7 @@
 # Chat Handoff Index — Context Economics
 
 > Last updated: 2026-06-09
-> Status: Phase 0 ready
+> Status: All 3 phases complete
 
 ## How This Works
 
@@ -28,12 +28,10 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Lesson consolidation | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
+| 1 | Lesson promotion & project LESSONS.md | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
+| 2 | Memory gauge | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
-
-| 1 | Lesson promotion & project LESSONS.md | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
-
-| 2 | Memory gauge | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
 
 ## Per-Phase Completion Summaries
 
