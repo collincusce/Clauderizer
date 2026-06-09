@@ -48,3 +48,9 @@ _(Add entries with `cz_add_decision`.)_
 **Context**: Edits must stay valid and idempotent.
 **Decision**: Every structured write routes through markdown/writer.py.
 **Consequences**: No tool does a free-form replace.
+
+### D-008 — Engine-regenerated regions in shared docs are marker-delimited
+
+**Context**: cz_write_handoff regenerates PHASE-N-HANDOFF.md by overwriting the whole file, destroying agent enrichment; meanwhile init already merges the CLAUDE.md stanza through marker blocks without clobbering user text.
+**Decision**: Any engine-regenerated content inside a document that agents or humans may also edit is delimited by <!-- clauderizer:NAME:start/end --> markers and rewritten via writer.upsert_marker_block. Regeneration replaces only the block; everything outside is preserved byte-for-byte.
+**Consequences**: Handoffs become safely enrichable; the CLAUDE.md stanza and handoffs now follow one pattern; future generated regions (e.g. status digests embedded in docs) inherit it.

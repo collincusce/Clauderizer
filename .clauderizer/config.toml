@@ -2,6 +2,7 @@
 version = "1"
 size = "standard"
 preflight_checks = ["branch_base", "clean_tree", "tests", "build", "deps_spotcheck", "branch_creation", "cascade_hygiene"]
+preflight_advisory = []
 
 [host]
 profile = "python"
@@ -19,4 +20,4 @@ cascade = true
 amendments = false
 
 [active_gameplan]
-id = "2026-05-30-clauderizer-v1-bootstrap"
+id = "2026-06-09-discipline-seams"

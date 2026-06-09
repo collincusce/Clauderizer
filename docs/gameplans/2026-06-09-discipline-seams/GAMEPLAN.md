@@ -1,0 +1,135 @@
+# Discipline Seams Gameplan
+
+> Created: 2026-06-09
+> Status: Planning
+> Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
+
+## Project Overview
+
+Close the three "discipline seams" surfaced by the 2026-06-09 external review of
+Clauderizer: places where the system still depends on agents hand-editing tracked
+docs (the exact failure mode the tool exists to kill) instead of a blessed write.
+
+1. **No blessed write for cascade resolution or lesson obsolescence** — closing a
+   cascade report's "needs review" verdicts and marking a lesson "(obsolete)" both
+   require forbidden hand-edits today, and cascade_hygiene *requires* the first one.
+2. **`cz_write_handoff` clobbers enrichment** — regeneration overwrites the whole
+   handoff file, so agent-added context (key constraints, what-exists notes) is lost.
+3. **Stale baseline + confusing completed-gameplan status** — preflight measures the
+   real test count but never writes it back (this repo's own hook said "0 tests" with
+   84 passing), and a fully completed gameplan greets sessions with "no in-progress
+   or ready phase found".
+
+## Subsystems Touched
+
+- `src/clauderizer/mutations.py` — new blessed writes (resolve_cascade, obsolete_lesson)
+- `src/clauderizer/mcp_server.py` + `tools_list.py` — new tools cz_resolve_cascade, cz_obsolete_lesson
+- `src/clauderizer/rituals/handoff.py` — marker-protected regeneration
+- `src/clauderizer/rituals/preflight.py` + `status_bundle.py` — baseline write-back, completion messaging
+- `src/clauderizer/skills/` (+ installed `.claude/skills/` copies) — stop instructing hand-edits
+
+## Source-of-Truth Captures
+
+Captured 2026-06-09 from the live repo (authority over the gameplan body):
+
+- **Baseline test count**: 84 passing (`python -m pytest -q`, venv Python 3.11.15)
+- **Engine version**: clauderizer 0.3.0; procedure 1.1.0
+- **MCP tool count before this gameplan**: 18 (`tools_list.TOOL_NAMES`)
+- **Observed staleness**: bootstrap gameplan CHAT-HANDOFF-INDEX says
+  `**Current baseline test count**: 0` while 84 tests pass — finding 3's live evidence
+- **Pending-cascade detection**: a report is "pending" while it contains
+  `_(fill in concrete edits` or `_needs review_` (status_bundle._pending_cascades)
+- **Lesson-pruning convention already documented**: index header says *"mark with
+  '(obsolete)' rather than deleting"*; handoff.collect_lessons drops lines containing
+  `(obsolete)` or `~~strikethrough~~`
+- **Marker-block precedent**: `sections.upsert_marker_block` / `writer.upsert_marker_block`
+  already exist and back the CLAUDE.md stanza merge
+
+## Amendments
+
+_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+
+## Decisions
+
+### D3 — Cascade resolution is a blessed write, not a hand-edit
+
+**Context**: cascade_hygiene fails preflight while a report contains placeholders, but filling verdicts required a hand-edit — the rules forbade the only way to make progress.
+**Decision**: Add mutations.resolve_cascade + cz_resolve_cascade: fills per-dependent 'checked:' verdicts and the Updates applied/deferred sections. Defaults to the latest pending report. Partial resolution is allowed; the report counts as pending until no placeholders remain (detection logic unchanged).
+**Consequences**: The do-phase/cascade loop is fully tool-driven; pending-cascade semantics stay backward compatible.
+
+### D4 — Lesson obsolescence uses the documented '(obsolete)' marker via a tool
+
+**Context**: handoff.collect_lessons already prunes lines containing '(obsolete)', and the index header documents the convention — but no tool writes it, so pruning meant a forbidden hand-edit.
+**Decision**: Add mutations.obsolete_lesson + cz_obsolete_lesson: appends '(obsolete: reason)' to lesson N's line in Accumulated Lessons. Idempotent; never deletes a lesson.
+**Consequences**: Append-only memory is preserved; handoff roll-ups shrink over time through a blessed write.
+
+### D5 — Preflight is the writer of the baseline test count
+
+**Context**: The baseline lives as prose in CHAT-HANDOFF-INDEX, written once at scaffold time; preflight parses the real count on every run but discards it, so the digest rots (observed: '0 tests' vs 84 passing in this very repo).
+**Decision**: When preflight's tests check parses a count that differs from the index's 'Current baseline test count' line, it updates that line through the writer and notes the change in the check detail. status_bundle keeps reading the same line.
+**Consequences**: The hook digest is self-healing; no second source of truth is introduced.
+
+## Open Items
+
+_(O1, O2, … — blockers and cross-phase questions.)_
+
+## Phase Breakdown
+
+### Phase 0: Blessed cascade resolution & lesson obsolescence
+
+**Goal**: Every write the workflow requires has a blessed tool — close the
+cascade-verdict and lesson-obsolescence hand-edit holes (review finding 1).
+**Depends on**: nothing (first phase).
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 0.1 | `mutations.resolve_cascade`: fill per-dependent verdicts + Updates applied/deferred in a cascade report; default to the latest pending report; partial resolution allowed (report stays pending until placeholder-free) | 2h |
+| 0.2 | `mutations.obsolete_lesson`: mark lesson N `(obsolete: reason)` in Accumulated Lessons; idempotent; never deletes | 1h |
+| 0.3 | Expose `cz_resolve_cascade` + `cz_obsolete_lesson` in mcp_server.py and tools_list.py | 1h |
+| 0.4 | Update skills (cascade, do-phase) to call the new tools instead of instructing hand-edits; sync installed `.claude/skills/` copies | 1h |
+| 0.5 | Tests: full + partial resolution vs pending detection, obsoleted lesson pruned from assembled handoff, idempotency (apply-twice == apply-once) | 2h |
+
+**Exit criteria**:
+- [ ] A pending cascade report can be fully resolved via the new tool and disappears from cz_status pending + passes cascade_hygiene
+- [ ] An obsoleted lesson stays in the index but no longer rolls into assembled handoffs
+- [ ] No shipped skill instructs hand-editing a tracked log
+- [ ] Full suite passes; baseline grows from 84
+
+### Phase 1: Marker-protected handoff regeneration
+
+**Goal**: `cz_write_handoff` owns only its marker-delimited block; agent enrichment
+outside the markers survives regeneration (review finding 2).
+**Depends on**: Phase 0.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 1.1 | handoff.assemble renders engine content inside a `clauderizer:handoff` marker block, plus an agent-owned "Phase Notes" scaffold outside the markers on first write | 2h |
+| 1.2 | Regeneration routes through writer.upsert_marker_block: only the block changes; bytes outside are preserved | 1h |
+| 1.3 | Legacy unmarked handoffs: define + implement safe migration (record as gameplan decision) | 1h |
+| 1.4 | Tests: first write contains markers + scaffold; enrichment outside markers survives regeneration byte-for-byte; legacy handling | 2h |
+
+**Exit criteria**:
+- [ ] Regenerating a handoff preserves all content outside the marker block byte-for-byte
+- [ ] Fresh handoffs include the agent-owned Phase Notes section
+- [ ] Legacy (unmarked) handoff behavior is decided, recorded, and tested
+- [ ] Full suite passes
+
+### Phase 2: Fresh baseline & completed-gameplan status
+
+**Goal**: The status digest can no longer go stale on test count, and a finished
+gameplan says so (review finding 3).
+**Depends on**: Phase 0 (test infra), independent of Phase 1.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 2.1 | preflight writes the parsed test count back to the index's "Current baseline test count" line when it changed; check detail reports the update | 2h |
+| 2.2 | status_bundle: when all phases are complete, summary says so and next_action points at close-out — not "no in-progress or ready phase found" | 1h |
+| 2.3 | Dogfood: run preflight on this repo so the bootstrap gameplan's stale "0" gets corrected by the new code | 0.5h |
+| 2.4 | CHANGELOG entry; re-run `clauderize init` to refresh engine-owned installed assets | 0.5h |
+| 2.5 | Tests: write-back on change, no-op when unchanged, completed-gameplan summary/next_action | 2h |
+
+**Exit criteria**:
+- [ ] `clauderize status` on a repo whose suite passes N tests reports N after a preflight, with no hand-edit
+- [ ] A gameplan with every phase complete reports completion + close-out guidance
+- [ ] CHANGELOG updated; installed assets refreshed
+- [ ] Full suite passes
