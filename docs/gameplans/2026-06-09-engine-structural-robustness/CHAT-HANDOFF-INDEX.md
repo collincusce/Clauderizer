@@ -27,7 +27,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Structural numbering and table writes | ⬜ READY | — | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Structural numbering and table writes | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-0-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -48,4 +48,6 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-_(none yet)_
+### Category: Integration
+
+**1.** An engine that owns a toolchain must resolve bare profile commands against its own interpreter's bin directory before PATH - shell activation can never be assumed.

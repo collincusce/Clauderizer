@@ -16,6 +16,7 @@ from . import assets
 from .config import Config
 from .graph import cascade, index
 from .markdown import sections
+from .markdown import tables
 from .markdown import writer
 from .model import next_numbered_id
 from .paths import RepoPaths
@@ -232,7 +233,9 @@ def add_lesson(
     path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
     full = writer.full_text(path)
     body = sections.get_section(full, "Accumulated Lessons") or ""
-    nums = [int(m.group(1)) for m in re.finditer(r"\*\*(\d+)\.\*\*", body)]
+    # Line-anchored like next_numbered_id: a lesson *text* mentioning "**3.**"
+    # must not shift the sequence.
+    nums = [int(m.group(1)) for m in re.finditer(r"^\s*\*\*(\d+)\.\*\*", body, re.M)]
     n = (max(nums) + 1) if nums else 1
     lesson_line = f"**{n}.** {text.strip()}"
     new_section = _insert_under_category(body, category, lesson_line)
@@ -551,18 +554,16 @@ def add_phase(
     )
     writer.append_to_section(gp, "Phase Breakdown", entry, level=2)
     files = [str(gp)]
-    # add a status row to the trackers
+    # add a status row to the trackers — through the table-aware write, so the
+    # row joins the table block instead of fracturing it (H-02 / gameplan D3)
     row = f"| {n} | {name} | ⬜ NOT STARTED | — | — | handoffs/PHASE-{n}-HANDOFF.md |"
     for fname, heading in (
         ("CHAT-HANDOFF-INDEX.md", "Phase Status Table"),
         ("PHASE-STATUS.md", "Phase Status"),
     ):
         path = paths.gameplan_dir(gameplan_id) / fname
-        if path.exists():
-            sec = sections.get_section(writer.full_text(path), heading) or ""
-            if f"| {n} |" not in sec:
-                writer.append_to_section(path, heading, row)
-                files.append(str(path))
+        if path.exists() and writer.upsert_table_row(path, heading, row):
+            files.append(str(path))
     return {"ok": True, "phase": n, "files_changed": files,
             "summary": f"added Phase {n}: {name}"}
 
@@ -588,29 +589,37 @@ _PHASE_ALIASES = {
 
 def _set_phase_row(path, heading: str, phase_n: str, display: str, norm: str,
                    today: str) -> bool:
-    """Rewrite the status (and dates) of one phase row in a tracker table."""
+    """Rewrite the status (and dates) of one phase row in a tracker table.
+
+    The rewritten section is re-normalized into a contiguous table block
+    (gameplan D3), so a tracker fractured by historical paragraph appends
+    heals on any blessed touch — including a same-status transition.
+    """
     text = writer.full_text(path)
     sec = sections.get_section(text, heading)
     if sec is None:
         return False
-    out, changed = [], False
+    out, found = [], False
     for line in sec.splitlines():
         s = line.strip()
         if s.startswith("|"):
             cells = [c.strip() for c in s.strip("|").split("|")]
             if len(cells) >= 6 and cells[0] == phase_n:
+                found = True
                 cells[2] = display
                 if norm in ("in_progress", "complete") and cells[3] in ("—", ""):
                     cells[3] = today
                 if norm == "complete":
                     cells[4] = today
-                rebuilt = "| " + " | ".join(cells) + " |"
-                if rebuilt != s:
-                    line, changed = rebuilt, True
+                line = "| " + " | ".join(cells) + " |"
         out.append(line)
-    if changed:
-        writer.upsert_section(path, heading, "\n".join(out))
-    return changed
+    if not found:
+        return False
+    new_sec = tables.normalize("\n".join(out))
+    if new_sec == sec:
+        return False
+    writer.upsert_section(path, heading, new_sec)
+    return True
 
 
 def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,

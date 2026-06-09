@@ -13,8 +13,10 @@ toolchain.
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -53,9 +55,23 @@ def _write_back_baseline(paths: RepoPaths, config: Config, count: str) -> str | 
 Runner = Callable[[str, Path], tuple[int, str]]
 
 
+def _command_env() -> dict[str, str]:
+    """Environment for profile commands: the running interpreter's bin
+    directory leads PATH, so a venv-installed engine resolves its own
+    toolchain (pytest, ruff, …) without shell activation. Observed live
+    (A-001): the engine launched by absolute venv path got 'pytest: not
+    found' from the inherited PATH while .venv/bin/pytest existed.
+    """
+    env = os.environ.copy()
+    bin_dir = str(Path(sys.executable).parent)
+    env["PATH"] = bin_dir + os.pathsep + env.get("PATH", "")
+    return env
+
+
 def _default_runner(cmd: str, cwd: Path) -> tuple[int, str]:
     proc = subprocess.run(
-        cmd, shell=True, cwd=cwd, capture_output=True, text=True, timeout=600
+        cmd, shell=True, cwd=cwd, capture_output=True, text=True, timeout=600,
+        env=_command_env(),
     )
     return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
 

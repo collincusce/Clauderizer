@@ -7,7 +7,7 @@
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Structural numbering and table writes | ⬜ READY | — | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Structural numbering and table writes | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-0-HANDOFF.md |
 
 | 1 | Collision-proof cascade reports | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
 
@@ -21,4 +21,10 @@ _(Concrete values produced by completed phases that later phases need.)_
 
 ## Corrections Log
 
-_(Every divergence from the gameplan, captured in real time, as C-NN entries.)_
+### C-01 — Phase 0
+
+**Phase**: 0
+**What gameplan said**: Pre-flight passes before Phase 0 code (captures: baseline 109, doctor all-green)
+**What was actually correct**: The tests check failed with 'pytest: not found': the profile command resolves via shell PATH, and the engine's venv (which contains pytest) is never activated when the engine is launched by absolute path
+**Why**: preflight._default_runner inherits the parent environment untouched; engine-environment resolution was assumed but never implemented
+**Lesson**: An engine that owns a toolchain must resolve bare profile commands against its own interpreter's bin directory before PATH - shell activation can never be assumed.

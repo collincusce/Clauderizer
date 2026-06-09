@@ -14,7 +14,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from . import frontmatter, sections
+from . import frontmatter, sections, tables
 
 
 def _read(path: Path) -> str:
@@ -97,6 +97,25 @@ def set_labeled_value(path: Path, label: str, value: str) -> bool:
         return False
     new_text = pattern.sub(lambda m: m.group(1) + value, text, count=1)
     return _write_if_changed(path, new_text)
+
+
+def upsert_table_row(path: Path, heading: str, row: str, *, key_col: int = 0,
+                     level: int = 2) -> bool:
+    """Insert or update one row of the table block under ``heading``.
+
+    The structured write for tracker tables: the row joins (or replaces, by
+    key cell) the section's first table block, and the whole block is
+    rebuilt contiguous — so a historically fractured table (H-02) heals on
+    any blessed touch. Returns ``False`` when the section doesn't exist.
+    """
+    text = _read(path)
+    data, body = frontmatter.parse(text)
+    sec = sections.get_section(body, heading)
+    if sec is None:
+        return False
+    new_sec = tables.upsert_row(sec, row, key_col=key_col)
+    new_body = sections.upsert_section(body, heading, new_sec, level=level)
+    return _write_if_changed(path, frontmatter.serialize(data, new_body))
 
 
 def create_if_absent(path: Path, content: str) -> bool:
