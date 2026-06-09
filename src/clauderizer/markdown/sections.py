@@ -83,6 +83,11 @@ def _is_placeholder(content: str) -> bool:
     return bool(_PLACEHOLDER_RE.match(content.strip()))
 
 
+# Public alias: mutations that manage their own sub-blocks need the same
+# "is this still just scaffold?" predicate the append path uses.
+is_placeholder = _is_placeholder
+
+
 def append_to_section(text: str, heading: str, entry: str, level: int = 2) -> str:
     """Append ``entry`` to the end of a section's existing content.
 

@@ -23,6 +23,8 @@ TOOL_NAMES = [
     "cz_consolidate_lessons",
     "cz_promote_lesson",
     "cz_add_correction",
+    "cz_add_output",
+    "cz_add_phase_summary",
     "cz_create_gameplan",
     "cz_add_phase",
     "cz_transition_phase",

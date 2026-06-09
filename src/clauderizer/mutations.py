@@ -414,6 +414,102 @@ def consolidate_lessons(
     }
 
 
+def add_output(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    phase: str,
+    key: str,
+    value: str,
+) -> dict:
+    """Record a concrete produced value in the PHASE-STATUS Outputs Registry.
+
+    The registry is the cross-phase memory for real captured values (ids,
+    counts, paths) — the anti-pattern-#9 fix, finally a blessed write. One
+    fenced block per phase; upserting an existing key rewrites its line, so
+    corrections never stack.
+    """
+    path = paths.gameplan_dir(gameplan_id) / "PHASE-STATUS.md"
+    if not path.exists():
+        return {"ok": False, "summary": f"no PHASE-STATUS.md for {gameplan_id}"}
+    body = sections.get_section(writer.full_text(path), "Outputs Registry")
+    if body is None:
+        return {"ok": False, "summary": "no Outputs Registry section"}
+    key, value = key.strip(), str(value).strip()
+    sub = f"### Phase {phase} Outputs"
+    lines = [] if (not body.strip() or sections.is_placeholder(body)) else body.splitlines()
+    h = next((i for i, ln in enumerate(lines) if ln.strip() == sub), None)
+    action = "recorded"
+    if h is None:
+        if lines:
+            lines.append("")
+        lines += [sub, "", "```", f"{key}: {value}", "```"]
+    else:
+        nxt = next((i for i in range(h + 1, len(lines)) if lines[i].startswith("### ")),
+                   len(lines))
+        o = next((i for i in range(h + 1, nxt) if lines[i].strip().startswith("```")), None)
+        if o is None:
+            lines[h + 1:h + 1] = ["", "```", f"{key}: {value}", "```"]
+        else:
+            c = next((i for i in range(o + 1, nxt) if lines[i].strip().startswith("```")), None)
+            if c is None:
+                c = nxt
+                lines.insert(c, "```")
+            for i in range(o + 1, c):
+                if lines[i].split(":", 1)[0].strip() == key:
+                    lines[i] = f"{key}: {value}"
+                    action = "updated"
+                    break
+            else:
+                lines.insert(c, f"{key}: {value}")
+    writer.upsert_section(path, "Outputs Registry", "\n".join(lines))
+    return {"ok": True, "phase": str(phase), "key": key, "action": action,
+            "files_changed": [str(path)],
+            "summary": f"output {key} {action} for phase {phase}"}
+
+
+def add_phase_summary(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    phase: str,
+    text: str,
+    today: str | None = None,
+) -> dict:
+    """Record a phase's completion summary in the handoff index.
+
+    One block per phase under "Per-Phase Completion Summaries" — the
+    at-a-glance record of what each phase actually shipped, previously stuck
+    at its scaffold placeholder for want of a blessed write. Re-recording a
+    phase's summary replaces its block.
+    """
+    path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+    if not path.exists():
+        return {"ok": False, "summary": f"no CHAT-HANDOFF-INDEX.md for {gameplan_id}"}
+    body = sections.get_section(writer.full_text(path), "Per-Phase Completion Summaries")
+    if body is None:
+        return {"ok": False, "summary": "no Per-Phase Completion Summaries section"}
+    block = f"### Phase {phase} — completed {_today(today)}\n\n{text.strip()}"
+    replaced = False
+    if not body.strip() or sections.is_placeholder(body):
+        new_body = block
+    else:
+        lines = body.splitlines()
+        pat = re.compile(rf"^###\s+Phase\s+{re.escape(str(phase))}\b")
+        start = next((i for i, ln in enumerate(lines) if pat.match(ln.strip())), None)
+        if start is None:
+            new_body = body.rstrip() + "\n\n" + block
+        else:
+            end = next((j for j in range(start + 1, len(lines))
+                        if lines[j].startswith("### ")), len(lines))
+            new_body = "\n".join(lines[:start] + block.splitlines() + lines[end:])
+            replaced = True
+    writer.upsert_section(path, "Per-Phase Completion Summaries", new_body)
+    return {"ok": True, "phase": str(phase), "replaced": replaced,
+            "files_changed": [str(path)],
+            "summary": f"phase {phase} summary {'replaced' if replaced else 'recorded'}"}
+
+
 _NEEDS_REVIEW = "_needs review_"
 _APPLIED_PLACEHOLDER = "_(fill in concrete edits"
 
@@ -564,7 +660,8 @@ def add_phase(
         path = paths.gameplan_dir(gameplan_id) / fname
         if path.exists() and writer.upsert_table_row(path, heading, row):
             files.append(str(path))
-    return {"ok": True, "phase": n, "files_changed": files,
+    files += _refresh_tracker_headers(paths, gameplan_id, _today(None))
+    return {"ok": True, "phase": n, "files_changed": list(dict.fromkeys(files)),
             "summary": f"added Phase {n}: {name}"}
 
 
@@ -622,6 +719,55 @@ def _set_phase_row(path, heading: str, phase_n: str, display: str, norm: str,
     return True
 
 
+def _refresh_tracker_headers(paths: RepoPaths, gameplan_id: str, today: str) -> list[str]:
+    """Write the tracker header lines back from the live phase table (D7).
+
+    ``> Status:`` and ``> Last updated:`` rotted on two closed gameplans
+    because no blessed write owned them. Every phase mutation now refreshes
+    them — the same self-healing the baseline test count got in
+    discipline-seams D5, generalized.
+    """
+    from .rituals import _tables
+
+    gdir = paths.gameplan_dir(gameplan_id)
+    src = next((gdir / n for n in ("CHAT-HANDOFF-INDEX.md", "PHASE-STATUS.md")
+                if (gdir / n).exists()), None)
+    rows = _tables.parse_phase_table(writer.full_text(src)) if src else []
+    total = len(rows)
+    cur = next((r for r in rows if r.status == "in_progress"), None)
+    nxt = next((r for r in rows if r.status in ("ready", "not_started")), None)
+    if not total:
+        tracker = "Planning"
+    elif all(r.status == "complete" for r in rows):
+        tracker = f"All {total} phases complete"
+    elif cur:
+        tracker = f"Phase {cur.number} of {total} in progress"
+    elif nxt:
+        tracker = f"Phase {nxt.number} ready"
+    else:
+        tracker = "Executing"
+    started = ("in_progress", "complete", "blocked", "failed")
+    if total and all(r.status == "complete" for r in rows):
+        gp_status = "Complete"
+    elif any(r.status in started for r in rows):
+        gp_status = "Executing"
+    else:
+        gp_status = "Planning"
+    files: list[str] = []
+    for fname in ("CHAT-HANDOFF-INDEX.md", "PHASE-STATUS.md"):
+        p = gdir / fname
+        if not p.exists():
+            continue
+        changed_status = writer.set_blockquote_field(p, "Status", tracker)
+        changed_date = writer.set_blockquote_field(p, "Last updated", today)
+        if changed_status or changed_date:
+            files.append(str(p))
+    gp = gdir / "GAMEPLAN.md"
+    if gp.exists() and writer.set_blockquote_field(gp, "Status", gp_status):
+        files.append(str(gp))
+    return files
+
+
 def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
                      to_status: str, today: str | None = None) -> dict:
     """Move a phase's lifecycle status in the gameplan trackers.
@@ -647,8 +793,10 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
     if not files:
         return {"ok": False,
                 "summary": f"phase {phase_n} not found (or already {norm}) in trackers"}
+    files += _refresh_tracker_headers(paths, gameplan_id, today)
     return {"ok": True, "phase": str(phase_n), "to_status": norm,
-            "files_changed": files, "summary": f"Phase {phase_n} → {norm}"}
+            "files_changed": list(dict.fromkeys(files)),
+            "summary": f"Phase {phase_n} → {norm}"}
 
 
 def add_amendment(

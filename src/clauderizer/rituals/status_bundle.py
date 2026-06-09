@@ -205,6 +205,9 @@ def compute(paths: RepoPaths, config: Config) -> dict:
             "Close out the gameplan (post-mortem, final cascade), or "
             "cz_create_gameplan to start the next initiative."
         )
+        # No next phase means no handoff to size — say so instead of silently
+        # dropping the figure the CHANGELOG promises (H-03).
+        bundle["memory"]["handoff_note"] = "n/a: gameplan complete"
     else:
         bundle["summary"] = f"Gameplan {gid}: no in-progress or ready phase found."
         bundle["next_action"] = "Review the gameplan or cz_add_phase."
@@ -226,10 +229,16 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
     mem = bundle.get("memory")
     if mem:
         tok = mem.get("handoff_est_tokens")
+        note = mem.get("handoff_note")
+        if tok:
+            suffix = f" (~{tok} tok handoff)."
+        elif note:
+            suffix = f" (handoff {note})."
+        else:
+            suffix = "."
         lines.append(
             f"Memory: {mem['active_lessons']} active lessons, "
-            f"{mem['project_lessons']} project"
-            + (f" (~{tok} tok handoff)." if tok else ".")
+            f"{mem['project_lessons']} project" + suffix
         )
         if mem.get("warning"):
             lines.append(f"⚠ Memory: {mem['warning']}")

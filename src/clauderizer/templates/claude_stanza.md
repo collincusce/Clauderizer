@@ -6,7 +6,9 @@ under `docs/` is the source of truth; an MCP server exposes it as live tools.
 **Start of every session**: the SessionStart hook injects current gameplan status
 into context automatically — no manual reading order. To refresh on demand, call
 `cz_status`. To begin/continue a phase, call `cz_next_phase_context` then
-`cz_preflight`.
+`cz_preflight`. **If the `cz_*` tools are absent** (no `[Clauderizer]` digest
+appeared), the wiring is broken, not the memory: run `clauderize doctor` in a
+shell and use `clauderize status` for this digest until it's repaired.
 
 **Key tools** (MCP server `clauderizer`):
 - `cz_status` / `cz_next_phase_context` — where things stand; the next phase bundle.
@@ -18,6 +20,8 @@ into context automatically — no manual reading order. To refresh on demand, ca
   outside its marker block survive regeneration).
 - `cz_add_decision` / `cz_add_invariant` / `cz_add_lesson` / `cz_add_correction`
   / `cz_upsert_entity` / `cz_transition_status` — structured, graph-aware writes.
+- `cz_add_output` / `cz_add_phase_summary` — the Ending Protocol writes: record
+  a phase's concrete produced values and its completion summary.
 - `cz_consolidate_lessons` / `cz_promote_lesson` / `cz_obsolete_lesson` — keep
   memory compact: synthesize overlap, promote the enduring to `docs/LESSONS.md`,
   mark the stale.

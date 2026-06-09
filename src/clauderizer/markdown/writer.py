@@ -99,6 +99,23 @@ def set_labeled_value(path: Path, label: str, value: str) -> bool:
     return _write_if_changed(path, new_text)
 
 
+def set_blockquote_field(path: Path, label: str, value: str) -> bool:
+    """Update the first ``> Label: value`` header line of a document.
+
+    Tracker docs carry their living state in blockquote header lines
+    (``> Status: …``, ``> Last updated: …``); these rotted for two whole
+    gameplans because no blessed write owned them. Engine-owned now
+    (gameplan D7) — agents and humans never hand-edit them. Returns
+    ``False`` when the doc has no such line.
+    """
+    text = _read(path)
+    pattern = re.compile(rf"^(>\s*{re.escape(label)}\s*:\s*).*$", re.M)
+    if not pattern.search(text):
+        return False
+    new_text = pattern.sub(lambda m: m.group(1) + value, text, count=1)
+    return _write_if_changed(path, new_text)
+
+
 def upsert_table_row(path: Path, heading: str, row: str, *, key_col: int = 0,
                      level: int = 2) -> bool:
     """Insert or update one row of the table block under ``heading``.
