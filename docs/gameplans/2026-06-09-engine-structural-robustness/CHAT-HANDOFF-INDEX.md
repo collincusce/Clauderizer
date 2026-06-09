@@ -28,8 +28,8 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Structural numbering and table writes | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Collision-proof cascade reports | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Bless the remaining tracked surfaces | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 1 | Collision-proof cascade reports | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
+| 2 | Bless the remaining tracked surfaces | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Structural lesson state and 0.6.0 release | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
