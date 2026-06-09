@@ -1,7 +1,7 @@
 # Chat Handoff Index — agent-autonomy
 
 > Last updated: 2026-06-09
-> Status: Phase 0 ready
+> Status: Phase 1 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 0
+**Current baseline test count**: 139
 
 ## Ending Protocol
 
@@ -29,7 +29,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Serialized tracked writes | ⬜ READY | — | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Serialized tracked writes | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | CLI write parity: clauderize ops | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Wiring truth: session-host-of-record | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Cold-start breadcrumb hook wrapper | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
@@ -39,7 +39,11 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 ## Per-Phase Completion Summaries
 
-_(None yet.)_
+### Phase 0 — completed 2026-06-09
+
+Closed H-05 by serializing every tracked write through an advisory file lock. src/clauderizer/locking.py implements write_lock() over .clauderizer/write.lock: O_CREAT|O_EXCL create with holder metadata (pid, host, since/ts, nonce) inside, bounded polling up to acquire_timeout (10s), and stale takeover (30s) done by atomic rename-to-trash so two reclaimers can never double-unlink a rival's fresh lock; a post-create nonce read-back closes the residual misjudged-takeover window. Contention surfaces as LockHeld — retryable, naming holder pid/host/since and the wait. All 18 public mutations.* functions acquire it via the @_locked decorator, spanning the full read-modify-write (IDs are allocated from the read that the final section write trusts, so locking individual writer calls would not have fixed H-05); the lock is reentrant per thread because mutations compose mutations (consolidate_lessons -> add_lesson), threads of one process serialize on a per-path RLock, and read tools never touch it (L-03).
+
+Suite went 139 -> 148. The load-bearing regression spawns 8 real writer processes that block on a GO sentinel and race add_lesson on one repo: 8 distinct sequential numbers, 8 surviving appends, no duplicates anywhere in the section. Also pinned: crashed-holder delay bounded by stale_timeout (exit criterion 2), LockHeld shape, release-on-exception, reentrancy, thread serialization, and no lock residue after mutations. H-05 was resolved through the locked path itself (task 0.4) by a fresh-process write, because the session's live MCP server still held the pre-lock module in memory — the lock guards MCP writers from the next server start onward.
 
 ## Accumulated Lessons
 
@@ -48,4 +52,6 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-_(none yet)_
+### Category: Integration
+
+**1.** A long-running MCP server executes the modules it imported at session start: after editing engine code, in-session cz_* writes still run the pre-edit code. Any dogfood or verification that must traverse a new code path needs a fresh process (stdio probe today, clauderize ops after Phase 1) — otherwise it silently exercises the old path while appearing to test the new one.

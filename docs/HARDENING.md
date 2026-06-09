@@ -61,7 +61,7 @@ resolved with a date instead. This is a permanent audit trail. Numbered `H-NN`.
 ### H-05 — No write lock on tracked docs: concurrent sessions on one repo can silently lose updates or duplicate IDs
 
 - **Severity**: medium
-- **Status**: open (2026-06-09)
+- **Status**: resolved (2026-06-09)
 - **Affected**: mutations.py (all 18 public write functions); .clauderizer index cache; any multi-window or multi-agent workflow on one repo
 - **Invariant violated**: Append-only trackers assume appends are serialized; numbering assumes allocation+write is atomic
 - **Preconditions**: Two writer processes (MCP servers, future CLI ops, or shims) mutating the same repo concurrently; sub-second collision window per write
@@ -70,3 +70,4 @@ resolved with a date instead. This is a permanent audit trail. Numbered `H-NN`.
 - **Reproduction**: Open two sessions on one repo and fire cz_add_lesson in both within the same second; inspect numbering and the lessons section for a lost append or duplicate number
 - **Recommended fix**: Advisory lock in the single mutation path (D-007 makes it one choke point): e.g. .clauderizer/write.lock created O_EXCL with a stale-lock timeout, held per mutation. Covers MCP, CLI ops, and shims uniformly; read tools stay lock-free (L-03). Until then: one writer session per repo at a time; reads are always safe; git history is the recovery backstop. Candidate task for the agent-autonomy gameplan Phase 0 alongside clauderize ops
 - **Regression tests**: None yet - candidate: N concurrent add_lesson processes against one repo yield N distinct sequential numbers and N surviving entries
+- **Resolution**: Closed by agent-autonomy Phase 0: advisory write lock at the mutation choke point (src/clauderizer/locking.py; all 18 public mutations.* functions serialize on .clauderizer/write.lock, reentrant, stale takeover ~30s). Regression evidence: tests/test_locking.py::test_concurrent_writer_processes_lose_nothing (8 concurrent writer processes -> 8 distinct sequential ids, 8 surviving appends) and test_crashed_holder_blocks_at_most_stale_timeout. This resolution was itself written through the locked path.

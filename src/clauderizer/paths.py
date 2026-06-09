@@ -44,6 +44,11 @@ class RepoPaths:
         return self.clauderizer_dir / "profile.lock.toml"
 
     @property
+    def write_lock_file(self) -> Path:
+        """The advisory inter-process write lock (H-05); see ``locking.py``."""
+        return self.clauderizer_dir / "write.lock"
+
+    @property
     def procedure_file(self) -> Path:
         return self.gameplans / "GAMEPLAN-PROCEDURE.md"
 

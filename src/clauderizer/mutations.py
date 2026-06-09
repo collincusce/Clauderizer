@@ -8,6 +8,7 @@ valid and numbering never collides. These back the ``cz_add_*`` / ``cz_upsert_*`
 
 from __future__ import annotations
 
+import functools
 import re
 from datetime import date as _date
 from pathlib import Path
@@ -15,6 +16,7 @@ from pathlib import Path
 from . import assets
 from .config import Config
 from .graph import cascade, index
+from .locking import write_lock
 from .markdown import lesson_state
 from .markdown import sections
 from .markdown import tables
@@ -32,9 +34,28 @@ def kebab(name: str) -> str:
     return s.strip("-")
 
 
+def _locked(fn):
+    """Serialize the whole mutation across processes (H-05, gameplan D1).
+
+    IDs are allocated from a read that the final section write trusts, so the
+    lock must span the full read-modify-write — it wraps the public function,
+    not the individual ``markdown.writer`` calls. Reentrant: mutations that
+    compose other mutations (``consolidate_lessons`` -> ``add_lesson``) take
+    the lock once. Read tools never acquire it (L-03).
+    """
+
+    @functools.wraps(fn)
+    def wrapper(paths, *args, **kwargs):
+        with write_lock(paths.write_lock_file):
+            return fn(paths, *args, **kwargs)
+
+    return wrapper
+
+
 # --- gameplans ----------------------------------------------------------------
 
 
+@_locked
 def create_gameplan(
     paths: RepoPaths,
     name: str,
@@ -78,6 +99,7 @@ def _ensure_doc(path: Path, doc_name: str) -> None:
             writer.create_if_absent(path, tmpl)
 
 
+@_locked
 def add_decision(
     paths: RepoPaths,
     *,
@@ -114,6 +136,7 @@ def add_decision(
             "files_changed": [str(path)], "summary": f"added decision {new_id}"}
 
 
+@_locked
 def add_invariant(
     paths: RepoPaths, *, text: str, introduced_by: str | None = None
 ) -> dict:
@@ -130,6 +153,7 @@ def add_invariant(
             "files_changed": [str(path)], "summary": f"added {new_id}"}
 
 
+@_locked
 def add_finding(
     paths: RepoPaths,
     *,
@@ -186,6 +210,7 @@ def add_finding(
 add_risk = add_finding
 
 
+@_locked
 def resolve_finding(paths: RepoPaths, *, finding_id: str, status: str = "resolved",
                     note: str | None = None, today: str | None = None) -> dict:
     """Update a finding's status (and an optional dated resolution note) in place.
@@ -228,6 +253,7 @@ def resolve_finding(paths: RepoPaths, *, finding_id: str, status: str = "resolve
             "summary": f"{finding_id} → {status.strip()}"}
 
 
+@_locked
 def add_lesson(
     paths: RepoPaths, *, gameplan_id: str, text: str, category: str = "Process"
 ) -> dict:
@@ -270,6 +296,7 @@ def _insert_under_category(section_body: str, category: str, lesson_line: str) -
     return f"{base}\n\n{heading}\n\n{lesson_line}".strip()
 
 
+@_locked
 def obsolete_lesson(
     paths: RepoPaths,
     *,
@@ -315,6 +342,7 @@ def obsolete_lesson(
             "summary": f"{label} marked obsolete"}
 
 
+@_locked
 def promote_lesson(
     paths: RepoPaths,
     *,
@@ -368,6 +396,7 @@ def promote_lesson(
             "summary": f"lesson #{n} promoted to {new_id} ({category})"}
 
 
+@_locked
 def consolidate_lessons(
     paths: RepoPaths,
     *,
@@ -415,6 +444,7 @@ def consolidate_lessons(
     }
 
 
+@_locked
 def add_output(
     paths: RepoPaths,
     *,
@@ -469,6 +499,7 @@ def add_output(
             "summary": f"output {key} {action} for phase {phase}"}
 
 
+@_locked
 def add_phase_summary(
     paths: RepoPaths,
     *,
@@ -515,6 +546,7 @@ _NEEDS_REVIEW = "_needs review_"
 _APPLIED_PLACEHOLDER = "_(fill in concrete edits"
 
 
+@_locked
 def resolve_cascade(
     paths: RepoPaths,
     *,
@@ -595,6 +627,7 @@ def resolve_cascade(
     }
 
 
+@_locked
 def add_correction(
     paths: RepoPaths,
     *,
@@ -628,6 +661,7 @@ def add_correction(
             "lesson": lesson_result, "summary": f"added correction {new_id}"}
 
 
+@_locked
 def add_phase(
     paths: RepoPaths,
     *,
@@ -769,6 +803,7 @@ def _refresh_tracker_headers(paths: RepoPaths, gameplan_id: str, today: str) -> 
     return files
 
 
+@_locked
 def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
                      to_status: str, today: str | None = None) -> dict:
     """Move a phase's lifecycle status in the gameplan trackers.
@@ -800,6 +835,7 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
             "summary": f"Phase {phase_n} → {norm}"}
 
 
+@_locked
 def add_amendment(
     paths: RepoPaths,
     *,
@@ -847,6 +883,7 @@ def _entity_path(paths: RepoPaths, entity_id: str, type_: str) -> Path:
     return paths.docs / folder / f"{slug}.md"
 
 
+@_locked
 def upsert_entity(
     paths: RepoPaths,
     *,
@@ -877,6 +914,7 @@ def upsert_entity(
             "summary": f"{'updated' if existed else 'created'} {id}"}
 
 
+@_locked
 def transition_status(
     paths: RepoPaths,
     config: Config,
