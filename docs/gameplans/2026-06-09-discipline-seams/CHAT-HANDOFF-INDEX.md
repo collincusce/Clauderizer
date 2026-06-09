@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
-| 1 | Marker-protected handoff regeneration | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Marker-protected handoff regeneration | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
 
 | 2 | Fresh baseline & completed-gameplan status | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 
@@ -49,3 +49,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Design
 
 **1.** Auto-numbering must not count IDs that only appear in scaffold placeholder prose — strip placeholders before scanning, or use ID patterns anchored to heading lines.
+
+**2.** A context fetch should return the merged on-disk view, not just freshly generated content — cz_next_phase_context now includes agent enrichment living outside the marker block.
