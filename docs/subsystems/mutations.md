@@ -1,7 +1,7 @@
 ---
 id: subsys.mutations
 type: subsystem
-version: 0.3.0
+version: 0.4.0
 status: active
 depends_on:
   - subsys.markdown-core@^0.1.0

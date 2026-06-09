@@ -10,7 +10,7 @@
 | 0 | Structural numbering and table writes | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Collision-proof cascade reports | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Bless the remaining tracked surfaces | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Structural lesson state and 0.6.0 release | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Structural lesson state and 0.6.0 release | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -34,6 +34,14 @@ COLLISION_DEMO: _cascade-reports/2026-06-09-subsys.rituals.md and ...rituals-01.
 BASELINE_AFTER_PHASE: 134 tests
 MCP_TOOLS: 24 (added cz_add_output, cz_add_phase_summary)
 DOCTOR_CHECKS: 13, all green incl. the two D9 identity checks
+```
+
+### Phase 3 Outputs
+
+```
+BASELINE_AFTER_PHASE: 139 tests
+RELEASE: clauderizer 0.6.0 (doctor 13/13 incl. identity checks)
+GRAMMAR_CALL_SITES: 5 (gauge, handoff filter, obsolete/promote/consolidate) on markdown/lesson_state.py
 ```
 
 ## Corrections Log

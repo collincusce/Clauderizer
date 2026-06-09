@@ -1,7 +1,7 @@
 # Chat Handoff Index — Engine Structural Robustness
 
 > Last updated: 2026-06-09
-> Status: Phase 3 of 4 in progress
+> Status: All 4 phases complete
 
 ## How This Works
 
@@ -30,7 +30,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Structural numbering and table writes | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Collision-proof cascade reports | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Bless the remaining tracked surfaces | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Structural lesson state and 0.6.0 release | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Structural lesson state and 0.6.0 release | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -48,6 +48,10 @@ Cascade report filenames carry a zero-padded -NN sequence per date+entity (D4); 
 
 The last hand-edit surfaces got blessed writes: cz_add_output (Outputs Registry, per-key upsert), cz_add_phase_summary (per-phase block replace), and D7 header write-backs on every phase mutation (> Status: / > Last updated: across both trackers plus GAMEPLAN.md). Doctor gained the D9 identity checks (stale metadata; dogfooding skew) and the digest now explains the missing handoff size at gameplan close (H-03). The CLAUDE.md stanza names the CLI fallback (H-01's missing breadcrumb). This very close-out is the exit criterion: outputs and summaries above were recorded through the new tools. Tests 127 -> 134.
 
+### Phase 3 — completed 2026-06-09
+
+Lesson state became a grammar: markdown/lesson_state.py parses the trailing (obsolete ...)/(promoted ...) markers (or legacy strikethrough) and all five former substring call sites route through it - a lesson whose text mentions '(obsolete' now counts active everywhere. Released 0.6.0: version bump, CHANGELOG, README tool list (24), Ending Protocol texts (skill, template, generated handoffs) now name the blessed writes, editable install refreshed so doctor's identity checks certify 0.6.0. Tests 134 -> 139.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -63,4 +67,4 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Design
 
-**2.** A writer's round-trip through its own parser is necessary but not sufficient: tests must also assert render-validity for external readers (contiguous table blocks) - the engine read its own fractured tables fine for two whole gameplans.
+**2.** A writer's round-trip through its own parser is necessary but not sufficient: tests must also assert render-validity for external readers (contiguous table blocks) - the engine read its own fractured tables fine for two whole gameplans. (promoted 2026-06-09: L-06)
