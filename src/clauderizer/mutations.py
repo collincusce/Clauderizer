@@ -302,6 +302,53 @@ def obsolete_lesson(
             "summary": f"lesson #{number} marked obsolete"}
 
 
+def consolidate_lessons(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    numbers: list[int | str],
+    text: str,
+    category: str = "Process",
+    today: str | None = None,
+) -> dict:
+    """Synthesize several lessons into one — the anti-bloat write (D-009).
+
+    Adds ``text`` as a new lesson, then marks every source lesson
+    ``(obsolete <date>: consolidated into #N)``. Nothing is deleted: the
+    handoff roll-up shrinks by ``len(numbers) - 1`` while the log keeps the
+    full trail. All sources are validated before anything is written.
+    """
+    uniq = list(dict.fromkeys(str(n) for n in numbers))
+    if len(uniq) < 2:
+        return {"ok": False, "summary": "consolidation needs at least two distinct lessons"}
+    path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+    body = sections.get_section(writer.full_text(path), "Accumulated Lessons") or ""
+    lines = body.splitlines()
+    problems = []
+    for n in uniq:
+        line = next((ln for ln in lines if ln.strip().startswith(f"**{n}.**")), None)
+        if line is None:
+            problems.append(f"#{n} not found")
+        elif "(obsolete" in line.lower() or "(promoted" in line.lower():
+            problems.append(f"#{n} already obsolete/promoted")
+    if problems:
+        return {"ok": False, "summary": "cannot consolidate: " + "; ".join(problems)}
+
+    added = add_lesson(paths, gameplan_id=gameplan_id, text=text.strip(), category=category)
+    new_n = added["number"]
+    files = list(added["files_changed"])
+    for n in uniq:
+        obsolete_lesson(paths, gameplan_id=gameplan_id, number=n,
+                        reason=f"consolidated into #{new_n}", today=today)
+    return {
+        "ok": True,
+        "number": new_n,
+        "consolidated": [int(n) for n in uniq],
+        "files_changed": files,
+        "summary": f"consolidated lessons {', '.join('#' + n for n in uniq)} into #{new_n}",
+    }
+
+
 _NEEDS_REVIEW = "_needs review_"
 _APPLIED_PLACEHOLDER = "_(fill in concrete edits"
 

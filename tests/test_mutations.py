@@ -192,6 +192,44 @@ def test_obsolete_lesson_marks_prunes_and_is_idempotent(temp_repo):
     assert M.obsolete_lesson(paths, gameplan_id=GID, number=99)["ok"] is False
 
 
+def test_consolidate_lessons_shrinks_rollup_keeps_log(temp_repo):
+    from clauderizer.rituals import handoff
+
+    paths, _ = _ctx(temp_repo)
+    idx_path = paths.gameplan_dir(GID) / "CHAT-HANDOFF-INDEX.md"
+    r = M.consolidate_lessons(
+        paths, gameplan_id=GID, numbers=[1, 2],
+        text="Markdown is canonical and cascade reconciles it post-hoc.",
+        category="Process", today="2026-06-09",
+    )
+    assert r["ok"] and r["number"] == 4 and r["consolidated"] == [1, 2]
+    text = idx_path.read_text()
+    # sources stay in the log, marked with the trail
+    assert "**1.** Markdown is canonical; the index is disposable. (obsolete 2026-06-09: consolidated into #4)" in text
+    assert "consolidated into #4" in text.split("**2.**")[1].splitlines()[0]
+    # roll-up shrank: 3 originals -> 1 survivor (#3) + 1 synthesized (#4)
+    rolled, count = handoff.collect_lessons(text)
+    assert count == 2
+    assert "cascade reconciles it post-hoc" in rolled
+
+
+def test_consolidate_lessons_validates_before_writing(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    idx_path = paths.gameplan_dir(GID) / "CHAT-HANDOFF-INDEX.md"
+    before = idx_path.read_text()
+    # missing source
+    r = M.consolidate_lessons(paths, gameplan_id=GID, numbers=[1, 99], text="x")
+    assert r["ok"] is False and "#99 not found" in r["summary"]
+    # fewer than two distinct sources (duplicates collapse)
+    r = M.consolidate_lessons(paths, gameplan_id=GID, numbers=[1, 1], text="x")
+    assert r["ok"] is False
+    assert idx_path.read_text() == before  # nothing was written
+    # already-consolidated source is rejected on a second pass
+    M.consolidate_lessons(paths, gameplan_id=GID, numbers=[1, 2], text="merged")
+    r = M.consolidate_lessons(paths, gameplan_id=GID, numbers=[2, 3], text="again")
+    assert r["ok"] is False and "already obsolete/promoted" in r["summary"]
+
+
 def test_add_phase_appends_and_rows(temp_repo):
     paths, _ = _ctx(temp_repo)
     r = M.add_phase(paths, gameplan_id=GID, name="Polish", goal="make it shine")

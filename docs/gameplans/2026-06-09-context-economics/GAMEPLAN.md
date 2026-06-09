@@ -66,6 +66,12 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Decision**: ACTIVE_LESSONS_WARN = 12 ships as a module constant in status_bundle with a docstring; a config knob can follow if real projects need different lines.
 **Consequences**: v1 stays small; the constant is trivially overridable in code and documented where it lives.
 
+### D6 — Entity bumps cascade once, at gameplan close
+
+**Context**: Phases 0-2 all touch subsys.mutations/rituals/mcp-server; per-phase cascades would hit the known same-day report filename collision (discipline-seams lesson #5) and overwrite each other.
+**Decision**: Version bumps + cascade for the touched subsystems run once in the close-out, covering the whole gameplan's changes.
+**Consequences**: One authoritative cascade report per entity; the collision bug stays on the open-threads list rather than biting this gameplan.
+
 ## Open Items
 
 _(O1, O2, … — blockers and cross-phase questions.)_

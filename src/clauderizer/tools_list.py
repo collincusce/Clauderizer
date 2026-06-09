@@ -20,6 +20,7 @@ TOOL_NAMES = [
     "cz_resolve_finding",
     "cz_add_lesson",
     "cz_obsolete_lesson",
+    "cz_consolidate_lessons",
     "cz_add_correction",
     "cz_create_gameplan",
     "cz_add_phase",

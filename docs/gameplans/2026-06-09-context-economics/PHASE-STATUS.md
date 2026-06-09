@@ -7,7 +7,7 @@
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Lesson consolidation | 🟡 IN PROGRESS | 2026-06-09 | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Lesson consolidation | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
 
 | 1 | Lesson promotion & project LESSONS.md | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
 

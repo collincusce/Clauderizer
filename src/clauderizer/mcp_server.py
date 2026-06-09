@@ -283,6 +283,23 @@ def build_server():
         return mutations.add_lesson(paths, gameplan_id=gid, text=text, category=category)
 
     @mcp.tool()
+    def cz_consolidate_lessons(numbers: list[int], text: str, category: str = "Process",
+                               gameplan_id: str = "") -> dict:
+        """Synthesize several overlapping lessons into one (anti-bloat, D-009).
+
+        Adds <text> as a new lesson and marks each source lesson
+        "(obsolete: consolidated into #N)" — every future handoff carries one
+        line instead of many, and the log keeps the full audit trail. Use when
+        the accumulated lessons start repeating themselves.
+        """
+        paths, config = _ctx()
+        gid = gameplan_id or config.active_gameplan
+        if not gid:
+            return {"ok": False, "error": "no gameplan specified or active"}
+        return mutations.consolidate_lessons(paths, gameplan_id=gid, numbers=list(numbers),
+                                             text=text, category=category)
+
+    @mcp.tool()
     def cz_obsolete_lesson(number: int, reason: str = "", gameplan_id: str = "") -> dict:
         """Mark an accumulated lesson obsolete so future handoffs stop carrying it.
 
