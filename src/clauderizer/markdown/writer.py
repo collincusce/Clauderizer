@@ -10,6 +10,7 @@ operation was a no-op (the idempotency signal the tests assert on).
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -79,6 +80,22 @@ def append_to_section(path: Path, heading: str, entry: str, level: int = 2) -> b
 def upsert_marker_block(path: Path, name: str, content: str) -> bool:
     text = _read(path)
     new_text = sections.upsert_marker_block(text, name, content)
+    return _write_if_changed(path, new_text)
+
+
+def set_labeled_value(path: Path, label: str, value: str) -> bool:
+    """Update the value of the first ``**Label**: value`` line in a document.
+
+    The bold-label line is a recurring idiom in the tracked docs (baseline test
+    count, finding fields); this is the structured write for refreshing one.
+    Returns ``False`` when no such line exists (callers treat that as "this doc
+    doesn't track the value" rather than an error).
+    """
+    text = _read(path)
+    pattern = re.compile(rf"^(\s*\*\*{re.escape(label)}\*\*\s*:\s*).*$", re.M)
+    if not pattern.search(text):
+        return False
+    new_text = pattern.sub(lambda m: m.group(1) + value, text, count=1)
     return _write_if_changed(path, new_text)
 
 

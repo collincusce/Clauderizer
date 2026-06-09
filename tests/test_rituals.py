@@ -188,3 +188,66 @@ def test_preflight_skips_when_no_test_command(sample_repo):
     runner = _fake_runner({"git status --porcelain": (0, "")})
     result = preflight.run(paths, config, profile, runner=runner)
     assert any(c.name == "tests" and c.status == "skip" for c in result.checks)
+
+
+def _add_baseline_line(paths, gid, count):
+    idx = paths.gameplan_dir(gid) / "CHAT-HANDOFF-INDEX.md"
+    idx.write_text(
+        idx.read_text(encoding="utf-8")
+        + f"\n## Pre-Flight Verification\n\n**Current baseline test count**: {count}\n",
+        encoding="utf-8",
+    )
+    return idx
+
+
+def test_preflight_writes_baseline_back(temp_repo):
+    paths, config = _paths_and_config(temp_repo)
+    idx = _add_baseline_line(paths, "2026-05-01-bootstrap", 5)
+    profile = Profile(name="python", commands={"test": "pytest -q"},
+                      baseline_test_regex=r"(\d+) passed")
+    runner = _fake_runner({"git status --porcelain": (0, ""),
+                           "pytest": (0, "7 passed in 0.1s")})
+    result = preflight.run(paths, config, profile, runner=runner)
+    assert result.baseline_tests == "7"
+    assert "**Current baseline test count**: 7" in idx.read_text(encoding="utf-8")
+    tests_check = next(c for c in result.checks if c.name == "tests")
+    assert "baseline updated 5 -> 7" in tests_check.detail
+    # idempotent: a second run finds the baseline already current
+    result2 = preflight.run(paths, config, profile, runner=runner)
+    tests_check2 = next(c for c in result2.checks if c.name == "tests")
+    assert "baseline updated" not in tests_check2.detail
+
+
+def test_preflight_no_write_back_on_failing_tests(temp_repo):
+    paths, config = _paths_and_config(temp_repo)
+    idx = _add_baseline_line(paths, "2026-05-01-bootstrap", 5)
+    profile = Profile(name="python", commands={"test": "pytest -q"},
+                      baseline_test_regex=r"(\d+) passed")
+    runner = _fake_runner({"git status --porcelain": (0, ""),
+                           "pytest": (1, "3 passed, 2 failed")})
+    result = preflight.run(paths, config, profile, runner=runner)
+    assert result.passed is False
+    # a red run never rewrites the tracked baseline
+    assert "**Current baseline test count**: 5" in idx.read_text(encoding="utf-8")
+
+
+def test_preflight_write_back_tolerates_missing_baseline_line(temp_repo):
+    paths, config = _paths_and_config(temp_repo)  # fixture index has no baseline line
+    profile = Profile(name="python", commands={"test": "pytest -q"},
+                      baseline_test_regex=r"(\d+) passed")
+    runner = _fake_runner({"git status --porcelain": (0, ""),
+                           "pytest": (0, "7 passed")})
+    result = preflight.run(paths, config, profile, runner=runner)
+    assert result.passed is True  # absence of the line is not an error
+
+
+def test_status_bundle_reports_completed_gameplan(temp_repo):
+    from clauderizer import mutations as M
+
+    paths, config = _paths_and_config(temp_repo)
+    M.transition_phase(paths, gameplan_id="2026-05-01-bootstrap", phase_n="1",
+                       to_status="complete", today="2026-06-09")
+    bundle = status_bundle.compute(paths, config)
+    assert "all 2 phase(s) COMPLETE" in bundle["summary"]
+    assert "no in-progress or ready phase" not in bundle["summary"]
+    assert "Close out the gameplan" in bundle["next_action"]

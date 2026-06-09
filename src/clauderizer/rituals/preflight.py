@@ -20,9 +20,34 @@ from pathlib import Path
 from typing import Callable
 
 from ..config import Config
+from ..markdown import writer
 from ..paths import RepoPaths
 from ..profiles.detect import Profile
 from . import status_bundle
+
+_BASELINE_LABEL = "Current baseline test count"
+
+
+def _write_back_baseline(paths: RepoPaths, config: Config, count: str) -> str | None:
+    """Refresh the tracked baseline with the count preflight just measured.
+
+    Anti-pattern #7 (stale references) applied to the system itself: the index's
+    baseline line was written once at scaffold time and rotted while preflight
+    measured the real number on every run and discarded it. Preflight is the
+    writer now — returns the old value when it changed something, else ``None``
+    (no active gameplan, no baseline line, or already current).
+    """
+    gid = config.active_gameplan
+    if not gid or not count:
+        return None
+    idx = paths.gameplan_dir(gid) / "CHAT-HANDOFF-INDEX.md"
+    if not idx.exists():
+        return None
+    m = re.search(rf"\*\*{_BASELINE_LABEL}\*\*\s*:\s*(\d+)", idx.read_text(encoding="utf-8"))
+    if m is None or m.group(1) == count:
+        return None
+    writer.set_labeled_value(idx, _BASELINE_LABEL, count)
+    return m.group(1)
 
 # (exit_code, combined_output)
 Runner = Callable[[str, Path], tuple[int, str]]
@@ -128,7 +153,12 @@ def run(
                     count = m.group(1)
                     result.baseline_tests = count
             if code == 0:
-                add("tests", "pass", f"`{cmd}` ok" + (f" ({count} tests)" if count else ""))
+                detail = f"`{cmd}` ok" + (f" ({count} tests)" if count else "")
+                # Green run with a measured count: keep the tracked baseline fresh.
+                old = _write_back_baseline(paths, config, count) if count else None
+                if old is not None:
+                    detail += f"; baseline updated {old} -> {count}"
+                add("tests", "pass", detail)
             else:
                 add("tests", "fail", f"`{cmd}` exit {code}\n{out.strip()[:400]}")
 

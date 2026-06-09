@@ -34,11 +34,22 @@ class Profile:
         return self.commands.get(kind, "").strip()
 
     def to_lock_toml(self) -> str:
-        lines = [f'profile = "{self.name}"', "", "[commands]"]
+        lines = [f"profile = {_toml_str(self.name)}", "", "[commands]"]
         for kind in ("test", "build", "lint", "typecheck"):
-            lines.append(f'{kind} = "{self.command(kind)}"')
-        lines += ["", "[preflight]", f'baseline_test_regex = "{self.baseline_test_regex}"', ""]
+            lines.append(f"{kind} = {_toml_str(self.command(kind))}")
+        lines += ["", "[preflight]",
+                  f"baseline_test_regex = {_toml_str(self.baseline_test_regex)}", ""]
         return "\n".join(lines)
+
+
+def _toml_str(value: str) -> str:
+    """Emit a value as a valid TOML basic string.
+
+    Regexes put backslashes in lock values (``(\\d+) passed``); emitting them
+    unescaped made the whole lock file unparseable — and silently ignored,
+    since load_for_repo falls back to packaged defaults on a parse error.
+    """
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
 def load_all() -> dict[str, Profile]:

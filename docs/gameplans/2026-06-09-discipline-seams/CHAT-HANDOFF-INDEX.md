@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 0
+**Current baseline test count**: 99
 
 ## Ending Protocol
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 | 1 | Marker-protected handoff regeneration | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
 
-| 2 | Fresh baseline & completed-gameplan status | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Fresh baseline & completed-gameplan status | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
 
 ## Per-Phase Completion Summaries
 
@@ -51,3 +51,11 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **1.** Auto-numbering must not count IDs that only appear in scaffold placeholder prose — strip placeholders before scanning, or use ID patterns anchored to heading lines.
 
 **2.** A context fetch should return the merged on-disk view, not just freshly generated content — cz_next_phase_context now includes agent enrichment living outside the marker block.
+
+**5.** Cascade report filenames are date+entity, so two same-day cascades of one entity silently overwrite the earlier report — report_filename needs a time or sequence component (candidate next fix).
+
+### Category: Integration
+
+**3.** Every file the engine writes must round-trip through its own parser in tests; silent fallback on config parse errors is a footgun — surface it (doctor now checks the lock parses).
+
+**4.** Host profile commands can double flags the project config already supplies (pytest -q + addopts -q = -qq kills the count summary) — verify the baseline regex matches real output when wiring a repo.

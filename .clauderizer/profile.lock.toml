@@ -1,10 +1,12 @@
 profile = "python"
 
 [commands]
-test = "pytest -q"
+# pyproject addopts already pass -q; doubling it (-qq) suppresses the
+# "N passed" summary line that baseline_test_regex needs to parse.
+test = "pytest"
 build = ""
 lint = "ruff check ."
 typecheck = "mypy ."
 
 [preflight]
-baseline_test_regex = "(\d+) passed"
+baseline_test_regex = "(\\d+) passed"

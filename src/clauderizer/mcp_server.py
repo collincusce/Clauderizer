@@ -116,7 +116,12 @@ def build_server():
 
     @mcp.tool()
     def cz_preflight() -> dict:
-        """Run the pre-flight checks (git state + host test/build commands) for real."""
+        """Run the pre-flight checks (git state + host test/build commands) for real.
+
+        A green test run with a measured count also refreshes the active
+        gameplan's tracked baseline ("Current baseline test count"), so the
+        status digest can't go stale on it.
+        """
         paths, config = _ctx()
         profile = detect.load_for_repo(config.host_profile, paths.profile_lock)
         return preflight.run(paths, config, profile).to_dict()

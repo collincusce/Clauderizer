@@ -121,6 +121,13 @@ def compute(paths: RepoPaths, config: Config) -> dict:
             f"Gameplan {gid}: next ready phase {nxt['number']}/{total} — \"{nxt['name']}\"."
         )
         bundle["next_action"] = "cz_next_phase_context, then cz_preflight."
+    elif total and all(p["status"] == "complete" for p in bundle["phases"]):
+        # A finished gameplan is a success state, not a confusing dead end.
+        bundle["summary"] = f"Gameplan {gid}: all {total} phase(s) COMPLETE. 🎉"
+        bundle["next_action"] = (
+            "Close out the gameplan (post-mortem, final cascade), or "
+            "cz_create_gameplan to start the next initiative."
+        )
     else:
         bundle["summary"] = f"Gameplan {gid}: no in-progress or ready phase found."
         bundle["next_action"] = "Review the gameplan or cz_add_phase."

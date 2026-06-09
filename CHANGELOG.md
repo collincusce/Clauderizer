@@ -2,6 +2,49 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.4.0] — 2026-06-09
+
+Closes the **discipline seams** from the 2026-06-09 external review: the places
+where the workflow still depended on agents hand-editing tracked docs because
+the blessed write was missing, destructive, or never ran.
+
+### Added
+- **`cz_resolve_cascade`** — record per-dependent verdicts + the Updates
+  applied/deferred sections on a cascade report. Previously, clearing the
+  `cascade_hygiene` preflight check *required* a forbidden hand-edit — the rules
+  banned the only way to make progress. Defaults to the latest pending report;
+  partial resolution keeps it pending (`status_bundle.pending_cascades` is now
+  the public, shared predicate).
+- **`cz_obsolete_lesson`** — mark an accumulated lesson `(obsolete <date>: <reason>)`
+  through a tool. The line stays in the log (append-only memory); handoff roll-ups
+  stop carrying it, so cumulative handoffs can shrink without a hand-edit.
+- **Baseline write-back** — a green `cz_preflight` run that measures a test count
+  now refreshes the active gameplan's "Current baseline test count" line
+  (anti-pattern #7, stale references, applied to the system itself: this repo's
+  own hook said "0 tests" while 84 passed).
+- **Completed-gameplan status** — a gameplan whose phases are all complete now
+  reports "all N phase(s) COMPLETE" with close-out guidance instead of the
+  confusing "no in-progress or ready phase found".
+- **`doctor`: lock-file check** — flags a `profile.lock.toml` that doesn't parse
+  (whose overrides were being silently ignored).
+
+### Changed
+- **Marker-protected handoffs (D-008)** — `cz_write_handoff` owns only a
+  `<!-- clauderizer:handoff -->` marker block; regeneration replaces the block and
+  preserves everything outside it byte-for-byte. Fresh handoffs add an agent-owned
+  "Phase Notes" scaffold; legacy generated skeletons are migrated wholesale;
+  unrecognized files are preserved verbatim below the block. `cz_next_phase_context`
+  returns the merged view, so a context fetch includes on-disk enrichment.
+- Skills no longer instruct hand-edits anywhere: cascade/do-phase route through
+  `cz_resolve_cascade`, record routes risks through `cz_add_finding`.
+
+### Fixed
+- **`Profile.to_lock_toml` emitted invalid TOML** for profiles whose baseline
+  regex contains backslashes (e.g. python's `(\d+) passed`) — and since
+  `load_for_repo` falls back silently on parse errors, every python-profile lock
+  written by `init` was being ignored in its entirety. Lock values are now
+  TOML-escaped, with a round-trip regression test across all packaged profiles.
+
 ## [0.3.0] — 2026-06-05
 
 Fixes the **state-mutation surface** — the gaps a second dogfooding session found

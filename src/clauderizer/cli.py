@@ -106,6 +106,9 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     hook_ok, hook_detail = _command_runnable(_hook_command(settings))
     check("SessionStart hook command runnable", hook_ok, hook_detail)
     check("index cache present", paths.index_file.exists())
+    # A lock that doesn't parse is silently ignored by load_for_repo — surface it.
+    lock_err = _lock_parse_error(paths.profile_lock)
+    check("profile.lock.toml parses", lock_err is None, lock_err or "")
     # procedure version drift (MAJOR)
     drift = _procedure_drift(paths.procedure_file)
     check("procedure version compatible", drift is None, drift or "")
@@ -201,6 +204,22 @@ def _command_runnable(argv: list[str] | None) -> tuple[bool, str]:
     if p.is_file() and os.access(p, os.X_OK):
         return True, str(p)
     return False, f"'{exe}' not found on PATH or not executable"
+
+
+def _lock_parse_error(lock_path: Path) -> str | None:
+    """Return a description of why the profile lock can't parse, else None."""
+    if not lock_path.exists():
+        return None  # no lock is fine — packaged defaults apply
+    import tomllib
+
+    try:
+        with lock_path.open("rb") as fh:
+            tomllib.load(fh)
+    except tomllib.TOMLDecodeError as e:
+        return f"invalid TOML ({e}) — overrides are being ignored; fix or delete it"
+    except OSError as e:
+        return str(e)
+    return None
 
 
 def _procedure_drift(procedure_file: Path) -> str | None:
