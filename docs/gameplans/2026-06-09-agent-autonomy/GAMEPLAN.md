@@ -55,6 +55,10 @@ Captured 2026-06-09 (second session, all values observed live):
 - **Windows-host ergonomics**: PS 5.1 mangles nested quotes and injects a BOM in
   native→native pipes — drive everything via script files + JSON args files (the
   `/tmp/mcp_probe.py` stdio-probe pattern from the addendum)
+- **uv/uvx**: uvx 0.11.19 installed in WSL via the official installer
+  (`~/.local/bin`, on login-shell PATH; non-login invocations need the absolute
+  path). `uvx --from clauderizer clauderize --version` → **0.6.0 from PyPI** —
+  Phase 4's by-name half pre-verified, uv cache warmed
 
 ## Amendments
 
