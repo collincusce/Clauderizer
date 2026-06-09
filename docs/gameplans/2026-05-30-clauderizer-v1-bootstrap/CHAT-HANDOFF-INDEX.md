@@ -42,7 +42,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-**3.** Markdown round-trip idempotency (apply-twice==apply-once) is the load-bearing test for every mutation.
+**3.** Markdown round-trip idempotency (apply-twice==apply-once) is the load-bearing test for every mutation. (promoted 2026-06-09: L-01)
 
 **4.** Make init idempotent via marker blocks, key-scoped JSON merges, and exists-checks — never clobber user content.
 
@@ -58,7 +58,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Observability
 
-**6.** Health checks must verify capability, not just presence: `doctor` now probes that the MCP/hook command is actually executable — a green check on a non-launchable setup is worse than no check.
+**6.** Health checks must verify capability, not just presence: `doctor` now probes that the MCP/hook command is actually executable — a green check on a non-launchable setup is worse than no check. (promoted 2026-06-09: L-02)
 
 **11.** Hook failures must surface where the agent can see them: the SessionStart hook now prints errors to stdout (session context), never silently to stderr.
 
@@ -72,4 +72,4 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Design
 
-**10.** Name tools by their effect: a 'context fetch' must not mutate the tree. cz_next_phase_context now assembles the handoff in-memory (write=False) and only cz_write_handoff persists.
+**10.** Name tools by their effect: a 'context fetch' must not mutate the tree. cz_next_phase_context now assembles the handoff in-memory (write=False) and only cz_write_handoff persists. (promoted 2026-06-09: L-03)

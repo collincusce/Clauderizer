@@ -142,6 +142,43 @@ def test_next_phase_context_merged_view_includes_enrichment(temp_repo):
     assert out.read_text(encoding="utf-8").endswith("Agent breadcrumb.\n")
 
 
+def test_handoff_carries_promoted_lesson_exactly_once(temp_repo):
+    from clauderizer import mutations as M
+
+    paths, config = _paths_and_config(temp_repo)
+    gid = "2026-05-01-bootstrap"
+    M.promote_lesson(paths, gameplan_id=gid, number=3, today="2026-06-09")
+    result = handoff.assemble(paths, config, gid, "2")
+    assert result["project_lessons"] == 1
+    assert result["lessons_rolled_up"] == 2  # promoted lesson left the gameplan roll-up
+    text = Path(result["path"]).read_text(encoding="utf-8")
+    assert "## Project Lessons (distilled — survive across gameplans)" in text
+    assert text.count("Keep fixtures small and hand-verifiable.") == 1
+    assert "**L-01.**" in text
+
+
+def test_promoted_lessons_survive_into_a_new_gameplan(temp_repo):
+    from clauderizer import mutations as M
+
+    paths, config = _paths_and_config(temp_repo)
+    M.promote_lesson(paths, gameplan_id="2026-05-01-bootstrap", number=3,
+                     today="2026-06-09")
+    M.create_gameplan(paths, "Next Initiative", today="2026-07-01")
+    result = handoff.assemble(paths, config, "2026-07-01-next-initiative", "0")
+    text = Path(result["path"]).read_text(encoding="utf-8")
+    # the new gameplan has no lessons of its own, but inherits the distilled list
+    assert result["lessons_rolled_up"] == 0
+    assert result["project_lessons"] == 1
+    assert "Keep fixtures small and hand-verifiable." in text
+
+
+def test_handoff_omits_project_section_when_no_lessons_doc(temp_repo):
+    paths, config = _paths_and_config(temp_repo)
+    result = handoff.assemble(paths, config, "2026-05-01-bootstrap", "2")
+    assert result["project_lessons"] == 0
+    assert "Project Lessons" not in result["handoff_md"]
+
+
 def _fake_runner(responses):
     def run(cmd, cwd):
         for key, val in responses.items():

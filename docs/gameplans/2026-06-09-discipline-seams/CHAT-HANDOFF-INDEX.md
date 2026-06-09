@@ -56,6 +56,6 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Integration
 
-**3.** Every file the engine writes must round-trip through its own parser in tests; silent fallback on config parse errors is a footgun — surface it (doctor now checks the lock parses).
+**3.** Every file the engine writes must round-trip through its own parser in tests; silent fallback on config parse errors is a footgun — surface it (doctor now checks the lock parses). (promoted 2026-06-09: L-04)
 
 **4.** Host profile commands can double flags the project config already supplies (pytest -q + addopts -q = -qq kills the count summary) — verify the baseline regex matches real output when wiring a repo.

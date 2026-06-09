@@ -300,13 +300,14 @@ def build_server():
                                              text=text, category=category)
 
     @mcp.tool()
-    def cz_obsolete_lesson(number: int, reason: str = "", gameplan_id: str = "") -> dict:
-        """Mark an accumulated lesson obsolete so future handoffs stop carrying it.
+    def cz_obsolete_lesson(number: str, reason: str = "", gameplan_id: str = "") -> dict:
+        """Mark a lesson obsolete so future handoffs stop carrying it.
 
-        Appends the documented "(obsolete <date>: <reason>)" marker to lesson
-        <number> in CHAT-HANDOFF-INDEX — the line stays in the log (append-only
-        memory), but the handoff roll-up prunes it. Idempotent. This is the
-        blessed write for pruning; never hand-edit the lessons list.
+        Appends the documented "(obsolete <date>: <reason>)" marker — the line
+        stays in the log (append-only memory), but the handoff roll-up prunes
+        it. Idempotent. number is a gameplan lesson ("4") or a project lesson
+        id ("L-04", curating docs/LESSONS.md). This is the blessed write for
+        pruning; never hand-edit the lessons list.
         """
         paths, config = _ctx()
         gid = gameplan_id or config.active_gameplan
@@ -314,6 +315,25 @@ def build_server():
             return {"ok": False, "error": "no gameplan specified or active"}
         return mutations.obsolete_lesson(paths, gameplan_id=gid, number=number,
                                          reason=reason or None)
+
+    @mcp.tool()
+    def cz_promote_lesson(number: str, text: str = "", category: str = "",
+                          gameplan_id: str = "") -> dict:
+        """Promote a gameplan lesson into the project-level docs/LESSONS.md.
+
+        For lessons that should outlive this gameplan: the lesson gets an L-NN
+        entry with provenance in a compact project doc that every future
+        handoff carries (across gameplans). The source line is marked
+        "(promoted <date>: L-NN)" and stops rolling up individually. Optional
+        text rewrites the wording (promotion is a chance to distill); category
+        defaults to the source lesson's. Typical moment: gameplan close-out.
+        """
+        paths, config = _ctx()
+        gid = gameplan_id or config.active_gameplan
+        if not gid:
+            return {"ok": False, "error": "no gameplan specified or active"}
+        return mutations.promote_lesson(paths, gameplan_id=gid, number=number,
+                                        text=text or None, category=category or None)
 
     @mcp.tool()
     def cz_add_correction(phase: str, gameplan_said: str, actually: str, why: str,

@@ -18,6 +18,7 @@ from ..markdown import sections
 from ..paths import RepoPaths
 
 _LESSON_LINE = re.compile(r"^\s*\*\*\d+\.\*\*")
+_PROJECT_LESSON_LINE = re.compile(r"^\s*\*\*L-\d+\.\*\*")
 
 
 def _gameplan_text(paths: RepoPaths, gid: str, name: str) -> str:
@@ -29,18 +30,30 @@ def collect_lessons(index_text: str) -> tuple[str, int]:
     """Return ``(rolled_up_markdown, count)`` of still-relevant lessons.
 
     Preserves the category sub-headings; drops any lesson line marked
-    ``(obsolete …)`` (the marker ``cz_obsolete_lesson`` writes, with or without
-    a date/reason) or wrapped in ``~~strikethrough~~``.
+    ``(obsolete …)`` (written by ``cz_obsolete_lesson``), ``(promoted …)``
+    (written by ``cz_promote_lesson`` — the project section carries it from
+    then on), or wrapped in ``~~strikethrough~~``.
     """
-    sec = sections.get_section(index_text, "Accumulated Lessons")
-    if not sec:
+    return _filter_lessons(sections.get_section(index_text, "Accumulated Lessons"),
+                           _LESSON_LINE)
+
+
+def collect_project_lessons(lessons_text: str) -> tuple[str, int]:
+    """Roll up the active ``L-NN`` entries of ``docs/LESSONS.md``."""
+    return _filter_lessons(sections.get_section(lessons_text, "Lessons"),
+                           _PROJECT_LESSON_LINE)
+
+
+def _filter_lessons(sec: str | None, line_re: re.Pattern) -> tuple[str, int]:
+    if not sec or not sec.strip():
         return "_(no lessons recorded yet)_", 0
     out_lines: list[str] = []
     count = 0
     for line in sec.splitlines():
         stripped = line.strip()
-        if _LESSON_LINE.match(stripped):
-            if "(obsolete" in stripped.lower() or stripped.startswith("~~"):
+        if line_re.match(stripped):
+            if ("(obsolete" in stripped.lower() or "(promoted" in stripped.lower()
+                    or stripped.startswith("~~")):
                 continue
             count += 1
             out_lines.append(line)
@@ -98,6 +111,14 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
     lessons_md, lessons_count = collect_lessons(index_text)
     phase_body = _phase_section(gameplan_text, phase_n)
 
+    # Distilled project lessons (docs/LESSONS.md) ride along in every handoff,
+    # across gameplans — that's what promotion buys (D-009).
+    project_lessons_md, project_count = "", 0
+    lessons_doc = paths.doc("LESSONS")
+    if lessons_doc.exists():
+        project_lessons_md, project_count = collect_project_lessons(
+            lessons_doc.read_text(encoding="utf-8"))
+
     parts = [
         f"# Phase {phase_n} Handoff",
         "",
@@ -123,6 +144,15 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
         "",
         lessons_md,
         "",
+    ]
+    if project_count:
+        parts += [
+            "## Project Lessons (distilled — survive across gameplans)",
+            "",
+            project_lessons_md,
+            "",
+        ]
+    parts += [
         "## Ending Protocol",
         "",
         "1. Update PHASE-STATUS.md (status + outputs + corrections).",
@@ -152,5 +182,6 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
         "mode": mode,
         "handoff_md": text,
         "lessons_rolled_up": lessons_count,
+        "project_lessons": project_count,
         "summary": summary,
     }

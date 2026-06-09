@@ -230,6 +230,46 @@ def test_consolidate_lessons_validates_before_writing(temp_repo):
     assert r["ok"] is False and "already obsolete/promoted" in r["summary"]
 
 
+def test_promote_lesson_round_trip(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    r = M.promote_lesson(paths, gameplan_id=GID, number=3, today="2026-06-09")
+    assert r["ok"] and r["id"] == "L-01"
+    assert r["category"] == "Testing"  # derived from the source category block
+    ldoc = paths.doc("LESSONS").read_text()
+    assert "# Distilled Lessons" in ldoc  # created on demand from the template
+    assert "**L-01.** Keep fixtures small and hand-verifiable. *(from 2026-05-01-bootstrap)*" in ldoc
+    assert "### Category: Testing" in ldoc
+    # source line marked, not deleted
+    idx = (paths.gameplan_dir(GID) / "CHAT-HANDOFF-INDEX.md").read_text()
+    assert "**3.** Keep fixtures small and hand-verifiable. (promoted 2026-06-09: L-01)" in idx
+    # re-promoting or promoting a marked lesson is rejected
+    assert M.promote_lesson(paths, gameplan_id=GID, number=3)["ok"] is False
+    assert M.promote_lesson(paths, gameplan_id=GID, number=42)["ok"] is False
+
+
+def test_promote_lesson_with_distilled_text_and_category(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    r = M.promote_lesson(paths, gameplan_id=GID, number=1,
+                         text="Markdown is the source of truth; caches are disposable.",
+                         category="Architecture", today="2026-06-09")
+    assert r["id"] == "L-01" and r["category"] == "Architecture"
+    ldoc = paths.doc("LESSONS").read_text()
+    assert "**L-01.** Markdown is the source of truth; caches are disposable." in ldoc
+
+
+def test_obsolete_project_lesson_by_l_id(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    M.promote_lesson(paths, gameplan_id=GID, number=3, today="2026-06-09")
+    r = M.obsolete_lesson(paths, gameplan_id=GID, number="L-01",
+                          reason="superseded by testing guide", today="2026-06-10")
+    assert r["ok"] and r["number"] == "L-01"
+    ldoc = paths.doc("LESSONS").read_text()
+    assert "(obsolete 2026-06-10: superseded by testing guide)" in ldoc
+    assert "Keep fixtures small" in ldoc  # never deleted
+    assert M.obsolete_lesson(paths, gameplan_id=GID, number="L-01")["already_obsolete"] is True
+    assert M.obsolete_lesson(paths, gameplan_id=GID, number="L-09")["ok"] is False
+
+
 def test_add_phase_appends_and_rows(temp_repo):
     paths, _ = _ctx(temp_repo)
     r = M.add_phase(paths, gameplan_id=GID, name="Polish", goal="make it shine")

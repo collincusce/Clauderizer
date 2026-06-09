@@ -274,32 +274,94 @@ def obsolete_lesson(
     reason: str | None = None,
     today: str | None = None,
 ) -> dict:
-    """Mark lesson ``number`` obsolete in Accumulated Lessons — never delete it.
+    """Mark lesson ``number`` obsolete — never delete it.
 
     The index header documents the convention ("mark with '(obsolete)' rather
     than deleting") and the handoff roll-up prunes marked lessons; this is the
     blessed write for that marker, so pruning no longer means a forbidden
     hand-edit of a tracked log. Idempotent: re-marking is a no-op.
+
+    ``number`` may be a gameplan lesson number (``4``) or a project lesson id
+    (``L-04``), curating ``docs/LESSONS.md`` with the same rules.
     """
-    path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
-    full = writer.full_text(path)
-    body = sections.get_section(full, "Accumulated Lessons")
+    n = str(number).strip()
+    if n.upper().startswith("L-"):
+        n = n.upper()
+        path = paths.doc("LESSONS")
+        section, label = "Lessons", f"project lesson {n}"
+    else:
+        path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+        section, label = "Accumulated Lessons", f"lesson #{n}"
+    body = sections.get_section(writer.full_text(path), section)
     if body is None:
-        return {"ok": False, "summary": "no Accumulated Lessons section found"}
-    prefix = f"**{number}.**"
+        return {"ok": False, "summary": f"no {section} section found"}
+    prefix = f"**{n}.**"
     lines = body.splitlines()
     idx = next((i for i, ln in enumerate(lines) if ln.strip().startswith(prefix)), None)
     if idx is None:
-        return {"ok": False, "summary": f"lesson #{number} not found"}
+        return {"ok": False, "summary": f"{label} not found"}
     if "(obsolete" in lines[idx].lower():
-        return {"ok": True, "number": int(number), "already_obsolete": True,
-                "files_changed": [], "summary": f"lesson #{number} already obsolete"}
+        return {"ok": True, "number": n, "already_obsolete": True,
+                "files_changed": [], "summary": f"{label} already obsolete"}
     marker = f"(obsolete {_today(today)}" + (f": {reason.strip()})" if reason else ")")
     lines[idx] = f"{lines[idx].rstrip()} {marker}"
-    writer.upsert_section(path, "Accumulated Lessons", "\n".join(lines))
-    return {"ok": True, "number": int(number), "already_obsolete": False,
+    writer.upsert_section(path, section, "\n".join(lines))
+    return {"ok": True, "number": n, "already_obsolete": False,
             "files_changed": [str(path)],
-            "summary": f"lesson #{number} marked obsolete"}
+            "summary": f"{label} marked obsolete"}
+
+
+def promote_lesson(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    number: int | str,
+    text: str | None = None,
+    category: str | None = None,
+    today: str | None = None,
+) -> dict:
+    """Promote a gameplan lesson into the project-level ``docs/LESSONS.md``.
+
+    The enduring half of D-009: lessons that should outlive their gameplan get
+    an ``L-NN`` entry (with provenance) in a compact project doc that every
+    future handoff carries; the source line is marked ``(promoted <date>: L-NN)``
+    and stops rolling up individually, so nothing is carried twice. ``text``
+    overrides the wording (promotion is a chance to distill); ``category``
+    defaults to the source lesson's category block.
+    """
+    n = str(number).strip()
+    idx_path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+    body = sections.get_section(writer.full_text(idx_path), "Accumulated Lessons")
+    if body is None:
+        return {"ok": False, "summary": "no Accumulated Lessons section found"}
+    prefix = f"**{n}.**"
+    lines = body.splitlines()
+    pos = next((i for i, ln in enumerate(lines) if ln.strip().startswith(prefix)), None)
+    if pos is None:
+        return {"ok": False, "summary": f"lesson #{n} not found"}
+    line = lines[pos].strip()
+    if "(obsolete" in line.lower() or "(promoted" in line.lower():
+        return {"ok": False, "summary": f"lesson #{n} is already obsolete/promoted"}
+    if category is None:
+        category = next(
+            (lines[j].strip().removeprefix("### Category:").strip()
+             for j in range(pos, -1, -1) if lines[j].strip().startswith("### Category:")),
+            "Process",
+        )
+    lesson_text = (text or line[len(prefix):]).strip()
+
+    ldoc = paths.doc("LESSONS")
+    _ensure_doc(ldoc, "LESSONS")
+    new_id = next_numbered_id(writer.full_text(ldoc), "L", sep="-", width=2)
+    entry = f"**{new_id}.** {lesson_text} *(from {gameplan_id})*"
+    lessons_body = sections.get_section(writer.full_text(ldoc), "Lessons") or ""
+    writer.upsert_section(ldoc, "Lessons", _insert_under_category(lessons_body, category, entry))
+
+    lines[pos] = f"{lines[pos].rstrip()} (promoted {_today(today)}: {new_id})"
+    writer.upsert_section(idx_path, "Accumulated Lessons", "\n".join(lines))
+    return {"ok": True, "id": new_id, "number": n, "category": category,
+            "files_changed": [str(ldoc), str(idx_path)],
+            "summary": f"lesson #{n} promoted to {new_id} ({category})"}
 
 
 def consolidate_lessons(
