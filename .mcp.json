@@ -4,7 +4,7 @@
       "command": "uvx",
       "args": [
         "--from",
-        "clauderizer",
+        "clauderizer[mcp]",
         "clauderizer-mcp"
       ]
     }

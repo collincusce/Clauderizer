@@ -46,4 +46,6 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-_(none yet)_
+### Category: Integration
+
+**1.** The blessed-write surface has a single point of failure: when the MCP server cannot connect (H-01), no CLI parity exists for tracked writes — the only honest fallback is hand-driving the server over stdio JSON-RPC. Disaster-recovery path for cz_* writes (CLI subcommands or a doctor-repairable connection) is missing.
