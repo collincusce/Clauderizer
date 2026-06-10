@@ -8,7 +8,7 @@
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Executor matrix: prove the wiring shape | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | hosts.py emits the immune shape; restart-validate H-08 | 🟡 IN PROGRESS | 2026-06-10 | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | hosts.py emits the immune shape; restart-validate H-08 | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Doctor traverses the consumer leg (D-010) | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Release preflight ritual (O3) and 1.0 readiness gates (O4) | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Memory guardrails as config: O1 ACTIVE_LESSONS_WARN, O2 consolidation trigger | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-4-HANDOFF.md |
@@ -25,7 +25,8 @@ hook_cwd_dependence: H-09 (open, medium): clauderizer-hook resolves its repo fro
 ### Phase 1 Outputs
 
 ```
-wiring_regenerated: Registered SessionStart command (verbatim, settings.json): wsl.exe -d ubuntu //bin/sh //home/ccusce/Clauderizer/.clauderizer/hook.sh — shape C live. Wrapper anchored (cd '/home/ccusce/Clauderizer' with repo-unreachable breadcrumb). hosts.py: hook_wrapper_invocation emits //-paths for windows-wsl only (native unchanged); render_hook_wrapper(root=...) optional param; REPO_BREADCRUMB_PREFIX constant; doctor freshness = full content compare vs fresh render, with a template-predates nudge (exit 3) distinct from engine-moved. Suite 215 → 220 (5 new: anchor render sh+cmd, foreign-cwd execution, unreachable-repo breadcrumb, doctor old-template nudge). init: 2 files changed then idempotent (0 on re-run). Doctor 16/16 exit 0 through the new wiring. Matrix vs production wiring from hostile cwd: C = PASS/PASS/PASS (gitbash/cmd/ps); A also all-pass (fallback confirmed); CUR fails only gitbash (control). REMAINING EXIT CRITERION: real harness cold start shows the digest → resolve H-08 quoting the transcript hook_success attachment, then transition phase 1 complete. H-09 resolved this session (anchor live with evidence).
+wiring_regenerated: Registered SessionStart command (verbatim, settings.json): wsl.exe -d ubuntu //bin/sh //home/ccusce/Clauderizer/.clauderizer/hook.sh — shape C live. Wrapper anchored (cd '/home/ccusce/Clauderizer' with repo-unreachable breadcrumb). hosts.py: hook_wrapper_invocation emits //-paths for windows-wsl only (native unchanged); render_hook_wrapper(root=...) optional param; REPO_BREADCRUMB_PREFIX constant; doctor freshness = full content compare vs fresh render, with a template-predates nudge (exit 3) distinct from engine-moved. Suite 215 → 220 (5 new: anchor render sh+cmd, foreign-cwd execution, unreachable-repo breadcrumb, doctor old-template nudge). init: 2 files changed then idempotent (0 on re-run). Doctor 16/16 exit 0 through the new wiring. Matrix vs production wiring from hostile cwd: C = PASS/PASS/PASS (gitbash/cmd/ps); A also all-pass (fallback confirmed); CUR fails only gitbash (control). H-09 resolved (anchor live with evidence). H-08 resolved 2026-06-10 via restart validation — see h08_restart_validation.
+h08_restart_validation: Real harness cold start 2026-06-10: transcript e4573a6d-1f63-4ab9-b563-5477011b4255.jsonl, hook_success attachment for SessionStart:startup, ts=2026-06-10T16:53:26.319Z — command = registered shape C verbatim (wsl.exe -d ubuntu //bin/sh //home/ccusce/Clauderizer/.clauderizer/hook.sh), exitCode=0, durationMs=388, stderr empty, stdout = full [Clauderizer] digest, which appeared in session context and drove this close-out. Contrast: prior shape's exit-127 hook_non_blocking_error attachments in transcripts 228fb4d0 and 6b9a162f (same harness leg). G1 of docs/RELEASING.md ("H-08 resolved with restart evidence") is satisfied; H-08 and H-09 both carry dated resolutions in docs/HARDENING.md.
 ```
 
 ### Phase 3 Outputs
@@ -43,4 +44,10 @@ memory_guardrails_config: [memory] config table shipped (O1+O2): active_lessons_
 
 ## Corrections Log
 
-_(Every divergence from the gameplan, captured in real time, as C-NN entries.)_
+### C-01 — Phase 1
+
+**Phase**: 1
+**What gameplan said**: Phase dependency chain is strictly sequential: Phase 2 depends on 1, Phase 3 on 2, Phase 4 on 3.
+**What was actually correct**: Execution order was 0 → 1 (code work) → 3 → 4 → 1 (restart validation, this session, now complete); Phase 2 has not started. Phases 3 and 4 completed 2026-06-10 while Phase 1 sat IN PROGRESS awaiting its cold-start gate.
+**Why**: Phase 1's final exit criterion (digest arriving in a REAL harness cold start) is only observable from a future session — the session that ships the wiring cannot witness its own next startup. Rather than idle, prior sessions executed 3 and 4, which despite the declared chain have no technical dependency on Phase 2's doctor work: release-check and the memory-config guardrails touch disjoint code from the probe leg.
+**Lesson**: Declare phase dependencies by technical need, not narrative order: a restart-gated exit criterion guarantees the shipping session cannot close its own phase, so genuinely independent later phases will (and should) run while it waits. What made the split safe was the outputs registry carrying an explicit REMAINING EXIT CRITERION line — the next session resumed and closed the phase cold from that line alone.

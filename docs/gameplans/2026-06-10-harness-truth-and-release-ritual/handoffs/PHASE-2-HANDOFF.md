@@ -30,6 +30,8 @@ _(none yet)_
 
 **1.** Debug every surprising matrix cell before reading the verdict: a cell can fail for a reason orthogonal to what the matrix measures, and a column can be 100% confounded. Round 1's entire cmd.exe column failed on working-directory fallback (H-09), not argv shape; shape A's row failed on a fixture missing +x. Both initially read as "shape ineligible" — the truthful matrix needed the confound removed (anchored wrapper, executable fixture) and the criterion hardened (hostile cwd by default). Lesson #4's "prove the probe" applies cell-by-cell, not just to the harness as a whole.
 
+**2.** Declare phase dependencies by technical need, not narrative order: a restart-gated exit criterion guarantees the shipping session cannot close its own phase, so genuinely independent later phases will (and should) run while it waits. What made the split safe was the outputs registry carrying an explicit REMAINING EXIT CRITERION line — the next session resumed and closed the phase cold from that line alone.
+
 ## Project Lessons (distilled — survive across gameplans)
 
 ### Category: Process
@@ -69,13 +71,11 @@ _(none yet)_
 
 ## Phase Notes (agent-owned)
 
-**Sequencing**: Phase 2 starts only after Phase 1's restart gate closes —
-the first cold start after the shape-C rewire must show the [Clauderizer]
-digest in session context. When it does: `cz_resolve_finding` H-08 quoting
-the transcript's `hook_success` attachment (the durable proof lives at
-lines ~3–6 of the session's .jsonl under
-`C:\Users\rafaj\.claude\projects\--wsl-localhost-ubuntu-home-ccusce-Clauderizer\`),
-then `cz_transition_phase` 1 → complete. If the digest does NOT appear:
+**Sequencing**: Phase 1's restart gate CLOSED 2026-06-10 — the cold start
+showed the digest, H-08 is resolved with the transcript `hook_success`
+attachment quoted (see Outputs Registry `h08_restart_validation`; transcript
+e4573a6d, exit 0, 388ms, shape C verbatim). Phase 2 is unblocked; nothing to
+re-validate before starting. If a FUTURE cold start ever loses the digest:
 diagnose from the transcript attachment (command/exitCode/stderr per hook),
 re-run `scripts\wiring_matrix.ps1`, and fall back to shape A per D2.
 
@@ -106,8 +106,8 @@ Phase-4 close: 234. Tests cannot spawn Windows executors from WSL pytest
 when interop is absent — skip-guard the Git-Bash-leg tests on
 `Path('/mnt/c/Program Files/Git/bin/bash.exe').exists()`.
 
-**State at handoff**: Phases 0, 3, 4 complete; Phase 1 in_progress with all
-in-session criteria met (suite 234 green, doctor 16/16 exit 0, matrix
-all-pass on the production command, init idempotent, H-09 resolved) —
-pending ONLY the restart observation. Phase 5 = close-out
-(/clauderizer-close-gameplan; lesson #1 is a promotion candidate).
+**State at handoff**: Phases 0, 1, 3, 4 complete (suite 234 green, doctor
+16/16 exit 0, matrix all-pass on the production command, init idempotent,
+H-08 AND H-09 resolved with dated evidence). Phase 2 is the only remaining
+build phase, then close-out (/clauderizer-close-gameplan; lessons #1 and #2
+are promotion candidates). Out-of-order execution is recorded as C-01.
