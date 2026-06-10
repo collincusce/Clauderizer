@@ -17,6 +17,10 @@ setup the real session host could not launch. This module closes the gap:
   reserved for hosts that truly cannot speak for the session host.
 - ``verify_wiring``: doctor's launchability verdict for the recorded session
   host — pass, fail, or an honest ``unverifiable``, never a false green.
+- ``verify_hook_wiring`` / ``hook_digest_probe``: the D-010 upgrade for the
+  SessionStart leg — traverse the harness's executor (Git Bash) from a
+  non-repo cwd and judge in-band evidence, because the direct argv probe
+  stayed green through the entire H-08 outage.
 """
 
 from __future__ import annotations
@@ -26,6 +30,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -166,7 +171,8 @@ def _decode(raw: bytes) -> str:
 
 
 def spawn_probe(argv: list[str] | None, *, timeout: float = PROBE_TIMEOUT,
-                probe_arg: str = "--version") -> Probe:
+                probe_arg: str = "--version",
+                cwd: str | Path | None = None) -> Probe:
     """Execute the composed command with a benign argument and judge the exit.
 
     This is the H-04 guard: a mis-composed invocation (e.g. ``clauderize
@@ -174,21 +180,25 @@ def spawn_probe(argv: list[str] | None, *, timeout: float = PROBE_TIMEOUT,
     written into wiring. ``wsl.exe`` commands probed from inside WSL
     round-trip through Windows interop — real cross-host evidence; without
     interop the verdict is honestly ``unverifiable``.
+
+    ``cwd`` lets H-09-aware callers spawn from a non-repo directory: the real
+    executor chain does not preserve the project cwd, so a probe that inherits
+    it certifies wiring sessions never get.
     """
     if not argv or not argv[0]:
         return Probe("fail", "no command registered")
+    cmd = [*argv, probe_arg] if probe_arg else list(argv)
+    shown = " ".join(cmd)
     if _is_wsl_exe(argv[0]) and sys.platform != "win32":
         if shutil.which("wsl.exe") is None:
             return Probe(
                 "unverifiable",
                 "wsl.exe is not reachable from this host (no Windows interop) — "
-                f"verify from the session host: `{' '.join([*argv, probe_arg])}`",
+                f"verify from the session host: `{shown}`",
             )
-    cmd = [*argv, probe_arg] if probe_arg else list(argv)
-    shown = " ".join(cmd)
     try:
         r = subprocess.run(cmd, capture_output=True, stdin=subprocess.DEVNULL,
-                           timeout=timeout)
+                           timeout=timeout, cwd=str(cwd) if cwd else None)
     except FileNotFoundError:
         return Probe("fail", f"'{argv[0]}' not found on PATH or not executable")
     except subprocess.TimeoutExpired:
@@ -444,3 +454,136 @@ def hook_wrapper_invocation(root: Path, session_host: str) -> list[str]:
     if kind == NATIVE:
         return ["/bin/sh", sh_path]
     return compose(["//bin/sh", "/" + sh_path], session_host)
+
+
+# --- harness executor leg (D-010; the H-08/H-09 residue) ---------------------------
+#
+# The Windows harness executes the registered SessionStart STRING through an
+# executor shell — Git Bash when Git for Windows is present (H-08 transcripts)
+# — which re-tokenizes and MSYS-converts the argv before wsl.exe ever runs,
+# and from a working directory that is not reliably the project (H-09: cmd.exe
+# cannot hold a UNC cwd). A probe that spawns the argv array directly from the
+# repo cwd therefore traverses a leg sessions never use: it stayed green
+# through the entire H-08 outage. These probes traverse the executor leg for
+# real and judge in-band evidence, or say honestly that they cannot — a check
+# may claim "end-to-end" only for a leg it actually traversed (D-010).
+
+DIGEST_PREFIX = "[Clauderizer]"
+
+# Canonical Git for Windows bash, as seen from WSL (interop) and from Windows
+# itself. The harness's executor choice is not ours to configure; this is the
+# leg H-08's failure transcripts proved sessions actually traverse.
+GIT_BASH_INTEROP = Path("/mnt/c/Program Files/Git/bin/bash.exe")
+GIT_BASH_WIN32 = Path(r"C:\Program Files\Git\bin\bash.exe")
+
+
+def harness_executor() -> Path | None:
+    """The harness's hook executor (Git Bash), when reachable from this host."""
+    candidate = GIT_BASH_WIN32 if sys.platform == "win32" else GIT_BASH_INTEROP
+    return candidate if candidate.is_file() else None
+
+
+def non_repo_cwd() -> str:
+    """A working directory that is not the project repo (H-09 probes spawn here).
+
+    The system temp dir: always present, in practice never inside a repo. The
+    point is that repo discovery must come from the wrapper's anchor — not from
+    an inherited project cwd the real executor chain does not preserve.
+    """
+    return tempfile.gettempdir()
+
+
+def hook_digest_probe(argv: list[str] | None, *, cwd: str | Path | None = None,
+                      timeout: float = PROBE_TIMEOUT) -> Probe:
+    """Run the registered hook with NO arguments and judge the in-band evidence.
+
+    ``--version`` answers before repo discovery, so only the no-arg digest path
+    exercises the H-09 anchor: from a non-repo cwd an un-anchored wrapper makes
+    the engine print NOTHING (exit 0) — the silent shape this probe exists to
+    catch. Breadcrumbs are wiring failures made visible and judged ``fail``;
+    silence is the enemy.
+    """
+    p = spawn_probe(argv, probe_arg="", cwd=cwd, timeout=timeout)
+    if p.status != "ok":
+        return p
+    line = p.detail
+    for prefix in (BREADCRUMB_PREFIX, REPO_BREADCRUMB_PREFIX):
+        if line.startswith(prefix):
+            return Probe("fail", f"hook spawns but reports: {line}")
+    if line.startswith(DIGEST_PREFIX):
+        return Probe("ok", line)
+    return Probe(
+        "fail",
+        f"hook exited 0 but emitted no in-band digest from a non-repo cwd — "
+        f"the H-09 silent shape (un-anchored or stale wrapper); re-run "
+        f"`clauderize init` (got: {line!r})",
+    )
+
+
+def verify_hook_wiring(argv: list[str] | None, session_host: str | None,
+                       *, timeout: float = PROBE_TIMEOUT) -> Probe:
+    """Doctor's SessionStart-hook verdict: traverse the leg sessions use (D-010).
+
+    ``native``: same presence/executability standard as :func:`verify_wiring`
+    (the harness spawns the wrapper directly; init's hostile-cwd spawn-test
+    covers the anchor at write time). ``windows-wsl``: the direct wsl.exe
+    round-trip first (engine identity — anything broken below the executor
+    fails here with the deepest diagnosis), then the REAL leg: the registered
+    command string through Git Bash from a non-repo cwd, requiring in-band
+    identity AND the digest. An unreachable executor is an honest
+    ``unverifiable`` — never a green that speaks for a leg nothing traversed.
+    """
+    try:
+        kind, _ = parse(session_host)
+    except SessionHostError as exc:
+        return Probe("fail", str(exc))
+    if kind == NATIVE:
+        return verify_wiring(argv, session_host, timeout=timeout)
+    base = verify_wiring(argv, session_host, timeout=timeout)
+    if base.status == "fail":
+        return base
+    exe = harness_executor()
+    if exe is None:
+        if base.status == "ok":
+            served = served_version(base.detail)
+            ident = f"identity clauderizer {served}" if served else "engine identified"
+            return Probe(
+                "unverifiable",
+                f"direct wsl.exe round-trip OK ({ident}) but the harness "
+                f"executor (Git Bash) is not reachable from this host, so the "
+                f"leg sessions actually traverse is unverified (H-08) — certify "
+                f"via a real cold start, or run doctor where Git Bash is reachable",
+            )
+        return Probe("unverifiable",
+                     f"{base.detail}; harness executor (Git Bash) also unreachable")
+    command = " ".join(argv)
+    hostile = non_repo_cwd()
+    identity = spawn_probe([str(exe), "-c", f"{command} --version"],
+                           probe_arg="", cwd=hostile, timeout=timeout)
+    if identity.status != "ok":
+        return Probe(
+            "fail",
+            f"harness-executor leg (git-bash) failed: {identity.detail} — the "
+            f"registered command does not survive the executor sessions actually "
+            f"use (the H-08 shape); re-run `clauderize init`, or see "
+            f"scripts/wiring_matrix.ps1 and D2's fallback shape",
+        )
+    served = served_version(identity.detail)
+    if served != __version__:
+        got = f"clauderizer {served}" if served else repr(identity.detail)
+        return Probe(
+            "fail",
+            f"harness-executor leg (git-bash) reached an engine answering {got}, "
+            f"expected clauderizer {__version__} — stale pin or different build; "
+            f"re-run `clauderize init`",
+        )
+    digest = hook_digest_probe([str(exe), "-c", command], cwd=hostile,
+                               timeout=timeout)
+    if digest.status != "ok":
+        return Probe("fail",
+                     f"harness-executor leg (git-bash), non-repo cwd: {digest.detail}")
+    return Probe(
+        "ok",
+        f"verified end-to-end via harness executor (git-bash → wsl.exe → sh) "
+        f"from a non-repo cwd — identity clauderizer {served}, digest in-band",
+    )

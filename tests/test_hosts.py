@@ -313,12 +313,15 @@ def test_doctor_reports_unverifiable_never_green(empty_python_repo, monkeypatch,
     init(empty_python_repo, session_host="windows-wsl:ubuntu", spawn_test=False)
     monkeypatch.setattr(hosts.shutil, "which", lambda n: None)  # no interop round-trip
     monkeypatch.setattr(hosts.sys, "platform", "linux")
+    # a host with no interop has no /mnt/c Git Bash either (D-010 executor leg)
+    monkeypatch.setattr(hosts, "harness_executor", lambda: None)
     monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
     rc, out = _doctor(empty_python_repo, monkeypatch, capsys)
     assert rc == 3  # nothing failed, but "OK" alone would be a false green
     assert "✓ session host of record: windows-wsl:ubuntu" in out
     assert "? MCP server launchable for session host — unverifiable from this host" in out
     assert "? SessionStart hook launchable for session host — unverifiable from this host" in out
+    assert "Git Bash" in out  # the hook verdict names the untraversed executor leg
     assert "✓ MCP server launchable" not in out
     assert "unverifiable from this host" in out.splitlines()[-1] or "certify" in out
 

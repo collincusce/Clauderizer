@@ -153,8 +153,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     settings = paths.root / ".claude" / "settings.json"
     check("SessionStart hook registered", _hook_registered(settings))
     hook_argv = _hook_command(settings)
+    # D-010: the hook is executed as a STRING through the harness's executor
+    # shell from an arbitrary cwd — the verdict must traverse that leg (Git
+    # Bash + non-repo cwd) or say honestly that it cannot. The direct argv
+    # probe alone stayed green through the entire H-08 outage.
     verdict("SessionStart hook launchable for session host",
-            hosts.verify_wiring(hook_argv, session_host))
+            hosts.verify_hook_wiring(hook_argv, session_host))
     # D4 breadcrumb wrapper: when the registered command is the wrapper, its
     # file must exist and its baked engine command should match what a fresh
     # init would compose (staleness = the engine moved since the last init).

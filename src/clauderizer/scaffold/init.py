@@ -228,17 +228,21 @@ def init(
     report.note("hook wrapper", wrapper_path, changed)
     registered_hook = hosts.hook_wrapper_invocation(root, resolved_host)
     if spawn_test:
-        probe = hosts.spawn_probe(registered_hook)
+        # No-arg digest probe from a NON-repo cwd (D-010/H-09): --version
+        # answers before repo discovery, so only the digest path proves the
+        # wrapper's anchor — an un-anchored wrapper is silent (exit 0) exactly
+        # like the real executor chain made it, and must not register.
+        probe = hosts.hook_digest_probe(registered_hook, cwd=hosts.non_repo_cwd())
         if probe.status == "fail":
             raise WiringRefused(
                 f"the SessionStart wrapper failed its spawn test — hook registration "
                 f"left unchanged.\n"
-                f"  command: {' '.join(registered_hook)}\n"
+                f"  command: {' '.join(registered_hook)}  (from a non-repo cwd)\n"
                 f"  probe:   {probe.detail}\n"
                 f"  The wrapper was written to {wrapper_path} for inspection; the "
                 f"engine command\n"
                 f"  itself probed OK in the pre-write gate, so suspect the wrapper "
-                f"shell (/bin/sh, cmd, wsl.exe)."
+                f"shell (/bin/sh, cmd, wsl.exe) or the repo anchor."
             )
         if probe.status == "unverifiable":
             report.warnings.append(f"SessionStart wrapper unverifiable: {probe.detail}")

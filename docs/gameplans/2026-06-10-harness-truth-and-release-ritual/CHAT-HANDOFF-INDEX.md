@@ -1,7 +1,7 @@
 # Chat Handoff Index — harness-truth-and-release-ritual
 
 > Last updated: 2026-06-10
-> Status: Phase 2 ready
+> Status: All 5 phases complete
 
 ## How This Works
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Executor matrix: prove the wiring shape | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | hosts.py emits the immune shape; restart-validate H-08 | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Doctor traverses the consumer leg (D-010) | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Doctor traverses the consumer leg (D-010) | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Release preflight ritual (O3) and 1.0 readiness gates (O4) | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Memory guardrails as config: O1 ACTIVE_LESSONS_WARN, O2 consolidation trigger | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-4-HANDOFF.md |
 
@@ -61,6 +61,12 @@ Wired the matrix-winning shape C into hosts.py — the windows-wsl SessionStart 
 
 The load-bearing criterion deliberately spanned a session boundary: the shipping session cannot observe its own next cold start. The following real cold start (2026-06-10, transcript e4573a6d) recorded a SessionStart:startup hook_success attachment running registered shape C verbatim — exit 0, 388ms, full [Clauderizer] digest on stdout, injected into session context — the only in-band proof of the whole chain (L-07/L-09). H-08 resolved with that evidence quoted. Residual handed to Phase 2 (D-010): doctor/init probes still spawn wsl.exe directly from the repo cwd; they must traverse the Git-Bash consumer leg from a non-repo cwd so regressions are caught by checks, not only by the matrix script.
 
+### Phase 2 — completed 2026-06-10
+
+Made doctor's SessionStart-hook verdict traverse the leg sessions actually use (D-010). hosts.verify_hook_wiring now runs the direct wsl.exe round-trip first (deepest diagnosis on failure), then — when Git Bash is reachable (interop path from WSL, canonical path on win32) — spawns the registered command STRING through bash.exe -c from a non-repo cwd twice: --version for engine identity, no-args for the in-band digest. The split matters and was discovered by the pre-code live smoke: --version answers before repo discovery, so an identity probe is anchor-blind; only the no-arg digest path proves the H-09 anchor. Executor unreachable → honest unverifiable naming Git Bash (exit 3), with no end-to-end claim surviving for an untraversed leg. init's registered-hook spawn-test switched to the same hostile-cwd digest probe, so an un-anchored wrapper can no longer register.
+
+Exit criteria all proven live on this box: the old wiring shape FAILS through the executor leg while the direct argv probe stays green on it (the false green retired, demonstrated in test_live_old_shape_guard_fires_where_direct_probe_stays_green); shape C passes end-to-end; real-repo doctor 16/16 exit 0 with the verdict naming the traversed leg (git-bash → wsl.exe → sh); init idempotent with the new probe live. Suite 234 → 255 (17 hermetic + 4 live skip-guarded tests). Lesson #3 recorded: a probe's argument changes which layers it traverses — judge each claim with the probe that actually reaches its layer.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -68,8 +74,10 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-_(none yet)_
-
 **1.** Debug every surprising matrix cell before reading the verdict: a cell can fail for a reason orthogonal to what the matrix measures, and a column can be 100% confounded. Round 1's entire cmd.exe column failed on working-directory fallback (H-09), not argv shape; shape A's row failed on a fixture missing +x. Both initially read as "shape ineligible" — the truthful matrix needed the confound removed (anchored wrapper, executable fixture) and the criterion hardened (hostile cwd by default). Lesson #4's "prove the probe" applies cell-by-cell, not just to the harness as a whole.
 
 **2.** Declare phase dependencies by technical need, not narrative order: a restart-gated exit criterion guarantees the shipping session cannot close its own phase, so genuinely independent later phases will (and should) run while it waits. What made the split safe was the outputs registry carrying an explicit REMAINING EXIT CRITERION line — the next session resumed and closed the phase cold from that line alone.
+
+### Category: Observability
+
+**3.** A probe's argument changes which layers it traverses: --version short-circuits before repo discovery, so it certifies launch identity but is blind to the H-09 anchor; the no-arg digest path proves anchoring but carries no version claim. One spawn cannot witness both — pair the probes and judge each guard's claim with the spawn that actually reaches its layer. Found by the pre-code live smoke (lesson #4's "prove the probe" applied at design time): the planned --version-only executor probe passed anchored AND un-anchored wrappers alike.

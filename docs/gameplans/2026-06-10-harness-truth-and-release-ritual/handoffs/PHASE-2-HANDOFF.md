@@ -26,11 +26,13 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-_(none yet)_
-
 **1.** Debug every surprising matrix cell before reading the verdict: a cell can fail for a reason orthogonal to what the matrix measures, and a column can be 100% confounded. Round 1's entire cmd.exe column failed on working-directory fallback (H-09), not argv shape; shape A's row failed on a fixture missing +x. Both initially read as "shape ineligible" — the truthful matrix needed the confound removed (anchored wrapper, executable fixture) and the criterion hardened (hostile cwd by default). Lesson #4's "prove the probe" applies cell-by-cell, not just to the harness as a whole.
 
 **2.** Declare phase dependencies by technical need, not narrative order: a restart-gated exit criterion guarantees the shipping session cannot close its own phase, so genuinely independent later phases will (and should) run while it waits. What made the split safe was the outputs registry carrying an explicit REMAINING EXIT CRITERION line — the next session resumed and closed the phase cold from that line alone.
+
+### Category: Observability
+
+**3.** A probe's argument changes which layers it traverses: --version short-circuits before repo discovery, so it certifies launch identity but is blind to the H-09 anchor; the no-arg digest path proves anchoring but carries no version claim. One spawn cannot witness both — pair the probes and judge each guard's claim with the spawn that actually reaches its layer. Found by the pre-code live smoke (lesson #4's "prove the probe" applied at design time): the planned --version-only executor probe passed anchored AND un-anchored wrappers alike.
 
 ## Project Lessons (distilled — survive across gameplans)
 
@@ -71,43 +73,38 @@ _(none yet)_
 
 ## Phase Notes (agent-owned)
 
-**Sequencing**: Phase 1's restart gate CLOSED 2026-06-10 — the cold start
-showed the digest, H-08 is resolved with the transcript `hook_success`
-attachment quoted (see Outputs Registry `h08_restart_validation`; transcript
-e4573a6d, exit 0, 388ms, shape C verbatim). Phase 2 is unblocked; nothing to
-re-validate before starting. If a FUTURE cold start ever loses the digest:
-diagnose from the transcript attachment (command/exitCode/stderr per hook),
-re-run `scripts\wiring_matrix.ps1`, and fall back to shape A per D2.
+**PHASE 2 SHIPPED 2026-06-10** — all five phases are now complete; the next
+session's job is the close-out (/clauderizer-close-gameplan). What shipped:
+`hosts.verify_hook_wiring` traverses the harness executor (Git Bash) with the
+registered STRING via `bash.exe -c` from a non-repo cwd, requiring in-band
+identity AND digest (lesson #3: --version is anchor-blind, so the probes are
+paired); doctor's hook verdict names the traversed leg; executor absent →
+exit-3 honesty; init's spawn-test is the hostile-cwd digest probe. Guard-fires
+proven LIVE: the old shape fails through bash.exe while the direct argv probe
+stays green on it (see Outputs Registry `guard_fires_evidence`). Doctor 16/16
+exit 0 on the real repo through the new leg; init idempotent.
 
-**What Phase 2 builds (D-010):**
-1. doctor's hook check must traverse the harness's executor when reachable:
-   from WSL, Git Bash is spawnable via interop at
-   `/mnt/c/Program Files/Git/bin/bash.exe` — probe
-   `bash.exe -c "<registered command string>"` and require in-band identity
-   (`clauderizer <version>` via the wrapper's `"$@"` forwarding of
-   `--version`). Executor absent → exit-3 honesty, never green.
-2. Probes (init spawn-test AND doctor) must spawn from a NON-repo cwd so the
-   H-09 anchor is what they verify (today both inherit the repo cwd, which
-   masks anchor regressions — the matrix's hostile-cwd default is currently
-   the only check that would catch one).
-3. Guard-fires proof (lesson #4, D5): build the failing fixture from the OLD
-   shape — register `wsl.exe -d ubuntu /bin/sh /home/…` in a scratch repo's
-   settings.json (or monkeypatched composition) and show the new doctor check
-   FAILS it loudly through the Git-Bash leg, passes the shape-C wiring.
-4. Wording: the check label must name the traversed leg (e.g. "hook
-   launchable via harness executor (git-bash)") — D-010's claim-honesty.
+**If a FUTURE cold start ever loses the digest**: diagnose from the transcript
+attachment (command/exitCode/stderr per hook), run `clauderize doctor` (the
+executor leg now catches H-08/H-09 shapes), re-run `scripts\wiring_matrix.ps1`,
+and fall back to shape A per D2.
+
+**Close-out pointers**: lessons #1–#3 are promotion candidates (judge against
+the existing L-entries: #3 extends L-09's family; #1 extends lesson-#4's
+"prove the probe"); C-01 (restart-gated ordering) belongs in the post-mortem;
+the H-08/H-09 HARDENING resolutions both carry a "Residual: Phase 2…" pointer
+that Phase 2 has now satisfied — say so in the post-mortem rather than
+rewriting the dated entries.
 
 **Captured constants**: registered command (verbatim):
 `wsl.exe -d ubuntu //bin/sh //home/ccusce/Clauderizer/.clauderizer/hook.sh`;
 Git Bash Windows path `C:\Program Files\Git\bin\bash.exe`; WSL-side interop
 path `/mnt/c/Program Files/Git/bin/bash.exe` (space in path — argv lists,
 never string-join); engine venv `/home/ccusce/Clauderizer/.venv`. Suite at
-Phase-4 close: 234. Tests cannot spawn Windows executors from WSL pytest
-when interop is absent — skip-guard the Git-Bash-leg tests on
-`Path('/mnt/c/Program Files/Git/bin/bash.exe').exists()`.
+Phase-2 close: 255 (4 live executor-leg tests skip-guarded on
+`hosts.GIT_BASH_INTEROP.is_file()` + wsl.exe + WSL_DISTRO_NAME).
 
-**State at handoff**: Phases 0, 1, 3, 4 complete (suite 234 green, doctor
-16/16 exit 0, matrix all-pass on the production command, init idempotent,
-H-08 AND H-09 resolved with dated evidence). Phase 2 is the only remaining
-build phase, then close-out (/clauderizer-close-gameplan; lessons #1 and #2
-are promotion candidates). Out-of-order execution is recorded as C-01.
+**State at handoff**: ALL phases (0–4) complete; suite 255 green; doctor
+16/16 exit 0 through the executor leg; H-08 AND H-09 resolved with dated
+evidence; out-of-order execution recorded as C-01. Remaining work for this
+gameplan: the close-out ritual only.
