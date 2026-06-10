@@ -107,6 +107,30 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
   consolidate/promote flow exists, the cross-gameplan one does not). Carried
   from the 0.6.0 post-mortem (restated 2026-06-09 by Phase 4; revisit when
   the count approaches ~20).
+- **O3 — Mechanize the release preflight (H-07's missing half)**: releasing is
+  the one ritual the engine doesn't own — phase work gets cz_preflight
+  re-observing reality at execution time, while the release steps live as
+  README prose and a day-old Source-of-Truth capture. H-07 happened in that
+  gap: a version was staged from a snapshot while a remote tag + Release
+  already claimed it. Wanted: a `clauderize release-check` (or doctor
+  extension) that, given the staged version, live-sweeps all four registries
+  (local tags, `git ls-remote --tags`, GitHub Releases API, PyPI JSON — never
+  uv's cache) plus origin/main sync state, and refuses on any existing claim.
+  The publish.yml gate covers the CI leg; this covers the staging leg.
+  (Added 2026-06-10 from the H-07 retrospective.)
+- **O4 — 1.0 readiness gates (captured 2026-06-10, pre-0.8.0-tag)**: 1.0 is a
+  stability promise, not a quality grade. Gates before declaring it:
+  (a) the headline path — SessionStart digest in a real harness cold start —
+  verified on current wiring (open: restart_validation_observation) and across
+  the supported host matrix (windows-wsl + native); (b) two consecutive boring
+  releases through the gated pipeline (0.8.0, then 0.9.x) with zero manual
+  repair; (c) failure-discovery rate decays (H-04..H-07 arrived in ~48h of
+  live use — 1.0 wants a quiet stretch, ideally on a second real project);
+  (d) stability contracts written: MCP tool/op schema policy, config +
+  procedure migration policy, release ritual mechanized (O3); (e) no dead
+  flags: rituals.amendments gets its cascade machinery or is descoped; O1/O2
+  closed or explicitly post-1.0; (f) classifier flips Alpha → Beta with a
+  README that claims only verified behavior.
 
 ## Phase Breakdown
 
