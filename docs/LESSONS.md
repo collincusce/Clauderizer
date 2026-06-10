@@ -11,6 +11,8 @@
 
 **L-01.** Markdown round-trip idempotency (apply-twice == apply-once) is the load-bearing test for every mutation. *(from 2026-05-30-clauderizer-v1-bootstrap)*
 
+**L-08.** A version number is a claim across four registries that never sync — source (pyproject/__version__), remote git tags, GitHub Releases, and the PyPI index — plus one ordering invariant: origin/main must hold the staged release commit before any tag or Release exists, because a GitHub-UI release tags the REMOTE branch head, and at that moment every locally-authored guard is unpushed by construction. Sweep all four with fresh eyes before staging (tags can exist remote-only; a Release can exist for an unpublished version; uvx by-name answers from uv's cache and can hide a recent failed attempt). v0.7.0 and v0.8.0 were both double-claimed by exactly this mechanism within one day. *(from 2026-06-09-agent-autonomy)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)*
@@ -22,6 +24,10 @@
 **L-05.** Every tracked write needs a CLI-reachable fallback: an MCP-only mutation surface deadlocks any session whose server cannot connect, stranding exactly the sessions that most need to record what broke. *(from 2026-06-09-context-economics)*
 
 **L-06.** Round-tripping through the engine's own parser is necessary but not sufficient: tests must assert render-validity for external readers too (contiguous tables, valid markdown) - an engine can read its own corruption indefinitely. *(from 2026-06-09-engine-structural-robustness)*
+
+**L-07.** Design failure reporting backward from the channel the consumer actually reads, then place the reliability wrapper on the deepest layer whose failure still leaves that channel reachable. The harness injects only a hook's stdout, so a dying hook's informative stderr is indistinguishable from silence — a breadcrumb wrapper is channel REROUTING (capture 2>&1, reprint on stdout, exit 0) as much as failure detection. And the wrapper's layer is a coverage decision, not a host-affinity default: enumerate which failure modes each candidate layer can observe AND report through the consumer-read channel (a Windows-side cmd wrapper would add UNC noise to healthy sessions while only covering repo-unreachable states). H-08 closed the loop: there is always a layer below your deepest wrapper (the harness's own shell), so only in-band evidence — the digest arriving — proves the chain. *(from 2026-06-09-agent-autonomy)*
+
+**L-09.** Locally-sound guard contracts compose into false green: a wrapper that always exits 0 (correct for hook stdout capture) silently defeats a spawn probe that reads exit 0 as "launchable", letting a health check certify a dead engine. When a new layer wraps a probed surface, re-derive what the outer signal still distinguishes — and prefer in-band identity (the output must claim who and what version ran) over exit codes, which only prove that something ran. H-06 and H-08 are both instances: the probe must traverse the consumer's exact execution leg, shell quirks included. *(from 2026-06-09-agent-autonomy)*
 
 ### Category: Integration
 

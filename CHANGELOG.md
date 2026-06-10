@@ -56,6 +56,15 @@ H-01 residue, the stale-uvx thread).
   version disagree, instead of building the wrong artifacts and dying as a
   PyPI duplicate that nothing on the Releases page surfaces.
 
+### Known issues
+- **H-08 (open)** — on Windows-harness hosts the SessionStart digest never
+  reaches session context: the harness executes hook commands through Git
+  Bash, whose MSYS2 path conversion rewrites the shim's `/bin/sh` argument
+  to a nonexistent `C:/Program Files/Git/usr/bin/sh` (exit 127 below the
+  wrapper, so no breadcrumb either). Engine, wrapper, and doctor are green
+  when invoked directly; the wiring fix (an MSYS-conversion-immune command
+  shape) is scheduled for the next gameplan. See `docs/HARDENING.md` H-08.
+
 ## [0.7.0] — 2026-06-09 *(version retired — never published)*
 
 A v0.7.0 GitHub Release was cut from a commit whose source still declared
