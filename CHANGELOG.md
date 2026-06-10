@@ -2,7 +2,7 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [Unreleased]
+## [0.9.0] — 2026-06-10
 
 The **harness-truth-and-release-ritual** work: every claim the system makes
 about its own wiring is now backed by a leg something actually traversed, and

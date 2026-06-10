@@ -60,3 +60,40 @@ exists (or is named here as owed), not a vibe:
   this file describe what the code actually does (no aspirational steps).
 
 When all seven hold, `release-check` + this list is the 1.0 sign-off.
+
+## Beta gates (D-012)
+
+Beta (`Development Status :: 4 - Beta`) is an **evidence claim, not a feature
+claim**: every current proof runs on one machine, one repo, one profile until
+the gates below say otherwise. The classifier line in `pyproject.toml` may
+only change in a release whose staged commit satisfies B1–B5 — and that
+release IS B6. A gate that cannot be met honestly is amended here with a
+named residual (the exit-3 pattern applied to the lifecycle), never waved
+through.
+
+- **B1 — Backlog shipped**: 0.9.0 live on PyPI and resolving fresh
+  (`uvx --refresh`), ritual followed with `release-check` exit 0 *before*
+  tagging.
+- **B2 — CI proves the OS matrix**: suite green on ubuntu, macos, AND
+  windows runners × py3.11–3.13, with the win32 cmd wrapper EXECUTED on a
+  real windows runner (not platform-monkeypatched).
+- **B3 — G6 closed or honestly amended**: native-leg cold-start evidence
+  with the traversed leg named (D-010 wording discipline).
+- **B4 — Foreign-repo loop**: the full loop (init → gameplan → preflight →
+  tracked writes → transition → handoff → digest) live on a non-python repo,
+  zero hand-edits, driven through CLI parity (`clauderize ops`).
+- **B5 — Stranger path**: quickstart verified end-to-end in a clean
+  environment; upgrade, uninstall, and the trust model (what init writes
+  into `.claude/settings.json` and why) documented.
+- **B6 — The flip ships via the ritual**: zero open findings and doctor
+  exit 0 at flip time; flip version chosen by a fresh four-registry sweep
+  (L-08), never assumed.
+
+| Gate | Status | Evidence (dated artifact) |
+|------|--------|---------------------------|
+| B1 | ⬜ | _(alpha-to-beta-evidence Phase 0)_ |
+| B2 | ⬜ | _(alpha-to-beta-evidence Phase 1)_ |
+| B3 | ⬜ | _(alpha-to-beta-evidence Phase 2)_ |
+| B4 | ⬜ | _(alpha-to-beta-evidence Phase 3)_ |
+| B5 | ⬜ | _(gameplan B: stranger-readiness)_ |
+| B6 | ⬜ | _(gameplan C: beta-flip)_ |
