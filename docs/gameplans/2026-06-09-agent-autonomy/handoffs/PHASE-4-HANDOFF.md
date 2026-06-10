@@ -106,9 +106,18 @@ absolutizes via which()).
 
 ---
 
-**PHASE 4 IS COMPLETE (2026-06-09); the gameplan shows Complete. The notes
-above were the pre-execution scouting — kept for the record. What remains
-is the close-out session, gated on one observation:**
+**PHASE 4 IS COMPLETE (2026-06-09; release renumbered 2026-06-10); the
+gameplan shows Complete. The notes above were the pre-execution scouting —
+kept for the record. What remains is the close-out session, gated on one
+observation:**
+
+**The release is 0.8.0, not 0.7.0 (C-04 / H-07).** A published GitHub
+Release v0.7.0 already existed at the Phase-0 commit (source 0.6.0); its
+PyPI publish failed as a duplicate, and the user chose to retire the
+number rather than retag. The broken v0.7.0 Release/tag deliberately
+remain on GitHub. publish.yml now refuses tag/source skew. NOTE:
+origin/main is at the Phase-1 commit — phases 2–4 and the renumber are
+local-only until pushed.
 
 **First thing to check in the next cold start: did the [Clauderizer]
 digest appear in YOUR session context?** The Phase-4 session — the first
@@ -116,14 +125,16 @@ wrapper-era harness session — got NO digest injected, while the exact
 registered command (`wsl.exe -d ubuntu /bin/sh
 /home/ccusce/Clauderizer/.clauderizer/hook.sh`) emits the digest and exits
 0 when run manually, and doctor certifies the chain end-to-end (16/16,
-'clauderizer 0.7.0'). Command leg green; harness leg unverified (Phase 4
+'clauderizer 0.8.0'). Command leg green; harness leg unverified (Phase 4
 output `restart_validation_observation`).
 
-- **Digest appeared** → restart validation PASSED. Then: `git tag v0.7.0`,
-  push main + the tag, cut the **GitHub Release** for v0.7.0 (publish.yml
-  / Trusted Publishing does PyPI — the bare tag does not publish), verify
-  `uvx --from clauderizer clauderize --version` → 0.7.0 once the index
-  updates, and run `/clauderizer-close-gameplan`.
+- **Digest appeared** → restart validation PASSED. Then: push main,
+  `git tag v0.8.0`, push the tag, cut the **GitHub Release** for v0.8.0
+  (publish.yml / Trusted Publishing does PyPI — the bare tag does not
+  publish; the new gate verifies tag==source), verify
+  `uvx --from clauderizer clauderize --version` → 0.8.0 once the index
+  updates (force-fresh: `uvx --refresh`), and run
+  `/clauderizer-close-gameplan`.
 - **No digest again** → do NOT tag. The failure point is harness-side hook
   execution (candidates: project-hook trust in this client, hook stdin
   JSON handling, timeout). Diagnose from PowerShell with the manual
@@ -135,8 +146,8 @@ output `restart_validation_observation`).
 gameplan; a lesson promotion/consolidation pass (candidates: #7
 false-green composition; #5/#6 channel-and-layer placement overlap);
 POST-MORTEM.md per the close-gameplan skill. State: suite 215 green,
-doctor 16/16 exit 0 via shim, H-01..H-06 resolved with evidence, 0.7.0
-fully staged and untagged.
+doctor 16/16 exit 0 via shim, H-01..H-07 resolved with evidence, 0.8.0
+fully staged and untagged (0.7.0 retired — H-07).
 
 **Runbook** (unchanged): tests via PowerShell `wsl.exe -d ubuntu --cd
 /home/ccusce/Clauderizer /home/ccusce/Clauderizer/.venv/bin/python -m

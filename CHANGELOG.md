@@ -2,7 +2,7 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [0.7.0] — 2026-06-09
+## [0.8.0] — 2026-06-10
 
 The **agent-autonomy** release: the recording machinery now works — and fails —
 out loud, from any host, under any concurrency, with or without MCP. Every
@@ -49,6 +49,22 @@ H-01 residue, the stale-uvx thread).
   (cascade reports are per-entity files). A-001 in the 0.6.0 gameplan healed
   to cite the per-entity report that actually holds its cascade evidence.
   Procedure 1.2.0 → 1.2.1 documents the conditional line.
+
+### Infrastructure
+- **publish.yml refuses tag/version skew (H-07)** — the release workflow now
+  fails fast when the Release tag and the tagged tree's `pyproject.toml`
+  version disagree, instead of building the wrong artifacts and dying as a
+  PyPI duplicate that nothing on the Releases page surfaces.
+
+## [0.7.0] — 2026-06-09 *(version retired — never published)*
+
+A v0.7.0 GitHub Release was cut from a commit whose source still declared
+0.6.0; its PyPI publish failed as a duplicate, so no installable 0.7.0
+exists anywhere (H-07). The work intended for this number ships as 0.8.0;
+the workflow gate above makes that failure shape impossible to repeat
+silently.
+
+## [0.6.0] — 2026-06-09
 
 Closes the **engine-robustness cluster** from the two prior post-mortems plus
 the cold-start findings H-01..H-03. The through-line is *structure over

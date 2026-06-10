@@ -17,6 +17,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # H-07 guard: a Release whose tag disagrees with the tagged tree's
+      # version builds the WRONG artifacts and fails later as an opaque PyPI
+      # duplicate (seen live: v0.7.0 cut from a 0.6.0-source commit). Refuse
+      # up front, naming both versions.
+      - name: Release tag must match pyproject version
+        run: |
+          python3 - <<'EOF'
+          import os, sys, tomllib
+          with open("pyproject.toml", "rb") as fh:
+              src = tomllib.load(fh)["project"]["version"]
+          tag = os.environ.get("GITHUB_REF_NAME", "")
+          if tag.removeprefix("v") != src:
+              sys.exit(f"refusing to publish: Release tag is '{tag}' but the tagged "
+                       f"tree's pyproject.toml declares {src} — retag the actual "
+                       f"release commit, or fix the version and re-release (H-07)")
+          print(f"ok: tag {tag} matches source version {src}")
+          EOF
       - uses: astral-sh/setup-uv@v5
       - run: uv build
       - run: uvx twine check dist/*
