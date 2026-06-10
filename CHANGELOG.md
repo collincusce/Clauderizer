@@ -2,6 +2,55 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [Unreleased]
+
+The **harness-truth-and-release-ritual** work: every claim the system makes
+about its own wiring is now backed by a leg something actually traversed, and
+the release ritual is a checked command instead of a remembered procedure.
+Closes H-08 and H-09 — the findings tracker is all-resolved through H-09.
+Suite 215 → 255.
+
+### Fixed
+- **H-08 — the SessionStart digest survives the Windows harness.** The
+  registered command uses //-led paths (shape C, D2): `wsl.exe -d <distro>
+  //bin/sh //<repo>/.clauderizer/hook.sh`. Git Bash's MSYS2 conversion skips
+  //-led arguments as UNC-form, Linux collapses // to /, and the shape carries
+  zero quote surface so cmd.exe and PowerShell pass it verbatim (evidence
+  artifact: `scripts/wiring_matrix.ps1`, hostile-cwd by default; shape A
+  `sh -c 'exec …'` is the documented fallback). Restart-validated in-band:
+  the first real cold start after the rewire delivered the digest (transcript
+  `hook_success` attachment — shape C verbatim, exit 0, 388ms).
+- **H-09 — the digest no longer depends on the executor's working directory.**
+  The generated wrapper anchors itself (`cd '<repo>'`) before delegating and
+  reports an unreachable repo as a stdout breadcrumb instead of silence
+  (cmd.exe structurally cannot hold a UNC cwd; any harness may spawn hooks
+  from a fixed directory).
+
+### Added
+- **Doctor traverses the consumer leg (D-010).** For windows-wsl hosts the
+  SessionStart verdict now spawns the registered command STRING through the
+  harness's executor (Git Bash, when reachable) from a non-repo cwd, with
+  paired probes — `--version` for engine identity (it answers before repo
+  discovery, so it is anchor-blind) plus the no-arg digest for the H-09
+  anchor — and names the traversed leg in its claim. Executor unreachable →
+  honest "unverifiable" (exit 3), never green. The old direct-argv probe
+  stayed green through the entire H-08 outage; a live regression test pins
+  that exact false green.
+- **`clauderize release-check` (O3/D-011)** — push-then-release ordering
+  (origin/<branch> == HEAD via ls-remote) and the four version registries
+  (local tags, remote tags, GitHub Releases, PyPI queried directly — never
+  uvx cache) checked as a command (exit 0/2/3), plus the publish.yml
+  tag==source gate marker. Every skew shape that double-claimed 0.7.0/0.8.0
+  is individually proven to fire in tests.
+- **`docs/RELEASING.md`** — the mechanical release ritual (release-check exit
+  0 as the hard precondition) and the seven 1.0 readiness gates (G1–G7).
+- **`[memory]` config (O1/O2)** — `active_lessons_warn` (default 12) and
+  `project_lessons_warn` (default 20): the memory-bloat nudges move from
+  hardcoded constants to config; the status digest's gauge reads them.
+- **init's registered-hook spawn-test is the hostile-cwd digest probe** — an
+  un-anchored wrapper can no longer register (it would be silent exactly the
+  way the real executor chain made it).
+
 ## [0.8.0] — 2026-06-10
 
 The **agent-autonomy** release: the recording machinery now works — and fails —

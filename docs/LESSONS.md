@@ -13,9 +13,13 @@
 
 **L-08.** A version number is a claim across four registries that never sync — source (pyproject/__version__), remote git tags, GitHub Releases, and the PyPI index — plus one ordering invariant: origin/main must hold the staged release commit before any tag or Release exists, because a GitHub-UI release tags the REMOTE branch head, and at that moment every locally-authored guard is unpushed by construction. Sweep all four with fresh eyes before staging (tags can exist remote-only; a Release can exist for an unpublished version; uvx by-name answers from uv's cache and can hide a recent failed attempt). v0.7.0 and v0.8.0 were both double-claimed by exactly this mechanism within one day. *(from 2026-06-09-agent-autonomy)*
 
+**L-11.** Declare phase dependencies by technical need, not narrative order — and expect a restart-gated exit criterion to split its phase across sessions by design: the session that ships a change to session wiring cannot observe its own next cold start. Record the residue as an explicit REMAINING EXIT CRITERION line in the outputs registry; the next session then closes the phase cold from that line alone, while genuinely independent phases run in the meantime. *(from 2026-06-10-harness-truth-and-release-ritual)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)*
+
+**L-10.** Prove every probe at the granularity it reports, in both directions: the guard must fire on the failure it exists for and stay green on health — per matrix cell, per probe argument. Evidence lies orthogonally to what it measures: round 1's entire cmd.exe matrix column failed on cwd fallback (H-09) while measuring argv shape, and the planned --version executor probe answered before repo discovery, certifying launch identity while blind to the H-09 anchor it was meant to verify. Remove the confound, pair probes so each claim is witnessed by a spawn that actually traverses its layer, and only then read the verdict. *(from 2026-06-10-harness-truth-and-release-ritual)*
 
 ### Category: Design
 
