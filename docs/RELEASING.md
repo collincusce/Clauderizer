@@ -91,7 +91,7 @@ through.
 
 | Gate | Status | Evidence (dated artifact) |
 |------|--------|---------------------------|
-| B1 | ⬜ | _(alpha-to-beta-evidence Phase 0)_ |
+| B1 | ✅ 2026-06-10 | 0.9.0 live on PyPI: release-check exit 0 BEFORE tag (commit bdac36b, all four registries swept); publish run 27311516131 green (tag==source gate passed, Trusted Publishing); `uvx --refresh --from clauderizer clauderize --version` → 0.9.0; doctor exit 0 with executor-leg identity 0.9.0 |
 | B2 | ⬜ | _(alpha-to-beta-evidence Phase 1)_ |
 | B3 | ⬜ | _(alpha-to-beta-evidence Phase 2)_ |
 | B4 | ⬜ | _(alpha-to-beta-evidence Phase 3)_ |
