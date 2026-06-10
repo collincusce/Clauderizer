@@ -1,11 +1,12 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.1.0
+**Procedure version**: 1.2.0
 **Last updated**: 2026-05-02
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.2.0** (2026-06-09): Named `clauderize ops <file.json|->` the canonical no-MCP fallback for every tracked write (L-05): op names and arg shapes are exactly the `cz_*` tool names and schemas, so recording never depends on a live MCP client. Ad-hoc stdio-probe/shim patterns are retired.
 - **v1.1.0** (2026-05-02): Added **Amendment (`A-NNN`)** concept as a first-class entity for tracking gameplan body changes after Phase 0 starts. Added "Procedure: Amend a Gameplan" with cascade-to-affected-phases rules. Added mini-gameplan-vs-amend-existing decision rule of thumb. Projects adopting may declare `INVARIANT-13: Gameplan amendments cascade before session ends` (poe2.design adopts; smaller projects may not).
 - **v1.0.0** (2026-05-02): Initial synthesis from existing project procedures + session-derived improvements.
 
@@ -1137,6 +1138,27 @@ Report final test count.
 When ending, write Phase <N+1> handoff with cumulative lessons,
 update PHASE-STATUS.md, run cascade for status transitions.
 ```
+
+### Recording Without MCP — `clauderize ops`
+
+The `cz_*` tools are the primary write surface, but recording must never be
+hostage to a live MCP connection (L-05). When the tools are absent or the
+server can't attach, every operation — reads and writes — is reachable from a
+shell:
+
+```
+clauderize ops <file.json>     # or `-` to read the batch from stdin
+```
+
+The file is a JSON array of `{"op": "<tool name>", "args": {...}}` (a single
+object is accepted too). Op names and argument shapes are **exactly** the
+`cz_*` tool names and schemas — one shared registry backs both surfaces, so
+they cannot drift. Results come back as per-op JSON on stdout (`ok`,
+`result`/`error` per entry); the exit code is 0 only when every op succeeded.
+Putting args in a file (not shell arguments) is deliberate: it bypasses shell
+quoting hazards entirely. Writes serialize on the same inter-process write
+lock as every other writer. Do not hand-edit tracked docs as a "fallback" —
+`clauderize ops` is the fallback.
 
 ---
 

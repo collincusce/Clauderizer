@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Callable
 
 from ..config import Config
+from ..locking import LockHeld, write_lock
 from ..markdown import writer
 from ..paths import RepoPaths
 from ..profiles.detect import Profile
@@ -48,7 +49,15 @@ def _write_back_baseline(paths: RepoPaths, config: Config, count: str) -> str | 
     m = re.search(rf"\*\*{_BASELINE_LABEL}\*\*\s*:\s*(\d+)", idx.read_text(encoding="utf-8"))
     if m is None or m.group(1) == count:
         return None
-    writer.set_labeled_value(idx, _BASELINE_LABEL, count)
+    # One tracked write inside an otherwise read-only ritual: serialize it with
+    # every other writer (H-05). The lock wraps just this write — never the
+    # long-running test commands — and a contended lock skips the refresh
+    # rather than failing preflight: the value self-heals on the next green run.
+    try:
+        with write_lock(paths.write_lock_file):
+            writer.set_labeled_value(idx, _BASELINE_LABEL, count)
+    except LockHeld:
+        return None
     return m.group(1)
 
 # (exit_code, combined_output)

@@ -6,6 +6,7 @@ Subcommands:
     reindex   rebuild the disposable graph cache from markdown
     doctor    verify the install and report drift
     mcp       launch the MCP server (stdio)
+    ops       execute a JSON batch of cz_* operations (the no-MCP fallback)
 """
 
 from __future__ import annotations
@@ -136,6 +137,41 @@ def cmd_mcp(args: argparse.Namespace) -> int:
     from .mcp_server import main as mcp_main
 
     return mcp_main()
+
+
+def cmd_ops(args: argparse.Namespace) -> int:
+    """Execute ``[{op, args}, ...]`` against the shared ops registry (L-05).
+
+    Every tracked write reachable without an MCP client: op names and arg
+    shapes are exactly the cz_* tool names and schemas. Args live in a JSON
+    file (or stdin with ``-``) by design — no shell-quoting hazards. Exit 0
+    when every op succeeded, 1 when any failed, 2 when the batch itself is
+    unreadable.
+    """
+    from . import ops
+
+    if args.file == "-":
+        # PS 5.1 pipes can prepend a BOM to otherwise-valid JSON; tolerate it.
+        raw = sys.stdin.read().lstrip(chr(0xFEFF))
+    else:
+        path = Path(args.file)
+        if not path.exists():
+            print(json.dumps({"ok": False, "error": f"no such file: {args.file}"}))
+            return 2
+        raw = path.read_text(encoding="utf-8-sig")
+    try:
+        batch = json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(json.dumps({"ok": False, "error": f"invalid JSON: {e}"}))
+        return 2
+    if isinstance(batch, dict):
+        batch = [batch]  # single-op convenience
+    if not isinstance(batch, list):
+        print(json.dumps({"ok": False, "error": 'expected a JSON array of {"op", "args"}'}))
+        return 2
+    results, all_ok = ops.run_batch(batch)
+    print(json.dumps({"ok": all_ok, "results": results}, indent=2))
+    return 0 if all_ok else 1
 
 
 # --- doctor helpers -----------------------------------------------------------
@@ -317,6 +353,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     pm = sub.add_parser("mcp", help="launch the MCP server (stdio)")
     pm.set_defaults(func=cmd_mcp)
+
+    po = sub.add_parser("ops", help="execute a JSON batch of cz_* operations (no-MCP fallback)")
+    po.add_argument("file", help="JSON file of [{op, args}, ...], or '-' for stdin")
+    po.set_defaults(func=cmd_ops)
     return p
 
 

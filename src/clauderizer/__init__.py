@@ -9,4 +9,4 @@ __version__ = "0.6.0"
 # The version of the gameplan procedure this engine was built against. The
 # engine ships GAMEPLAN-PROCEDURE.md verbatim; `clauderize doctor` warns if a
 # host repo's procedure has drifted to a different MAJOR version.
-PROCEDURE_VERSION = "1.1.0"
+PROCEDURE_VERSION = "1.2.0"

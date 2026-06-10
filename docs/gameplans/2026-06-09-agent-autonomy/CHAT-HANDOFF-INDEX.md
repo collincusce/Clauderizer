@@ -1,7 +1,7 @@
 # Chat Handoff Index — agent-autonomy
 
 > Last updated: 2026-06-09
-> Status: Phase 1 ready
+> Status: Phase 2 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 139
+**Current baseline test count**: 148
 
 ## Ending Protocol
 
@@ -30,7 +30,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Serialized tracked writes | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | CLI write parity: clauderize ops | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | CLI write parity: clauderize ops | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Wiring truth: session-host-of-record | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Cold-start breadcrumb hook wrapper | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Stale-engine proof, amendment pointer, 0.7.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
@@ -45,6 +45,12 @@ Closed H-05 by serializing every tracked write through an advisory file lock. sr
 
 Suite went 139 -> 148. The load-bearing regression spawns 8 real writer processes that block on a GO sentinel and race add_lesson on one repo: 8 distinct sequential numbers, 8 surviving appends, no duplicates anywhere in the section. Also pinned: crashed-holder delay bounded by stale_timeout (exit criterion 2), LockHeld shape, release-on-exception, reentrancy, thread serialization, and no lock residue after mutations. H-05 was resolved through the locked path itself (task 0.4) by a fresh-process write, because the session's live MCP server still held the pre-lock module in memory — the lock guards MCP writers from the next server start onward.
 
+### Phase 1 — completed 2026-06-09
+
+Closed L-05 structurally: every tracked write is now reachable without an MCP client. src/clauderizer/ops.py is the single dispatch surface — the 24 tool bodies moved there verbatim as module-level functions whose names, signatures, and docstrings ARE the tool contract; mcp_server.py now registers those exact function objects in a loop (schemas derive from the same callables the CLI executes — identity by construction, not equality by test), and `clauderize ops <file.json|->` executes JSON batches of {op, args} against the same registry with per-op results and meaningful exit codes (0/1/2). Args-in-files is deliberate: it bypasses the PS 5.1 quoting hazards that motivated the shim era, and the reader tolerates BOMs (utf-8-sig + stdin strip). Phase 0's deferred lock residue closed along the way: cascade-report writes, handoff regeneration, and the create-gameplan config flip now serialize on the write lock inside their op bodies (covering MCP and CLI identically), and preflight's baseline refresh locks at the write site — skipping self-healingly under contention rather than holding the lock across a minutes-long test run or failing the ritual.
+
+Suite 148 → 162 (+14 in tests/test_ops.py): registry==TOOL_NAMES enumeration parity, MCP-vs-ops read and write parity on twin repos, batch continues-after-failure semantics, tool-level ok:false counting as failure, CLI file/stdin/BOM/exit-code behavior, a cold-process invocation, lock coverage of the non-mutation writes, dry-run lock-freedom (L-03), and the baseline contention-skip. Docs: the CLAUDE.md stanza and GAMEPLAN-PROCEDURE 1.2.0 (new "Recording Without MCP" quick-reference section) name clauderize ops as the canonical fallback, retiring shim guidance. Dogfood (task 1.5): a real Outputs Registry entry (mcp_less_write_demo) was recorded on this repo by `clauderize ops /tmp/dogfood_ops.json` in a fresh process with the MCP server never spawned — the exit-criterion evidence, alongside the in-test cold-process run.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -55,3 +61,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Integration
 
 **1.** A long-running MCP server executes the modules it imported at session start: after editing engine code, in-session cz_* writes still run the pre-edit code. Any dogfood or verification that must traverse a new code path needs a fresh process (stdio probe today, clauderize ops after Phase 1) — otherwise it silently exercises the old path while appearing to test the new one.
+
+### Category: Design
+
+**2.** When two transports must expose the same operation surface, register the same function objects on both rather than testing two implementations for equality: schemas and behavior stay identical by construction, and the parity test reduces to one enumeration check (registry keys == published tool names). Wrapper layers for cross-cutting concerns (locking, context) belong inside the shared bodies, not around them — introspection-based schema derivation makes wrappers a drift risk.

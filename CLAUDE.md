@@ -9,7 +9,10 @@ into context automatically — no manual reading order. To refresh on demand, ca
 `cz_status`. To begin/continue a phase, call `cz_next_phase_context` then
 `cz_preflight`. **If the `cz_*` tools are absent** (no `[Clauderizer]` digest
 appeared), the wiring is broken, not the memory: run `clauderize doctor` in a
-shell and use `clauderize status` for this digest until it's repaired.
+shell, use `clauderize status` for this digest, and make tracked writes with
+`clauderize ops <file.json|->` — a JSON batch `[{"op": "cz_add_lesson",
+"args": {...}}, ...]` against the exact tool names and schemas — until the
+wiring is repaired. Every `cz_*` tool is reachable that way.
 
 **Key tools** (MCP server `clauderizer`):
 - `cz_status` / `cz_next_phase_context` — where things stand; the next phase bundle.
@@ -28,6 +31,6 @@ shell and use `clauderize status` for this digest until it's repaired.
   mark the stale.
 
 **Rules**: never hand-edit frontmatter or append to tracked logs directly — use the
-`cz_*` tools so the graph stays consistent. The procedure spec is at
-`docs/gameplans/GAMEPLAN-PROCEDURE.md`.
+`cz_*` tools (or `clauderize ops` when MCP is unavailable) so the graph stays
+consistent. The procedure spec is at `docs/gameplans/GAMEPLAN-PROCEDURE.md`.
 <!-- clauderizer:end -->
