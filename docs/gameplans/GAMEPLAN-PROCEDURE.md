@@ -1,11 +1,12 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.2.0
-**Last updated**: 2026-05-02
+**Procedure version**: 1.2.1
+**Last updated**: 2026-06-09
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.2.1** (2026-06-09): Amendment entries carry a `Cascade report` line only when the `amendments` ritual is enabled, and as a pending pointer (`run cz_cascade for the affected entities`) rather than a per-amendment filename — cascade reports are per-entity files, so `<date>-A-NNN.md` never exists (the A-001 dangling-pointer bug).
 - **v1.2.0** (2026-06-09): Named `clauderize ops <file.json|->` the canonical no-MCP fallback for every tracked write (L-05): op names and arg shapes are exactly the `cz_*` tool names and schemas, so recording never depends on a live MCP client. Ad-hoc stdio-probe/shim patterns are retired.
 - **v1.1.0** (2026-05-02): Added **Amendment (`A-NNN`)** concept as a first-class entity for tracking gameplan body changes after Phase 0 starts. Added "Procedure: Amend a Gameplan" with cascade-to-affected-phases rules. Added mini-gameplan-vs-amend-existing decision rule of thumb. Projects adopting may declare `INVARIANT-13: Gameplan amendments cascade before session ends` (poe2.design adopts; smaller projects may not).
 - **v1.0.0** (2026-05-02): Initial synthesis from existing project procedures + session-derived improvements.
@@ -146,8 +147,10 @@ Captured as a numbered entry in a `## Amendments` section near the top of `GAMEP
 - **Triggered by**: <D-NNN, real-time discovery, scope change, etc.>
 - **What changed**: <text>
 - **Why**: <text>
-- **Cascade report**: `<gameplan>/_cascade-reports/YYYY-MM-DD-A-NNN.md`
+- **Cascade report**: _pending — run `cz_cascade` for the affected entities; reports land in `_cascade-reports/`_
 ```
+
+The `Cascade report` line appears only when the project's `amendments` ritual is enabled (INVARIANT-13 adopters), and always as the pending pointer above — cascade reports are per-entity files named by the engine, so an amendment entry never promises a `<date>-A-NNN.md` filename.
 
 Amendments are append-only (just like decisions) — superseded amendments stay in the record with `Status: superseded` and a `Superseded-by: A-MMM` link.
 

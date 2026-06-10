@@ -22,11 +22,14 @@ setup the real session host could not launch. This module closes the gap:
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+from . import __version__
 
 NATIVE = "native"
 WSL_KIND = "windows-wsl"
@@ -200,6 +203,24 @@ def spawn_probe(argv: list[str] | None, *, timeout: float = PROBE_TIMEOUT,
     return Probe("ok", out[0] if out else f"`{shown}` exit 0")
 
 
+# Both console entry points answer ``--version`` with exactly this shape
+# (cli argparse, mcp_server.main, hook.sessionstart.main) — the round-trip
+# probe's output is therefore an identity claim, not just an exit code.
+_SERVED_VERSION_RE = re.compile(r"\bclauderizer (\d[^\s)]*)")
+
+
+def served_version(probe_detail: str) -> str | None:
+    """The engine version a probe's output claims, if it identifies itself.
+
+    ``None`` for engines that predate the deterministic ``--version`` surface
+    (pre-0.6.0 ``clauderizer-mcp`` exits 0 on EOF printing *nothing* — the
+    lesson-#4 accident) and for wrapper breadcrumbs (a dead engine behind the
+    D4 hook wrapper still exits 0, with the breadcrumb on stdout).
+    """
+    m = _SERVED_VERSION_RE.search(probe_detail)
+    return m.group(1) if m else None
+
+
 def _inner_target(argv: list[str]) -> str | None:
     """The engine-side executable inside a wsl.exe shim argv, if extractable."""
     rest = argv[1:]
@@ -255,6 +276,28 @@ def verify_wiring(argv: list[str] | None, session_host: str | None,
                                  f"not executable in this distro")
     probe = spawn_probe(argv, timeout=timeout)
     if probe.status == "ok":
+        # Identity, not just launchability (D5, D9): exit 0 alone certified a
+        # pinned-stale engine (pre-0.6.0 servers exit 0 on EOF) and even a DEAD
+        # engine behind the D4 wrapper (breadcrumb on stdout, always exit 0).
+        # The round-trip must claim the same version as the engine answering
+        # this doctor, or the green verdict speaks for a different build than
+        # sessions actually get.
+        served = served_version(probe.detail)
+        if served is None:
+            return Probe(
+                "fail",
+                f"round-trip succeeded but the wiring did not identify its engine "
+                f"(expected 'clauderizer {__version__}', got: {probe.detail or '<no output>'!r}) "
+                f"— stale pre-0.6.0 pin or dead engine behind the hook wrapper; "
+                f"update the pin or re-run `clauderize init`",
+            )
+        if served != __version__:
+            return Probe(
+                "fail",
+                f"wiring serves clauderizer {served} but this doctor is {__version__} — "
+                f"sessions on this repo run {served} (stale pin or cached build); "
+                f"update the pin, clear the uvx cache, or re-run `clauderize init`",
+            )
         return Probe("ok", f"verified end-to-end via wsl.exe round-trip ({probe.detail})")
     if probe.status == "unverifiable":
         detail = probe.detail

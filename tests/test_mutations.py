@@ -290,6 +290,25 @@ def test_add_amendment(temp_repo):
     assert r["id"] == "A-001"
     gp = (paths.gameplan_dir(GID) / "GAMEPLAN.md").read_text()
     assert "### A-001 — add task" in gp
+    # Ritual disabled (the default): no cascade-report line at all. Until 0.7.0
+    # every amendment cited `_cascade-reports/<date>-A-NNN.md` — a file no code
+    # path creates under any setting (A-001's dangling pointer).
+    assert "Cascade report" not in gp
+
+
+def test_add_amendment_cascade_line_only_under_ritual(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    r = M.add_amendment(
+        paths, gameplan_id=GID, title="add task", affected_sections="Phase 1",
+        affected_phases="Phase 1", triggered_by="discovery", what="added a task",
+        why="missed it", amendments_ritual=True, today="2026-06-02",
+    )
+    assert r["id"] == "A-001"
+    gp = (paths.gameplan_dir(GID) / "GAMEPLAN.md").read_text()
+    assert "- **Cascade report**: _pending" in gp
+    assert "cz_cascade" in gp
+    # Never a per-amendment filename promise — cascade reports are per-entity.
+    assert "_cascade-reports/2026-06-02-A-001.md" not in gp
 
 
 def test_upsert_entity_create_then_update_preserves_body(temp_repo):

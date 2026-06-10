@@ -207,7 +207,8 @@ def cz_add_amendment(title: str, affected_sections: str, affected_phases: str,
     return mutations.add_amendment(paths, gameplan_id=gid, title=title,
                                    affected_sections=affected_sections,
                                    affected_phases=affected_phases,
-                                   triggered_by=triggered_by, what=what, why=why)
+                                   triggered_by=triggered_by, what=what, why=why,
+                                   amendments_ritual=config.ritual_enabled("amendments"))
 
 
 def cz_add_decision(title: str, context: str, decision: str, consequences: str,

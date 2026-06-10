@@ -217,10 +217,11 @@ your-repo/
 ├── CLAUDE.md                    # a Clauderizer stanza (between markers — your text is preserved)
 ├── .mcp.json                    # registers the clauderizer MCP server
 ├── .claude/
-│   ├── settings.json            # SessionStart hook
+│   ├── settings.json            # SessionStart hook (registers the breadcrumb wrapper)
 │   └── skills/clauderizer-*/    # six workflow skills (/do-phase, /cascade, /record, …)
 ├── .clauderizer/
-│   ├── config.toml              # size dial + host profile + active gameplan
+│   ├── config.toml              # size dial + host profile + session host + active gameplan
+│   ├── hook.sh                  # breadcrumb hook wrapper (hook.cmd on native Windows)
 │   ├── profile.lock.toml        # per-project test/build/lint commands (editable override)
 │   └── index.json               # disposable graph cache (gitignored)
 └── docs/                        # the canonical markdown memory
@@ -233,8 +234,8 @@ your-repo/
 `init` is **idempotent**: re-running fills gaps and refreshes engine-owned files but never
 clobbers your content (marker blocks, key-scoped JSON merges, exists-checks). Run
 `clauderize doctor` any time to verify the install is not just *present* but actually
-*runnable* (it probes that the MCP/hook commands can launch — a green check on a broken
-setup is worse than no check).
+*runnable by the host that spawns your sessions* — and that the engine it reaches is the
+version answering the doctor (a green check on a broken setup is worse than no check).
 
 ## The model
 
@@ -261,10 +262,13 @@ setup is worse than no check).
 ```bash
 clauderize init [--size pet|standard|saas] [--profile auto|node|python|go|ruby]
                 [--gameplan "Name"] [--run-cmd "uvx --from clauderizer"]
+                [--session-host native|windows-wsl:<distro>] [--no-spawn-test]
 clauderize status [--json]   # the current digest
-clauderize doctor            # verify the install is present AND runnable; report drift
+clauderize doctor            # present AND runnable for the session host of record;
+                             # exit 0 ok · 2 drift · 3 ok-but-unverifiable-from-this-host
 clauderize reindex           # rebuild the graph cache from markdown
 clauderize mcp               # launch the MCP server (stdio)
+clauderize ops <file.json|-> # execute a JSON batch of cz_* ops (the no-MCP write fallback)
 ```
 
 ## MCP surface
@@ -281,6 +285,45 @@ clauderize mcp               # launch the MCP server (stdio)
 The tools are deliberately separate and self-describing rather than one generic `mutate` — that's
 the whole point of going MCP-native: an agent dropped into the repo *discovers* the workflow from
 the tool schemas, no documentation pass required.
+
+## No MCP client? Every write still works
+
+The `cz_*` tools are the front door, not a dependency. `clauderize ops` executes the same
+operations — same names, same arg shapes, same shared registry — from the command line:
+
+```bash
+echo '[{"op": "cz_add_lesson", "args": {"text": "…", "category": "Process"}}]' > batch.json
+clauderize ops batch.json        # or `clauderize ops -` to read the batch from stdin
+```
+
+Per-op JSON results land on stdout (exit 0 all-ok, 1 any-op-failed, 2 unreadable batch), and
+writes hold the same advisory write lock as the MCP server — so a session whose wiring is
+broken can still record exactly what broke. Args live in files by design: no shell-quoting
+hazards on any host.
+
+## Split-host wiring (Windows → WSL) — wiring that can't lie
+
+Sessions and the engine don't always share a host: Claude Code on Windows over
+`\\wsl.localhost\…` spawns commands *Windows* must launch, even when the engine lives in a
+WSL venv. Clauderizer records the **session host of record** (`native` or
+`windows-wsl:<distro>`) in config, composes wiring for it (the `wsl.exe -d <distro>` shim,
+command/args split for `.mcp.json`, one command string for the hook), and `init`
+**spawn-tests every command before writing it** — a command that can't answer `--version`
+is refused with nothing written.
+
+Three guards keep the wiring honest after that:
+
+- **The SessionStart hook is a breadcrumb wrapper** (`.clauderizer/hook.sh` / `hook.cmd`):
+  it always spawns, and any engine failure prints
+  `[Clauderizer] engine unreachable: … — run clauderize doctor` *into the session context*
+  instead of dying silently.
+- **`clauderize doctor` verifies for the host of record**: it certifies the wiring through a
+  real round-trip spawned the way sessions spawn it, or honestly reports "unverifiable from
+  this host" (exit 3) — never a false green from the wrong side of the boundary.
+- **Identity, not just launchability**: the round-trip must come back claiming
+  `clauderizer <version>` — the same version as the doctor you're running. A stale pinned
+  engine (`uvx --from "clauderizer[mcp]==0.5.0"` *launches fine*) and a dead engine hiding
+  behind the always-exit-0 wrapper both fail loudly instead of certifying green.
 
 ## Configurable two ways
 

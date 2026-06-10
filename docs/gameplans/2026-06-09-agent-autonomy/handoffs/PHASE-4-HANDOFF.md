@@ -26,6 +26,8 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
+**8.** init's refresh boundary is per-asset and a release must know it: create_if_absent assets (the installed GAMEPLAN-PROCEDURE.md) never track template bumps on re-init — by design, since host repos may hold annotated copies — so the engine repo's release flow syncs its own installed copy explicitly (template -> docs/gameplans/, done for 1.2.0 and 1.2.1). Releasing = bump pyproject + __version__ + pip install -e . (dist-info skew, H-03) + CHANGELOG + procedure-copy sync + re-init + restart-validated cold start BEFORE the tag; publishing fires on the GitHub Release (publish.yml Trusted Publishing), not the bare tag.
+
 ### Category: Integration
 
 **1.** A long-running MCP server executes the modules it imported at session start: after editing engine code, in-session cz_* writes still run the pre-edit code. Any dogfood or verification that must traverse a new code path needs a fresh process (stdio probe today, clauderize ops after Phase 1) — otherwise it silently exercises the old path while appearing to test the new one.
@@ -41,6 +43,8 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **5.** Know which output channel your consumer actually reads before designing failure reporting: the harness injects only a hook's stdout into session context, so a dying hook's perfectly informative stderr was indistinguishable from silence. A breadcrumb wrapper is therefore channel REROUTING (capture 2>&1, reprint on stdout, exit 0) at least as much as failure detection — and the same applies to any tool whose stderr goes somewhere humans don't look.
 
 **6.** Place a reliability wrapper on the deepest layer whose failure still leaves the system reachable, not automatically on the consumer's host: for split-host wiring, a Windows-side cmd wrapper would add noise (UNC cwd warning into every healthy session) and fragility (cwd reset) while only covering states in which the repo itself is unreachable. Coverage analysis beats "host-native by default" — enumerate which failure modes each candidate layer can actually observe AND report through a channel the consumer reads.
+
+**7.** Locally-sound guard contracts can compose into a false green: the D4 wrapper's always-exit-0 design (correct for hook stdout capture) silently defeated the spawn probe's exit-0-means-launchable assumption, so doctor certified a DEAD engine ('verified end-to-end' with a breadcrumb as the evidence string). When a new layer wraps a probed surface, re-derive what the outer signal still distinguishes — and prefer in-band identity (the output must claim who it is) over exit codes, which only say that something ran.
 
 ## Project Lessons (distilled — survive across gameplans)
 
@@ -100,22 +104,42 @@ clauderizer-mcp exits 0 on EOF — same accident lesson #4 documents);
 `~/.local/bin/uvx` (non-login PATH caveat; `_resolve_invocation`
 absolutizes via which()).
 
-**Task 4.2 (amendment pointer):** `rituals.amendments = false` on this
-repo; A-001 in the 0.6.0 gameplan (docs/gameplans/2026-06-09-*) cites
-`_cascade-reports/2026-06-09-A-001.md` which does not exist. Fix the
-renderer (pointer only when the ritual is enabled / the file is created)
-+ regression test + heal A-001's text via the blessed write path.
+---
 
-**Task 4.4 (release 0.7.0):** version in pyproject.toml AND
-`src/clauderizer/__init__.py.__version__` (doctor compares both —
-"engine metadata matches source version" goes red on skew until
-`pip install -e .` refreshes dist-info; lesson from H-03). CHANGELOG.md at
-repo root. README gains ops/host-of-record/wrapper sections. Re-init
-installed assets. **Tag only after a restart-validated cold start** — that
-restart is also the first live harness run of the new wrapper digest path.
+**PHASE 4 IS COMPLETE (2026-06-09); the gameplan shows Complete. The notes
+above were the pre-execution scouting — kept for the record. What remains
+is the close-out session, gated on one observation:**
+
+**First thing to check in the next cold start: did the [Clauderizer]
+digest appear in YOUR session context?** The Phase-4 session — the first
+wrapper-era harness session — got NO digest injected, while the exact
+registered command (`wsl.exe -d ubuntu /bin/sh
+/home/ccusce/Clauderizer/.clauderizer/hook.sh`) emits the digest and exits
+0 when run manually, and doctor certifies the chain end-to-end (16/16,
+'clauderizer 0.7.0'). Command leg green; harness leg unverified (Phase 4
+output `restart_validation_observation`).
+
+- **Digest appeared** → restart validation PASSED. Then: `git tag v0.7.0`,
+  push main + the tag, cut the **GitHub Release** for v0.7.0 (publish.yml
+  / Trusted Publishing does PyPI — the bare tag does not publish), verify
+  `uvx --from clauderizer clauderize --version` → 0.7.0 once the index
+  updates, and run `/clauderizer-close-gameplan`.
+- **No digest again** → do NOT tag. The failure point is harness-side hook
+  execution (candidates: project-hook trust in this client, hook stdin
+  JSON handling, timeout). Diagnose from PowerShell with the manual
+  wrapper run + `clauderize doctor`; record findings via `cz_add_finding`.
+  H-06's pattern applies to any new guard: in-band identity beats exit
+  codes.
+
+**Close-out also owes**: O1/O2 (GAMEPLAN Open Items) carried to the next
+gameplan; a lesson promotion/consolidation pass (candidates: #7
+false-green composition; #5/#6 channel-and-layer placement overlap);
+POST-MORTEM.md per the close-gameplan skill. State: suite 215 green,
+doctor 16/16 exit 0 via shim, H-01..H-06 resolved with evidence, 0.7.0
+fully staged and untagged.
 
 **Runbook** (unchanged): tests via PowerShell `wsl.exe -d ubuntu --cd
 /home/ccusce/Clauderizer /home/ccusce/Clauderizer/.venv/bin/python -m
-pytest`; tracked writes via `clauderize ops /tmp/<batch>.json`; live MCP
-server runs session-start modules (lesson #1) — dogfood new engine code in
-fresh processes.
+pytest`; tracked writes sans MCP via `clauderize ops /tmp/<batch>.json`;
+live MCP server runs session-start modules (lesson #1) — dogfood new
+engine code in fresh processes.

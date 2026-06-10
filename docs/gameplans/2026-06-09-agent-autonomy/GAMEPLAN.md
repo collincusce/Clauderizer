@@ -1,7 +1,7 @@
 # agent-autonomy Gameplan
 
 > Created: 2026-06-09
-> Status: Executing
+> Status: Complete
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -98,7 +98,15 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 ## Open Items
 
-_(O1, O2, … — blockers and cross-phase questions.)_
+- **O1 — `ACTIVE_LESSONS_WARN` as config**: the memory-gauge warn threshold is
+  a constant; make it configurable. Carried from the 0.5.0/0.6.0 post-mortems
+  (restated here 2026-06-09 by Phase 4 thread hygiene; not in any phase's
+  scope — candidate for the next gameplan).
+- **O2 — Project-lesson consolidation past ~20 entries**: docs/LESSONS.md has
+  no consolidation pressure yet (currently 6 entries; the per-gameplan
+  consolidate/promote flow exists, the cross-gameplan one does not). Carried
+  from the 0.6.0 post-mortem (restated 2026-06-09 by Phase 4; revisit when
+  the count approaches ~20).
 
 ## Phase Breakdown
 

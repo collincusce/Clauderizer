@@ -846,6 +846,7 @@ def add_amendment(
     triggered_by: str,
     what: str,
     why: str,
+    amendments_ritual: bool = False,
     today: str | None = None,
 ) -> dict:
     today = _today(today)
@@ -859,9 +860,17 @@ def add_amendment(
         f"- **Affected phases**: {affected_phases}\n"
         f"- **Triggered by**: {triggered_by}\n"
         f"- **What changed**: {what}\n"
-        f"- **Why**: {why}\n"
-        f"- **Cascade report**: _cascade-reports/{today}-{new_id}.md"
+        f"- **Why**: {why}"
     )
+    if amendments_ritual:
+        # The cascade line only when the rituals.amendments discipline applies
+        # (INVARIANT-13 adopters) — and as an honest pending pointer: cascade
+        # reports are per-entity files, so no `<date>-A-NNN.md` ever exists.
+        # A-001 in engine-structural-robustness dangled on exactly that name.
+        entry += (
+            f"\n- **Cascade report**: _pending — run `cz_cascade` for the "
+            f"affected entities; reports land in `_cascade-reports/`_"
+        )
     writer.append_to_section(gp, "Amendments", entry)
     return {"ok": True, "id": new_id, "files_changed": [str(gp)],
             "summary": f"added amendment {new_id}"}

@@ -154,10 +154,53 @@ def test_verify_wiring_dead_engine_target_fails_inside_matching_distro(monkeypat
 def test_verify_wiring_round_trip_certifies(monkeypatch):
     monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
     monkeypatch.setattr(hosts, "spawn_probe",
+                        lambda argv, **kw: hosts.Probe("ok", f"clauderizer {hosts.__version__}"))
+    p = hosts.verify_wiring(["wsl.exe", "-d", "ubuntu", "/x/clauderizer-mcp"],
+                            "windows-wsl:ubuntu")
+    assert p.ok and "end-to-end" in p.detail and hosts.__version__ in p.detail
+
+
+# --- verify_wiring: identity, not just launchability (D5, stale-engine proof) --------
+# Until Phase 4 this fixture said Probe("ok", "clauderizer 9.9.9") and verify_wiring
+# certified it against a non-9.9.9 engine — the exact false green D5 exists to kill.
+
+
+def test_verify_wiring_round_trip_fails_on_version_skew(monkeypatch):
+    monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
+    monkeypatch.setattr(hosts, "spawn_probe",
                         lambda argv, **kw: hosts.Probe("ok", "clauderizer 9.9.9"))
     p = hosts.verify_wiring(["wsl.exe", "-d", "ubuntu", "/x/clauderizer-mcp"],
                             "windows-wsl:ubuntu")
-    assert p.ok and "end-to-end" in p.detail and "9.9.9" in p.detail
+    assert p.status == "fail"
+    assert "9.9.9" in p.detail and hosts.__version__ in p.detail
+    assert "stale" in p.detail
+
+
+def test_verify_wiring_round_trip_fails_without_identity(monkeypatch):
+    # The lesson-#4 accident: a pre-0.6.0 clauderizer-mcp exits 0 on EOF and
+    # prints nothing — exit code alone would certify a stale pinned engine.
+    monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
+    monkeypatch.setattr(hosts, "spawn_probe",
+                        lambda argv, **kw: hosts.Probe(
+                            "ok", "`wsl.exe -d ubuntu uvx clauderizer-mcp --version` exit 0"))
+    p = hosts.verify_wiring(["wsl.exe", "-d", "ubuntu", "/x/clauderizer-mcp"],
+                            "windows-wsl:ubuntu")
+    assert p.status == "fail"
+    assert "did not identify" in p.detail and hosts.__version__ in p.detail
+
+
+def test_verify_wiring_round_trip_fails_on_wrapper_breadcrumb(monkeypatch):
+    # The D4 wrapper always exits 0 and converts a dead engine into a stdout
+    # breadcrumb — without the identity check that read as a GREEN hook verdict.
+    monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
+    crumb = (f"{hosts.BREADCRUMB_PREFIX} exit 127 from /x/clauderizer-hook "
+             f"— run `clauderize doctor`")
+    monkeypatch.setattr(hosts, "spawn_probe",
+                        lambda argv, **kw: hosts.Probe("ok", crumb))
+    p = hosts.verify_wiring(["wsl.exe", "-d", "ubuntu", "/bin/sh", "/x/.clauderizer/hook.sh"],
+                            "windows-wsl:ubuntu")
+    assert p.status == "fail"
+    assert hosts.BREADCRUMB_PREFIX in p.detail  # the breadcrumb surfaces in doctor output
 
 
 # --- init: composition, record, and the H-04 refusal ----------------------------------

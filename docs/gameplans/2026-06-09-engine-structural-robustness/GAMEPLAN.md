@@ -65,7 +65,7 @@ Captured 2026-06-09 from the live repo (authority over the gameplan body):
 - **Triggered by**: Phase 0 preflight failure on this repo: tests check ran `pytest` and got 'pytest: not found' while .venv/bin/pytest exists
 - **What changed**: Add task 0.6: preflight's default runner prepends the running interpreter's bin directory to PATH for profile commands, so a venv-installed engine finds its own toolchain without shell activation.
 - **Why**: The repaired wiring launches the engine by absolute venv path with no activation; profile commands resolve against the inherited PATH and miss the engine's own environment - the same capability-gap class as H-01, one layer down.
-- **Cascade report**: _cascade-reports/2026-06-09-A-001.md
+- **Cascade report**: none — no per-amendment report exists (pre-0.7.0 renderer bug, fixed in 0.7.0); A-001's cascade evidence: `_cascade-reports/2026-06-09-subsys.markdown-core.md`
 
 ## Decisions
 

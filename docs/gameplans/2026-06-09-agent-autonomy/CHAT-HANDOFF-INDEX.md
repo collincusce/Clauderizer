@@ -1,7 +1,7 @@
 # Chat Handoff Index — agent-autonomy
 
 > Last updated: 2026-06-09
-> Status: Phase 4 ready
+> Status: All 5 phases complete
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 195
+**Current baseline test count**: 211
 
 ## Ending Protocol
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | CLI write parity: clauderize ops | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Wiring truth: session-host-of-record | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Cold-start breadcrumb hook wrapper | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Stale-engine proof, amendment pointer, 0.7.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Stale-engine proof, amendment pointer, 0.7.0 | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-4-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -63,12 +63,20 @@ Closed H-01's residue: a cold session whose engine cannot launch now learns why.
 
 One deliberate deviation from D4's letter (correction): for windows-wsl the wrapper is WSL-side sh registered behind the wsl.exe shim, not a Windows .cmd — a cmd wrapper started in this repo's \\wsl.localhost UNC cwd would inject a "UNC paths are not supported" warning into every HEALTHY session and resets cwd, while only covering "wsl.exe dead but cmd alive", a state in which the UNC repo is unreachable and no session starts here anyway. Exit criteria green: live demo on a scratch repo (engine binary renamed, registered command run verbatim from PowerShell) recorded as H-01's closure evidence — before: exit 127/empty stdout; after: exit 0/breadcrumb; the remaining silent boundary (wrapper shell or wsl.exe itself dead, wrapper file deleted) documented explicitly in H-01's resolution; suite 211 green (195 + 16); this repo upgraded by re-init (only hook.sh + settings.json changed), doctor 16/16 exit 0 through the shim.
 
+### Phase 4 — completed 2026-06-09
+
+Phase 4 proved the last unproven guard and shipped the release. The stale-engine thread closed with recorded evidence (H-06): verify_wiring now demands the round-trip identify its engine — a scratch repo pinned to uvx clauderizer[mcp]==0.5.0, which init legitimately writes because both 0.5.0 entry points pass exit-code probes (the lesson-#4 accident, observed live), fails BOTH of the current doctor's launch checks loudly (exit 2), while by-name uvx resolves PyPI latest (0.6.0) and this repo's healthy wiring certifies '(clauderizer 0.7.0)' 16/16. The same identity check killed a false green nobody had named: the D4 wrapper's always-exit-0 contract had turned a dead engine into a green hook verdict (lesson #7). cz_add_amendment's cascade pointer became conditional-and-honest (per-amendment report filenames never existed; procedure 1.2.1), and A-001's dangling pointer was healed via an entry-anchored locked write to cite the per-entity report that actually holds its evidence. The 0.6.0 post-mortem's open threads are all annotated closed-with-evidence or restated as Open Items O1/O2.
+
+Release 0.7.0 is staged but deliberately untagged: version bumped (pyproject + __version__ + dist-info), CHANGELOG covers all five phases, README gains ops/split-host/identity sections, installed assets re-inited, suite 211 → 215, doctor 16/16 exit 0 through the shim. The tag is gated on a restart-validated cold start, and this session sharpened exactly that question: the first wrapper-era harness session got NO digest injected while the registered command works perfectly when run manually — command leg green, harness leg unverified (recorded as restart_validation_observation). Next session: check the digest, then tag v0.7.0 and cut the GitHub Release (publish.yml does PyPI), then close the gameplan.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
 obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
+
+**8.** init's refresh boundary is per-asset and a release must know it: create_if_absent assets (the installed GAMEPLAN-PROCEDURE.md) never track template bumps on re-init — by design, since host repos may hold annotated copies — so the engine repo's release flow syncs its own installed copy explicitly (template -> docs/gameplans/, done for 1.2.0 and 1.2.1). Releasing = bump pyproject + __version__ + pip install -e . (dist-info skew, H-03) + CHANGELOG + procedure-copy sync + re-init + restart-validated cold start BEFORE the tag; publishing fires on the GitHub Release (publish.yml Trusted Publishing), not the bare tag.
 
 ### Category: Integration
 
@@ -85,3 +93,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **5.** Know which output channel your consumer actually reads before designing failure reporting: the harness injects only a hook's stdout into session context, so a dying hook's perfectly informative stderr was indistinguishable from silence. A breadcrumb wrapper is therefore channel REROUTING (capture 2>&1, reprint on stdout, exit 0) at least as much as failure detection — and the same applies to any tool whose stderr goes somewhere humans don't look.
 
 **6.** Place a reliability wrapper on the deepest layer whose failure still leaves the system reachable, not automatically on the consumer's host: for split-host wiring, a Windows-side cmd wrapper would add noise (UNC cwd warning into every healthy session) and fragility (cwd reset) while only covering states in which the repo itself is unreachable. Coverage analysis beats "host-native by default" — enumerate which failure modes each candidate layer can actually observe AND report through a channel the consumer reads.
+
+**7.** Locally-sound guard contracts can compose into a false green: the D4 wrapper's always-exit-0 design (correct for hook stdout capture) silently defeated the spawn probe's exit-0-means-launchable assumption, so doctor certified a DEAD engine ('verified end-to-end' with a breadcrumb as the evidence string). When a new layer wraps a probed surface, re-derive what the outer signal still distinguishes — and prefer in-band identity (the output must claim who it is) over exit codes, which only say that something ran.

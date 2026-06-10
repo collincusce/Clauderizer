@@ -127,18 +127,44 @@ Collected in real time across the cold-start recovery and all four phases:
 
 ## Open Threads
 
+_(Status annotations added 2026-06-09 by agent-autonomy Phase 4 — every thread
+below is now closed or explicitly carried forward.)_
+
 - **CLI write parity** (friction #1): expose the mutation surface without an
   MCP client — the highest-leverage robustness item this round surfaced.
+  → **Closed** by agent-autonomy Phase 1 (0.7.0): `clauderize ops <file.json|->`
+  executes batches against the same registry the MCP server dispatches; 24/24
+  tool parity by enumeration; L-05 resolved (evidence: the Phase-1 outputs
+  registry entry was itself recorded MCP-less).
 - **Publish 0.6.0 to PyPI**: `uvx --from clauderizer` by name still resolves
   the published version; until 0.6.0 ships, any uvx-wired repo dogfoods old
   code (doctor's D9 check now detects it, but only for the engine repo
   itself).
+  → **Closed**: 0.6.0 reached PyPI via the v0.6.0 release (observed live,
+  same day). The remaining proof half — doctor *demonstrably* failing a
+  stale-pinned uvx wiring on a non-engine repo — landed in agent-autonomy
+  Phase 4 as H-06: `verify_wiring` now requires the round-trip to identify
+  its engine, and the pinned `clauderizer[mcp]==0.5.0` scratch-repo demo
+  fails both launch checks loudly (doctor exit 2) while by-name uvx resolves
+  0.6.0.
 - H-01 engine-side residue: a cold-start breadcrumb when the hook cannot
   spawn at all.
+  → **Closed** by agent-autonomy Phase 3 (0.7.0): init registers a
+  breadcrumb wrapper (`.clauderizer/hook.sh`) as the SessionStart command;
+  live demo recorded in H-01's resolution (dead engine → breadcrumb on
+  stdout, exit 0).
 - Carried from before, still deferred: `ACTIVE_LESSONS_WARN` as config;
   project-scope lesson consolidation past ~20 entries.
+  → **Still open, deliberately**: restated as agent-autonomy Open Items
+  O1/O2 so they survive this document going cold.
 - `cz_add_amendment`'s unconditional cascade-report pointer (Procedure
   Improvements above).
+  → **Closed** by agent-autonomy Phase 4 (0.7.0): the `Cascade report` line
+  renders only when the `amendments` ritual is enabled, as a pending pointer
+  (per-amendment report files never existed); A-001's dangling pointer above
+  healed to cite `_cascade-reports/2026-06-09-subsys.markdown-core.md`, the
+  per-entity report that actually holds its cascade evidence; procedure
+  1.2.1.
 
 ## Addendum — second live test, same day (Windows-host cold start of the repaired wiring)
 

@@ -2,7 +2,53 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [0.6.0] — 2026-06-09
+## [0.7.0] — 2026-06-09
+
+The **agent-autonomy** release: the recording machinery now works — and fails —
+out loud, from any host, under any concurrency, with or without MCP. Every
+change closes a named finding from the 0.6.0 live tests (H-05, L-05, H-04,
+H-01 residue, the stale-uvx thread).
+
+### Added
+- **Advisory write lock** (`.clauderizer/write.lock`) — every tracked write
+  serializes at the mutation choke point: O_EXCL acquire with holder metadata,
+  stale takeover (~30s), clear retryable `LockHeld` error naming the holder.
+  N concurrent writer *processes* now yield N sequential IDs and N surviving
+  appends (closes H-05). Reads stay lock-free.
+- **`clauderize ops <file.json|->`** — CLI write parity: a JSON batch of
+  `[{op, args}, ...]` executes against the same registry the MCP server
+  dispatches; op names and schemas are exactly the `cz_*` tool names. Every
+  tracked write is now reachable without an MCP client (closes L-05); the
+  ad-hoc shim patterns are retired.
+- **Session host of record** — config records which host spawns sessions
+  (`native` | `windows-wsl:<distro>`); init composes host-appropriate wiring
+  (wsl.exe shim, command/args split) and **spawn-tests every command before
+  writing** (refuses the H-04 `clauderize clauderizer-mcp` mis-composition
+  with nothing written); doctor verifies launchability *for the recorded
+  host* or honestly reports "unverifiable from this host" (exit 3 — never a
+  false green). Closes H-04.
+- **Cold-start breadcrumb wrapper** — init registers a thin always-spawns
+  wrapper (`.clauderizer/hook.sh`, `hook.cmd` on native win32) as the
+  SessionStart command; any engine failure becomes a stdout breadcrumb
+  (`[Clauderizer] engine unreachable: … — run clauderize doctor`) instead of
+  silence (closes H-01's residue). Doctor checks wrapper presence and
+  freshness against the engine path.
+- **Wiring identity verification (D5)** — doctor's round-trip launch checks
+  now require the wiring to *identify its engine*: the probed `--version`
+  output must claim the same version as the engine answering doctor.
+  Catches pinned-stale wiring that launches fine (a `uvx --from
+  clauderizer[mcp]==0.5.0` pin passes every exit-code probe — demonstrated
+  live, recorded as H-06) and a dead engine behind the always-exit-0 hook
+  wrapper (whose breadcrumb previously read as a green hook verdict).
+
+### Fixed
+- **`cz_add_amendment` dangling cascade pointer** — amendment entries cited
+  `_cascade-reports/<date>-A-NNN.md`, a per-amendment filename no code path
+  creates under any setting. The `Cascade report` line now renders only when
+  the `amendments` ritual is enabled, and as an honest pending pointer
+  (cascade reports are per-entity files). A-001 in the 0.6.0 gameplan healed
+  to cite the per-entity report that actually holds its cascade evidence.
+  Procedure 1.2.0 → 1.2.1 documents the conditional line.
 
 Closes the **engine-robustness cluster** from the two prior post-mortems plus
 the cold-start findings H-01..H-03. The through-line is *structure over
