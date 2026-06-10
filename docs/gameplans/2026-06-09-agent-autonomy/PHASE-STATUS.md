@@ -10,7 +10,7 @@
 | 0 | Serialized tracked writes | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | CLI write parity: clauderize ops | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Wiring truth: session-host-of-record | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Cold-start breadcrumb hook wrapper | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Cold-start breadcrumb hook wrapper | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Stale-engine proof, amendment pointer, 0.7.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
 ## Outputs Registry
@@ -48,6 +48,15 @@ exit_evidence: clauderize init on this repo (via the PowerShell shim, fresh proc
 test_count: 195 (162 + 33: tests/test_hosts.py — parse/detect/compose matrix, config round-trip incl. apply-twice, real spawn probes incl. the H-04 exit-2 shape refusing init with nothing written, verify_wiring 3-state, init adoption/persistence/idempotency, doctor messaging; test_engine_hardening's _command_runnable tests ported to hosts.verify_wiring)
 ```
 
+### Phase 3 Outputs
+
+```
+wrapper_machinery: hosts.py additions — BREADCRUMB_PREFIX ("[Clauderizer] engine unreachable:"), render_hook_wrapper (sh + cmd variants: capture engine 2>&1, breadcrumb+captured-error on stdout on failure, "$@" forwarding so probes stay transparent, always exit 0), wrapper_engine_argv (parses the "# engine-hook:" line — doctor's freshness anchor), hook_wrapper_invocation (native posix: /bin/sh <repo>/.clauderizer/hook.sh; native win32: cmd /c hook.cmd; windows-wsl: wsl.exe -d <distro> /bin/sh <repo path engine-side>), is_hook_command (shared matcher: clauderizer-hook OR .clauderizer/hook. — init dedup + doctor cannot drift)
+init_doctor_integration: init step 11: writes .clauderizer/hook.sh|.cmd (engine-owned rewrite-if-diff, bakes the UNSHIMMED engine argv), spawn-tests the registered wrapper command before touching settings.json (wrapper-specific WiringRefused names the wrapper path; engine reachability still gated pre-write in step 0b so the H-04 nothing-written contract holds); doctor: 16 checks on wrapper repos — "hook wrapper present" (missing = drift exit 2), "hook wrapper freshness" (baked argv vs fresh _resolve_invocation; mismatch = "?" exit 3), direct pre-wrapper wiring gets a "?" re-init nudge; hook launch verdict now certifies the full chain wsl.exe -> /bin/sh -> hook.sh -> engine
+h01_closure_evidence: Live demo 2026-06-10 (scratch /tmp/breadcrumb_demo wired windows-wsl:ubuntu, venv clauderizer-hook renamed): pre-D4 direct wiring spawned from PowerShell -> exit 127, stdout EMPTY (error stderr-only = the silent cold start); the registered wrapper command verbatim -> exit 0, stdout = breadcrumb + captured "not found"; binary restored, --version green. H-01 -> resolved via clauderize ops (fresh process). Remaining silent boundary documented in H-01's resolution: wrapper shell itself dead (wsl.exe/distro down = repo unreachable anyway; /bin/sh absent; wrapper file deleted = caught by doctor presence check next run)
+test_count: 211 (195 + 16 in tests/test_hook_wrapper.py: template rendering + engine-line round-trip + invocation matrix, REAL /bin/sh executions (dead engine -> verbatim breadcrumb on stdout exit 0 stderr empty; healthy passthrough; --version forwarding through to the real engine), init registration matrix + upgrade dedup + regeneration-on-engine-move + spawn-tested idempotent re-run, doctor present/missing/stale/nudge with exit codes 0/2/3/3); this repo re-inited: only hook.sh + settings.json changed, doctor 16/16 exit 0 through the shim
+```
+
 ## Corrections Log
 
 ### C-01 — Phase 2
@@ -56,3 +65,10 @@ test_count: 195 (162 + 33: tests/test_hosts.py — parse/detect/compose matrix, 
 **What gameplan said**: Task 2.3: spawn-test every composed command via a --help probe
 **What was actually correct**: Probed with --version instead (entry points handle both): the probe's success output is the engine version the wiring actually serves, so doctor's certification line carries identity evidence ("verified end-to-end via wsl.exe round-trip (clauderizer 0.6.0)") for free. Also added two surfaces the plan didn't name: --no-spawn-test as a loud escape hatch for spawn-restricted sandboxes, and doctor exit code 3 for ok-but-unverifiable.
 **Why**: Live probing showed clauderizer-mcp exited 0 on EOF even without argv handling, so any probe arg needed explicit entry-point support anyway — and --version returns a meaningful payload where --help returns prose. The exit-3 distinction keeps scripts from reading "unverifiable" as either green or drift.
+
+### C-02 — Phase 3
+
+**Phase**: 3
+**What gameplan said**: D4 / task 3.1: per session host, the wrapper is host-native — .clauderizer/hook.cmd for a Windows session host, hook.sh for POSIX
+**What was actually correct**: For windows-wsl the wrapper is WSL-side hook.sh registered as `wsl.exe -d <distro> /bin/sh <repo>/.clauderizer/hook.sh`; hook.cmd ships only for the native-win32 session host (engine installed on Windows)
+**Why**: A cmd.exe wrapper spawned in this repo's \\wsl.localhost UNC cwd prints "UNC paths are not supported" into every healthy session's context and resets cwd to C:\Windows (breaking repo detection), while the only failure it additionally covers — wsl.exe dead with cmd alive — implies the UNC repo is unreachable, so no session could start there anyway. The honest layer-below-the-engine for split-host is /bin/sh inside the distro: it spawns whenever wsl.exe+distro are alive, which is exactly when a session on this repo can exist at all.

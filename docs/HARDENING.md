@@ -8,7 +8,7 @@ resolved with a date instead. This is a permanent audit trail. Numbered `H-NN`.
 ### H-01 — Checked-in launch wiring was non-launchable on the working machine; cold start silently lost the digest and every cz_* tool
 
 - **Severity**: high
-- **Status**: mitigated (2026-06-09)
+- **Status**: resolved (2026-06-09)
 - **Affected**: .mcp.json; .claude/settings.json; scaffold/init.py command resolution; CLAUDE.md stanza (documents cz_status but no CLI fallback)
 - **Invariant violated**: L-02: health checks must verify capability, not presence - the committed wiring itself was never capability-checked on the host that runs sessions
 - **Preconditions**: Session host without uvx on PATH (here: both Windows host and the WSL distro)
@@ -17,7 +17,7 @@ resolved with a date instead. This is a permanent audit trail. Numbered `H-NN`.
 - **Reproduction**: Start a Claude Code session on a host without uvx: no digest, no cz_* tools. `clauderize doctor` (repo source) -> 'MCP server command runnable' and 'SessionStart hook command runnable' both FAIL
 - **Recommended fix**: Local wiring repaired this session: editable venv reinstalled and `clauderize init` re-run from .venv, doctor now all-green. Engine-side (open): the CLAUDE.md stanza should name the CLI fallback (`clauderize status`) so a session without MCP can self-orient; doctor could also compare the executed engine version against the repo source version when the repo IS the engine (dogfood skew).
 - **Regression tests**: None yet - candidate: init warns loudly when the command it writes does not resolve on the current host
-- **Resolution**: Wiring repaired to the editable venv (doctor 13/13 incl. new D9 identity checks); stanza now names the CLI fallback. Residual: a hook that cannot spawn still leaves no in-session breadcrumb - carried as an open thread in the 0.6.0 post-mortem.
+- **Resolution**: Residue closed by agent-autonomy Phase 3 (D4): init now writes a breadcrumb wrapper (.clauderizer/hook.sh, hook.cmd for native-win32) and registers IT as the SessionStart command; the wrapper invokes the engine hook, forwards args (probe-transparent), and converts any engine failure into a STDOUT breadcrumb '[Clauderizer] engine unreachable: exit N from <engine> - run clauderize doctor' + the captured error, always exit 0. Live demo (2026-06-10, scratch repo /tmp/breadcrumb_demo wired windows-wsl:ubuntu, engine binary renamed): pre-D4 direct wiring -> exit 127, stdout EMPTY (error stderr-only - the silent cold start); registered wrapper command run verbatim from PowerShell -> exit 0, breadcrumb + captured 'not found' on stdout; binary restored, clauderize --version green. Regression: tests/test_hook_wrapper.py (real /bin/sh execution: dead engine -> verbatim breadcrumb on stdout/exit 0, healthy passthrough, arg forwarding; init registration matrix + upgrade dedup + regeneration; doctor presence/freshness/nudge checks - 16 checks on wrapper repos). REMAINING SILENT BOUNDARY (documented, accepted): the wrapper itself failing to spawn - wsl.exe/the distro dead (then the \\wsl.localhost repo is unreachable and no session starts here anyway), /bin/sh absent, or the wrapper file deleted (doctor 'hook wrapper present' catches that on the next run). One layer below the wrapper there is no engine-side code left to speak.
 ### H-02 — Blessed phase-table writes emit invalid markdown tables, and the engine's own parser hides it
 
 - **Severity**: medium

@@ -22,7 +22,7 @@ from .config import Config
 from .graph import index
 from .paths import find_repo_root, resolve
 from .rituals import status_bundle
-from .scaffold.init import WiringRefused, init as run_init
+from .scaffold.init import WiringRefused, _resolve_invocation, init as run_init
 from .tools_list import TOOL_NAMES
 
 
@@ -117,6 +117,13 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             ok = False
             print(f"✗ {label} — {probe.detail}")
 
+    def warn(label: str, detail: str) -> None:
+        # Advisory middle state outside launchability: shown, counted toward
+        # exit 3, never green and never drift.
+        nonlocal unverified
+        unverified += 1
+        print(f"? {label} — {detail}")
+
     check("config.toml present", paths.config_file.exists())
     check("procedure shipped", paths.procedure_file.exists())
     check("CLAUDE.md stanza", _has_marker(paths.claude_md, "clauderizer"))
@@ -144,8 +151,39 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             hosts.verify_wiring(wiring, session_host))
     settings = paths.root / ".claude" / "settings.json"
     check("SessionStart hook registered", _hook_registered(settings))
+    hook_argv = _hook_command(settings)
     verdict("SessionStart hook launchable for session host",
-            hosts.verify_wiring(_hook_command(settings), session_host))
+            hosts.verify_wiring(hook_argv, session_host))
+    # D4 breadcrumb wrapper: when the registered command is the wrapper, its
+    # file must exist and its baked engine command should match what a fresh
+    # init would compose (staleness = the engine moved since the last init).
+    wrapper_token = next(
+        (t for t in (hook_argv or [])
+         if ".clauderizer/hook." in t or ".clauderizer\\hook." in t),
+        None,
+    )
+    if wrapper_token:
+        wrapper_path = Path(wrapper_token)
+        check("hook wrapper present", wrapper_path.is_file(),
+              f"{wrapper_token} missing — re-run `clauderize init`")
+        if wrapper_path.is_file():
+            baked = hosts.wrapper_engine_argv(
+                wrapper_path.read_text(encoding="utf-8", errors="replace"))
+            current = _resolve_invocation(None)[1]
+            if baked is None:
+                check("hook wrapper freshness", False,
+                      "no engine-hook line found — re-run `clauderize init`")
+            elif baked == current:
+                check("hook wrapper freshness", True)
+            else:
+                warn("hook wrapper freshness",
+                     f"wrapper invokes `{' '.join(baked)}` but a fresh init would "
+                     f"compose `{' '.join(current)}` — re-run `clauderize init` if "
+                     f"the engine moved (expected with a custom --run-cmd)")
+    elif hook_argv:
+        warn("hook wrapper",
+             "not installed (direct engine wiring) — re-run `clauderize init` to add "
+             "the cold-start breadcrumb wrapper (D4)")
     check("index cache present", paths.index_file.exists())
     # A lock that doesn't parse is silently ignored by load_for_repo — surface it.
     lock_err = _lock_parse_error(paths.profile_lock)
@@ -252,7 +290,7 @@ def _hook_registered(settings: Path) -> bool:
         return False
     for group in data.get("hooks", {}).get("SessionStart", []):
         for h in group.get("hooks", []):
-            if "clauderizer-hook" in h.get("command", ""):
+            if hosts.is_hook_command(h.get("command", "")):
                 return True
     return False
 
@@ -267,7 +305,7 @@ def _hook_command(settings: Path) -> list[str] | None:
     for group in data.get("hooks", {}).get("SessionStart", []):
         for h in group.get("hooks", []):
             cmd = h.get("command", "")
-            if "clauderizer-hook" in cmd:
+            if hosts.is_hook_command(cmd):
                 return cmd.split()
     return None
 

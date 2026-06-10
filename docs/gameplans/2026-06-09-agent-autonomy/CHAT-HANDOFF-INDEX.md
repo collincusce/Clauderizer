@@ -1,7 +1,7 @@
 # Chat Handoff Index — agent-autonomy
 
 > Last updated: 2026-06-09
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 162
+**Current baseline test count**: 195
 
 ## Ending Protocol
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Serialized tracked writes | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | CLI write parity: clauderize ops | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Wiring truth: session-host-of-record | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Cold-start breadcrumb hook wrapper | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Cold-start breadcrumb hook wrapper | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Stale-engine proof, amendment pointer, 0.7.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -57,6 +57,12 @@ Closed H-04's residuals by making the session host a recorded, first-class fact.
 
 Exit criteria all green: plain `clauderize init` on this repo regenerated the hand-maintained wiring byte-identically (.mcp.json and settings.json "kept"; config gained only the session_host line) — the hand-wiring era ends with no migration step; doctor invoked from PowerShell through the shim certified 14/14 with end-to-end round-trip evidence, exit 0; suite 195 green (162 + 33); H-04 resolved via clauderize ops in a fresh process. Documented residual: a mid-session wiring repair still needs a session restart to attach MCP tools (harness enumerates servers once at session start).
 
+### Phase 3 — completed 2026-06-09
+
+Closed H-01's residue: a cold session whose engine cannot launch now learns why. Premise proven live before building (lesson #4): a dead console script through the direct wiring puts its error on stderr and NOTHING on stdout — and stdout is the only channel the harness injects into session context. The fix is a thin wrapper one layer below the engine: init writes .clauderizer/hook.sh (hook.cmd for native-win32), bakes the unshimmed engine argv into it, spawn-tests the registered wrapper command, and registers it as the SessionStart hook. The wrapper captures the engine's combined output, passes it through on success, forwards args (so --version probes stay deterministic through the wrapper), and on any failure prints "[Clauderizer] engine unreachable: exit N from <engine> — run clauderize doctor" plus the captured error — on stdout, always exit 0. doctor grew to 16 checks: wrapper presence (missing = drift), freshness (baked engine argv vs a fresh resolution = "?" when the engine moved), and a re-init nudge for pre-wrapper direct wiring; the hook launch verdict now certifies the entire chain wsl.exe → /bin/sh → hook.sh → engine.
+
+One deliberate deviation from D4's letter (correction): for windows-wsl the wrapper is WSL-side sh registered behind the wsl.exe shim, not a Windows .cmd — a cmd wrapper started in this repo's \\wsl.localhost UNC cwd would inject a "UNC paths are not supported" warning into every HEALTHY session and resets cwd, while only covering "wsl.exe dead but cmd alive", a state in which the UNC repo is unreachable and no session starts here anyway. Exit criteria green: live demo on a scratch repo (engine binary renamed, registered command run verbatim from PowerShell) recorded as H-01's closure evidence — before: exit 127/empty stdout; after: exit 0/breadcrumb; the remaining silent boundary (wrapper shell or wsl.exe itself dead, wrapper file deleted) documented explicitly in H-01's resolution; suite 211 green (195 + 16); this repo upgraded by re-init (only hook.sh + settings.json changed), doctor 16/16 exit 0 through the shim.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -75,3 +81,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **2.** When two transports must expose the same operation surface, register the same function objects on both rather than testing two implementations for equality: schemas and behavior stay identical by construction, and the parity test reduces to one enumeration check (registry keys == published tool names). Wrapper layers for cross-cutting concerns (locking, context) belong inside the shared bodies, not around them — introspection-based schema derivation makes wrappers a drift risk.
 
 **3.** When retrofitting a host-of-record (or any "which environment is this for" field) onto an existing install, the most reliable detector is the artifact that already works: the hand-maintained wiring's own -d argument named the distro correctly where environment sniffing disagreed on case (WSL_DISTRO_NAME=Ubuntu vs the wiring's ubuntu — only the former breaks byte-identical regeneration). Adopt observed-working state first; derive from the environment only as fallback.
+
+**5.** Know which output channel your consumer actually reads before designing failure reporting: the harness injects only a hook's stdout into session context, so a dying hook's perfectly informative stderr was indistinguishable from silence. A breadcrumb wrapper is therefore channel REROUTING (capture 2>&1, reprint on stdout, exit 0) at least as much as failure detection — and the same applies to any tool whose stderr goes somewhere humans don't look.
+
+**6.** Place a reliability wrapper on the deepest layer whose failure still leaves the system reachable, not automatically on the consumer's host: for split-host wiring, a Windows-side cmd wrapper would add noise (UNC cwd warning into every healthy session) and fragility (cwd reset) while only covering states in which the repo itself is unreachable. Coverage analysis beats "host-native by default" — enumerate which failure modes each candidate layer can actually observe AND report through a channel the consumer reads.

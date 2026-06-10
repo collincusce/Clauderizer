@@ -209,8 +209,39 @@ def init(
     changed = _register_mcp(paths.mcp_json, mcp_cmd)
     report.note(".mcp.json", paths.mcp_json, changed)
 
-    # 11. SessionStart hook (merge into .claude/settings.json)
-    changed = _register_hook(root / ".claude" / "settings.json", hook_cmd)
+    # 11. SessionStart hook: write the breadcrumb wrapper, prove the registered
+    # command spawns, then register it (D4). The engine hook itself was already
+    # probed in step 0b, so a failure here is wrapper-specific. The wrapper
+    # always bakes the UNSHIMMED engine argv — it executes on the engine host.
+    wrapper_name = hosts.wrapper_filename(resolved_host)
+    wrapper_path = root / ".clauderizer" / wrapper_name
+    changed = _rewrite_if_diff(
+        wrapper_path,
+        hosts.render_hook_wrapper(engine_hook, windows=wrapper_name.endswith(".cmd")),
+    )
+    if changed and not wrapper_name.endswith(".cmd"):
+        try:  # courtesy for direct execution; /bin/sh invocation needs no x-bit
+            wrapper_path.chmod(wrapper_path.stat().st_mode | 0o755)
+        except OSError:
+            pass
+    report.note("hook wrapper", wrapper_path, changed)
+    registered_hook = hosts.hook_wrapper_invocation(root, resolved_host)
+    if spawn_test:
+        probe = hosts.spawn_probe(registered_hook)
+        if probe.status == "fail":
+            raise WiringRefused(
+                f"the SessionStart wrapper failed its spawn test — hook registration "
+                f"left unchanged.\n"
+                f"  command: {' '.join(registered_hook)}\n"
+                f"  probe:   {probe.detail}\n"
+                f"  The wrapper was written to {wrapper_path} for inspection; the "
+                f"engine command\n"
+                f"  itself probed OK in the pre-write gate, so suspect the wrapper "
+                f"shell (/bin/sh, cmd, wsl.exe)."
+            )
+        if probe.status == "unverifiable":
+            report.warnings.append(f"SessionStart wrapper unverifiable: {probe.detail}")
+    changed = _register_hook(root / ".claude" / "settings.json", registered_hook)
     report.note("hook", root / ".claude" / "settings.json", changed)
 
     # 12. gitignore the disposable cache; reindex
@@ -261,13 +292,14 @@ def _register_hook(settings_json: Path, hook_argv: list[str]) -> bool:
     hooks = data.setdefault("hooks", {})
     sessionstart = hooks.get("SessionStart", [])
 
-    # Drop ANY existing clauderizer hook entry (matched by the entry-point name),
-    # not just an exact-string match. This makes re-running init with a changed
-    # invocation (e.g. uvx -> venv path) REPLACE the hook instead of appending a
-    # duplicate. Non-clauderizer hooks are preserved untouched.
+    # Drop ANY existing clauderizer hook entry — direct entry-point wiring or
+    # the D4 wrapper (hosts.is_hook_command is the shared matcher) — not just
+    # an exact-string match. This makes re-running init with a changed
+    # invocation (e.g. uvx -> venv path -> wrapper) REPLACE the hook instead of
+    # appending a duplicate. Non-clauderizer hooks are preserved untouched.
     cleaned: list[dict] = []
     for group in sessionstart:
-        kept = [h for h in group.get("hooks", []) if "clauderizer-hook" not in h.get("command", "")]
+        kept = [h for h in group.get("hooks", []) if not hosts.is_hook_command(h.get("command", ""))]
         if kept:
             cleaned.append({**group, "hooks": kept})
         elif not group.get("hooks"):
