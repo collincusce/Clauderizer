@@ -167,14 +167,23 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         check("hook wrapper present", wrapper_path.is_file(),
               f"{wrapper_token} missing — re-run `clauderize init`")
         if wrapper_path.is_file():
-            baked = hosts.wrapper_engine_argv(
-                wrapper_path.read_text(encoding="utf-8", errors="replace"))
+            wrapper_text = wrapper_path.read_text(encoding="utf-8", errors="replace")
+            baked = hosts.wrapper_engine_argv(wrapper_text)
             current = _resolve_invocation(None)[1]
+            expected = hosts.render_hook_wrapper(
+                current, root=paths.root,
+                windows=wrapper_path.name.endswith(".cmd"))
             if baked is None:
                 check("hook wrapper freshness", False,
                       "no engine-hook line found — re-run `clauderize init`")
-            elif baked == current:
+            elif wrapper_text == expected:
                 check("hook wrapper freshness", True)
+            elif baked == current:
+                # Right engine, old template — e.g. missing the H-09 repo
+                # anchor. The hook still launches, so this is a nudge, not drift.
+                warn("hook wrapper freshness",
+                     "wrapper template predates this engine (missing the repo "
+                     "anchor or later template fixes) — re-run `clauderize init`")
             else:
                 warn("hook wrapper freshness",
                      f"wrapper invokes `{' '.join(baked)}` but a fresh init would "

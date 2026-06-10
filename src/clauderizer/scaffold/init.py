@@ -217,7 +217,8 @@ def init(
     wrapper_path = root / ".clauderizer" / wrapper_name
     changed = _rewrite_if_diff(
         wrapper_path,
-        hosts.render_hook_wrapper(engine_hook, windows=wrapper_name.endswith(".cmd")),
+        hosts.render_hook_wrapper(engine_hook, root=root,
+                                  windows=wrapper_name.endswith(".cmd")),
     )
     if changed and not wrapper_name.endswith(".cmd"):
         try:  # courtesy for direct execution; /bin/sh invocation needs no x-bit

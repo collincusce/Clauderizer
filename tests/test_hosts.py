@@ -227,11 +227,13 @@ def test_init_adopts_existing_wsl_wiring(empty_python_repo):
     assert entry["args"][:2] == ["-d", "ubuntu"]
     assert entry["args"][-1].endswith("clauderizer-mcp")
     # the hook goes through the same shim as ONE command string — since D4 the
-    # registered target is the breadcrumb wrapper, not the engine directly
+    # registered target is the breadcrumb wrapper, not the engine directly;
+    # since D2 (H-08) its paths are //-prefixed to survive Git Bash's MSYS2
+    # argument conversion (shape C)
     settings = json.loads(
         (empty_python_repo / ".claude" / "settings.json").read_text(encoding="utf-8"))
     cmds = [h["command"] for g in settings["hooks"]["SessionStart"] for h in g["hooks"]]
-    assert any(c.startswith("wsl.exe -d ubuntu /bin/sh ")
+    assert any(c.startswith("wsl.exe -d ubuntu //bin/sh //")
                and c.endswith(".clauderizer/hook.sh") for c in cmds)
 
 

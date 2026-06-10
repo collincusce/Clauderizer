@@ -3,6 +3,10 @@
 # A session whose engine cannot launch must still learn why (H-01): any
 # engine failure becomes a breadcrumb on STDOUT (the session context).
 # engine-hook: /home/ccusce/Clauderizer/.venv/bin/clauderizer-hook
+cd '/home/ccusce/Clauderizer' 2>/dev/null || {
+  printf '%s %s — run `clauderize doctor`\n' '[Clauderizer] repo unreachable:' '/home/ccusce/Clauderizer'
+  exit 0
+}
 out=$(/home/ccusce/Clauderizer/.venv/bin/clauderizer-hook "$@" 2>&1)
 status=$?
 if [ "$status" -eq 0 ]; then

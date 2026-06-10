@@ -67,11 +67,33 @@ def test_hook_wrapper_invocation_matrix(monkeypatch, tmp_path):
     monkeypatch.setattr(hosts.sys, "platform", "linux")
     sh_path = (tmp_path / ".clauderizer" / "hook.sh").as_posix()
     assert hosts.hook_wrapper_invocation(tmp_path, "native") == ["/bin/sh", sh_path]
+    # shape C (D2/H-08): //-prefixed so Git Bash's MSYS2 conversion skips the
+    # paths (UNC-form) while Linux collapses // — zero quote surface for cmd/PS
     assert hosts.hook_wrapper_invocation(tmp_path, "windows-wsl:ubuntu") == [
-        "wsl.exe", "-d", "ubuntu", "/bin/sh", sh_path]
+        "wsl.exe", "-d", "ubuntu", "//bin/sh", "/" + sh_path]
     monkeypatch.setattr(hosts.sys, "platform", "win32")
     argv = hosts.hook_wrapper_invocation(tmp_path, "native")
     assert argv[:2] == ["cmd", "/c"] and argv[2].endswith("hook.cmd")
+
+
+def test_render_sh_with_root_anchors_before_engine():
+    # H-09: the engine discovers its repo from cwd; the wrapper must not
+    # depend on the executor preserving the harness's project cwd.
+    text = hosts.render_hook_wrapper(["/v/bin/clauderizer-hook"], root=Path("/repo"))
+    assert "cd '/repo' 2>/dev/null || {" in text
+    assert hosts.REPO_BREADCRUMB_PREFIX in text
+    assert text.index("cd '/repo'") < text.index("out=$(")  # anchor first
+    assert text.rstrip().endswith("exit 0")
+    # the engine-line freshness anchor is unaffected by the anchor block
+    assert hosts.wrapper_engine_argv(text) == ["/v/bin/clauderizer-hook"]
+
+
+def test_render_cmd_with_root_anchors():
+    text = hosts.render_hook_wrapper(["C:\\v\\clauderizer-hook.exe"],
+                                     root=Path("C:\\repo"), windows=True)
+    assert 'cd /d "C:\\repo" 2>nul' in text
+    assert hosts.REPO_BREADCRUMB_PREFIX in text
+    assert "exit /b 0" in text
 
 
 # --- real execution on the host shell (the exit-criterion behavior) -------------
@@ -105,6 +127,38 @@ def test_healthy_engine_passes_digest_through(tmp_path):
 
 
 @posix_only
+def test_anchored_wrapper_runs_engine_from_repo_cwd(tmp_path):
+    # Execute the wrapper from a foreign cwd: the engine must still see the
+    # repo as its working directory (H-09 — cmd.exe drops UNC cwds for real).
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    engine = tmp_path / "engine"
+    engine.write_text("#!/bin/sh\npwd\n", encoding="utf-8")
+    engine.chmod(0o755)
+    w = tmp_path / "hook.sh"
+    w.write_text(hosts.render_hook_wrapper([str(engine)], root=repo),
+                 encoding="utf-8")
+    r = subprocess.run(["/bin/sh", str(w)], capture_output=True,
+                       stdin=subprocess.DEVNULL, timeout=60, cwd=str(tmp_path))
+    assert r.returncode == 0
+    assert r.stdout.decode().strip() == str(repo)
+
+
+@posix_only
+def test_unreachable_repo_emits_breadcrumb_on_stdout(tmp_path):
+    w = tmp_path / "hook.sh"
+    w.write_text(hosts.render_hook_wrapper(["/bin/true"],
+                                           root=tmp_path / "gone"),
+                 encoding="utf-8")
+    r = _run_sh(w)
+    assert r.returncode == 0  # never block the session
+    out = r.stdout.decode()
+    assert out.startswith(hosts.REPO_BREADCRUMB_PREFIX)
+    assert "clauderize doctor" in out
+    assert r.stderr == b""  # cd noise routed away; stdout is the channel
+
+
+@posix_only
 def test_wrapper_forwards_args_to_real_engine(tmp_path):
     engine = Path(sys.executable).parent / "clauderizer-hook"
     if not engine.exists():
@@ -132,7 +186,7 @@ def test_init_native_registers_sh_wrapper(empty_python_repo):
 def test_init_windows_wsl_registers_shimmed_wrapper(empty_python_repo):
     init(empty_python_repo, session_host="windows-wsl:ubuntu", spawn_test=False)
     sh_path = (empty_python_repo / ".clauderizer" / "hook.sh").as_posix()
-    assert _hook_cmds(empty_python_repo) == [f"wsl.exe -d ubuntu /bin/sh {sh_path}"]
+    assert _hook_cmds(empty_python_repo) == [f"wsl.exe -d ubuntu //bin/sh /{sh_path}"]
     # the wrapper bakes the UNSHIMMED engine command — it executes engine-side
     baked = hosts.wrapper_engine_argv(
         (empty_python_repo / ".clauderizer" / "hook.sh").read_text(encoding="utf-8"))
@@ -203,6 +257,19 @@ def test_doctor_stale_wrapper_warns(empty_python_repo, monkeypatch, capsys):
         hosts.render_hook_wrapper(["/moved/clauderizer-hook"]), encoding="utf-8")
     rc, out = _doctor(empty_python_repo, monkeypatch, capsys)
     assert "? hook wrapper freshness" in out
+    assert rc == 3
+
+
+def test_doctor_old_template_same_engine_warns(empty_python_repo, monkeypatch, capsys):
+    # Right engine baked in, but the wrapper predates the H-09 repo anchor:
+    # launchable (so a nudge, not drift) yet a fresh init would rewrite it.
+    init(empty_python_repo, spawn_test=False)
+    wrapper = empty_python_repo / ".clauderizer" / "hook.sh"
+    baked = hosts.wrapper_engine_argv(wrapper.read_text(encoding="utf-8"))
+    wrapper.write_text(hosts.render_hook_wrapper(baked), encoding="utf-8")  # no root
+    rc, out = _doctor(empty_python_repo, monkeypatch, capsys)
+    assert "? hook wrapper freshness" in out
+    assert "template predates" in out
     assert rc == 3
 
 

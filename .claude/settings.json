@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "wsl.exe -d ubuntu /bin/sh /home/ccusce/Clauderizer/.clauderizer/hook.sh"
+            "command": "wsl.exe -d ubuntu //bin/sh //home/ccusce/Clauderizer/.clauderizer/hook.sh"
           }
         ]
       }
