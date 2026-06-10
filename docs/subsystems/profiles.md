@@ -1,7 +1,7 @@
 ---
 id: subsys.profiles
 type: subsystem
-version: 0.2.0
+version: 0.3.0
 status: completed
 depends_on:
 last_verified: 2026-06-09

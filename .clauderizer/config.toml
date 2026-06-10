@@ -6,6 +6,7 @@ preflight_advisory = []
 
 [host]
 profile = "python"
+session_host = "windows-wsl:ubuntu"
 
 [paths]
 docs = "docs"

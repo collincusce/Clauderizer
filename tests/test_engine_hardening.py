@@ -127,22 +127,27 @@ def test_resolve_invocation_falls_back_to_path_then_uvx(monkeypatch, tmp_path):
 
 
 # --- #1 doctor command executability -----------------------------------------
+# (the boolean _command_runnable grew into hosts.verify_wiring's three-state
+# verdict in agent-autonomy Phase 2; the native branch keeps these semantics)
 
-def test_command_runnable_detects_missing_and_present():
-    ok, _ = cli._command_runnable([sys.executable])  # absolute, executable
-    assert ok is True
-    bad, detail = cli._command_runnable(["definitely-not-a-real-binary-xyz123"])
-    assert bad is False and "not found" in detail
-    none_ok, _ = cli._command_runnable(None)
-    assert none_ok is False
+def test_native_verify_wiring_detects_missing_and_present():
+    from clauderizer import hosts
+
+    assert hosts.verify_wiring([sys.executable], "native").ok is True  # absolute, executable
+    bad = hosts.verify_wiring(["definitely-not-a-real-binary-xyz123"], "native")
+    assert bad.ok is False and "not found" in bad.detail
+    assert hosts.verify_wiring(None, "native").ok is False
+    assert hosts.verify_wiring(None, None).ok is False  # unrecorded host -> native rules
 
 
 def test_mcp_and_hook_command_extraction(tmp_path):
+    from clauderizer import hosts
+
     mcp_json = tmp_path / ".mcp.json"
     mcp_json.write_text(json.dumps(
         {"mcpServers": {"clauderizer": {"command": "uvx", "args": ["--from", "clauderizer", "clauderizer-mcp"]}}}
     ), encoding="utf-8")
-    assert cli._mcp_command(mcp_json) == ["uvx", "--from", "clauderizer", "clauderizer-mcp"]
+    assert hosts.read_wiring(mcp_json) == ["uvx", "--from", "clauderizer", "clauderizer-mcp"]
     settings = tmp_path / "settings.json"
     settings.write_text(json.dumps(
         {"hooks": {"SessionStart": [{"hooks": [{"type": "command", "command": "uvx --from clauderizer clauderizer-hook"}]}]}}

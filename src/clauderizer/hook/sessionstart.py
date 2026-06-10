@@ -8,8 +8,10 @@ never block a session, so errors degrade to a single warning line.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
+from .. import __version__
 from ..config import Config
 from ..paths import find_repo_root, resolve
 from ..rituals import status_bundle
@@ -17,6 +19,17 @@ from ..tools_list import TOOL_NAMES
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Deterministic probe path (D3): init/doctor spawn-test the hook with
+    # --version; answer it without reading the repo so the probe is fast and
+    # its output is the engine identity, not a status digest.
+    args = sys.argv[1:] if argv is None else argv
+    if "--version" in args or "-V" in args:
+        print(f"clauderizer {__version__}")
+        return 0
+    if "--help" in args or "-h" in args:
+        print("clauderizer-hook — print the gameplan digest for SessionStart.\n"
+              "Flags: --version, --help. Always exits 0.")
+        return 0
     try:
         root = find_repo_root(Path.cwd())
         paths = resolve(root)

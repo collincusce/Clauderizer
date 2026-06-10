@@ -13,7 +13,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .. import assets
+from .. import assets, hosts
 from ..config import Config, merge_missing
 from ..graph import index
 from ..markdown import writer
@@ -23,6 +23,15 @@ from ..profiles import detect
 # Zero-install fallback when nothing is on PATH. uvx resolves the package on
 # demand. Overridable with --run-cmd "pipx run clauderizer".
 DEFAULT_RUN = ["uvx", "--from", "clauderizer"]
+
+
+class WiringRefused(RuntimeError):
+    """A composed wiring command failed its spawn test; nothing was written.
+
+    The H-04 regression guard: init must never write a command the session
+    host cannot launch (e.g. a multi-word --run-cmd that composes an invalid
+    subcommand like ``clauderize clauderizer-mcp``).
+    """
 
 
 def _resolve_invocation(run_cmd: list[str] | None) -> tuple[list[str], list[str]]:
@@ -49,7 +58,11 @@ def _resolve_invocation(run_cmd: list[str] | None) -> tuple[list[str], list[str]
     which_hook = shutil.which("clauderizer-hook")
     if which_mcp and which_hook:
         return [which_mcp], [which_hook]
-    return [*DEFAULT_RUN, "clauderizer-mcp"], [*DEFAULT_RUN, "clauderizer-hook"]
+    # Absolutize uvx when present: hooks and shimmed commands run in non-login
+    # shells whose PATH may not include ~/.local/bin (observed live on WSL).
+    uvx = shutil.which(DEFAULT_RUN[0]) or DEFAULT_RUN[0]
+    run = [uvx, *DEFAULT_RUN[1:]]
+    return [*run, "clauderizer-mcp"], [*run, "clauderizer-hook"]
 
 
 @dataclass
@@ -57,8 +70,10 @@ class InitReport:
     repo: str
     host_profile: str = ""
     size: str = ""
+    session_host: str = ""
     actions: list[str] = field(default_factory=list)
     changed: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     def note(self, action: str, path: Path | str, changed: bool) -> None:
         verb = "wrote" if changed else "kept"
@@ -85,11 +100,48 @@ def init(
     gameplan: str | None = None,
     run_cmd: list[str] | None = None,
     workflow: str = "code",
+    session_host: str | None = None,
+    spawn_test: bool = True,
 ) -> InitReport:
     root = root.resolve()
     paths = resolve(root)
     report = InitReport(repo=str(root))
-    mcp_cmd, hook_cmd = _resolve_invocation(run_cmd)
+
+    # 0. session host of record (D3): explicit flag > what config already
+    # records > adoption of the host the existing wiring serves > native.
+    existing_config = Config.load(paths.config_file) if paths.config_file.exists() else None
+    resolved_host = (
+        session_host
+        or (existing_config.session_host if existing_config else None)
+        or hosts.detect(hosts.read_wiring(paths.mcp_json))
+    )
+    hosts.parse(resolved_host)  # invalid values fail loudly before anything composes
+    report.session_host = resolved_host
+
+    engine_mcp, engine_hook = _resolve_invocation(run_cmd)
+    mcp_cmd = hosts.compose(engine_mcp, resolved_host)
+    hook_cmd = hosts.compose(engine_hook, resolved_host)
+
+    # 0b. spawn-test every composed command BEFORE any write (H-04 guard):
+    # wiring that cannot answer --version must never reach .mcp.json or the
+    # hook registration. "Unverifiable" (no interop path to the session host)
+    # proceeds with a loud warning naming the command to certify from there.
+    if spawn_test:
+        for label, argv in (("MCP server", mcp_cmd), ("SessionStart hook", hook_cmd)):
+            probe = hosts.spawn_probe(argv)
+            if probe.status == "fail":
+                raise WiringRefused(
+                    f"the composed {label} command failed its spawn test — "
+                    f"nothing was written.\n"
+                    f"  command: {' '.join(argv)}\n"
+                    f"  probe:   {probe.detail}\n"
+                    f"  Drop --run-cmd to let init resolve the installed console "
+                    f"scripts, or pass\n"
+                    f"  --session-host windows-wsl:<distro> for a WSL engine driven "
+                    f"from Windows."
+                )
+            if probe.status == "unverifiable":
+                report.warnings.append(f"{label} wiring unverifiable: {probe.detail}")
 
     # 1–2. detect host language
     if profile == "auto":
@@ -103,12 +155,10 @@ def init(
     defaults.preflight_advisory = list(WORKFLOW_ADVISORY.get(workflow, []))
     report.size = size
 
-    # 4. config.toml (merge missing on re-run)
-    if paths.config_file.exists():
-        existing = Config.load(paths.config_file)
-        config = merge_missing(existing, defaults)
-    else:
-        config = defaults
+    # 4. config.toml (merge missing on re-run); record the session host of
+    # record so every later init/doctor composes and verifies for it.
+    config = merge_missing(existing_config, defaults) if existing_config else defaults
+    config.session_host = resolved_host
     changed = writer.create_if_absent(paths.config_file, config.to_toml()) or _rewrite_if_diff(
         paths.config_file, config.to_toml()
     )

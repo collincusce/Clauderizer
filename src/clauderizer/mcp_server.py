@@ -17,6 +17,9 @@ it is imported lazily so the rest of the package works without it.
 
 from __future__ import annotations
 
+import sys
+
+from . import __version__
 from .graph import index
 from .ops import REGISTRY, repo_ctx
 from .rituals import status_bundle
@@ -66,6 +69,17 @@ def build_server():
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Answer --version/--help without touching stdin or the mcp SDK: init's and
+    # doctor's spawn probes (D3) need a deterministic, fast exit-0 path that
+    # proves the entry point launches — not a stdio server waiting on EOF luck.
+    args = sys.argv[1:] if argv is None else argv
+    if "--version" in args or "-V" in args:
+        print(f"clauderizer {__version__}")
+        return 0
+    if "--help" in args or "-h" in args:
+        print("clauderizer-mcp — launch the Clauderizer MCP server on stdio.\n"
+              "Flags: --version, --help. No other arguments.")
+        return 0
     try:
         server = build_server()
     except ImportError:

@@ -13,18 +13,16 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
-import shutil
 import sys
 from pathlib import Path
 
-from . import PROCEDURE_VERSION, __version__
+from . import PROCEDURE_VERSION, __version__, hosts
 from .config import Config
 from .graph import index
 from .paths import find_repo_root, resolve
 from .rituals import status_bundle
-from .scaffold.init import init as run_init
+from .scaffold.init import WiringRefused, init as run_init
 from .tools_list import TOOL_NAMES
 
 
@@ -37,21 +35,30 @@ def _load(root: Path | None = None):
 
 def cmd_init(args: argparse.Namespace) -> int:
     run_cmd = args.run_cmd.split() if args.run_cmd else None
-    report = run_init(
-        Path(args.path).resolve(),
-        size=args.size,
-        profile=args.profile,
-        gameplan=args.gameplan,
-        run_cmd=run_cmd,
-        workflow=args.workflow,
-    )
+    try:
+        report = run_init(
+            Path(args.path).resolve(),
+            size=args.size,
+            profile=args.profile,
+            gameplan=args.gameplan,
+            run_cmd=run_cmd,
+            workflow=args.workflow,
+            session_host=args.session_host,
+            spawn_test=not args.no_spawn_test,
+        )
+    except (WiringRefused, hosts.SessionHostError) as exc:
+        print(f"✗ init refused: {exc}")
+        return 1
     print(f"Clauderized {report.repo}")
-    print(f"  size={report.size}  host profile={report.host_profile}")
+    print(f"  size={report.size}  host profile={report.host_profile}"
+          f"  session host={report.session_host}")
     n_changed = len(report.changed)
     print(f"  {n_changed} file(s) written/updated, {len(report.actions) - n_changed} kept as-is")
     if args.verbose:
         for a in report.actions:
             print(f"    {a}")
+    for w in report.warnings:
+        print(f"  ! {w}")
     print("\nNext: open a Claude Code session here — the SessionStart hook will show status.")
     print("Or run `clauderize status`.")
     return 0
@@ -87,6 +94,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         print("✗ Not a clauderized repo (no .clauderizer/config.toml). Run `clauderize init`.")
         return 1
     ok = True
+    unverified = 0
 
     def check(label: str, condition: bool, detail: str = "") -> None:
         nonlocal ok
@@ -95,17 +103,49 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         if not condition:
             ok = False
 
+    def verdict(label: str, probe: hosts.Probe) -> None:
+        # Three-state launchability (D3): pass shows its evidence, fail flips
+        # drift, and "unverifiable from this host" is an honest middle that is
+        # never rendered as green.
+        nonlocal ok, unverified
+        if probe.status == "ok":
+            print(f"✓ {label} — {probe.detail}")
+        elif probe.status == "unverifiable":
+            unverified += 1
+            print(f"? {label} — unverifiable from this host: {probe.detail}")
+        else:
+            ok = False
+            print(f"✗ {label} — {probe.detail}")
+
     check("config.toml present", paths.config_file.exists())
     check("procedure shipped", paths.procedure_file.exists())
     check("CLAUDE.md stanza", _has_marker(paths.claude_md, "clauderizer"))
     check(".mcp.json registers clauderizer", _mcp_registered(paths.mcp_json))
-    # Fidelity: registration present is not enough — the command must be launchable.
-    mcp_ok, mcp_detail = _command_runnable(_mcp_command(paths.mcp_json))
-    check("MCP server command runnable", mcp_ok, mcp_detail)
+    # Session host of record (D3): launchability is only meaningful relative to
+    # the host that spawns sessions, so surface — and validate — the record.
+    session_host = config.session_host
+    wiring = hosts.read_wiring(paths.mcp_json)
+    if session_host:
+        try:
+            hosts.parse(session_host)
+            print(f"✓ session host of record: {session_host}")
+        except hosts.SessionHostError as exc:
+            ok = False
+            print(f"✗ session host of record — {exc}")
+    elif hosts.is_wsl_shim(wiring):
+        unverified += 1
+        print("? session host of record — not recorded, but the wiring is wsl.exe-shimmed "
+              "(a Windows session host); re-run `clauderize init` to record it")
+    else:
+        print("✓ session host of record: native (default — not recorded)")
+    # Fidelity: registration present is not enough — the command must be
+    # launchable BY THE SESSION HOST OF RECORD, or doctor must say it cannot tell.
+    verdict("MCP server launchable for session host",
+            hosts.verify_wiring(wiring, session_host))
     settings = paths.root / ".claude" / "settings.json"
     check("SessionStart hook registered", _hook_registered(settings))
-    hook_ok, hook_detail = _command_runnable(_hook_command(settings))
-    check("SessionStart hook command runnable", hook_ok, hook_detail)
+    verdict("SessionStart hook launchable for session host",
+            hosts.verify_wiring(_hook_command(settings), session_host))
     check("index cache present", paths.index_file.exists())
     # A lock that doesn't parse is silently ignored by load_for_repo — surface it.
     lock_err = _lock_parse_error(paths.profile_lock)
@@ -129,8 +169,17 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     if config.active_gameplan:
         gp = paths.gameplan_dir(config.active_gameplan) / "GAMEPLAN.md"
         check(f"active gameplan {config.active_gameplan} on disk", gp.exists())
-    print("\nOK" if ok else "\nDrift detected — re-run `clauderize init` to repair.")
-    return 0 if ok else 2
+    if not ok:
+        print("\nDrift detected — re-run `clauderize init` to repair.")
+        return 2
+    if unverified:
+        # Exit 3: nothing failed, but ≥1 check could not be verified from this
+        # host — "OK" would be a false green for the session host of record.
+        print(f"\nOK — {unverified} check(s) unverifiable from this host; run "
+              f"`clauderize doctor` from the session host of record to certify.")
+        return 3
+    print("\nOK")
+    return 0
 
 
 def cmd_mcp(args: argparse.Namespace) -> int:
@@ -208,19 +257,6 @@ def _hook_registered(settings: Path) -> bool:
     return False
 
 
-def _mcp_command(mcp_json: Path) -> list[str] | None:
-    if not mcp_json.exists():
-        return None
-    try:
-        data = json.loads(mcp_json.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return None
-    entry = data.get("mcpServers", {}).get("clauderizer")
-    if not entry:
-        return None
-    return [entry.get("command", ""), *entry.get("args", [])]
-
-
 def _hook_command(settings: Path) -> list[str] | None:
     if not settings.exists():
         return None
@@ -234,25 +270,6 @@ def _hook_command(settings: Path) -> list[str] | None:
             if "clauderizer-hook" in cmd:
                 return cmd.split()
     return None
-
-
-def _command_runnable(argv: list[str] | None) -> tuple[bool, str]:
-    """Can the configured launch command actually be executed on this machine?
-
-    Guards against a green health check on a setup that can't launch (e.g. a
-    ``.mcp.json`` pointing at ``uvx`` that isn't installed, or a dev path that
-    doesn't exist) — a check that's green while the server can't start is worse
-    than no check.
-    """
-    if not argv or not argv[0]:
-        return False, "no clauderizer command registered"
-    exe = argv[0]
-    if shutil.which(exe):
-        return True, exe
-    p = Path(exe)
-    if p.is_file() and os.access(p, os.X_OK):
-        return True, str(p)
-    return False, f"'{exe}' not found on PATH or not executable"
 
 
 def _metadata_version() -> str | None:
@@ -338,6 +355,13 @@ def build_parser() -> argparse.ArgumentParser:
                     help="how the repo invokes the engine (default: 'uvx --from clauderizer')")
     pi.add_argument("--workflow", choices=["code", "docs", "audit"], default="code",
                     help="docs/audit make clean_tree (and test) checks advisory, not fatal")
+    pi.add_argument("--session-host", default=None, dest="session_host",
+                    help="which host spawns Claude Code sessions: 'native' (default; "
+                         "auto-detected from existing wiring) or 'windows-wsl:<distro>' "
+                         "for a WSL-installed engine driven from Windows")
+    pi.add_argument("--no-spawn-test", action="store_true",
+                    help="skip the pre-write launch probes (escape hatch for sandboxes "
+                         "that cannot spawn; the probes are the mis-wiring guard)")
     pi.add_argument("-v", "--verbose", action="store_true")
     pi.set_defaults(func=cmd_init)
 

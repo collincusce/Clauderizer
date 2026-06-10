@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Serialized tracked writes | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | CLI write parity: clauderize ops | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Wiring truth: session-host-of-record | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Wiring truth: session-host-of-record | ✅ COMPLETE | 2026-06-09 | 2026-06-09 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Cold-start breadcrumb hook wrapper | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Stale-engine proof, amendment pointer, 0.7.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
@@ -37,6 +37,22 @@ test_count: 162 (148 + 14 in tests/test_ops.py: registry/tool-surface equality, 
 docs_updated: CLAUDE.md stanza names clauderize ops as the no-MCP write fallback (refreshed via marker block); GAMEPLAN-PROCEDURE.md 1.1.0 → 1.2.0 ("Recording Without MCP" Quick Reference section + changelog; shim/stdio-probe patterns retired); PROCEDURE_VERSION constant synced
 ```
 
+### Phase 2 Outputs
+
+```
+hosts_module: src/clauderizer/hosts.py — session-host vocabulary (native | windows-wsl:<distro>; SessionHostError with guidance), detect() (adopt the distro from existing wsl.exe wiring's -d arg, then WSL_DISTRO_NAME, else native), compose() (shim wrap, never double-wraps an explicit wsl.exe run-cmd), spawn_probe() and verify_wiring() returning a 3-state Probe (ok | fail | unverifiable)
+config_field: [host] session_host in config.toml — None means "recorded by no init yet" (pre-Phase-2 configs load as None, emit nothing; doctor nudges re-init when wiring is shimmed); resolution precedence in init: --session-host flag > existing config record > adopt-existing-wiring > native
+init_guard: init spawn-tests both composed commands (--version, stdin=DEVNULL, 60s) BEFORE any write; fail -> WiringRefused naming command+probe output, nothing written (the H-04 'clauderize clauderizer-mcp' shape now refuses); unverifiable (no interop) -> warn-but-write with the certify-from-host command; CLI: --session-host flag, --no-spawn-test escape hatch; uvx fallback absolutized via which() for non-login PATHs
+doctor_surface: 14 checks (was 13): new "session host of record" line (validates the record; nudges re-init when unrecorded but wiring is shimmed) and both launch checks host-aware via hosts.verify_wiring — windows-wsl certifies through a real wsl.exe interop round-trip showing the served version, or prints "? ... unverifiable from this host"; exit codes now 0 ok / 2 drift / 3 ok-but-unverifiable (never a false green); clauderizer-mcp and clauderizer-hook answer --version/--help deterministically (the probe surface)
+exit_evidence: clauderize init on this repo (via the PowerShell shim, fresh process): detected windows-wsl:ubuntu from existing wiring, .mcp.json and .claude/settings.json both "kept" (byte-identical regeneration of the hand-maintained wiring), config.toml +1 line (the record); doctor through the same shim: 14/14 green, both launch checks "verified end-to-end via wsl.exe round-trip (clauderizer 0.6.0)", exit 0; H-04 resolved via clauderize ops (fresh process)
+test_count: 195 (162 + 33: tests/test_hosts.py — parse/detect/compose matrix, config round-trip incl. apply-twice, real spawn probes incl. the H-04 exit-2 shape refusing init with nothing written, verify_wiring 3-state, init adoption/persistence/idempotency, doctor messaging; test_engine_hardening's _command_runnable tests ported to hosts.verify_wiring)
+```
+
 ## Corrections Log
 
-_(Every divergence from the gameplan, captured in real time, as C-NN entries.)_
+### C-01 — Phase 2
+
+**Phase**: 2
+**What gameplan said**: Task 2.3: spawn-test every composed command via a --help probe
+**What was actually correct**: Probed with --version instead (entry points handle both): the probe's success output is the engine version the wiring actually serves, so doctor's certification line carries identity evidence ("verified end-to-end via wsl.exe round-trip (clauderizer 0.6.0)") for free. Also added two surfaces the plan didn't name: --no-spawn-test as a loud escape hatch for spawn-restricted sandboxes, and doctor exit code 3 for ok-but-unverifiable.
+**Why**: Live probing showed clauderizer-mcp exited 0 on EOF even without argv handling, so any probe arg needed explicit entry-point support anyway — and --version returns a meaningful payload where --help returns prose. The exit-3 distinction keeps scripts from reading "unverifiable" as either green or drift.

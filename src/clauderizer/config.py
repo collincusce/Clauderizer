@@ -79,6 +79,10 @@ class Config:
     version: str = CONFIG_VERSION
     size: str = "standard"
     host_profile: str = "generic"
+    # Which host spawns Claude Code sessions: "native" or "windows-wsl:<distro>"
+    # (D3, agent-autonomy). None = recorded by no init yet — treated as native,
+    # but doctor can tell the difference and nudge a re-init.
+    session_host: str | None = None
     docs: str = "docs"
     gameplans: str = "docs/gameplans"
     modules: list[str] = field(default_factory=list)
@@ -115,6 +119,7 @@ class Config:
             version=str(cz.get("version", CONFIG_VERSION)),
             size=str(cz.get("size", "standard")),
             host_profile=str(host.get("profile", "generic")),
+            session_host=(str(host["session_host"]) if host.get("session_host") else None),
             docs=str(paths.get("docs", "docs")),
             gameplans=str(paths.get("gameplans", "docs/gameplans")),
             modules=list(modules.get("enabled", [])),
@@ -134,6 +139,7 @@ class Config:
             "",
             "[host]",
             f'profile = "{self.host_profile}"',
+            *([f'session_host = "{self.session_host}"'] if self.session_host else []),
             "",
             "[paths]",
             f'docs = "{self.docs}"',
@@ -169,6 +175,7 @@ def merge_missing(existing: Config, defaults: Config) -> Config:
         version=existing.version or defaults.version,
         size=existing.size or defaults.size,
         host_profile=existing.host_profile or defaults.host_profile,
+        session_host=existing.session_host or defaults.session_host,
         docs=existing.docs or defaults.docs,
         gameplans=existing.gameplans or defaults.gameplans,
         modules=existing.modules or defaults.modules,
