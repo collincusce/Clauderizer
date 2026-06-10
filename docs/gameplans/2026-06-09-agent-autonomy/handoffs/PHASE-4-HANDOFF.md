@@ -128,19 +128,32 @@ registered command (`wsl.exe -d ubuntu /bin/sh
 'clauderizer 0.8.0'). Command leg green; harness leg unverified (Phase 4
 output `restart_validation_observation`).
 
-- **Digest appeared** → restart validation PASSED. Then: push main,
-  `git tag v0.8.0`, push the tag, cut the **GitHub Release** for v0.8.0
-  (publish.yml / Trusted Publishing does PyPI — the bare tag does not
-  publish; the new gate verifies tag==source), verify
-  `uvx --from clauderizer clauderize --version` → 0.8.0 once the index
-  updates (force-fresh: `uvx --refresh`), and run
-  `/clauderizer-close-gameplan`.
-- **No digest again** → do NOT tag. The failure point is harness-side hook
-  execution (candidates: project-hook trust in this client, hook stdin
-  JSON handling, timeout). Diagnose from PowerShell with the manual
-  wrapper run + `clauderize doctor`; record findings via `cz_add_finding`.
-  H-06's pattern applies to any new guard: in-band identity beats exit
-  codes.
+**STATE CHANGE 2026-06-10 ~04:37Z — v0.8.0 was cut from the GitHub UI
+before main was pushed** (lesson #10): the tag/Release bind to the remote
+head 22ac029 (Phase 1, source 0.6.0), the publish failed as a
+duplicate-0.6.0, and the H-07 gate could not fire because it lives in the
+unpushed commits. 0.8.0 is NOT burned — PyPI rejected the upload. See
+Phase 4 output `release_0_8_0_state` for the full repair plan.
+
+- **Digest appeared** → restart validation PASSED; record it
+  (`cz_add_output`, phase 4, key `restart_validation_observation`). Then
+  repair the release WITH USER CONFIRMATION for each remote-state move:
+  (1) push main (fast-forward; origin gets source 0.8.0 + the gate);
+  (2) retarget the tag: `git push origin :refs/tags/v0.8.0`, tag the
+  release commit `v0.8.0`, push the tag; (3) delete and recreate/republish
+  the v0.8.0 GitHub Release with the prepared notes so `release:published`
+  re-fires — the gate then validates tag==source and PyPI gets a real
+  0.8.0; (4) verify the Actions run succeeds and
+  `uvx --refresh --from clauderizer clauderize --version` → 0.8.0; then
+  run `/clauderizer-close-gameplan`.
+- **No digest again** → leave the broken remote release alone for the
+  moment; the failure point is harness-side hook execution (candidates:
+  project-hook trust in this client, hook stdin JSON handling, timeout).
+  Diagnose from PowerShell with the manual wrapper run + `clauderize
+  doctor`; record findings via `cz_add_finding`. The release repair above
+  can proceed afterward — it does not depend on the digest, but the
+  close-out should record both outcomes. H-06's pattern applies to any new
+  guard: in-band identity beats exit codes.
 
 **Close-out also owes**: O1/O2 (GAMEPLAN Open Items) carried to the next
 gameplan; a lesson promotion/consolidation pass (candidates: #7

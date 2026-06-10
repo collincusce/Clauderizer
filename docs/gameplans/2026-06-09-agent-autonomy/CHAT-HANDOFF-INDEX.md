@@ -80,6 +80,8 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 **9.** A version number is a namespace claim across FOUR registries that do not sync — source (pyproject/__version__), remote git tags, GitHub Releases, and the PyPI index — and staging a release means sweeping all four with fresh eyes: git tag -l AND git ls-remote --tags origin (tags can exist remote-only), the Releases API (a Release can exist for an unpublished version), and PyPI queried directly (uvx by-name answers from uv's cache and can hide a recent attempt). Phase 4 swept three, read 'by-name resolves 0.6.0' as confirmation, and double-claimed 0.7.0 — when that uvx result was actually the symptom of a failed v0.7.0 publish (H-07).
 
+**10.** A GitHub-UI release tags the REMOTE's branch head, not your tree: if local work isn't pushed, the release is wrong by construction — wrong source version, and without any locally-authored guards, since those are unpushed too. Two live repros in one day: v0.7.0 cut at the Phase-0 origin-head, v0.8.0 cut at the Phase-1 origin-head (both built 0.6.0 artifacts, both publishes failed as duplicates). Push-then-release is an ordering invariant, and the release-check ritual (O3) must verify origin/main == the staged release commit before any tag or Release exists.
+
 ### Category: Integration
 
 **1.** A long-running MCP server executes the modules it imported at session start: after editing engine code, in-session cz_* writes still run the pre-edit code. Any dogfood or verification that must traverse a new code path needs a fresh process (stdio probe today, clauderize ops after Phase 1) — otherwise it silently exercises the old path while appearing to test the new one.
