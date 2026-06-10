@@ -321,6 +321,50 @@ def test_memory_gauge_warns_past_threshold(temp_repo):
     assert bundle["memory"]["warning"] is None
 
 
+def test_memory_thresholds_config_roundtrip(tmp_path):
+    # O1/O2: the nudge lines are config, not constants — and survive the
+    # to_toml <-> load round trip (L-04: engine-written files re-parse).
+    from clauderizer.config import Config
+
+    cfg = Config.for_size("standard")
+    assert cfg.active_lessons_warn == 12  # the pre-O1 constant, honored
+    assert cfg.project_lessons_warn == 20
+    cfg.active_lessons_warn = 5
+    cfg.project_lessons_warn = 7
+    f = tmp_path / "config.toml"
+    f.write_text(cfg.to_toml(), encoding="utf-8")
+    loaded = Config.load(f)
+    assert loaded.active_lessons_warn == 5
+    assert loaded.project_lessons_warn == 7
+    # configs that predate [memory] load with the defaults
+    f.write_text("[clauderizer]\nversion = \"1\"\n", encoding="utf-8")
+    legacy = Config.load(f)
+    assert legacy.active_lessons_warn == 12
+    assert legacy.project_lessons_warn == 20
+
+
+def test_memory_gauge_honors_configured_thresholds(temp_repo):
+    # fixture has 3 active lessons and (after one promotion) 1 project lesson
+    from clauderizer import mutations as M
+
+    paths, config = _paths_and_config(temp_repo)
+    M.promote_lesson(paths, gameplan_id="2026-05-01-bootstrap", number=3,
+                     today="2026-06-09")
+    config.active_lessons_warn = 1   # 2 active > 1
+    config.project_lessons_warn = 0  # 1 project > 0
+    bundle = status_bundle.compute(paths, config)
+    warning = bundle["memory"]["warning"]
+    assert "(> 1)" in warning and "cz_consolidate_lessons" in warning
+    assert "project lessons (> 0)" in warning and "L-entries" in warning
+    assert " | " in warning  # both nudges coexist, one digest line each
+    digest = status_bundle.render_digest(bundle, tools=[])
+    assert "⚠ Memory:" in digest
+    # raise the lines back above the counts: silent again
+    config.active_lessons_warn = 12
+    config.project_lessons_warn = 20
+    assert status_bundle.compute(paths, config)["memory"]["warning"] is None
+
+
 def test_status_bundle_reports_completed_gameplan(temp_repo):
     from clauderizer import mutations as M
 

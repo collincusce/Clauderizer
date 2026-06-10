@@ -12,6 +12,10 @@ session_host = "windows-wsl:ubuntu"
 docs = "docs"
 gameplans = "docs/gameplans"
 
+[memory]
+active_lessons_warn = 12
+project_lessons_warn = 20
+
 [modules]
 enabled = ["VISION", "ARCHITECTURE", "DECISIONS", "INVARIANTS", "TESTING", "HARDENING"]
 

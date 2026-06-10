@@ -11,7 +11,7 @@
 | 1 | hosts.py emits the immune shape; restart-validate H-08 | 🟡 IN PROGRESS | 2026-06-10 | — | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Doctor traverses the consumer leg (D-010) | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Release preflight ritual (O3) and 1.0 readiness gates (O4) | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Memory guardrails as config: O1 ACTIVE_LESSONS_WARN, O2 consolidation trigger | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Memory guardrails as config: O1 ACTIVE_LESSONS_WARN, O2 consolidation trigger | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-4-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -33,6 +33,12 @@ wiring_regenerated: Registered SessionStart command (verbatim, settings.json): w
 ```
 release_check_shipped: clauderize release-check live (src/clauderizer/release_check.py + CLI wiring): doctor-style three-state checks — clean tree; push-then-release (origin/<branch> == HEAD via ls-remote, names the UI-tags-REMOTE-head mechanism); four-registry sweep for v{pyproject version} (local tag, remote tag via ls-remote --tags, GitHub Release via gh seam, PyPI index queried DIRECTLY via urllib — never uvx cache); publish gate marker ('Release tag must match pyproject version') required when publish.yml exists. Exit 0 ok / 2 any fail / 3 unverifiable-but-no-fail (honest middle, D-010). 12 new tests against real git repos with a local bare origin, network seams monkeypatched: every skew individually proven to fire (unpushed commit, dirty tree, local-only tag, REMOTE-ONLY tag — the v0.7.0/v0.8.0 shape, claimed Release, claimed PyPI, gateless workflow, unverifiable→exit-3) plus a marker-drift pin against the real publish.yml. LIVE-FIRE on this repo (dirty tree, 0.8.0 released): exit 2 with clean-tree ✗ and all four registries ✗ claimed, push-ordering ✓, gate ✓ — the H-07 incident shape detected on real data. Suite 220 → 232.
 one_dot_zero_gates: docs/RELEASING.md (O4): the mechanical release ritual (push first → release-check exit 0 → tag the pushed commit → push tag → cut Release → watch the tag==source gate → uvx --refresh verify → restart-validate wiring releases) plus seven 1.0 readiness gates: G1 harness leg truthful (H-08 restart evidence + executor matrix), G2 probes traverse the consumer leg incl. non-repo cwd (D-010, Phase 2), G3 release ritual mechanical (release-check exit 0 precondition, gate pinned by tests), G4 no open high findings with dated evidence on resolutions, G5 structural invariants green (L-01/L-04/L-05/L-06), G6 cold-start UX proven on native AND windows-wsl scratch repos, G7 docs match behavior. Credential caveat recorded in the ritual: workflow-file pushes need Windows git + GCM on this host.
+```
+
+### Phase 4 Outputs
+
+```
+memory_guardrails_config: [memory] config table shipped (O1+O2): active_lessons_warn (default 12 — the pre-O1 constant honored) and project_lessons_warn (default 20). Config dataclass + load (int() raises on garbage per L-04 — never a silent default for a malformed value) + to_toml emission + merge_missing pass-through (ints carry values post-load; `or` would clobber a deliberate 0 = warn-always). _memory_gauge reads thresholds from config (module constants remain the config=None fallback); NEW project-lessons nudge past the line: names docs/LESSONS.md as riding in every handoff across gameplans, prescribes cz_obsolete_lesson L-NN + re-promote a synthesis; both warnings coexist joined with ' | ' on the single ⚠ Memory digest line. Tests: config round-trip with custom values, legacy configs (no [memory]) load defaults, configured thresholds honored incl. 0, both-warnings coexistence, silent-when-under. Suite 232 → 234. This repo's config.toml regenerated via init (1 file, idempotent after); live digest verified silent at 9/20 project lessons.
 ```
 
 ## Corrections Log

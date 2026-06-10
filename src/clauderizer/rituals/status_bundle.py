@@ -15,10 +15,12 @@ from ..markdown import lesson_state, sections
 from ..paths import RepoPaths
 from . import _tables
 
-# Above this many active lessons, the digest nudges toward consolidation (D-009
-# is pressure + visibility, not caps — nothing is ever auto-pruned). A documented
-# constant for now; promote it to config if real projects need different lines.
+# Defaults for the consolidation nudges (D-009 is pressure + visibility, not
+# caps — nothing is ever auto-pruned). Configurable per repo since O1/O2:
+# `[memory] active_lessons_warn / project_lessons_warn` in config.toml; these
+# constants remain the fallback when no config is in hand.
 ACTIVE_LESSONS_WARN = 12
+PROJECT_LESSONS_WARN = 20
 
 _LESSON_LINE_RE = re.compile(r"\*\*\d+\.\*\*")
 
@@ -47,6 +49,10 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
         from .handoff import collect_project_lessons
 
         _, project = collect_project_lessons(lessons_doc.read_text(encoding="utf-8"))
+    warn_active = (config.active_lessons_warn if config is not None
+                   else ACTIVE_LESSONS_WARN)
+    warn_project = (config.project_lessons_warn if config is not None
+                    else PROJECT_LESSONS_WARN)
     gauge = {
         "active_lessons": active,
         "obsolete_lessons": obsolete,
@@ -55,12 +61,25 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
         "handoff_est_tokens": None,
         "warning": None,
     }
-    if active > ACTIVE_LESSONS_WARN:
-        gauge["warning"] = (
-            f"{active} active lessons (> {ACTIVE_LESSONS_WARN}) — every handoff "
+    warnings = []
+    if active > warn_active:
+        warnings.append(
+            f"{active} active lessons (> {warn_active}) — every handoff "
             f"carries all of them. cz_consolidate_lessons the overlapping, "
             f"cz_promote_lesson the enduring, cz_obsolete_lesson the stale."
         )
+    if project > warn_project:
+        # O2: project lessons ride in every handoff across ALL gameplans —
+        # past the line, re-distill: obsolete the superseded L-entries
+        # (cz_obsolete_lesson "L-NN") and promote a tighter synthesis.
+        warnings.append(
+            f"{project} project lessons (> {warn_project}) — docs/LESSONS.md "
+            f"rides in every handoff across gameplans. Re-distill: "
+            f"cz_obsolete_lesson the superseded L-entries and promote a "
+            f"tighter synthesis."
+        )
+    if warnings:
+        gauge["warning"] = " | ".join(warnings)
     return gauge
 
 

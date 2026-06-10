@@ -90,6 +90,13 @@ class Config:
     preflight_checks: list[str] = field(default_factory=list)
     preflight_advisory: list[str] = field(default_factory=list)
     active_gameplan: str | None = None
+    # [memory] — D-009 is pressure + visibility, not caps: above these counts
+    # the status digest nudges toward consolidation; nothing is auto-pruned.
+    # active_lessons_warn: the current gameplan's active lessons (every handoff
+    # carries all of them). project_lessons_warn: docs/LESSONS.md L-entries
+    # (these ride in every handoff across ALL gameplans, O2).
+    active_lessons_warn: int = 12
+    project_lessons_warn: int = 20
 
     @classmethod
     def for_size(cls, size: str, host_profile: str = "generic") -> "Config":
@@ -115,6 +122,7 @@ class Config:
         modules = raw.get("modules", {})
         rituals = raw.get("rituals", {})
         active = raw.get("active_gameplan", {})
+        memory = raw.get("memory", {})
         return cls(
             version=str(cz.get("version", CONFIG_VERSION)),
             size=str(cz.get("size", "standard")),
@@ -127,6 +135,10 @@ class Config:
             preflight_checks=list(cz.get("preflight_checks", [])),
             preflight_advisory=list(cz.get("preflight_advisory", [])),
             active_gameplan=(active.get("id") or None),
+            # int() raises on garbage — a malformed threshold must be visible,
+            # never silently replaced by a default (L-04).
+            active_lessons_warn=int(memory.get("active_lessons_warn", 12)),
+            project_lessons_warn=int(memory.get("project_lessons_warn", 20)),
         )
 
     def to_toml(self) -> str:
@@ -144,6 +156,10 @@ class Config:
             "[paths]",
             f'docs = "{self.docs}"',
             f'gameplans = "{self.gameplans}"',
+            "",
+            "[memory]",
+            f"active_lessons_warn = {self.active_lessons_warn}",
+            f"project_lessons_warn = {self.project_lessons_warn}",
             "",
             "[modules]",
             _toml_kv("enabled", self.modules),
@@ -183,4 +199,8 @@ def merge_missing(existing: Config, defaults: Config) -> Config:
         preflight_checks=existing.preflight_checks or defaults.preflight_checks,
         preflight_advisory=existing.preflight_advisory or defaults.preflight_advisory,
         active_gameplan=existing.active_gameplan or defaults.active_gameplan,
+        # ints always carry a value after load (defaults applied there); `or`
+        # would clobber a deliberate 0 ("warn always"), so pass through as-is.
+        active_lessons_warn=existing.active_lessons_warn,
+        project_lessons_warn=existing.project_lessons_warn,
     )
