@@ -120,6 +120,25 @@ def _git(args: str, cwd: Path, runner: Runner) -> tuple[int, str]:
     return runner(f"git {args}", cwd)
 
 
+def _git_branch_state(root: Path, runner: Runner) -> tuple[str, str]:
+    """One of ('branch', name) | ('detached','') | ('unborn','') | ('none','').
+
+    ``rev-parse --abbrev-ref HEAD`` fails BOTH outside a repo and on a fresh
+    ``git init`` with zero commits (unborn branch) — and the unborn case is
+    the very first thing a brand-new adopter runs preflight on, so it must
+    not be misdiagnosed as "not a git repo" (found live in the node-profile
+    loop proof, alpha-to-beta-evidence Phase 3).
+    """
+    code, out = _git("rev-parse --abbrev-ref HEAD", root, runner)
+    if code == 0:
+        name = out.strip()
+        return ("detached", "") if name == "HEAD" else ("branch", name)
+    inside, _ = _git("rev-parse --is-inside-work-tree", root, runner)
+    if inside == 0:
+        return ("unborn", "")
+    return ("none", "")
+
+
 def run(
     paths: RepoPaths,
     config: Config,
@@ -147,11 +166,14 @@ def run(
             result.passed = False
 
     if "branch_base" in enabled:
-        code, out = _git("rev-parse --abbrev-ref HEAD", root, runner)
-        branch = out.strip()
-        if code != 0:
+        state, branch = _git_branch_state(root, runner)
+        if state == "none":
             add("branch_base", "skip", "not a git repo")
-        elif branch == "HEAD":
+        elif state == "unborn":
+            add("branch_base", "skip",
+                "git repo has no commits yet (unborn branch) — commit the "
+                "scaffold to enable branch checks")
+        elif state == "detached":
             add("branch_base", "fail", "detached HEAD — check out a branch")
         else:
             add("branch_base", "pass", f"on branch {branch}")
@@ -204,9 +226,15 @@ def run(
             add("deps_spotcheck", "fail", "active gameplan GAMEPLAN.md not found on disk")
 
     if "branch_creation" in enabled:
-        code, out = _git("rev-parse --abbrev-ref HEAD", root, runner)
-        add("branch_creation", "pass" if code == 0 else "skip",
-            f"current branch: {out.strip()}" if code == 0 else "not a git repo")
+        state, branch = _git_branch_state(root, runner)
+        if state == "branch":
+            add("branch_creation", "pass", f"current branch: {branch}")
+        elif state == "detached":
+            add("branch_creation", "pass", "current branch: HEAD (detached)")
+        elif state == "unborn":
+            add("branch_creation", "skip", "no commits yet (unborn branch)")
+        else:
+            add("branch_creation", "skip", "not a git repo")
 
     if "cascade_hygiene" in enabled:
         gid = config.active_gameplan

@@ -229,6 +229,42 @@ def test_preflight_skips_when_no_test_command(sample_repo):
     assert any(c.name == "tests" and c.status == "skip" for c in result.checks)
 
 
+def test_preflight_distinguishes_unborn_branch_from_no_repo(sample_repo):
+    # A fresh `git init` with zero commits — the first thing a brand-new
+    # adopter runs preflight on — must not read as "not a git repo"
+    # (found live in the node-profile loop proof).
+    paths, config = _paths_and_config(sample_repo)
+    config.preflight_checks = ["branch_base", "clean_tree", "branch_creation"]
+    profile = Profile(name="generic", commands={})
+    runner = _fake_runner({
+        "rev-parse --abbrev-ref HEAD": (128, "fatal: ambiguous argument 'HEAD'"),
+        "rev-parse --is-inside-work-tree": (0, "true"),
+        "git status --porcelain": (0, "?? scaffold"),
+    })
+    result = preflight.run(paths, config, profile, runner=runner)
+    names = {c.name: (c.status, c.detail) for c in result.checks}
+    assert names["branch_base"][0] == "skip"
+    assert "no commits yet" in names["branch_base"][1]
+    assert "not a git repo" not in names["branch_base"][1]
+    assert names["branch_creation"][0] == "skip"
+    assert "no commits yet" in names["branch_creation"][1]
+
+
+def test_preflight_outside_any_repo_still_says_so(sample_repo):
+    paths, config = _paths_and_config(sample_repo)
+    config.preflight_checks = ["branch_base", "branch_creation"]
+    profile = Profile(name="generic", commands={})
+    runner = _fake_runner({
+        "rev-parse --abbrev-ref HEAD": (128, "fatal: not a git repository"),
+        "rev-parse --is-inside-work-tree": (128, "fatal: not a git repository"),
+        "git status --porcelain": (128, "fatal: not a git repository"),
+    })
+    result = preflight.run(paths, config, profile, runner=runner)
+    names = {c.name: c.detail for c in result.checks}
+    assert names["branch_base"] == "not a git repo"
+    assert names["branch_creation"] == "not a git repo"
+
+
 def _add_baseline_line(paths, gid, count):
     idx = paths.gameplan_dir(gid) / "CHAT-HANDOFF-INDEX.md"
     idx.write_text(
