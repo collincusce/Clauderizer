@@ -9,6 +9,7 @@ never a false green).
 
 import json
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -225,7 +226,9 @@ def test_init_adopts_existing_wsl_wiring(empty_python_repo):
     entry = json.loads(mcp.read_text(encoding="utf-8"))["mcpServers"]["clauderizer"]
     assert entry["command"] == "wsl.exe"
     assert entry["args"][:2] == ["-d", "ubuntu"]
-    assert entry["args"][-1].endswith("clauderizer-mcp")
+    # win32 console scripts carry .exe — identity, not suffix, is the claim
+    assert Path(entry["args"][-1]).name.lower() in ("clauderizer-mcp",
+                                                    "clauderizer-mcp.exe")
     # the hook goes through the same shim as ONE command string — since D4 the
     # registered target is the breadcrumb wrapper, not the engine directly;
     # since D2 (H-08) its paths are //-prefixed to survive Git Bash's MSYS2
@@ -233,8 +236,14 @@ def test_init_adopts_existing_wsl_wiring(empty_python_repo):
     settings = json.loads(
         (empty_python_repo / ".claude" / "settings.json").read_text(encoding="utf-8"))
     cmds = [h["command"] for g in settings["hooks"]["SessionStart"] for h in g["hooks"]]
-    assert any(c.startswith("wsl.exe -d ubuntu //bin/sh //")
-               and c.endswith(".clauderizer/hook.sh") for c in cmds)
+    if sys.platform == "win32":
+        # a win32-resident repo renders /C:/… (a POSIX-repo path is what the
+        # //-led shape exists for); shim + wrapper registration is the claim
+        assert any(c.startswith("wsl.exe -d ubuntu //bin/sh /")
+                   and c.endswith(".clauderizer/hook.sh") for c in cmds)
+    else:
+        assert any(c.startswith("wsl.exe -d ubuntu //bin/sh //")
+                   and c.endswith(".clauderizer/hook.sh") for c in cmds)
 
 
 def test_init_explicit_flag_wins_and_persists(empty_python_repo):

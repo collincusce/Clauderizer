@@ -1,0 +1,5 @@
+# The engine treats newlines as content (L-01 byte-idempotency; the hook
+# wrappers carry their newline convention as part of their contract). Never
+# let git's autocrlf rewrite the working tree — windows CI runners default
+# to autocrlf=true, which would corrupt fixture round-trips.
+* text=auto eol=lf

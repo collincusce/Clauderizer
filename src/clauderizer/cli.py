@@ -169,10 +169,22 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     )
     if wrapper_token:
         wrapper_path = Path(wrapper_token)
+        if not wrapper_path.is_file():
+            # windows-wsl registrations carry the DISTRO-side spelling
+            # (/home/… — or /C:/… for a win32-resident repo), which this host
+            # may not be able to stat; the wrapper itself lives in this repo.
+            tail = wrapper_token.replace("\\", "/").rsplit("/.clauderizer/", 1)
+            if len(tail) == 2:
+                candidate = paths.root / ".clauderizer" / tail[1]
+                if candidate.is_file():
+                    wrapper_path = candidate
         check("hook wrapper present", wrapper_path.is_file(),
               f"{wrapper_token} missing — re-run `clauderize init`")
         if wrapper_path.is_file():
-            wrapper_text = wrapper_path.read_text(encoding="utf-8", errors="replace")
+            # Bytes, not read_text: universal-newline normalization would strip
+            # the cmd template's \r\n and make a healthy win32 wrapper never
+            # compare equal to its own render (a permanent false "stale" nudge).
+            wrapper_text = wrapper_path.read_bytes().decode("utf-8", errors="replace")
             baked = hosts.wrapper_engine_argv(wrapper_text)
             current = _resolve_invocation(None)[1]
             expected = hosts.render_hook_wrapper(

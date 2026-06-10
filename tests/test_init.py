@@ -23,11 +23,11 @@ def test_init_creates_expected_layout(empty_python_repo):
     for doc in ("VISION", "ARCHITECTURE", "DECISIONS", "INVARIANTS", "TESTING", "HARDENING"):
         assert (r / "docs" / f"{doc}.md").exists(), doc
     assert (r / "CLAUDE.md").exists()
-    assert "<!-- clauderizer:start -->" in (r / "CLAUDE.md").read_text()
+    assert "<!-- clauderizer:start -->" in (r / "CLAUDE.md").read_text(encoding="utf-8")
     assert (r / ".mcp.json").exists()
     assert (r / ".claude" / "settings.json").exists()
     assert (r / ".claude" / "skills" / "clauderizer-do-phase" / "SKILL.md").exists()
-    assert ".clauderizer/index.json" in (r / ".gitignore").read_text()
+    assert ".clauderizer/index.json" in (r / ".gitignore").read_text(encoding="utf-8")
 
     cfg = Config.load(r / ".clauderizer" / "config.toml")
     assert cfg.size == "standard"
@@ -55,7 +55,7 @@ def test_init_preserves_existing_claude_md(empty_python_repo):
     claude = empty_python_repo / "CLAUDE.md"
     claude.write_text("# My Project\n\nImportant human notes.\n", encoding="utf-8")
     init(empty_python_repo)
-    text = claude.read_text()
+    text = claude.read_text(encoding="utf-8")
     assert "Important human notes." in text
     assert "<!-- clauderizer:start -->" in text
 
@@ -64,7 +64,7 @@ def test_init_preserves_other_mcp_servers(empty_python_repo):
     mcp = empty_python_repo / ".mcp.json"
     mcp.write_text(json.dumps({"mcpServers": {"other": {"command": "x"}}}), encoding="utf-8")
     init(empty_python_repo)
-    data = json.loads(mcp.read_text())
+    data = json.loads(mcp.read_text(encoding="utf-8"))
     assert "other" in data["mcpServers"]
     assert "clauderizer" in data["mcpServers"]
 

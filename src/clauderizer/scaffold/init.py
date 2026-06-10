@@ -47,12 +47,20 @@ def _resolve_invocation(run_cmd: list[str] | None) -> tuple[list[str], list[str]
         return [*run_cmd, "clauderizer-mcp"], [*run_cmd, "clauderizer-hook"]
     # Prefer the console scripts that sit next to the *running* interpreter — the
     # most reliable hit for a venv/pipx install, even when that bin dir isn't on
-    # PATH (the Windows→WSL / unactivated-venv case shutil.which misses). Fall back
-    # to PATH lookup, then to zero-install uvx.
+    # PATH (the Windows→WSL / unactivated-venv case shutil.which misses). On
+    # win32 the scripts carry .exe (and live in Scripts/, which IS the
+    # interpreter's dir for a venv). Fall back to PATH lookup, then uvx.
     bindir = Path(sys.executable).parent
-    mcp = bindir / "clauderizer-mcp"
-    hook = bindir / "clauderizer-hook"
-    if mcp.exists() and hook.exists():
+
+    def _script(name: str) -> Path | None:
+        for candidate in (bindir / f"{name}.exe", bindir / name):
+            if candidate.exists():
+                return candidate
+        return None
+
+    mcp = _script("clauderizer-mcp")
+    hook = _script("clauderizer-hook")
+    if mcp and hook:
         return [str(mcp)], [str(hook)]
     which_mcp = shutil.which("clauderizer-mcp")
     which_hook = shutil.which("clauderizer-hook")
@@ -219,6 +227,7 @@ def init(
         wrapper_path,
         hosts.render_hook_wrapper(engine_hook, root=root,
                                   windows=wrapper_name.endswith(".cmd")),
+        exact_newlines=True,
     )
     if changed and not wrapper_name.endswith(".cmd"):
         try:  # courtesy for direct execution; /bin/sh invocation needs no x-bit
@@ -261,7 +270,23 @@ def init(
 # --- helpers ------------------------------------------------------------------
 
 
-def _rewrite_if_diff(path: Path, content: str) -> bool:
+def _rewrite_if_diff(path: Path, content: str, *, exact_newlines: bool = False) -> bool:
+    """Write ``content`` if the file differs; report whether anything changed.
+
+    ``exact_newlines`` writes/compares BYTES: executable wrapper scripts carry
+    their newline convention as part of their contract (hook.sh must stay \\n
+    even when written from a win32 host — the distro's sh chokes on \\r; the
+    cmd template's \\r\\n must not become \\r\\r\\n via text-mode translation,
+    which also broke init idempotency on win32 by making the read-back never
+    equal the render).
+    """
+    if exact_newlines:
+        data = content.encode("utf-8")
+        if path.exists() and path.read_bytes() == data:
+            return False
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        return True
     if path.exists() and path.read_text(encoding="utf-8") == content:
         return False
     path.parent.mkdir(parents=True, exist_ok=True)

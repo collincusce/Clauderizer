@@ -80,7 +80,7 @@ def test_register_hook_replaces_on_invocation_change(tmp_path):
     settings = tmp_path / "settings.json"
     _register_hook(settings, ["uvx", "--from", "clauderizer", "clauderizer-hook"])
     _register_hook(settings, ["/venv/bin/clauderizer-hook"])  # re-run, different invocation
-    data = json.loads(settings.read_text())
+    data = json.loads(settings.read_text(encoding="utf-8"))
     cmds = [h["command"] for g in data["hooks"]["SessionStart"] for h in g["hooks"]]
     clauderizer = [c for c in cmds if "clauderizer-hook" in c]
     assert clauderizer == ["/venv/bin/clauderizer-hook"]  # replaced, not duplicated
@@ -93,7 +93,7 @@ def test_register_hook_preserves_others_and_is_idempotent(tmp_path):
     ), encoding="utf-8")
     assert _register_hook(settings, ["clauderizer-hook"]) is True
     assert _register_hook(settings, ["clauderizer-hook"]) is False  # second run = no-op
-    cmds = [h["command"] for g in json.loads(settings.read_text())["hooks"]["SessionStart"]
+    cmds = [h["command"] for g in json.loads(settings.read_text(encoding="utf-8"))["hooks"]["SessionStart"]
             for h in g["hooks"]]
     assert "other-tool" in cmds
     assert cmds.count("clauderizer-hook") == 1

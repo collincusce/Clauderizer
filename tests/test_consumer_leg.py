@@ -167,7 +167,8 @@ def test_no_executor_keeps_unverifiable_unverifiable(monkeypatch):
 
 def test_executor_leg_all_green_names_the_leg(monkeypatch):
     calls = []
-    _wire(monkeypatch, base=BASE_OK, executor=Path("/mnt/c/git/bash.exe"),
+    executor = Path("/mnt/c/git/bash.exe")  # str() differs per OS — compare via str()
+    _wire(monkeypatch, base=BASE_OK, executor=executor,
           spawn=_spawn_router(_ok(f"clauderizer {V}"),
                               _ok("[Clauderizer] Gameplan x."), calls))
     p = hosts.verify_hook_wiring(ARGV, WSL_HOST)
@@ -178,8 +179,8 @@ def test_executor_leg_all_green_names_the_leg(monkeypatch):
     # both from the hostile cwd
     id_argv, id_kw = calls[0]
     dg_argv, dg_kw = calls[1]
-    assert id_argv == ["/mnt/c/git/bash.exe", "-c", " ".join(ARGV) + " --version"]
-    assert dg_argv == ["/mnt/c/git/bash.exe", "-c", " ".join(ARGV)]
+    assert id_argv == [str(executor), "-c", " ".join(ARGV) + " --version"]
+    assert dg_argv == [str(executor), "-c", " ".join(ARGV)]
     assert id_kw["cwd"] == hosts.non_repo_cwd()
     assert dg_kw["cwd"] == hosts.non_repo_cwd()
 

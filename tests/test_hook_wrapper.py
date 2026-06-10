@@ -20,11 +20,30 @@ from clauderizer.scaffold.init import init
 
 posix_only = pytest.mark.skipif(sys.platform == "win32",
                                 reason="executes the POSIX wrapper shell")
+win32_only = pytest.mark.skipif(sys.platform != "win32",
+                                reason="executes the native win32 cmd wrapper (D3/B2)")
 
 
 def _run_sh(script_path, *args):
     return subprocess.run(["/bin/sh", str(script_path), *args],
                           capture_output=True, stdin=subprocess.DEVNULL, timeout=60)
+
+
+def _run_cmd(script_path, *args, cwd=None):
+    return subprocess.run(["cmd", "/c", str(script_path), *args],
+                          capture_output=True, stdin=subprocess.DEVNULL,
+                          timeout=60, cwd=cwd)
+
+
+def _native_wrapper(repo):
+    """The wrapper file a native-host init actually writes on THIS platform."""
+    return repo / ".clauderizer" / hosts.wrapper_filename("native")
+
+
+def _is_hook_entry(token, name="clauderizer-hook"):
+    """Platform-tolerant console-script identity (win32 scripts carry .exe)."""
+    from pathlib import Path as _P
+    return _P(token).name.lower() in (name, f"{name}.exe")
 
 
 def _hook_cmds(repo):
@@ -170,16 +189,83 @@ def test_wrapper_forwards_args_to_real_engine(tmp_path):
     assert r.stdout.decode().startswith("clauderizer ")
 
 
+# --- real execution, win32 cmd twin (D3/B2: the leg only a windows runner can
+# --- traverse — these must RUN, not skip, in the windows CI cells) ---------------
+
+
+def _write_cmd_wrapper(path, engine_argv, root=None):
+    path.write_bytes(
+        hosts.render_hook_wrapper(engine_argv, root=root, windows=True)
+        .encode("utf-8"))
+
+
+@win32_only
+def test_cmd_dead_engine_emits_breadcrumb_on_stdout(tmp_path):
+    w = tmp_path / "hook.cmd"
+    _write_cmd_wrapper(w, [str(tmp_path / "gone" / "clauderizer-hook.exe")])
+    r = _run_cmd(w)
+    assert r.returncode == 0  # never block the session
+    out = r.stdout.decode("utf-8", "replace")
+    assert hosts.BREADCRUMB_PREFIX in out  # on STDOUT, the channel sessions read
+    assert "clauderize doctor" in out
+
+
+@win32_only
+def test_cmd_healthy_engine_passes_digest_through(tmp_path):
+    engine = tmp_path / "engine.py"
+    engine.write_text("print('digest line')\n", encoding="utf-8")
+    w = tmp_path / "hook.cmd"
+    _write_cmd_wrapper(w, [sys.executable, str(engine)])
+    r = _run_cmd(w)
+    assert r.returncode == 0
+    out = r.stdout.decode("utf-8", "replace")
+    assert out.strip() == "digest line"
+    assert hosts.BREADCRUMB_PREFIX not in out
+
+
+@win32_only
+def test_cmd_anchored_wrapper_runs_engine_from_repo_cwd(tmp_path):
+    # H-09 on the native win32 leg: spawn from a foreign cwd; the anchor's
+    # `cd /d` must put the engine in the repo.
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    engine = tmp_path / "engine.py"
+    engine.write_text("import os\nprint(os.getcwd())\n", encoding="utf-8")
+    w = tmp_path / "hook.cmd"
+    _write_cmd_wrapper(w, [sys.executable, str(engine)], root=repo)
+    r = _run_cmd(w, cwd=str(tmp_path))
+    assert r.returncode == 0
+    assert r.stdout.decode("utf-8", "replace").strip() == str(repo)
+
+
+@win32_only
+def test_cmd_unreachable_repo_emits_breadcrumb_on_stdout(tmp_path):
+    engine = tmp_path / "engine.py"
+    engine.write_text("print('never reached')\n", encoding="utf-8")
+    w = tmp_path / "hook.cmd"
+    _write_cmd_wrapper(w, [sys.executable, str(engine)], root=tmp_path / "gone")
+    r = _run_cmd(w)
+    assert r.returncode == 0
+    out = r.stdout.decode("utf-8", "replace")
+    assert hosts.REPO_BREADCRUMB_PREFIX in out
+    assert "never reached" not in out  # the engine must not have run
+
+
 # --- init: registration matrix, upgrade dedup, regeneration ---------------------
 
 
-def test_init_native_registers_sh_wrapper(empty_python_repo):
+def test_init_native_registers_platform_wrapper(empty_python_repo):
     init(empty_python_repo, spawn_test=False)
-    wrapper = empty_python_repo / ".clauderizer" / "hook.sh"
+    wrapper = _native_wrapper(empty_python_repo)
     assert wrapper.is_file()
     baked = hosts.wrapper_engine_argv(wrapper.read_text(encoding="utf-8"))
-    assert baked and baked[-1].endswith("clauderizer-hook")
-    expected = f"/bin/sh {(empty_python_repo / '.clauderizer' / 'hook.sh').as_posix()}"
+    assert baked and _is_hook_entry(baked[-1])
+    if sys.platform == "win32":
+        assert wrapper.name == "hook.cmd"
+        expected = f"cmd /c {wrapper}"
+    else:
+        assert wrapper.name == "hook.sh"
+        expected = f"/bin/sh {wrapper.as_posix()}"
     assert _hook_cmds(empty_python_repo) == [expected]
 
 
@@ -205,14 +291,17 @@ def test_init_upgrades_direct_wiring_to_wrapper(empty_python_repo):
     init(empty_python_repo, spawn_test=False)
     ours = [c for c in _hook_cmds(empty_python_repo) if hosts.is_hook_command(c)]
     assert len(ours) == 1
-    assert ".clauderizer/hook.sh" in ours[0]
+    wrapper_name = hosts.wrapper_filename("native")  # hook.cmd on win32
+    assert f".clauderizer/{wrapper_name}" in ours[0].replace("\\", "/")
 
 
 def test_init_regenerates_wrapper_when_engine_moves(empty_python_repo):
     init(empty_python_repo, spawn_test=False)
-    wrapper = empty_python_repo / ".clauderizer" / "hook.sh"
-    wrapper.write_text(hosts.render_hook_wrapper(["/moved/away/clauderizer-hook"]),
-                       encoding="utf-8")
+    wrapper = _native_wrapper(empty_python_repo)
+    windows = wrapper.name.endswith(".cmd")
+    wrapper.write_text(
+        hosts.render_hook_wrapper(["/moved/away/clauderizer-hook"], windows=windows),
+        encoding="utf-8")
     init(empty_python_repo, spawn_test=False)  # engine-owned: refreshed to current
     baked = hosts.wrapper_engine_argv(wrapper.read_text(encoding="utf-8"))
     assert baked != ["/moved/away/clauderizer-hook"]
@@ -245,7 +334,7 @@ def test_doctor_wrapper_present_and_fresh_green(empty_python_repo, monkeypatch, 
 
 def test_doctor_missing_wrapper_is_drift(empty_python_repo, monkeypatch, capsys):
     init(empty_python_repo, spawn_test=False)
-    (empty_python_repo / ".clauderizer" / "hook.sh").unlink()
+    _native_wrapper(empty_python_repo).unlink()
     rc, out = _doctor(empty_python_repo, monkeypatch, capsys)
     assert "✗ hook wrapper present" in out
     assert rc == 2
@@ -253,8 +342,10 @@ def test_doctor_missing_wrapper_is_drift(empty_python_repo, monkeypatch, capsys)
 
 def test_doctor_stale_wrapper_warns(empty_python_repo, monkeypatch, capsys):
     init(empty_python_repo, spawn_test=False)
-    (empty_python_repo / ".clauderizer" / "hook.sh").write_text(
-        hosts.render_hook_wrapper(["/moved/clauderizer-hook"]), encoding="utf-8")
+    wrapper = _native_wrapper(empty_python_repo)
+    wrapper.write_bytes(
+        hosts.render_hook_wrapper(["/moved/clauderizer-hook"],
+                                  windows=wrapper.name.endswith(".cmd")).encode("utf-8"))
     rc, out = _doctor(empty_python_repo, monkeypatch, capsys)
     assert "? hook wrapper freshness" in out
     assert rc == 3
@@ -264,9 +355,11 @@ def test_doctor_old_template_same_engine_warns(empty_python_repo, monkeypatch, c
     # Right engine baked in, but the wrapper predates the H-09 repo anchor:
     # launchable (so a nudge, not drift) yet a fresh init would rewrite it.
     init(empty_python_repo, spawn_test=False)
-    wrapper = empty_python_repo / ".clauderizer" / "hook.sh"
+    wrapper = _native_wrapper(empty_python_repo)
     baked = hosts.wrapper_engine_argv(wrapper.read_text(encoding="utf-8"))
-    wrapper.write_text(hosts.render_hook_wrapper(baked), encoding="utf-8")  # no root
+    wrapper.write_bytes(
+        hosts.render_hook_wrapper(baked, windows=wrapper.name.endswith(".cmd"))
+        .encode("utf-8"))  # no root: the pre-H-09 template
     rc, out = _doctor(empty_python_repo, monkeypatch, capsys)
     assert "? hook wrapper freshness" in out
     assert "template predates" in out

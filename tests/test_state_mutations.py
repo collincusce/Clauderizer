@@ -29,7 +29,7 @@ def test_transition_phase_updates_both_trackers_and_dates(temp_repo):
                            today="2026-06-05")
     assert r["ok"] and r["to_status"] == "complete"
     for fname in ("CHAT-HANDOFF-INDEX.md", "PHASE-STATUS.md"):
-        text = (paths.gameplan_dir(GID) / fname).read_text()
+        text = (paths.gameplan_dir(GID) / fname).read_text(encoding="utf-8")
         rows = {row.number: row.status for row in _tables.parse_phase_table(text)}
         assert rows["1"] == "complete", fname
         assert "| 1 | Wire it up | ✅ COMPLETE | 2026-05-01 | 2026-06-05 |" in text
@@ -91,12 +91,12 @@ def test_init_preserves_profile_lock_overrides(empty_python_repo):
     lock = empty_python_repo / ".clauderizer" / "profile.lock.toml"
     lock.write_text('profile = "python"\n[commands]\ntest = "MY-PINNED-CMD"\n', encoding="utf-8")
     init(empty_python_repo, size="standard")  # re-run must not clobber
-    assert "MY-PINNED-CMD" in lock.read_text()
+    assert "MY-PINNED-CMD" in lock.read_text(encoding="utf-8")
 
 
 def test_init_workflow_audit_sets_advisory(empty_python_repo):
     init(empty_python_repo, size="standard", workflow="audit")
-    text = (empty_python_repo / ".clauderizer" / "config.toml").read_text()
+    text = (empty_python_repo / ".clauderizer" / "config.toml").read_text(encoding="utf-8")
     assert "preflight_advisory" in text
     assert "clean_tree" in text.split("preflight_advisory")[1].split("\n")[0]
 
@@ -110,7 +110,7 @@ def test_resolve_finding_updates_status_and_keeps_entry(temp_repo):
     r = M.resolve_finding(paths, finding_id="H-01", status="resolved",
                           note="owner confirmed 3-of-5 Safe", today="2026-06-06")
     assert r["ok"]
-    text = paths.doc("HARDENING").read_text()
+    text = paths.doc("HARDENING").read_text(encoding="utf-8")
     assert "### H-01 — Reentrancy risk" in text      # append-only: entry kept
     assert "**Status**: resolved (2026-06-06)" in text
     assert "**Resolution**: owner confirmed 3-of-5 Safe" in text
@@ -121,7 +121,7 @@ def test_resolve_finding_resolution_is_idempotent(temp_repo):
     M.add_finding(paths, title="f", severity="LOW", impact="x", today="2026-06-05")
     M.resolve_finding(paths, finding_id="H-01", note="first", today="2026-06-06")
     M.resolve_finding(paths, finding_id="H-01", note="second", today="2026-06-07")
-    text = paths.doc("HARDENING").read_text()
+    text = paths.doc("HARDENING").read_text(encoding="utf-8")
     assert text.count("**Resolution**:") == 1   # replaced, not stacked
     assert "second" in text and "first" not in text
 

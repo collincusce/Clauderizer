@@ -90,7 +90,7 @@ def test_cz_add_finding(temp_repo):
             "impact": "example impact text", "invariant": "INVARIANT-01",
         })
     assert added["id"] == "H-01"
-    text = (temp_repo / "docs" / "HARDENING.md").read_text()
+    text = (temp_repo / "docs" / "HARDENING.md").read_text(encoding="utf-8")
     assert "### H-01 — Sample finding via MCP" in text
     assert "**Severity**: CRITICAL" in text
 
