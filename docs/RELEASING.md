@@ -56,6 +56,17 @@ exists (or is named here as owed), not a vibe:
 - **G6 — Cold-start UX proven on both host shapes**: `native` and
   `windows-wsl:<distro>` installs each demonstrate init → digest → doctor 0
   on a scratch repo.
+  *Satisfied 2026-06-10 (legs named per D-010):* **windows-wsl** — a real
+  harness cold start on the reference host delivered the digest through
+  Git Bash → wsl.exe → sh (transcript `e4573a6d` hook_success, shape C
+  verbatim, exit 0). **native** — scratch repo `/tmp/cz-g6-*/repo`: init
+  (real hostile-cwd digest spawn-test) → doctor 14/14 exit 0 → the
+  registered string traversed via `/bin/sh -c` AND `/bin/bash -c` from a
+  hostile cwd → in-band digest + identity `clauderizer 0.9.0`.
+  *Named residual:* the native evidence traverses the executor leg
+  faithfully but is not a literal Claude Code cold start on a native-OS
+  machine (this host's harness is Windows); a native-harness restart
+  observation remains open until one runs on such a machine.
 - **G7 — Docs match behavior**: README quickstarts, GAMEPLAN-PROCEDURE, and
   this file describe what the code actually does (no aspirational steps).
 
@@ -93,7 +104,7 @@ through.
 |------|--------|---------------------------|
 | B1 | ✅ 2026-06-10 | 0.9.0 live on PyPI: release-check exit 0 BEFORE tag (commit bdac36b, all four registries swept); publish run 27311516131 green (tag==source gate passed, Trusted Publishing); `uvx --refresh --from clauderizer clauderize --version` → 0.9.0; doctor exit 0 with executor-leg identity 0.9.0 |
 | B2 | ⬜ | _(alpha-to-beta-evidence Phase 1)_ |
-| B3 | ⬜ | _(alpha-to-beta-evidence Phase 2)_ |
+| B3 | ✅ 2026-06-10 | G6 satisfied with legs named (see G6 note above): windows-wsl via real harness cold start (transcript e4573a6d); native via scratch-repo init → doctor 14/14 exit 0 → sh -c AND bash -c on the registered string from hostile cwd → digest + identity 0.9.0; residual (literal native-harness restart) named |
 | B4 | ⬜ | _(alpha-to-beta-evidence Phase 3)_ |
 | B5 | ⬜ | _(gameplan B: stranger-readiness)_ |
 | B6 | ⬜ | _(gameplan C: beta-flip)_ |

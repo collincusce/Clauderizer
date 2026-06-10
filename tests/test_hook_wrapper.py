@@ -370,9 +370,13 @@ def test_doctor_nudges_direct_wiring(empty_python_repo, monkeypatch, capsys):
     init(empty_python_repo, spawn_test=False)
     sf = empty_python_repo / ".claude" / "settings.json"
     data = json.loads(sf.read_text(encoding="utf-8"))
+    # register the console script that actually exists (win32 carries .exe —
+    # and py3.11's shutil.which does not PATHEXT-resolve explicit paths, so a
+    # suffix-less registration would read as dead wiring there, not a nudge)
+    script = "clauderizer-hook.exe" if sys.platform == "win32" else "clauderizer-hook"
     data["hooks"]["SessionStart"] = [{"hooks": [{
         "type": "command",
-        "command": str(Path(sys.executable).parent / "clauderizer-hook")}]}]
+        "command": str(Path(sys.executable).parent / script)}]}]
     sf.write_text(json.dumps(data), encoding="utf-8")
     rc, out = _doctor(empty_python_repo, monkeypatch, capsys)
     assert "? hook wrapper — not installed" in out
