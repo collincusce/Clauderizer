@@ -103,8 +103,8 @@ through.
 | Gate | Status | Evidence (dated artifact) |
 |------|--------|---------------------------|
 | B1 | ✅ 2026-06-10 | 0.9.0 live on PyPI: release-check exit 0 BEFORE tag (commit bdac36b, all four registries swept); publish run 27311516131 green (tag==source gate passed, Trusted Publishing); `uvx --refresh --from clauderizer clauderize --version` → 0.9.0; doctor exit 0 with executor-leg identity 0.9.0 |
-| B2 | ⬜ | _(alpha-to-beta-evidence Phase 1)_ |
+| B2 | ✅ 2026-06-10 | CI run 27312987722 (commit eef7136): 9/9 cells green — ubuntu/macos/windows-latest × py3.11–3.13; the win32 cmd-wrapper execution tests cannot skip on windows runners (win32_only mark), so green cells ⇒ they ran; subsequent runs tracked by the README badge. Surfaced and fixed before CI via a local native-Windows run: .exe console-script resolution, byte-exact wrapper newlines (\r\r\n corruption + idempotency break), CRLF-safe doctor freshness, distro-spelling wrapper fallback, cp1252-blind test reads, py3.11 which() PATHEXT quirk |
 | B3 | ✅ 2026-06-10 | G6 satisfied with legs named (see G6 note above): windows-wsl via real harness cold start (transcript e4573a6d); native via scratch-repo init → doctor 14/14 exit 0 → sh -c AND bash -c on the registered string from hostile cwd → digest + identity 0.9.0; residual (literal native-harness restart) named |
-| B4 | ⬜ | _(alpha-to-beta-evidence Phase 3)_ |
+| B4 | ✅ 2026-06-10 | Node-profile live loop on a scratch repo (/tmp/cz-node2-*): auto-detect → node; init + scaffold commit; preflight 7/7 PASS running REAL `npm test` (baseline 2 via mocha regex) and `npm run build`; 7 tracked writes via `clauderize ops` (create gameplan, transition ×2, decision, lesson, output, summary, handoff) all ok; digest direct AND from hostile cwd; guard-fires: broken test → preflight FAIL (tests ✗), restored → 7/7 again; doctor exit 0. Zero hand-edits. Defect it surfaced fixed with tests: unborn-branch (fresh `git init`, no commits) no longer misdiagnosed as "not a git repo" |
 | B5 | ⬜ | _(gameplan B: stranger-readiness)_ |
 | B6 | ⬜ | _(gameplan C: beta-flip)_ |
