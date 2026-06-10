@@ -1,7 +1,7 @@
 # harness-truth-and-release-ritual Gameplan
 
 > Created: 2026-06-10
-> Status: Planning
+> Status: Executing
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -28,6 +28,12 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Context**: Three candidate MSYS-immune SessionStart command shapes exist with partial evidence: wsl.exe -d ubuntu sh -c 'exec /home/…/hook.sh' (verified under Git Bash only), MSYS_NO_PATHCONV=1 prefix (verified under Git Bash; bash-only env syntax, expected to fail under cmd/PowerShell), //bin/sh double-slash (untested anywhere). The harness's executor choice is not ours to pin and has already changed behavior once (PS 5.1 quoting, Git Bash interposition), and quoting survives the PowerShell→wsl.exe→distro-shell chain differently per executor.
 **Decision**: Phase 0 runs every candidate shape under all three Windows executors (Git Bash bash -c, cmd.exe /c, PowerShell direct) against the real wrapper, records the full pass/fail matrix as a phase output BEFORE any hosts.py change, and the only shape eligible for wiring is one that emits the digest under all three. The current broken shape runs in the same matrix to prove the test detects the failure (lesson #4: prove the guard fires).
 **Consequences**: Phase 1 (hosts.py emission) is blocked on Phase 0's matrix; the matrix script becomes the regression artifact for D-010's init spawn-test contract; if no shape passes all three executors, the wiring decision escalates to the user with the matrix as evidence instead of shipping a partial fix.
+
+### D2 — Wire shape C (double-slash paths) plus a self-anchoring wrapper; shape A is the documented fallback
+
+**Context**: Final executor matrix (hostile cwd C:\, executable anchored fixture, in-band digest criterion): CUR fails only under Git Bash (the H-08 control fires); A (sh -c 'exec …') passes all three; B (MSYS_NO_PATHCONV=1) is bash-syntax-only; C (wsl.exe -d ubuntu //bin/sh //<repo>/.clauderizer/hook.sh) passes all three and was re-confirmed against the production wrapper path under Git Bash. Round-1 traps worth remembering: the cmd column failed entirely on cwd (H-09), and A's first row failed on a fixture missing +x — both orthogonal to what the matrix measures.
+**Decision**: Phase 1 wires shape C: //-prefixed sh and script paths (MSYS2 skips //-led args per its UNC convention; Linux collapses // to /), combined with the H-09 self-anchoring wrapper. C is chosen over A because it is byte-minimal against the current shape, has ZERO quote surface (A's single-quoted payload survives today's three executors but depends on each executor's quote chain), and needs no exec/+x on the target. Shape A is recorded as the fallback if some future executor mishandles //-led arguments.
+**Consequences**: hosts.py hook-command composition changes to emit // paths; the wrapper template gains the repo anchor; init's spawn-test and doctor must spawn from a non-repo cwd to verify anchoring (Phase 2); restart validation in a real harness session remains the resolution gate for H-08; scripts/wiring_matrix.ps1 re-runs the evidence if executors change.
 
 ## Open Items
 
