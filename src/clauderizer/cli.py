@@ -1,12 +1,13 @@
 """``clauderize`` — the human/agent command line.
 
 Subcommands:
-    init      drop Clauderizer into the current repo (idempotent)
-    status    print the current gameplan digest
-    reindex   rebuild the disposable graph cache from markdown
-    doctor    verify the install and report drift
-    mcp       launch the MCP server (stdio)
-    ops       execute a JSON batch of cz_* operations (the no-MCP fallback)
+    init           drop Clauderizer into the current repo (idempotent)
+    status         print the current gameplan digest
+    reindex        rebuild the disposable graph cache from markdown
+    doctor         verify the install and report drift
+    release-check  preflight the four version registries + push ordering (O3)
+    mcp            launch the MCP server (stdio)
+    ops            execute a JSON batch of cz_* operations (the no-MCP fallback)
 """
 
 from __future__ import annotations
@@ -229,6 +230,26 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_release_check(args: argparse.Namespace) -> int:
+    """O3/D-011: refuse to stage a release on a skewed registry or unpushed tree."""
+    from .release_check import run
+
+    code, checks = run(Path.cwd())
+    marks = {"ok": "✓", "fail": "✗", "unverifiable": "?", "skip": "-"}
+    for c in checks:
+        print(f"{marks[c.status]} {c.label}" + (f" — {c.detail}" if c.detail else ""))
+    if code == 0:
+        print("\nOK — stage the release: tag the pushed commit, push the tag, cut "
+              "the GitHub Release (publishing fires on the Release, not the tag).")
+    elif code == 2:
+        print("\nRED — do not tag and do not cut a Release until every ✗ is "
+              "resolved (L-08).")
+    else:
+        print("\nOK with unverifiable check(s) — verify each ? manually before "
+              "staging; an unswept registry is how versions get double-claimed.")
+    return code
+
+
 def cmd_mcp(args: argparse.Namespace) -> int:
     from .mcp_server import main as mcp_main
 
@@ -421,6 +442,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     pd = sub.add_parser("doctor", help="verify the install and report drift")
     pd.set_defaults(func=cmd_doctor)
+
+    prc = sub.add_parser(
+        "release-check",
+        help="preflight a release: push ordering + the four version registries "
+             "(source, remote tags, Releases, PyPI) — exit 0 ok / 2 red / 3 unverifiable",
+    )
+    prc.set_defaults(func=cmd_release_check)
 
     pm = sub.add_parser("mcp", help="launch the MCP server (stdio)")
     pm.set_defaults(func=cmd_mcp)
