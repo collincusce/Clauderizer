@@ -5,7 +5,7 @@
 [![Tests](https://github.com/collincusce/Clauderizer/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/collincusce/Clauderizer/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-### Durable, structured memory for AI agents — drop it into any repo in one command.
+### Git-native working memory for coding agents — drop it into any repo in one command.
 
 ```bash
 uvx --from clauderizer clauderize init
@@ -48,6 +48,11 @@ hope:
 > **Markdown is the source of truth.** The graph index is a disposable cache rebuilt from the
 > markdown on demand — if they ever disagree, markdown wins. No database, no lock-in: your
 > memory is just readable files in `docs/`.
+
+If you've tried to get this from a fatter `CLAUDE.md` or a personal assistant's memory:
+prose conventions rot because nothing executes them, and personal-agent memory follows the
+*person*. Project memory belongs **in the repo** — where it ships, diffs, and reviews with
+the code — as tool calls the agent can't forget to make, not advice it has to remember.
 
 ---
 
@@ -196,6 +201,31 @@ You steer; Claude keeps the memory, the graph, and the rituals honest between se
 
 ---
 
+## Maturity: alpha, with receipts
+
+The classifier says Alpha and means it — but the claims are evidence, not vibes. The
+[beta gates](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md) are
+public: B1–B4 are satisfied with dated artifacts (shipped releases gated by
+`clauderize release-check`; the suite green on ubuntu/macos/windows × py3.11–3.13 with the
+Windows wrapper *executed*, not simulated; cold-start proven on both host shapes; the full
+loop proven on a non-python repo). The quickstart below runs against the **published
+package on a clean CI machine on every push** — and the findings tracker
+([HARDENING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/HARDENING.md))
+is append-only and all-resolved, each finding with dated evidence.
+
+## Docs
+
+- **[TRUST.md](https://github.com/collincusce/Clauderizer/blob/main/docs/TRUST.md)** — what
+  init writes, what executes when, and the contracts each surface honors (every claim cites
+  the code that implements it).
+- **[TROUBLESHOOTING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/TROUBLESHOOTING.md)**
+  — the "no digest at session start" ladder, the breadcrumb decoder, doctor's exit-code
+  contract.
+- **[UPGRADING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/UPGRADING.md)**
+  — upgrades are two moves; uninstalling keeps `docs/` (your memory, not the tool's).
+- **[RELEASING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md)**
+  — the mechanical release ritual, the 1.0 gates, the beta evidence table.
+
 ## Install
 
 
@@ -267,7 +297,7 @@ clauderize init [--size pet|standard|saas] [--profile auto|node|python|go|ruby]
                 [--session-host native|windows-wsl:<distro>] [--no-spawn-test]
 clauderize status [--json]   # the current digest
 clauderize doctor            # present AND runnable for the session host of record;
-                             # exit 0 ok · 2 drift · 3 ok-but-unverifiable-from-this-host
+                             # exit 0 ok · 1 not clauderized · 2 drift · 3 ok-but-unverifiable
 clauderize reindex           # rebuild the graph cache from markdown
 clauderize mcp               # launch the MCP server (stdio)
 clauderize ops <file.json|-> # execute a JSON batch of cz_* ops (the no-MCP write fallback)
@@ -350,13 +380,15 @@ pytest
 ### Releasing (maintainers)
 
 Publishing is automated and tokenless via **PyPI Trusted Publishing** (OIDC) — no secrets stored.
-
 One-time setup on PyPI → the `clauderizer` project → *Publishing* → add a trusted publisher:
 owner `collincusce`, repo `Clauderizer`, workflow `publish.yml`, environment `pypi`.
 
-Then for each release: bump `version` in `pyproject.toml` + `__version__`, update the CHANGELOG,
-and **cut a GitHub Release**. The `publish.yml` workflow builds, runs `twine check`, and uploads
-to PyPI automatically. (`uv build` locally to sanity-check first.)
+Each release follows
+**[docs/RELEASING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md)**
+to the letter: stage the version bump, **push first**, then `clauderize release-check` must
+exit 0 *before* any tag exists — it sweeps all four version registries fresh and verifies push
+ordering. Only then tag the pushed commit and cut the GitHub Release (`publish.yml` refuses
+tag/source skew before building).
 
 ## License
 
