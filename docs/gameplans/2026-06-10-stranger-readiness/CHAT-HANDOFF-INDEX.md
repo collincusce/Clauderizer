@@ -1,7 +1,7 @@
 # Chat Handoff Index — stranger-readiness
 
 > Last updated: 2026-06-10
-> Status: Phase 0 ready
+> Status: Phase 0 of 5 in progress
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 0
+**Current baseline test count**: 257
 
 ## Ending Protocol
 
@@ -29,7 +29,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | The stranger's first hour: quickstart truth, live | ⬜ READY | — | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | The stranger's first hour: quickstart truth, live | 🟡 IN PROGRESS | 2026-06-10 | — | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Upgrade and uninstall stories, walked live | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Trust model on the record (TRUST.md + SECURITY.md) | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Troubleshooting runbook from the scar tissue | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |

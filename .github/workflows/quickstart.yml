@@ -1,0 +1,58 @@
+name: Quickstart
+
+# D1 (stranger-readiness): the README's install path executed verbatim on a
+# genuinely clean machine, against the PUBLISHED package — the stranger walk
+# as a permanent regression guard. The weekly run catches registry/uv drift
+# that no push would.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  stranger:
+    runs-on: ubuntu-latest
+    steps:
+      # checkout exists ONLY for the doc-drift guard below; the walk itself
+      # uses the published package, never the repo code.
+      - uses: actions/checkout@v5
+      - name: README still documents the exact command this job runs
+        run: grep -F "uvx --from clauderizer clauderize init" README.md
+      - name: Install uv per its official one-liner
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: The stranger's first hour
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          mkdir /tmp/my-project && cd /tmp/my-project
+          git init
+          uvx --from clauderizer clauderize init --size standard
+          test -f .clauderizer/config.toml
+          REG=$(python3 -c "import json;print([h['command'] for g in json.load(open('.claude/settings.json'))['hooks']['SessionStart'] for h in g['hooks']][0])")
+          echo "registered hook: $REG"
+          cd /tmp
+          OUT=$(/bin/sh -c "$REG")
+          echo "$OUT"
+          printf '%s\n' "$OUT" | head -1 | grep -q '^\[Clauderizer\]'
+          cd /tmp/my-project
+          uvx --from clauderizer clauderize doctor
+      - name: The wiring survives a cache clean (self-arming)
+        # Published 0.9.0 predates the ephemeral-wiring fix (it wires uv-cache
+        # paths that die on `uv cache clean`); the assertion arms automatically
+        # at the first release that carries it.
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          cd /tmp/my-project
+          V=$(uvx --from clauderizer clauderize --version | awk '{print $2}')
+          if [ "$V" = "0.9.0" ]; then
+            echo "published $V predates the ephemeral-wiring fix — assertion arms at the next release"
+            exit 0
+          fi
+          uv cache clean
+          REG=$(python3 -c "import json;print([h['command'] for g in json.load(open('.claude/settings.json'))['hooks']['SessionStart'] for h in g['hooks']][0])")
+          OUT=$(/bin/sh -c "$REG")
+          echo "$OUT"
+          printf '%s\n' "$OUT" | head -1 | grep -q '^\[Clauderizer\]'
+          printf '%s\n' "$OUT" | grep -qv 'engine unreachable'

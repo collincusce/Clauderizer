@@ -22,7 +22,7 @@ classifiers = [
 ]
 # The core engine has ZERO runtime dependencies (stdlib only: tomllib, dataclasses,
 # argparse). Frontmatter is parsed by a vendored minimal YAML subset. This keeps
-# Clauderizer a true drop-in — `uvx clauderizer init` needs nothing else.
+# Clauderizer a true drop-in — `uvx --from clauderizer clauderize init` needs nothing else.
 dependencies = []
 
 [project.optional-dependencies]

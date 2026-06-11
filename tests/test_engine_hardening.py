@@ -123,7 +123,8 @@ def test_resolve_invocation_falls_back_to_path_then_uvx(monkeypatch, tmp_path):
     monkeypatch.setattr(scaffold_init.shutil, "which", lambda name: f"/venv/bin/{name}")
     assert _resolve_invocation(None)[0] == ["/venv/bin/clauderizer-mcp"]
     monkeypatch.setattr(scaffold_init.shutil, "which", lambda name: None)
-    assert _resolve_invocation(None)[0] == ["uvx", "--from", "clauderizer", "clauderizer-mcp"]
+    assert _resolve_invocation(None)[0] == ["uvx", "-q", "--from", "clauderizer",
+                                            "clauderizer-mcp"]
 
 
 # --- #1 doctor command executability -----------------------------------------

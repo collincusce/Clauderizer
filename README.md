@@ -8,7 +8,7 @@
 ### Durable, structured memory for AI agents — drop it into any repo in one command.
 
 ```bash
-uvx clauderize init
+uvx --from clauderizer clauderize init
 ```
 
 Clauderizer gives a stateless coding agent something it normally lacks: a **memory that
@@ -89,7 +89,7 @@ Brand-new project with nothing in it — not even Clauderizer installed? Three s
 ```bash
 mkdir my-project && cd my-project
 git init                                # recommended — pre-flight uses git
-uvx clauderize init --size standard     # scaffolds docs/, CLAUDE.md, skills, MCP server, hook
+uvx --from clauderizer clauderize init --size standard   # scaffolds docs/, CLAUDE.md, skills, MCP server, hook
 ```
 
 > No language to detect yet, so the host profile starts as `generic`. Once your first phase
@@ -130,8 +130,8 @@ easy to review:
 
 ```bash
 cd my-existing-repo
-uvx clauderize init --size standard     # auto-detects node / python / go / ruby
-clauderize doctor                       # confirm it's wired AND runnable
+uvx --from clauderizer clauderize init --size standard   # auto-detects node / python / go / ruby
+uvx --from clauderizer clauderize doctor                 # confirm it's wired AND runnable
 ```
 
 Because your project already has a language, pre-flight runs your **real** test/build/lint
@@ -200,15 +200,17 @@ You steer; Claude keeps the memory, the graph, and the rituals honest between se
 
 
 ```bash
-pipx install "clauderizer[mcp]"   # regular use (engine + MCP server)
+pipx install "clauderizer[mcp]"   # regular use (engine + MCP server; gives you a bare `clauderize`)
 # or zero-install:
-uvx clauderize init
+uvx --from clauderizer clauderize init
 ```
 
 The core engine has **no runtime dependencies**; the `mcp` extra is only needed to run the
 MCP server. `init` prefers the installed `clauderizer-mcp`/`clauderizer-hook` scripts (venv /
-pipx) and falls back to `uvx` only when nothing's on your PATH — so it wires up correctly on
-native Linux, macOS, and Windows→WSL alike.
+pipx) and otherwise wires the durable `uvx --from clauderizer …` form — never a uvx
+ephemeral-cache path (those die on `uv cache clean`) — so it wires up correctly on native
+Linux, macOS, and Windows→WSL alike. Zero-install users: every `clauderize <cmd>` in these
+docs is `uvx --from clauderizer clauderize <cmd>` until you install properly.
 
 ## What `init` drops in
 

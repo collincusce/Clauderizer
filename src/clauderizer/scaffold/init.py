@@ -8,6 +8,7 @@ unchanged repo produces zero diffs (a tested invariant).
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import sys
 from dataclasses import dataclass, field
@@ -21,8 +22,12 @@ from ..paths import RepoPaths, resolve
 from ..profiles import detect
 
 # Zero-install fallback when nothing is on PATH. uvx resolves the package on
-# demand. Overridable with --run-cmd "pipx run clauderizer".
-DEFAULT_RUN = ["uvx", "--from", "clauderizer"]
+# demand. Overridable with --run-cmd "pipx run clauderizer". The -q matters:
+# on a cold cache uv prints resolution progress to stderr, which the hook
+# wrapper reroutes into stdout (L-07) — straight into session context, and in
+# front of the --version identity line the probes parse (stranger-readiness
+# Phase 0, cache-clean walk).
+DEFAULT_RUN = ["uvx", "-q", "--from", "clauderizer"]
 
 
 class WiringRefused(RuntimeError):
@@ -32,6 +37,44 @@ class WiringRefused(RuntimeError):
     host cannot launch (e.g. a multi-word --run-cmd that composes an invalid
     subcommand like ``clauderize clauderizer-mcp``).
     """
+
+
+def _under_uv_cache(p: Path) -> bool:
+    """Is this path inside uv's cache — i.e. a uvx ephemeral tool environment?
+
+    ``uvx --from clauderizer clauderize init`` runs from an env under uv's
+    CACHE. Wiring those console-script paths into ``.mcp.json`` / the hook
+    wrapper produces wiring that dies on ``uv cache clean`` — doctor drift
+    plus engine-unreachable breadcrumbs until a re-init (found live in the
+    stranger-readiness Phase 0 walk). Such paths must never be wired; the
+    durable zero-install ``uvx --from clauderizer`` form is.
+    """
+    try:
+        rp = p.resolve()
+    except OSError:
+        rp = p
+    if "archive-v0" in rp.parts:  # uvx ephemeral envs live here on every OS
+        return True
+    candidates: list[Path] = []
+    env_cache = os.environ.get("UV_CACHE_DIR")
+    if env_cache:
+        candidates.append(Path(env_cache))
+    if sys.platform == "win32":
+        lad = os.environ.get("LOCALAPPDATA")
+        if lad:
+            candidates.append(Path(lad) / "uv" / "cache")
+    else:
+        try:
+            candidates.append(Path.home() / ".cache" / "uv")
+        except RuntimeError:
+            pass
+    for c in candidates:
+        try:
+            if rp.is_relative_to(c.resolve()):
+                return True
+        except (OSError, ValueError):
+            continue
+    return False
 
 
 def _resolve_invocation(run_cmd: list[str] | None) -> tuple[list[str], list[str]]:
@@ -49,7 +92,8 @@ def _resolve_invocation(run_cmd: list[str] | None) -> tuple[list[str], list[str]
     # most reliable hit for a venv/pipx install, even when that bin dir isn't on
     # PATH (the Windows→WSL / unactivated-venv case shutil.which misses). On
     # win32 the scripts carry .exe (and live in Scripts/, which IS the
-    # interpreter's dir for a venv). Fall back to PATH lookup, then uvx.
+    # interpreter's dir for a venv). NEVER wire a uvx ephemeral env (it dies on
+    # `uv cache clean`); fall back to PATH lookup, then the durable uvx form.
     bindir = Path(sys.executable).parent
 
     def _script(name: str) -> Path | None:
@@ -58,13 +102,17 @@ def _resolve_invocation(run_cmd: list[str] | None) -> tuple[list[str], list[str]
                 return candidate
         return None
 
-    mcp = _script("clauderizer-mcp")
-    hook = _script("clauderizer-hook")
-    if mcp and hook:
-        return [str(mcp)], [str(hook)]
+    if not _under_uv_cache(bindir):
+        mcp = _script("clauderizer-mcp")
+        hook = _script("clauderizer-hook")
+        if mcp and hook:
+            return [str(mcp)], [str(hook)]
     which_mcp = shutil.which("clauderizer-mcp")
     which_hook = shutil.which("clauderizer-hook")
-    if which_mcp and which_hook:
+    if (which_mcp and which_hook
+            and not _under_uv_cache(Path(which_mcp))):
+        # (uvx prepends its ephemeral bin to PATH, so which() finds the same
+        # dying paths the bindir check just refused — filter those too)
         return [which_mcp], [which_hook]
     # Absolutize uvx when present: hooks and shimmed commands run in non-login
     # shells whose PATH may not include ~/.local/bin (observed live on WSL).
