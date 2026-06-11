@@ -17,6 +17,8 @@
 
 **L-12.** Preview a foreign CI cell locally before iterating through the pipeline: install the package into a native venv on the target OS (this machine runs both legs — a Windows venv installs cleanly from the UNC repo path) and run the suite there. One local cycle found every win32 defect — three product bugs and a test-encoding class — that nine months of monkeypatched-platform tests never could; the CI matrix then needed only two cycles, and its single failure was a runner-version quirk (py3.11 which/PATHEXT) that only CI could produce. Local preview shrinks CI iteration to exactly the failures only CI can show — and platform claims that were never EXECUTED on the platform are not claims, they are guesses. *(from 2026-06-10-alpha-to-beta-evidence)*
 
+**L-13.** Distribution claims need distribution execution (L-12's sibling: same principle, different surface): the author's environment never exercises the published install path — an editable venv is not `uvx --from PyPI` — so the README's first command was broken in four places, and the wiring init produced died on a cache clean, while every test passed. Walk the published artifact from a fresh environment, fix what it hits at the layer it lives (doc, resolution logic, or the wired command itself), then pin the walk as a CI job that executes the doc's exact text — doc-drift grep included — with assertions that SELF-ARM when the fix they guard is not yet released. *(from 2026-06-10-stranger-readiness)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)*

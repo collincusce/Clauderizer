@@ -4,9 +4,45 @@ All notable changes to Clauderizer are documented here.
 
 ## [Unreleased]
 
-The **alpha-to-beta-evidence** work (beta gates B1–B4, D-012): the suite now
-runs — and passes — on machines and repos that are not the author's. Suite
-255 → 261.
+The **alpha-to-beta-evidence** and **stranger-readiness** work (beta gates
+B1–B5, D-012): the suite now runs — and passes — on machines and repos that
+are not the author's, and a stranger can adopt, upgrade, trust, debug, and
+remove Clauderizer from the published docs alone. Suite 255 → 264.
+
+### Fixed (stranger-readiness)
+- **The quickstart command** — `uvx clauderize init` resolved no such
+  package (uvx derives the package from the command name); every occurrence
+  is now `uvx --from clauderizer clauderize init`, and the README carries a
+  zero-install note for bare `clauderize` commands.
+- **init no longer wires uvx ephemeral-cache paths.** Run via `uvx`, init
+  used to register console scripts from uv's cache — `uv cache clean` then
+  killed the MCP registration and every digest until a re-init. Resolution
+  now refuses cache-resident paths (`_under_uv_cache`) and wires the durable
+  absolutized `uvx -q --from clauderizer …` form, which survives cache
+  cleans by re-resolving on demand. The `-q` matters on its own: cold-cache
+  uv progress noise used to ride the hook wrapper's stderr-rerouting into
+  session context — in front of the `--version` identity line probes parse.
+
+### Added (stranger-readiness)
+- **The stranger docs**, all executable rather than aspirational:
+  `docs/UPGRADING.md` (upgrades are two moves; the five-step uninstall keeps
+  `docs/` — walked live, both doctor nudges verified verbatim),
+  `docs/TRUST.md` (what init writes, what executes when, the cloned-repo
+  scenario, supply chain — every claim cites grep-verified code),
+  `SECURITY.md`, and `docs/TROUBLESHOOTING.md` (the "no digest" ladder, the
+  breadcrumb decoder, doctor's exit contract — every quoted string verified
+  against src).
+- **`quickstart.yml`** — the README's exact install path executed against
+  the PUBLISHED package on a clean runner, every push plus weekly, with a
+  doc-drift grep and a self-arming cache-clean assertion.
+- **README repositioned**: "Git-native working memory for coding agents",
+  the adoption wedge, a "Maturity: alpha, with receipts" section linking the
+  public beta gates, absolute doc links, and a maintainers' release section
+  that now follows the ritual it used to contradict.
+
+---
+
+Earlier in the same arc (**alpha-to-beta-evidence**, B1–B4):
 
 ### Fixed
 - **win32, found by executing the platform instead of monkeypatching it**:
