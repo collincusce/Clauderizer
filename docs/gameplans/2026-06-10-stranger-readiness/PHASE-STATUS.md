@@ -11,7 +11,7 @@
 | 1 | Upgrade and uninstall stories, walked live | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Trust model on the record (TRUST.md + SECURITY.md) | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Troubleshooting runbook from the scar tissue | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | README positioning pass + B5 consolidation | 🟡 IN PROGRESS | 2026-06-10 | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | README positioning pass + B5 consolidation | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-4-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -37,6 +37,12 @@ trust_docs: docs/TRUST.md shipped: the one-paragraph model (repo-local writes on
 
 ```
 troubleshooting_runbook: docs/TROUBLESHOOTING.md shipped, distilled from H-01..H-09 + the gameplan friction logs: the "no digest at session start" ladder (doctor → the breadcrumb decoder table mapping each [Clauderizer] prefix to its layer and cure → windows-wsl/H-08 note with wiring_matrix.ps1 → the harness transcript hook attachments as the durable diagnostic surface, the exact method that diagnosed and resolved H-08); the doctor exit-code contract table (0/1/2/3 with the designed-? honesty note); cz_* tools missing mid-session (server enumerated at start, restart is the last mile, clauderize ops as the no-MCP write fallback per L-05); the unborn-branch preflight skip; release-check red-after-shipping as designed behavior; uvx cache staleness (--refresh; post-0.9.0 wiring survives cache clean). Every quoted string grep-verified against source, 9/9 (both breadcrumb prefixes, status-unavailable, the exit-1/2/3 doctor lines, unborn-branch, the stanza's ops fallback, the matrix artifact). Evidence pointers section routes to HARDENING / RELEASING / post-mortems. README link lands in Phase 4.
+```
+
+### Phase 4 Outputs
+
+```
+b5_consolidated_and_gpc_scope: B5 ✅ (row filled in RELEASING.md with dated artifacts): README pass per D3 — tagline "Git-native working memory for coding agents", the adoption-wedge paragraph (prose conventions rot; personal-agent memory follows the person; project memory belongs in the repo as tool calls), "Maturity: alpha, with receipts" section linking the public beta gates, a Docs section with ABSOLUTE GitHub URLs (TRUST/TROUBLESHOOTING/UPGRADING/RELEASING — PyPI-render-safe), doctor exit-1 added to the CLI contract comment, and the maintainers' release section rewritten to follow the ritual (push-first + release-check exit 0 before tagging) instead of contradicting it. Final-text verification: quickstart.yml green (run 27317115908) and the 9-cell matrix green (run 27317115901) on commit 1a8916e; suite 264. GP-C (beta-flip, B6) SCOPE, refined by this gameplan's findings: (1) version bump (0.10.0 expected, fresh four-registry sweep per L-08) carrying the ephemeral-wiring fix + -q wiring — the release that ARMS quickstart.yml's cache-clean assertion; (2) classifier line pyproject.toml:15 → "Development Status :: 4 - Beta"; (3) burn-down candidates: the bare-IO meta-test (no read_text/write_text without encoding= repo-wide), the MCP-staleness nudge (engine source newer than server start), TRUST.md sync check at release time; (4) CHANGELOG already accumulating in [Unreleased]; (5) post-flip: uvx --refresh verify + quickstart.yml watch (its self-arming step goes live) + README maturity section update to "beta". NAMED RESIDUAL carried: G6's literal native-harness cold start.
 ```
 
 ## Corrections Log

@@ -1,7 +1,7 @@
 # Chat Handoff Index — stranger-readiness
 
 > Last updated: 2026-06-10
-> Status: Phase 4 of 5 in progress
+> Status: All 5 phases complete
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Upgrade and uninstall stories, walked live | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Trust model on the record (TRUST.md + SECURITY.md) | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Troubleshooting runbook from the scar tissue | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | README positioning pass + B5 consolidation | 🟡 IN PROGRESS | 2026-06-10 | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | README positioning pass + B5 consolidation | ✅ COMPLETE | 2026-06-10 | 2026-06-10 | handoffs/PHASE-4-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -62,6 +62,12 @@ Root SECURITY.md follows GitHub convention: private vulnerability reporting, the
 Turned the project's scar tissue into a stranger-usable runbook. docs/TROUBLESHOOTING.md leads with the failure that matters most — no digest at session start — as a ladder: doctor first, then a decoder table mapping each breadcrumb prefix to the layer that failed and its cure, then the windows-wsl executor note, and finally the harness transcript's per-hook attachments as the durable diagnostic surface (the exact method that took H-08 from silent absence to byte-identical root cause). Around it: the doctor exit-code contract (with the designed-honesty note that ? is a verdict, not a failure), the mid-session MCP-absence reality (restart is the last mile; clauderize ops is the always-available write path), the unborn-branch skip, release-check's designed post-release red, and uvx cache staleness.
 
 Discipline matched the trust doc: every quoted string was grep-verified against the source (9/9), so the runbook cannot drift from the code silently — and each entry names its evidence, a HARDENING finding or a live walk in a gameplan registry. README linkage is deferred to Phase 4's single copy pass.
+
+### Phase 4 — completed 2026-06-10
+
+Executed D3's single copy pass and consolidated B5. The README now leads with "Git-native working memory for coding agents", carries the adoption wedge (prose conventions rot because nothing executes them; personal-agent memory follows the person; project memory belongs in the repo as tool calls), states its maturity honestly with receipts (a section linking the public beta gates and what each already evidences), links the four stranger docs with absolute GitHub URLs so the PyPI rendering survives, completes doctor's exit-code contract in the CLI block, and — a G7 catch — its maintainers' release section now follows the ritual it used to contradict (push-first, release-check exit 0 before any tag). Verified on the final text: quickstart.yml green against the published package (run 27317115908) and the 9-cell matrix green (run 27317115901) on the same commit; suite 264.
+
+B5's evidence row is filled, completing B1–B5 — only B6 (the flip) remains. GP-C's scope is recorded in the outputs registry, refined by what this gameplan learned: the flip release doubles as the release that ships the ephemeral-wiring fix and arms quickstart.yml's self-arming cache-clean assertion; the burn-down list (bare-IO meta-test, MCP-staleness nudge, TRUST.md release-time sync) and the carried G6 residual ride with it.
 
 ## Accumulated Lessons
 
