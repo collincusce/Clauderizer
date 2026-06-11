@@ -8,12 +8,37 @@ order: instead of "read these 6 files in order", the agent gets the live state.
 from __future__ import annotations
 
 import re
+import time
 from pathlib import Path
 
 from ..config import Config
 from ..markdown import lesson_state, sections
 from ..paths import RepoPaths
 from . import _tables
+
+# When this process imported the engine. A long-lived MCP server holds the
+# modules it imported at session start; if the engine SOURCE changes after
+# that (the dogfooding case: editing clauderizer inside a clauderized
+# session), every cz_* call silently runs the older build. cz_status compares
+# source mtimes against this and nudges — restart is the last mile,
+# `clauderize ops` always runs fresh.
+PROCESS_STARTED = time.time()
+
+
+def engine_source_newer_than(started: float) -> bool:
+    """True when any engine source file was modified after ``started``.
+
+    Meaningful only for long-lived processes (the MCP server): a fresh CLI
+    process imports after any edit, so it never sees ``True``. For installed
+    (non-editable) packages, file mtimes are install-time — also never newer.
+    """
+    import clauderizer
+
+    root = Path(clauderizer.__file__).parent
+    try:
+        return any(p.stat().st_mtime > started for p in root.rglob("*.py"))
+    except OSError:
+        return False
 
 # Defaults for the consolidation nudges (D-009 is pressure + visibility, not
 # caps — nothing is ever auto-pruned). Configurable per repo since O1/O2:
@@ -267,6 +292,12 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         lines.append("Blocked: " + ", ".join(bundle["blockers"]))
     for warn in bundle.get("drift") or []:
         lines.append(f"⚠ Drift: {warn}")
+    if bundle.get("engine_stale"):
+        lines.append(
+            "⚠ Engine: source changed since this server started — cz_* tools run "
+            "the older build; restart the session, or use `clauderize ops` "
+            "(fresh process) for writes."
+        )
     lines.append(f"Next: {bundle.get('next_action', '')}")
     if tools:
         lines.append("Tools: " + ", ".join(tools))

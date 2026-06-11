@@ -250,6 +250,26 @@ def test_preflight_distinguishes_unborn_branch_from_no_repo(sample_repo):
     assert "no commits yet" in names["branch_creation"][1]
 
 
+def test_engine_staleness_detection():
+    from clauderizer.rituals import status_bundle
+
+    # files are always newer than the epoch; never newer than the future
+    assert status_bundle.engine_source_newer_than(0.0) is True
+    assert status_bundle.engine_source_newer_than(2_000_000_000.0) is False
+
+
+def test_digest_nudges_on_stale_engine(sample_repo):
+    from clauderizer.rituals import status_bundle
+
+    paths, config = _paths_and_config(sample_repo)
+    bundle = status_bundle.compute(paths, config)
+    assert "Engine: source changed" not in status_bundle.render_digest(bundle)
+    bundle["engine_stale"] = True
+    out = status_bundle.render_digest(bundle)
+    assert "⚠ Engine: source changed since this server started" in out
+    assert "clauderize ops" in out  # the fresh-process escape hatch is named
+
+
 def test_preflight_outside_any_repo_still_says_so(sample_repo):
     paths, config = _paths_and_config(sample_repo)
     config.preflight_checks = ["branch_base", "branch_creation"]

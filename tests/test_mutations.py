@@ -319,7 +319,7 @@ def test_upsert_entity_create_then_update_preserves_body(temp_repo):
     path = paths.docs / "subsystems" / "billing.md"
     # add human prose to the body
     text = path.read_text(encoding="utf-8")
-    path.write_text(text + "\nHand-written prose.\n")
+    path.write_text(text + "\nHand-written prose.\n", encoding="utf-8")
     r2 = M.upsert_entity(paths, id="subsys.billing", type="subsystem",
                          status="active", today="2026-06-02")
     assert r2["created"] is False

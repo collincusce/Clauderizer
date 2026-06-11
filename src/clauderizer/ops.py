@@ -51,7 +51,12 @@ def _graph(paths: RepoPaths):
 def cz_status() -> dict:
     """Current state: active gameplan, phase table, baseline tests, pending cascades, blockers."""
     paths, config = repo_ctx()
-    return status_bundle.compute(paths, config)
+    bundle = status_bundle.compute(paths, config)
+    # Long-lived servers only: nudge when the engine source on disk is newer
+    # than this process (a fresh CLI/ops process never sees True).
+    bundle["engine_stale"] = status_bundle.engine_source_newer_than(
+        status_bundle.PROCESS_STARTED)
+    return bundle
 
 
 def cz_next_phase_context() -> dict:

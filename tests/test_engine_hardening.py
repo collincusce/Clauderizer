@@ -108,8 +108,8 @@ def test_resolve_invocation_explicit_prefix():
 def test_resolve_invocation_prefers_scripts_next_to_interpreter(monkeypatch, tmp_path):
     # scripts sitting next to the running interpreter win — the reliable venv hit,
     # even when shutil.which would miss (bin dir off PATH).
-    (tmp_path / "clauderizer-mcp").write_text("")
-    (tmp_path / "clauderizer-hook").write_text("")
+    (tmp_path / "clauderizer-mcp").write_text("", encoding="utf-8")
+    (tmp_path / "clauderizer-hook").write_text("", encoding="utf-8")
     monkeypatch.setattr(scaffold_init.sys, "executable", str(tmp_path / "python"))
     monkeypatch.setattr(scaffold_init.shutil, "which", lambda name: None)  # PATH misses
     mcp, hook = _resolve_invocation(None)

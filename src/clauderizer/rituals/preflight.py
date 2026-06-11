@@ -78,9 +78,11 @@ def _command_env() -> dict[str, str]:
 
 
 def _default_runner(cmd: str, cwd: Path) -> tuple[int, str]:
+    # encoding pinned (not text=True): on win32 the locale codec would decode
+    # tool output as cp1252 — and raise outright on undecodable bytes.
     proc = subprocess.run(
-        cmd, shell=True, cwd=cwd, capture_output=True, text=True, timeout=600,
-        env=_command_env(),
+        cmd, shell=True, cwd=cwd, capture_output=True, timeout=600,
+        encoding="utf-8", errors="replace", env=_command_env(),
     )
     return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
 

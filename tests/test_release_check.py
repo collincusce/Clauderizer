@@ -64,6 +64,32 @@ def test_green_path_exit_0(staged_repo):
     assert _by_label(checks, "publish gate").status == "skip"  # no publish.yml
 
 
+def test_readme_naming_the_ritual_is_ok(staged_repo):
+    (staged_repo / "README.md").write_text(
+        "Release: run `clauderize release-check` first.\n", encoding="utf-8")
+    _git(staged_repo, "add", "-A")
+    _git(staged_repo, "commit", "-q", "-m", "readme")
+    _git(staged_repo, "push", "-q", "origin", "main")
+    code, checks = run(staged_repo)
+    assert code == 0
+    assert _by_label(checks, "README names the ritual").status == "ok"
+
+
+def test_readme_drifted_from_ritual_is_red(staged_repo):
+    # G7 between sibling docs: a README that documents releasing without the
+    # check is exactly how the real README contradicted RELEASING.md.
+    (staged_repo / "README.md").write_text(
+        "Release: bump the version and cut a GitHub Release.\n", encoding="utf-8")
+    _git(staged_repo, "add", "-A")
+    _git(staged_repo, "commit", "-q", "-m", "readme")
+    _git(staged_repo, "push", "-q", "origin", "main")
+    code, checks = run(staged_repo)
+    assert code == 2
+    c = _by_label(checks, "README names the ritual")
+    assert c.status == "fail"
+    assert "G7" in c.detail
+
+
 def test_unpushed_commit_is_red(staged_repo):
     (staged_repo / "x.txt").write_text("x", encoding="utf-8")
     _git(staged_repo, "add", "-A")

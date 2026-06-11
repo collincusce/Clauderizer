@@ -26,6 +26,11 @@ from pathlib import Path
 # publish workflow that lost it. tests pin this against the real file.
 GATE_MARKER = "Release tag must match pyproject version"
 
+# G7 between sibling docs: the README's release section once contradicted
+# RELEASING.md for months (it omitted the check entirely). If a README
+# exists, it must at least name the ritual it claims to follow.
+RITUAL_MARKER = "clauderize release-check"
+
 _GIT_TIMEOUT = 30.0
 _NET_TIMEOUT = 10.0
 
@@ -40,7 +45,7 @@ class Check:
 def _git(root: Path, *args: str) -> tuple[int, str, str]:
     try:
         r = subprocess.run(["git", *args], cwd=str(root), capture_output=True,
-                           text=True, timeout=_GIT_TIMEOUT)
+                           encoding="utf-8", errors="replace", timeout=_GIT_TIMEOUT)
     except (OSError, subprocess.TimeoutExpired) as exc:
         return 1, "", str(exc)
     return r.returncode, r.stdout.strip(), r.stderr.strip()
@@ -187,6 +192,17 @@ def run(start: Path) -> tuple[int, list[Check]]:
         add("publish gate (tag==source)", "fail",
             f"publish.yml lacks the '{GATE_MARKER}' guard (H-07) — a skewed "
             f"Release would build the wrong artifacts")
+
+    readme = root / "README.md"
+    if not readme.exists():
+        add("README names the ritual", "skip", "no README.md in this repo")
+    elif RITUAL_MARKER in readme.read_text(encoding="utf-8", errors="replace"):
+        add("README names the ritual", "ok")
+    else:
+        add("README names the ritual", "fail",
+            f"README.md never mentions `{RITUAL_MARKER}` — its release section "
+            f"has drifted from the ritual it claims to follow (G7); fix the doc "
+            f"before staging")
 
     if any(c.status == "fail" for c in checks):
         return 2, checks
