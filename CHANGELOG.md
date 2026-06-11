@@ -2,6 +2,43 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [Unreleased]
+
+The **alpha-to-beta-evidence** work (beta gates B1–B4, D-012): the suite now
+runs — and passes — on machines and repos that are not the author's. Suite
+255 → 261.
+
+### Fixed
+- **win32, found by executing the platform instead of monkeypatching it**:
+  `init` resolves win32 console scripts (`clauderizer-*.exe`) beside the
+  interpreter; the generated wrappers are written with **byte-exact
+  newlines** (text-mode IO corrupted `hook.cmd` to `\r\r\n` and broke init
+  idempotency on win32; `hook.sh` written from a win32 host now stays `\n` —
+  the distro's sh chokes on `\r`); doctor's wrapper-freshness compare reads
+  bytes (universal-newline normalization made a healthy win32 wrapper read
+  permanently stale); doctor resolves distro-spelled wrapper registrations
+  (`/home/…` or `/C:/…`) to the repo-local file instead of failing the
+  presence check.
+- **Unborn-branch diagnosis** (found by the node-profile live loop): a fresh
+  `git init` with zero commits — the first state a brand-new adopter runs
+  preflight in — no longer reads as "not a git repo"; branch checks now
+  discriminate via `rev-parse --is-inside-work-tree` and report an honest
+  "no commits yet (unborn branch)" skip.
+
+### Added
+- **CI proves the OS matrix (B2)**: tests run on ubuntu, macos, AND windows
+  runners × py3.11–3.13, with the native win32 cmd wrapper EXECUTED on real
+  Windows (live tests: digest passthrough, dead-engine breadcrumb,
+  unreachable-repo breadcrumb, hostile-cwd `cd /d` anchor).
+- **`.gitattributes` (`eol=lf`)** — newlines are content (L-01); autocrlf
+  runners no longer rewrite fixtures.
+- **Beta gates B1–B6** in `docs/RELEASING.md` (D-012) with a dated evidence
+  table; B1–B4 satisfied.
+
+### Infrastructure
+- Both workflows bumped off deprecated Node-20 actions (checkout@v5,
+  setup-uv@v6, upload/download-artifact@v5).
+
 ## [0.9.0] — 2026-06-10
 
 The **harness-truth-and-release-ritual** work: every claim the system makes

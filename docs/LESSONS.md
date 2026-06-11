@@ -15,6 +15,8 @@
 
 **L-11.** Declare phase dependencies by technical need, not narrative order — and expect a restart-gated exit criterion to split its phase across sessions by design: the session that ships a change to session wiring cannot observe its own next cold start. Record the residue as an explicit REMAINING EXIT CRITERION line in the outputs registry; the next session then closes the phase cold from that line alone, while genuinely independent phases run in the meantime. *(from 2026-06-10-harness-truth-and-release-ritual)*
 
+**L-12.** Preview a foreign CI cell locally before iterating through the pipeline: install the package into a native venv on the target OS (this machine runs both legs — a Windows venv installs cleanly from the UNC repo path) and run the suite there. One local cycle found every win32 defect — three product bugs and a test-encoding class — that nine months of monkeypatched-platform tests never could; the CI matrix then needed only two cycles, and its single failure was a runner-version quirk (py3.11 which/PATHEXT) that only CI could produce. Local preview shrinks CI iteration to exactly the failures only CI can show — and platform claims that were never EXECUTED on the platform are not claims, they are guesses. *(from 2026-06-10-alpha-to-beta-evidence)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)*
