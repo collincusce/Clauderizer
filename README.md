@@ -201,15 +201,17 @@ You steer; Claude keeps the memory, the graph, and the rituals honest between se
 
 ---
 
-## Maturity: alpha, with receipts
+## Maturity: beta, with receipts
 
-The classifier says Alpha and means it — but the claims are evidence, not vibes. The
-[beta gates](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md) are
-public: B1–B4 are satisfied with dated artifacts (shipped releases gated by
-`clauderize release-check`; the suite green on ubuntu/macos/windows × py3.11–3.13 with the
-Windows wrapper *executed*, not simulated; cold-start proven on both host shapes; the full
-loop proven on a non-python repo). The quickstart below runs against the **published
-package on a clean CI machine on every push** — and the findings tracker
+The classifier says **Beta** and earned it — every gate behind the flip is public
+evidence, not vibes. The
+[beta gates](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md)
+B1–B5 are satisfied with dated artifacts (releases gated by `clauderize release-check`;
+the suite green on ubuntu/macos/windows × py3.11–3.13 with the Windows wrapper
+*executed*, not simulated; cold-start proven on both host shapes; the full loop proven
+on a non-python repo; the quickstart and the stranger docs walked live) — and the flip
+release itself is gate B6, shipped via the ritual. The quickstart below runs against the
+**published package on a clean CI machine on every push** — and the findings tracker
 ([HARDENING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/HARDENING.md))
 is append-only and all-resolved, each finding with dated evidence.
 

@@ -2,12 +2,30 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [Unreleased]
+## [0.10.0] — 2026-06-10
 
-The **alpha-to-beta-evidence** and **stranger-readiness** work (beta gates
-B1–B5, D-012): the suite now runs — and passes — on machines and repos that
-are not the author's, and a stranger can adopt, upgrade, trust, debug, and
-remove Clauderizer from the published docs alone. Suite 255 → 264.
+**Beta.** `Development Status :: 4 - Beta` — the flip itself is beta gate B6
+(D-012), shipped via the release ritual with B1–B5 already satisfied by dated
+artifacts (`docs/RELEASING.md` carries the evidence table). This release
+bundles the **alpha-to-beta-evidence**, **stranger-readiness**, and
+**beta-flip burn-down** work: the suite runs — and passes — on machines and
+repos that are not the author's; a stranger can adopt, upgrade, trust, debug,
+and remove Clauderizer from the published docs alone; and the codebase now
+carries structural guards for the failure classes that earned the gates.
+Suite 255 → 270.
+
+### Added (beta-flip burn-down)
+- **The bare-IO tripwire** (`tests/test_io_discipline.py`): no text-mode
+  `read_text`/`write_text`/`open` without `encoding=` anywhere in src or
+  tests — it caught three stragglers on its first sweep. Same class:
+  subprocess output decoding pinned to utf-8 in preflight's runner and
+  release-check's git wrapper (win32 locale decode could mojibake or raise).
+- **Engine-staleness nudge**: `cz_status` from a long-lived MCP server now
+  warns when the engine source on disk is newer than the running process —
+  "restart the session, or use `clauderize ops` (fresh process) for writes."
+- **release-check: "README names the ritual"** — a README whose release
+  section never mentions `clauderize release-check` fails staging (the
+  G7-drift-between-sibling-docs tripwire).
 
 ### Fixed (stranger-readiness)
 - **The quickstart command** — `uvx clauderize init` resolved no such
