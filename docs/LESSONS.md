@@ -19,6 +19,8 @@
 
 **L-13.** Distribution claims need distribution execution (L-12's sibling: same principle, different surface): the author's environment never exercises the published install path — an editable venv is not `uvx --from PyPI` — so the README's first command was broken in four places, and the wiring init produced died on a cache clean, while every test passed. Walk the published artifact from a fresh environment, fix what it hits at the layer it lives (doc, resolution logic, or the wired command itself), then pin the walk as a CI job that executes the doc's exact text — doc-drift grep included — with assertions that SELF-ARM when the fix they guard is not yet released. *(from 2026-06-10-stranger-readiness)*
 
+**L-14.** A dependency's footprint relative to the data it serves is a first-class go/no-go axis — it can disqualify a tool before functional quality is ever measured. Spike the real install early (sibling to L-12/L-13's "prove the real artifact on the real target"), measure footprint-vs-value explicitly against the product's posture, and when the ratio is absurd, take the cheap no-go over a heavy integration. Instance: D-014 rejected LEANN for semantic recall — ~2 GB of eagerly-imported torch ML stack to search 1.2 MB of curated markdown, clashing with Clauderizer's "memory is just readable files, no lock-in" identity even as an optional extra. *(from 2026-06-17-semantic-recall)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)*
