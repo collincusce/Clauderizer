@@ -1,7 +1,7 @@
 # Chat Handoff Index — spec-kit-discipline-gates
 
 > Last updated: 2026-06-17
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Clarify gate: structured open items (O-NN) + judgment-based surfacing | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Exit-criteria gate: machine-checkable phase criteria + surfacing at completion | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Analyze gate: surface conflicting invariants/decisions for agent judgment | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Analyze gate: surface conflicting invariants/decisions for agent judgment | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Integration & docs: wire gates into rituals/skills/digest, document to code | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -45,6 +45,10 @@ Phase 0 shipped the clarify gate: structured open items. Two blessed mutations �
 ### Phase 1 — completed 2026-06-17
 
 Phase 1 shipped the exit-criteria gate. cz_set_exit_criteria authors/replaces a phase's exit criteria as machine-checkable - [ ] items (preserving the checked state of unchanged text); cz_check_exit_criterion toggles one by substring (idempotent). Both operate on the GAMEPLAN 'Phase Breakdown' blocks (D1: reuse existing checkboxes) and ride the shared MCP+CLI registry (parity green). cz_transition_phase to complete now appends a kind:exit_criteria advisory listing the phase's unchecked criteria, alongside Phase 0's open_items advisory in the shared result['advisories'] shape — advisory and non-blocking (INVARIANT-05); test-ish criteria auto-link to the measured baseline count (the D-015 'be intelligent' bit). status_bundle parsers skip scaffold placeholders so a fresh phase never nags about the _(verifiable)_ template line. Suite 273 -> 279 (+6), 4 skipped, zero regressions.
+
+### Phase 2 — completed 2026-06-17
+
+Phase 2 shipped the analyze gate — spec-kit's /analyze adapted to Clauderizer's judgment-based grain (D-016). New module analyze.py surfaces the existing decisions/invariants most relevant to a piece of text by lexical overlap (keyword + entity-id, ADR boilerplate stopped, ranked + capped top-k) — no embeddings, no new dependency (L-14, resolving O-01 as gameplan decision D2). cz_analyze (read-op, parallel to cz_graph_query) returns candidates + a verdict prompt; cz_add_decision now enriches its result with related/possibly-superseded entries so a conflict is noticed at write time. Both are advisory and judgment-based — the engine surfaces, the agent rules; never a deterministic contradiction-detector (D-016), never blocking (INVARIANT-05). Registry 29 tools (parity green). Phase 2's own exit criteria (machine-checkable since Phase 1) were checked off with cz_check_exit_criterion and the phase completed clean — the three gates dogfooding one another. Suite 279 -> 283 (+4), 4 skipped, zero regressions.
 
 ## Accumulated Lessons
 

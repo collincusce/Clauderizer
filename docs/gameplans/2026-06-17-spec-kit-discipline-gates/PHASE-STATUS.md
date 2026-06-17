@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Clarify gate: structured open items (O-NN) + judgment-based surfacing | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Exit-criteria gate: machine-checkable phase criteria + surfacing at completion | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Analyze gate: surface conflicting invariants/decisions for agent judgment | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Analyze gate: surface conflicting invariants/decisions for agent judgment | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Integration & docs: wire gates into rituals/skills/digest, document to code | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
@@ -29,6 +29,16 @@ test-count: 266 -> 273 (+7 in tests/test_open_items.py), 4 skipped, 0 regression
 new-tools: cz_set_exit_criteria (author/replace a phase's - [ ] list, preserving checked-state of unchanged text) + cz_check_exit_criterion (toggle by substring, idempotent). On the shared MCP+CLI registry; tool surface now 28 (parity green).
 surfacing: transition_phase->complete appends a kind:exit_criteria advisory (the phase's unchecked criteria) to result['advisories'] alongside open_items; test-ish criteria (/test|suite|baseline/) auto-link to the measured baseline count. status_bundle.exit_criteria/unchecked_exit_criteria parse the Phase Breakdown blocks and SKIP scaffold placeholders.
 test-count: 273 -> 279 (+6 tests/test_exit_criteria.py), 4 skipped, 0 regressions; registry-parity + MCP-list tests green.
+```
+
+### Phase 2 Outputs
+
+```
+new-module: src/clauderizer/analyze.py — parse_entries + rank_relevant (lexical: keyword + entity-id overlap, top-k) + analyze(). No new dependencies (L-14).
+new-tool: cz_analyze (read-op, writes=False) surfaces ranked relevant decisions/invariants + a verdict prompt; judgment-based (D-016) — engine surfaces, agent rules. Registry now 29 tools (parity green).
+add-decision-enrichment: cz_add_decision result now carries 'related' (+ 'advisory') — related/possibly-superseded existing entries surfaced at write time (best-effort, never blocks).
+relevance-method: O-01 resolved -> gameplan decision D2: lexical overlap (keyword + entity-id + scope), no embeddings (L-14).
+test-count: 279 -> 283 (+4 tests/test_analyze.py), 4 skipped, 0 regressions. Note: test_locking timing test flaked once under full-suite load (waited 0.20s < 0.4s) — flagged for a separate fix (task_5305996c), unrelated to the gates; passes 36/36 in isolation.
 ```
 
 ## Corrections Log

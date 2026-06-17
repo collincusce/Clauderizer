@@ -132,8 +132,25 @@ def add_decision(
         f"**Consequences**: {consequences}{sup}"
     )
     writer.append_to_section(path, "Decisions", entry)
-    return {"ok": True, "id": new_id, "path": str(path),
-            "files_changed": [str(path)], "summary": f"added decision {new_id}"}
+    result = {"ok": True, "id": new_id, "path": str(path),
+              "files_changed": [str(path)], "summary": f"added decision {new_id}"}
+    # Analyze gate (D-016): surface related / possibly-superseded existing entries so a
+    # conflict is noticed at write time. Best-effort, judgment-based, never blocks.
+    try:
+        from . import analyze as _analyze
+
+        rel = _analyze.analyze(paths, f"{title}. {decision} {context}", k=3,
+                               exclude_ids=(new_id,))
+        related = rel["decisions"] + rel["invariants"]
+        if related:
+            result["related"] = related
+            result["advisory"] = (
+                "Related existing entries — check for contradiction/supersession: "
+                + ", ".join(f"{r['id']} ({r['title']})" for r in related)
+            )
+    except Exception:
+        pass
+    return result
 
 
 @_locked

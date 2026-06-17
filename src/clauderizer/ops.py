@@ -92,6 +92,31 @@ def cz_graph_query(entity_id: str = "", kind: str = "lookup", transitive: bool =
     return {"ok": ent is not None, "entity": ent.to_dict() if ent else None}
 
 
+def cz_analyze(text: str, k: int = 5) -> dict:
+    """Surface the existing decisions/invariants most relevant to `text`, for you to
+    judge contradiction or supersession (the analyze gate, D-016).
+
+    Judgment-based like cz_cascade and read-only: the engine ASSEMBLES the most
+    relevant entries (by keyword + entity-id overlap) and prompts; it never decides.
+    Use before recording a decision, or to vet a phase/plan against recorded
+    invariants. If a surfaced entry is contradicted, record a correction or revise;
+    if one is superseded, set `supersedes` on cz_add_decision.
+    """
+    paths, _ = repo_ctx()
+    from . import analyze as _analyze
+
+    res = _analyze.analyze(paths, text, k=k)
+    n = len(res["decisions"]) + len(res["invariants"])
+    res["ok"] = True
+    res["prompt"] = (
+        "Review these against the text: does it CONTRADICT any (record a correction "
+        "or revise) or SUPERSEDE one (set supersedes on cz_add_decision)? If none "
+        "apply, proceed — the engine surfaces candidates only; you decide."
+    )
+    res["summary"] = f"surfaced {n} relevant entr{'y' if n == 1 else 'ies'} for review"
+    return res
+
+
 # --- ritual ops ------------------------------------------------------------------
 
 
@@ -505,6 +530,7 @@ REGISTRY: dict[str, Op] = {
     "cz_resolve_open_item": Op(cz_resolve_open_item, writes=True),
     "cz_set_exit_criteria": Op(cz_set_exit_criteria, writes=True),
     "cz_check_exit_criterion": Op(cz_check_exit_criterion, writes=True),
+    "cz_analyze": Op(cz_analyze, writes=False),
 }
 
 

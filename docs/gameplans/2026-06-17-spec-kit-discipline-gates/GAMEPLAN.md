@@ -29,9 +29,15 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Decision**: Open items extend the existing "Open Items" section as auto-numbered O-NN entries (modeled on cz_add_decision's D-NNN allocation via next_numbered_id). Exit criteria reuse the existing `- [ ]` checkboxes, made machine-trackable in place — a blessed write toggles them; transition surfaces unchecked ones. No new frontmatter schema, no new DAG entity kind.
 **Consequences**: Minimal template churn; existing gameplans stay valid. Writers reuse markdown/writer.py primitives (append_to_section; checkbox toggling may need one small new writer helper). Preserves the "markdown is human-readable source of truth" invariant. Keeps the parser surface small.
 
+### D2 — Analyze-gate relevance = lexical overlap (keyword + entity-id), not embeddings
+
+**Context**: O-01 asked how cz_analyze should rank candidate invariants/decisions: keyword/entity-id/scope overlap vs. heavier semantic similarity. L-14 and D-014 (the LEANN no-go) say stay dependency-light.
+**Decision**: Relevance is lexical: token overlap (4+ char content words, ADR boilerplate stopped) plus a boost when the query names an entity id (D-NNN / INVARIANT-NN); ranked descending, capped at top-k. No embeddings, no new dependency. Implemented in src/clauderizer/analyze.py.
+**Consequences**: cz_analyze and the cz_add_decision enrichment carry zero new dependencies and stay fast. Good enough for the curated, distinctive vocabulary of DECISIONS/INVARIANTS (proven by the seeded-fixture test). The ranker is a single pure function to swap if recall ever proves insufficient, but per L-14 the bar for a semantic dependency is high.
+
 ## Open Items
 
-**O-01.** _(phase 2)_ Phase 2 analyze gate: pick the candidate-relevance method for surfacing invariants/decisions (keyword / entity-id / scope overlap vs. heavier semantic similarity). Must stay dependency-light (L-14) — keyword+ID+scope overlap is the likely default; record the call as a Phase 2 decision.
+**O-01.** _(phase 2)_ Phase 2 analyze gate: pick the candidate-relevance method for surfacing invariants/decisions (keyword / entity-id / scope overlap vs. heavier semantic similarity). Must stay dependency-light (L-14) — keyword+ID+scope overlap is the likely default; record the call as a Phase 2 decision. _(resolved 2026-06-17: Decided as gameplan D2: lexical overlap (keyword + entity-id), no embeddings (L-14).)_
 
 ## Phase Breakdown
 
@@ -69,10 +75,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_analyze returns a ranked, relevant candidate set of invariants/decisions (not the whole file) plus a verdict prompt, on the MCP+CLI registry with parity
-- [ ] cz_add_decision surfaces related and possibly-superseded entries in its result (judgment-based, D-016)
-- [ ] relevance is tested against seeded fixtures (right entries surfaced, irrelevant ones not)
-- [ ] full suite green
+- [x] cz_analyze returns a ranked, relevant candidate set of invariants/decisions (not the whole file) plus a verdict prompt, on the MCP+CLI registry with parity
+- [x] cz_add_decision surfaces related and possibly-superseded entries in its result (judgment-based, D-016)
+- [x] relevance is tested against seeded fixtures (right entries surfaced, irrelevant ones not)
+- [x] full suite green
 
 ### Phase 3: Integration & docs: wire gates into rituals/skills/digest, document to code
 
