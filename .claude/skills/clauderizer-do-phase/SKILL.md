@@ -9,6 +9,7 @@ description: Execute or continue the current gameplan phase end-to-end — pre-f
 2. Call `cz_preflight`. If any enabled check fails, STOP and report — do not write code.
 3. Execute the phase tasks. Honor every rule in `CLAUDE.md` and the accumulated lessons.
 4. Closing protocol:
+   - Before completing: `cz_check_exit_criterion` each exit criterion you've met and `cz_resolve_open_item` any the phase raised — `cz_transition_phase` → `complete` then surfaces whatever's still unchecked/unresolved (relevant to the phase) as advisories, never blocking (INVARIANT-05).
    - `cz_transition_phase` the finished phase to `complete`, then `cz_add_output` for each concrete value the phase produced (counts, paths, ids — later phases read these instead of asking) and `cz_add_phase_summary` for the 1–2 paragraph recap.
    - Record outcomes: `cz_add_correction` for any divergence; `cz_add_lesson` for anything generalizable; `cz_obsolete_lesson` for lessons this phase made irrelevant; if the lessons list is repeating itself, `cz_consolidate_lessons`.
    - For each subsystem/feature whose state changed, `cz_transition_status` (this fires cascade automatically when enabled).

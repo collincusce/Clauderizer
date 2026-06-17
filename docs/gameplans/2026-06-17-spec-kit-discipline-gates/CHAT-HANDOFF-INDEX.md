@@ -1,7 +1,7 @@
 # Chat Handoff Index — spec-kit-discipline-gates
 
 > Last updated: 2026-06-17
-> Status: Phase 3 ready
+> Status: All 4 phases complete
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 273
+**Current baseline test count**: 283
 
 ## Ending Protocol
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Clarify gate: structured open items (O-NN) + judgment-based surfacing | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Exit-criteria gate: machine-checkable phase criteria + surfacing at completion | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Analyze gate: surface conflicting invariants/decisions for agent judgment | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Integration & docs: wire gates into rituals/skills/digest, document to code | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Integration & docs: wire gates into rituals/skills/digest, document to code | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -50,6 +50,10 @@ Phase 1 shipped the exit-criteria gate. cz_set_exit_criteria authors/replaces a 
 
 Phase 2 shipped the analyze gate — spec-kit's /analyze adapted to Clauderizer's judgment-based grain (D-016). New module analyze.py surfaces the existing decisions/invariants most relevant to a piece of text by lexical overlap (keyword + entity-id, ADR boilerplate stopped, ranked + capped top-k) — no embeddings, no new dependency (L-14, resolving O-01 as gameplan decision D2). cz_analyze (read-op, parallel to cz_graph_query) returns candidates + a verdict prompt; cz_add_decision now enriches its result with related/possibly-superseded entries so a conflict is noticed at write time. Both are advisory and judgment-based — the engine surfaces, the agent rules; never a deterministic contradiction-detector (D-016), never blocking (INVARIANT-05). Registry 29 tools (parity green). Phase 2's own exit criteria (machine-checkable since Phase 1) were checked off with cz_check_exit_criterion and the phase completed clean — the three gates dogfooding one another. Suite 279 -> 283 (+4), 4 skipped, zero regressions.
 
+### Phase 3 — completed 2026-06-17
+
+Phase 3 integrated and documented the three gates. The five new tools are in the canonical agent-facing tool list (CLAUDE.md and the claude_stanza init template), a CHANGELOG Unreleased entry records them (24->29 tools, suite 270->283), and docs/ARCHITECTURE.md's Capabilities section describes them with implementation pointers (claims cite code). The clauderizer-do-phase skill's close-out — both the packaged src copy and the active .claude copy — now prompts cz_check_exit_criterion + cz_resolve_open_item before completing a phase, wiring the gates into the workflow rather than just exposing them. Phase 3's own exit criteria were set and checked with the exit-criteria gate (a final dogfood) and the phase completed clean. Deferred and recorded (non-blocking): wiring cz_analyze into the new-gameplan/record skills, and a digest line for unchecked criteria. Suite 283, 4 skipped, zero regressions.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -62,3 +66,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Design
 
 **2.** An always-on advisory that reads existing markdown must exclude scaffold placeholders (_(...)_), or every fresh gameplan surfaces its template placeholder as a real finding. Adding a new surfacing source turns previously-inert scaffold into live input — the existing suite caught this the moment exit-criteria surfacing landed (write→read→rewrite tests earn their keep on cross-feature interactions, not just the happy path).
+
+### Category: Integration
+
+**3.** Generated/managed content has a source template — edit the source, not just the render. Clauderizer renders CLAUDE.md's stanza and .claude/skills from src/clauderizer/templates/claude_stanza.md and src/clauderizer/skills/ at init time; editing only the rendered copy leaves the source stale (and a future init would overwrite the render), while editing only the source leaves the live repo stale until re-init. No test enforces sync, so the drift is silent — update both, source first.

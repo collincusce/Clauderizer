@@ -2,6 +2,29 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [Unreleased]
+
+### Added — discipline gates (spec-kit-inspired; always-on, advisory, judgment-based — D-015 / D-016 / INVARIANT-05)
+
+Three gates that surface findings in the tool result for the agent to rule on —
+they never hard-block a mutation/phase transition and add no config flags. The
+model is `cz_cascade`'s: the engine finds and reports; it does not decide.
+
+- **Clarify gate** — `cz_add_open_item` / `cz_resolve_open_item`: auto-numbered
+  `O-NN` open items in a gameplan's "Open Items"; `cz_status` reports the
+  unresolved ones, and `cz_transition_phase`→complete surfaces those relevant to
+  the phase (tagged to it, or untagged).
+- **Exit-criteria gate** — `cz_set_exit_criteria` / `cz_check_exit_criterion`:
+  a phase's `- [ ]` exit criteria become machine-checkable; completing a phase
+  surfaces the unchecked ones, with test-ish criteria auto-linked to the measured
+  baseline test count (scaffold placeholders are ignored).
+- **Analyze gate** — `cz_analyze` surfaces the existing decisions/invariants most
+  relevant (lexical: keyword + entity-id overlap — no new dependency) to a piece of
+  text, for the agent to judge contradiction/supersession; `cz_add_decision` now
+  enriches its result with related/possibly-superseded entries.
+- Tool surface **24 → 29**; every gate tool is reachable via both MCP and
+  `clauderize ops` (registry parity enforced). Suite 270 → 283.
+
 ## [0.10.0] — 2026-06-10
 
 **Beta.** `Development Status :: 4 - Beta` — the flip itself is beta gate B6

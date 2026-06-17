@@ -10,7 +10,7 @@
 | 0 | Clarify gate: structured open items (O-NN) + judgment-based surfacing | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Exit-criteria gate: machine-checkable phase criteria + surfacing at completion | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Analyze gate: surface conflicting invariants/decisions for agent judgment | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Integration & docs: wire gates into rituals/skills/digest, document to code | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Integration & docs: wire gates into rituals/skills/digest, document to code | ✅ COMPLETE | 2026-06-17 | 2026-06-17 | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -39,6 +39,15 @@ new-tool: cz_analyze (read-op, writes=False) surfaces ranked relevant decisions/
 add-decision-enrichment: cz_add_decision result now carries 'related' (+ 'advisory') — related/possibly-superseded existing entries surfaced at write time (best-effort, never blocks).
 relevance-method: O-01 resolved -> gameplan decision D2: lexical overlap (keyword + entity-id + scope), no embeddings (L-14).
 test-count: 279 -> 283 (+4 tests/test_analyze.py), 4 skipped, 0 regressions. Note: test_locking timing test flaked once under full-suite load (waited 0.20s < 0.4s) — flagged for a separate fix (task_5305996c), unrelated to the gates; passes 36/36 in isolation.
+```
+
+### Phase 3 Outputs
+
+```
+docs-to-code: CLAUDE.md + src/clauderizer/templates/claude_stanza.md 'Key tools' now list the 5 gate tools; CHANGELOG.md Unreleased records the three gates (24->29 tools, suite 270->283); docs/ARCHITECTURE.md Capabilities has a 'Discipline gates' entry citing analyze.py + the tools.
+skill-wiring: clauderizer-do-phase SKILL.md (src/clauderizer/skills + .claude/skills) close-out now prompts cz_check_exit_criterion each met criterion + cz_resolve_open_item before completing — the gates wired into the workflow, not just exposed.
+deferred: Non-blocking, recorded: (1) wire cz_analyze into clauderizer-new-gameplan / clauderizer-record skills (use before recording a decision); (2) add a cz_status/digest line for the current phase's unchecked exit criteria (the open-items digest line already exists). Both are skill/prose wiring; the engine surfaces (cz_analyze, unchecked_exit_criteria) already exist.
+final-state: 29 tools (added cz_add_open_item, cz_resolve_open_item, cz_set_exit_criteria, cz_check_exit_criterion, cz_analyze). Suite 283 passed / 4 skipped. New module src/clauderizer/analyze.py. Decisions D-015, D-016 + gameplan D1, D2; INVARIANT-05.
 ```
 
 ## Corrections Log

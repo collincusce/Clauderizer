@@ -1,7 +1,7 @@
 # spec-kit-discipline-gates Gameplan
 
 > Created: 2026-06-17
-> Status: Executing
+> Status: Complete
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -90,4 +90,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] _(verifiable)_
+- [x] Three gates documented to code: CLAUDE.md + claude_stanza tool list, CHANGELOG Unreleased, ARCHITECTURE Capabilities
+- [x] do-phase skill close-out wires cz_check_exit_criterion + cz_resolve_open_item (src + .claude)
+- [x] full suite green, no regressions from docs/skill edits
+- [x] remaining integration recorded as deferred (new-gameplan/record analyze-wiring, digest unchecked-criteria line)

@@ -29,6 +29,11 @@ wiring is repaired. Every `cz_*` tool is reachable that way.
 - `cz_consolidate_lessons` / `cz_promote_lesson` / `cz_obsolete_lesson` — keep
   memory compact: synthesize overlap, promote the enduring to `docs/LESSONS.md`,
   mark the stale.
+- `cz_add_open_item` / `cz_resolve_open_item` / `cz_set_exit_criteria` /
+  `cz_check_exit_criterion` / `cz_analyze` — the discipline gates (D-015/D-016,
+  always advisory & judgment-based — INVARIANT-05): track open items and
+  machine-checkable exit criteria (surfaced when a phase completes), and surface the
+  decisions/invariants most relevant to a new decision for contradiction-judgment.
 
 **Rules**: never hand-edit frontmatter or append to tracked logs directly — use the
 `cz_*` tools (or `clauderize ops` when MCP is unavailable) so the graph stays
