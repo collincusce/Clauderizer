@@ -61,7 +61,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-**1.** When an exploration subagent maps an unfamiliar codebase to ground a plan, treat its file:line claims as leads to verify, not facts. The spec-kit-gates map asserted tests/test_blessed_surfaces.py held the MCP/CLI parity test; it was actually tests/test_ops.py (test_registry_is_exactly_the_tool_surface), so editing on the map alone would have changed the wrong test. Fan-out exploration locates code fast; confirm which file does what at the point of edit.
+**1.** When an exploration subagent maps an unfamiliar codebase to ground a plan, treat its file:line claims as leads to verify, not facts. The spec-kit-gates map asserted tests/test_blessed_surfaces.py held the MCP/CLI parity test; it was actually tests/test_ops.py (test_registry_is_exactly_the_tool_surface), so editing on the map alone would have changed the wrong test. Fan-out exploration locates code fast; confirm which file does what at the point of edit. (promoted 2026-06-17: L-15)
 
 ### Category: Design
 
@@ -69,4 +69,4 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Integration
 
-**3.** Generated/managed content has a source template — edit the source, not just the render. Clauderizer renders CLAUDE.md's stanza and .claude/skills from src/clauderizer/templates/claude_stanza.md and src/clauderizer/skills/ at init time; editing only the rendered copy leaves the source stale (and a future init would overwrite the render), while editing only the source leaves the live repo stale until re-init. No test enforces sync, so the drift is silent — update both, source first.
+**3.** Generated/managed content has a source template — edit the source, not just the render. Clauderizer renders CLAUDE.md's stanza and .claude/skills from src/clauderizer/templates/claude_stanza.md and src/clauderizer/skills/ at init time; editing only the rendered copy leaves the source stale (and a future init would overwrite the render), while editing only the source leaves the live repo stale until re-init. No test enforces sync, so the drift is silent — update both, source first. (promoted 2026-06-17: L-16)

@@ -21,6 +21,8 @@
 
 **L-14.** A dependency's footprint relative to the data it serves is a first-class go/no-go axis — it can disqualify a tool before functional quality is ever measured. Spike the real install early (sibling to L-12/L-13's "prove the real artifact on the real target"), measure footprint-vs-value explicitly against the product's posture, and when the ratio is absurd, take the cheap no-go over a heavy integration. Instance: D-014 rejected LEANN for semantic recall — ~2 GB of eagerly-imported torch ML stack to search 1.2 MB of curated markdown, clashing with Clauderizer's "memory is just readable files, no lock-in" identity even as an optional extra. *(from 2026-06-17-semantic-recall)*
 
+**L-15.** When an exploration subagent maps an unfamiliar codebase to ground a plan, treat its file:line claims as leads to verify, not facts. The spec-kit-gates map asserted tests/test_blessed_surfaces.py held the MCP/CLI parity test; it was actually tests/test_ops.py (test_registry_is_exactly_the_tool_surface), so editing on the map alone would have changed the wrong test. Fan-out exploration locates code fast; confirm which file does what at the point of edit. *(from 2026-06-17-spec-kit-discipline-gates)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)*
@@ -42,3 +44,5 @@
 ### Category: Integration
 
 **L-04.** Every file the engine writes must round-trip through its own parser in tests; never swallow config parse errors silently. *(from 2026-06-09-discipline-seams)*
+
+**L-16.** Generated/managed content has a source template — edit the source, not just the render. Clauderizer renders CLAUDE.md's stanza and .claude/skills from src/clauderizer/templates/claude_stanza.md and src/clauderizer/skills/ at init time; editing only the rendered copy leaves the source stale (and a future init would overwrite the render), while editing only the source leaves the live repo stale until re-init. No test enforces sync, so the drift is silent — update both, source first. *(from 2026-06-17-spec-kit-discipline-gates)*
