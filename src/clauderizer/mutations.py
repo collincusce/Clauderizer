@@ -830,9 +830,28 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
         return {"ok": False,
                 "summary": f"phase {phase_n} not found (or already {norm}) in trackers"}
     files += _refresh_tracker_headers(paths, gameplan_id, today)
-    return {"ok": True, "phase": str(phase_n), "to_status": norm,
-            "files_changed": list(dict.fromkeys(files)),
-            "summary": f"Phase {phase_n} → {norm}"}
+    result = {"ok": True, "phase": str(phase_n), "to_status": norm,
+              "files_changed": list(dict.fromkeys(files)),
+              "summary": f"Phase {phase_n} → {norm}"}
+    # Advisory surfacing (D-015 / INVARIANT-05): completing a phase surfaces its
+    # unresolved open items so they aren't silently left behind. It NEVER blocks
+    # — the agent rules. Shared `advisories` shape reused by later gates.
+    if norm == "complete":
+        from .rituals.status_bundle import unresolved_open_items
+
+        pending = unresolved_open_items(paths.gameplan_dir(gameplan_id), phase=str(phase_n))
+        if pending:
+            ids = [it["id"] for it in pending]
+            result["advisories"] = [{
+                "kind": "open_items",
+                "ids": ids,
+                "message": (
+                    f"{len(ids)} unresolved open item(s) relevant to phase {phase_n} "
+                    f"({', '.join(ids)}) — resolve with cz_resolve_open_item, or "
+                    f"confirm they don't belong to this phase, before relying on it as done."
+                ),
+            }]
+    return result
 
 
 @_locked
@@ -874,6 +893,79 @@ def add_amendment(
     writer.append_to_section(gp, "Amendments", entry)
     return {"ok": True, "id": new_id, "files_changed": [str(gp)],
             "summary": f"added amendment {new_id}"}
+
+
+# --- open items (the clarify gate, D-015) -------------------------------------
+#
+# Blockers and cross-phase questions, auto-numbered O-NN so cz_status can report
+# them and cz_transition_phase can surface the unresolved ones (advisory, never
+# blocking — INVARIANT-05). They live as ``**O-NN.**`` lines in the GAMEPLAN
+# "Open Items" section: a next_numbered_id-compatible anchor (same as lessons),
+# kept human-readable, no new schema (gameplan D1). Resolved in place with a
+# ``_(resolved <date>: …)_`` marker — never deleted (append-only memory).
+
+
+@_locked
+def add_open_item(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    text: str,
+    phase: str | None = None,
+) -> dict:
+    """Append an auto-numbered open item (``O-NN``) to a gameplan's Open Items.
+
+    An optional ``phase`` tags the item to a phase so transition surfacing can
+    judge relevance. The first item replaces the section's scaffold placeholder.
+    """
+    if not gameplan_id:
+        return {"ok": False, "error": "open items require a gameplan_id"}
+    path = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
+    if not path.exists():
+        return {"ok": False, "summary": f"no GAMEPLAN.md for {gameplan_id}"}
+    doc = writer.full_text(path)
+    new_id = next_numbered_id(doc, "O", sep="-", width=2)
+    p = "" if phase is None or str(phase).strip() == "" else str(phase).strip()
+    tag = f" _(phase {p})_" if p else ""
+    entry = f"**{new_id}.**{tag} {text.strip()}"
+    writer.append_to_section(path, "Open Items", entry)
+    return {"ok": True, "id": new_id, "path": str(path),
+            "files_changed": [str(path)], "summary": f"added open item {new_id}"}
+
+
+@_locked
+def resolve_open_item(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    id: str,
+    resolution: str,
+    today: str | None = None,
+) -> dict:
+    """Mark an open item resolved in place — never delete it (append-only).
+
+    Appends a ``_(resolved <date>: <resolution>)_`` marker to the ``O-NN`` line.
+    Idempotent: re-resolving an already-resolved item is a no-op.
+    """
+    if not gameplan_id:
+        return {"ok": False, "error": "open items require a gameplan_id"}
+    oid = id.strip()
+    path = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
+    body = sections.get_section(writer.full_text(path), "Open Items")
+    if body is None:
+        return {"ok": False, "summary": "no Open Items section"}
+    lines = body.splitlines()
+    prefix = f"**{oid}.**"
+    idx = next((i for i, ln in enumerate(lines) if ln.strip().startswith(prefix)), None)
+    if idx is None:
+        return {"ok": False, "summary": f"open item {oid} not found"}
+    if "_(resolved" in lines[idx]:
+        return {"ok": True, "id": oid, "already_resolved": True,
+                "files_changed": [], "summary": f"open item {oid} already resolved"}
+    lines[idx] = lines[idx].rstrip() + f" _(resolved {_today(today)}: {resolution.strip()})_"
+    writer.upsert_section(path, "Open Items", "\n".join(lines))
+    return {"ok": True, "id": oid, "already_resolved": False,
+            "files_changed": [str(path)], "summary": f"open item {oid} resolved"}
 
 
 # --- entities + status --------------------------------------------------------

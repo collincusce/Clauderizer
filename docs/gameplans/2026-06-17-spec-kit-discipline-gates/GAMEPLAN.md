@@ -1,7 +1,7 @@
 # spec-kit-discipline-gates Gameplan
 
 > Created: 2026-06-17
-> Status: Planning
+> Status: Executing
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -31,7 +31,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 ## Open Items
 
-_(O1, O2, … — blockers and cross-phase questions.)_
+**O-01.** _(phase 2)_ Phase 2 analyze gate: pick the candidate-relevance method for surfacing invariants/decisions (keyword / entity-id / scope overlap vs. heavier semantic similarity). Must stay dependency-light (L-14) — keyword+ID+scope overlap is the likely default; record the call as a Phase 2 decision.
 
 ## Phase Breakdown
 

@@ -29,4 +29,6 @@ TOOL_NAMES = [
     "cz_add_phase",
     "cz_transition_phase",
     "cz_add_amendment",
+    "cz_add_open_item",
+    "cz_resolve_open_item",
 ]

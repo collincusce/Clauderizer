@@ -27,7 +27,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 ## Open Items
 
-_(O1, O2, … — blockers and cross-phase questions.)_
+_(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Blockers and cross-phase questions — unresolved ones surface in cz_status and when a phase is completed.)_
 
 ## Phase Breakdown
 

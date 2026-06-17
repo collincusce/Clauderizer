@@ -401,6 +401,36 @@ def cz_transition_status(id: str, to_status: str, run_cascade: bool = True) -> d
     return result
 
 
+def cz_add_open_item(text: str, phase: str = "", gameplan_id: str = "") -> dict:
+    """Record a blocker or cross-phase question as an auto-numbered open item (O-NN).
+
+    The clarify gate's blessed write (D-015): open items get a stable id instead
+    of untracked prose, so cz_status reports the unresolved ones and
+    cz_transition_phase surfaces them when completing a phase. Optional `phase`
+    tags the item for relevance. Resolve with cz_resolve_open_item — items are
+    marked resolved, never deleted.
+    """
+    paths, config = repo_ctx()
+    gid = gameplan_id or config.active_gameplan
+    if not gid:
+        return {"ok": False, "error": "no gameplan specified or active"}
+    return mutations.add_open_item(paths, gameplan_id=gid, text=text, phase=phase or None)
+
+
+def cz_resolve_open_item(id: str, resolution: str, gameplan_id: str = "") -> dict:
+    """Mark an open item (O-NN) resolved in place — never deleted (append-only).
+
+    Appends a "(resolved <date>: <resolution>)" marker to the item's line.
+    Idempotent: re-resolving is a no-op. The blessed write for closing an open
+    item; never hand-edit the Open Items section.
+    """
+    paths, config = repo_ctx()
+    gid = gameplan_id or config.active_gameplan
+    if not gid:
+        return {"ok": False, "error": "no gameplan specified or active"}
+    return mutations.resolve_open_item(paths, gameplan_id=gid, id=id, resolution=resolution)
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -438,6 +468,8 @@ REGISTRY: dict[str, Op] = {
     "cz_add_phase": Op(cz_add_phase, writes=True),
     "cz_transition_phase": Op(cz_transition_phase, writes=True),
     "cz_add_amendment": Op(cz_add_amendment, writes=True),
+    "cz_add_open_item": Op(cz_add_open_item, writes=True),
+    "cz_resolve_open_item": Op(cz_resolve_open_item, writes=True),
 }
 
 

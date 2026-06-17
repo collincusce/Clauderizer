@@ -144,6 +144,49 @@ def pending_cascades(reports_dir: Path) -> list[str]:
 _pending_cascades = pending_cascades
 
 
+_OPEN_ITEM_RE = re.compile(r"^\*\*(O-\d+)\.\*\*(.*)$")
+_OPEN_PHASE_RE = re.compile(r"_\(phase ([^)]+)\)_")
+
+
+def open_items(gameplan_dir: Path) -> list[dict]:
+    """Parse a gameplan's Open Items into ``{id, phase, resolved, text}`` dicts.
+
+    Open items are ``**O-NN.**`` lines in GAMEPLAN.md's "Open Items" section
+    (the clarify gate, D-015). An item is resolved once its line carries a
+    ``_(resolved …)_`` marker; ``_(phase N)_`` tags it to a phase.
+    """
+    gp = gameplan_dir / "GAMEPLAN.md"
+    if not gp.exists():
+        return []
+    body = sections.get_section(gp.read_text(encoding="utf-8"), "Open Items") or ""
+    items: list[dict] = []
+    for line in body.splitlines():
+        m = _OPEN_ITEM_RE.match(line.strip())
+        if not m:
+            continue
+        rest = m.group(2)
+        pm = _OPEN_PHASE_RE.search(rest)
+        items.append({
+            "id": m.group(1),
+            "phase": pm.group(1).strip() if pm else None,
+            "resolved": "_(resolved" in rest,
+            "text": rest.strip(),
+        })
+    return items
+
+
+def unresolved_open_items(gameplan_dir: Path, phase: str | None = None) -> list[dict]:
+    """Unresolved open items, optionally only those relevant to ``phase``
+    (tagged to it, or untagged — the trivial Phase-0 relevance rule)."""
+    out = []
+    for it in open_items(gameplan_dir):
+        if it["resolved"]:
+            continue
+        if phase is None or it["phase"] is None or str(it["phase"]) == str(phase):
+            out.append(it)
+    return out
+
+
 def _baseline_tests(index_text: str) -> str | None:
     m = re.search(r"baseline test count\D*(\d+)", index_text, re.IGNORECASE)
     return m.group(1) if m else None
@@ -187,6 +230,7 @@ def compute(paths: RepoPaths, config: Config) -> dict:
         "pending_cascades": [],
         "blockers": [],
         "drift": [],
+        "open_items": [],
         "memory": None,
     }
     if not gid:
@@ -218,6 +262,7 @@ def compute(paths: RepoPaths, config: Config) -> dict:
         bundle["drift"] = _drift_warnings(paths, rows)
 
     bundle["pending_cascades"] = _pending_cascades(gdir / "_cascade-reports")
+    bundle["open_items"] = [it["id"] for it in unresolved_open_items(gdir)]
 
     cur = bundle["current_phase"]
     nxt = bundle["next_phase"]
@@ -288,6 +333,9 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
             lines.append(f"⚠ Memory: {mem['warning']}")
     pc = bundle.get("pending_cascades") or []
     lines.append(f"Pending cascades: {len(pc)}." + (f" {', '.join(pc)}" if pc else ""))
+    oi = bundle.get("open_items") or []
+    if oi:
+        lines.append(f"Open items: {len(oi)} unresolved ({', '.join(oi)}).")
     if bundle.get("blockers"):
         lines.append("Blocked: " + ", ".join(bundle["blockers"]))
     for warn in bundle.get("drift") or []:
