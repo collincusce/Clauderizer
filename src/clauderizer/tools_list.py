@@ -31,4 +31,6 @@ TOOL_NAMES = [
     "cz_add_amendment",
     "cz_add_open_item",
     "cz_resolve_open_item",
+    "cz_set_exit_criteria",
+    "cz_check_exit_criterion",
 ]

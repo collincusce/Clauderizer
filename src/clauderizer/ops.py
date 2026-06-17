@@ -431,6 +431,39 @@ def cz_resolve_open_item(id: str, resolution: str, gameplan_id: str = "") -> dic
     return mutations.resolve_open_item(paths, gameplan_id=gid, id=id, resolution=resolution)
 
 
+def cz_set_exit_criteria(phase: str, criteria: list[str], gameplan_id: str = "") -> dict:
+    """Author or replace a phase's exit criteria as machine-checkable - [ ] items.
+
+    The exit-criteria gate's authoring write (D-015): replaces the phase's "Exit
+    criteria" list (placeholder or prior items) with `criteria`, preserving the
+    checked state of any item whose text is unchanged. Check items off with
+    cz_check_exit_criterion; cz_transition_phase surfaces the unchecked ones when
+    completing the phase.
+    """
+    paths, config = repo_ctx()
+    gid = gameplan_id or config.active_gameplan
+    if not gid:
+        return {"ok": False, "error": "no gameplan specified or active"}
+    return mutations.set_exit_criteria(paths, gameplan_id=gid, phase=phase,
+                                       criteria=list(criteria))
+
+
+def cz_check_exit_criterion(phase: str, criterion: str, checked: bool = True,
+                            gameplan_id: str = "") -> dict:
+    """Check (or uncheck) one of a phase's exit criteria, matched by substring.
+
+    Idempotent: toggling to the current state is a no-op. The blessed write for
+    marking a criterion done; cz_transition_phase to complete surfaces any still
+    unchecked (advisory, never blocking — INVARIANT-05).
+    """
+    paths, config = repo_ctx()
+    gid = gameplan_id or config.active_gameplan
+    if not gid:
+        return {"ok": False, "error": "no gameplan specified or active"}
+    return mutations.check_exit_criterion(paths, gameplan_id=gid, phase=phase,
+                                          criterion=criterion, checked=checked)
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -470,6 +503,8 @@ REGISTRY: dict[str, Op] = {
     "cz_add_amendment": Op(cz_add_amendment, writes=True),
     "cz_add_open_item": Op(cz_add_open_item, writes=True),
     "cz_resolve_open_item": Op(cz_resolve_open_item, writes=True),
+    "cz_set_exit_criteria": Op(cz_set_exit_criteria, writes=True),
+    "cz_check_exit_criterion": Op(cz_check_exit_criterion, writes=True),
 }
 
 

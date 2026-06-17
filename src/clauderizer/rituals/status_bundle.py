@@ -187,6 +187,48 @@ def unresolved_open_items(gameplan_dir: Path, phase: str | None = None) -> list[
     return out
 
 
+_EC_CHECK_RE = re.compile(r"^\s*-\s*\[([ xX])\]\s*(.*)$")
+
+
+def phase_block(breakdown_body: str, phase: str):
+    """``(lines, start, end)`` of the ``### Phase N`` block within a Phase
+    Breakdown body, or ``None``. ``end`` is the next ``### `` heading (or EOF)."""
+    lines = breakdown_body.splitlines()
+    pat = re.compile(rf"^###\s+Phase\s+{re.escape(str(phase))}\b")
+    start = next((i for i, ln in enumerate(lines) if pat.match(ln.strip())), None)
+    if start is None:
+        return None
+    end = next((j for j in range(start + 1, len(lines))
+                if lines[j].startswith("### ")), len(lines))
+    return lines, start, end
+
+
+def exit_criteria(gameplan_dir: Path, phase: str) -> list[dict]:
+    """Parse a phase's exit-criteria checkboxes into ``{checked, text}`` dicts (D-015)."""
+    gp = gameplan_dir / "GAMEPLAN.md"
+    if not gp.exists():
+        return []
+    body = sections.get_section(gp.read_text(encoding="utf-8"), "Phase Breakdown") or ""
+    blk = phase_block(body, phase)
+    if blk is None:
+        return []
+    lines, start, end = blk
+    out = []
+    for ln in lines[start:end]:
+        m = _EC_CHECK_RE.match(ln)
+        if m:
+            text = m.group(2).strip()
+            if sections.is_placeholder(text):  # ignore the scaffold "_(verifiable)_"
+                continue
+            out.append({"checked": m.group(1).lower() == "x", "text": text})
+    return out
+
+
+def unchecked_exit_criteria(gameplan_dir: Path, phase: str) -> list[dict]:
+    """Exit criteria for ``phase`` still unchecked (``- [ ]``) — the surfacing input."""
+    return [c for c in exit_criteria(gameplan_dir, phase) if not c["checked"]]
+
+
 def _baseline_tests(index_text: str) -> str | None:
     m = re.search(r"baseline test count\D*(\d+)", index_text, re.IGNORECASE)
     return m.group(1) if m else None

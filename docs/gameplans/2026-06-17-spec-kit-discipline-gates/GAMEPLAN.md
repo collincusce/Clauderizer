@@ -69,7 +69,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] _(verifiable)_
+- [ ] cz_analyze returns a ranked, relevant candidate set of invariants/decisions (not the whole file) plus a verdict prompt, on the MCP+CLI registry with parity
+- [ ] cz_add_decision surfaces related and possibly-superseded entries in its result (judgment-based, D-016)
+- [ ] relevance is tested against seeded fixtures (right entries surfaced, irrelevant ones not)
+- [ ] full suite green
 
 ### Phase 3: Integration & docs: wire gates into rituals/skills/digest, document to code
 

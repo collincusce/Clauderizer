@@ -837,12 +837,16 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
     # unresolved open items so they aren't silently left behind. It NEVER blocks
     # — the agent rules. Shared `advisories` shape reused by later gates.
     if norm == "complete":
-        from .rituals.status_bundle import unresolved_open_items
+        from .rituals.status_bundle import (
+            _baseline_tests, unchecked_exit_criteria, unresolved_open_items,
+        )
 
-        pending = unresolved_open_items(paths.gameplan_dir(gameplan_id), phase=str(phase_n))
+        gdir = paths.gameplan_dir(gameplan_id)
+        advisories: list[dict] = []
+        pending = unresolved_open_items(gdir, phase=str(phase_n))
         if pending:
             ids = [it["id"] for it in pending]
-            result["advisories"] = [{
+            advisories.append({
                 "kind": "open_items",
                 "ids": ids,
                 "message": (
@@ -850,7 +854,29 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
                     f"({', '.join(ids)}) — resolve with cz_resolve_open_item, or "
                     f"confirm they don't belong to this phase, before relying on it as done."
                 ),
-            }]
+            })
+        unchecked = unchecked_exit_criteria(gdir, str(phase_n))
+        if unchecked:
+            idx = gdir / "CHAT-HANDOFF-INDEX.md"
+            baseline = _baseline_tests(idx.read_text(encoding="utf-8")) if idx.exists() else None
+
+            def _annot(t: str) -> str:
+                # Intelligence (D-015): link a test-ish criterion to the measured signal.
+                if baseline and re.search(r"test|suite|baseline", t, re.I):
+                    return f"{t} [measured: baseline {baseline} tests]"
+                return t
+
+            items = [_annot(c["text"]) for c in unchecked]
+            advisories.append({
+                "kind": "exit_criteria",
+                "items": items,
+                "message": (
+                    f"{len(items)} unchecked exit criteria for phase {phase_n} — verify each "
+                    f"and cz_check_exit_criterion it, or confirm done: " + "; ".join(items)
+                ),
+            })
+        if advisories:
+            result["advisories"] = advisories
     return result
 
 
@@ -966,6 +992,103 @@ def resolve_open_item(
     writer.upsert_section(path, "Open Items", "\n".join(lines))
     return {"ok": True, "id": oid, "already_resolved": False,
             "files_changed": [str(path)], "summary": f"open item {oid} resolved"}
+
+
+# --- exit criteria (the exit-criteria gate, D-015) ----------------------------
+#
+# Phase exit criteria live as ``- [ ]`` checkboxes inside each ``### Phase N``
+# block of GAMEPLAN.md "Phase Breakdown" (gameplan D1: reuse what's there). Two
+# blessed writes — set (author/replace the list; no hand-edit) and check (toggle
+# one) — make them machine-trackable; cz_transition_phase surfaces the unchecked
+# ones on completion (advisory, never blocking — INVARIANT-05).
+_EC_LINE_RE = r"^\s*-\s*\[([ xX])\]\s*(.*)$"
+
+
+@_locked
+def set_exit_criteria(
+    paths: RepoPaths, *, gameplan_id: str, phase: str, criteria: list[str],
+) -> dict:
+    """Author/replace a phase's exit criteria as ``- [ ]`` checkboxes.
+
+    Replaces the phase block's ``**Exit criteria**:`` list (placeholder or prior
+    items) with ``criteria``, preserving the checked state of any item whose text
+    is unchanged.
+    """
+    if not gameplan_id:
+        return {"ok": False, "error": "exit criteria require a gameplan_id"}
+    from .rituals.status_bundle import phase_block
+
+    path = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
+    body = sections.get_section(writer.full_text(path), "Phase Breakdown")
+    if body is None:
+        return {"ok": False, "summary": "no Phase Breakdown section"}
+    blk = phase_block(body, phase)
+    if blk is None:
+        return {"ok": False, "summary": f"phase {phase} not found in Phase Breakdown"}
+    lines, start, end = blk
+    block = lines[start:end]
+    prior = {}
+    for ln in block:
+        m = re.match(_EC_LINE_RE, ln)
+        if m:
+            prior[m.group(2).strip()] = m.group(1).lower() == "x"
+    items = [c.strip() for c in criteria if c.strip()]
+    new_items = [f"- [{'x' if prior.get(c, False) else ' '}] {c}" for c in items]
+    ec = next((i for i, ln in enumerate(block)
+               if ln.strip().startswith("**Exit criteria**")), None)
+    if ec is None:
+        while block and not block[-1].strip():
+            block.pop()
+        block += ["", "**Exit criteria**:"] + new_items + [""]
+    else:
+        # criteria are the last element of a phase block — replace to its end
+        block = block[:ec + 1] + new_items + [""]
+    new_lines = lines[:start] + block + lines[end:]
+    changed = writer.upsert_section(path, "Phase Breakdown", "\n".join(new_lines))
+    return {"ok": True, "phase": str(phase), "count": len(new_items),
+            "files_changed": [str(path)] if changed else [],
+            "summary": f"set {len(new_items)} exit criteria for phase {phase}"}
+
+
+@_locked
+def check_exit_criterion(
+    paths: RepoPaths, *, gameplan_id: str, phase: str, criterion: str,
+    checked: bool = True,
+) -> dict:
+    """Check/uncheck one exit criterion (matched by substring) under a phase.
+
+    Idempotent: toggling to the state it already holds is a no-op (files_changed=[]).
+    """
+    if not gameplan_id:
+        return {"ok": False, "error": "exit criteria require a gameplan_id"}
+    from .rituals.status_bundle import phase_block
+
+    path = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
+    body = sections.get_section(writer.full_text(path), "Phase Breakdown")
+    if body is None:
+        return {"ok": False, "summary": "no Phase Breakdown section"}
+    blk = phase_block(body, phase)
+    if blk is None:
+        return {"ok": False, "summary": f"phase {phase} not found in Phase Breakdown"}
+    lines, start, end = blk
+    want = "x" if checked else " "
+    target = criterion.strip().lower()
+    for i in range(start, end):
+        m = re.match(r"^(\s*-\s*\[)([ xX])(\]\s*)(.*)$", lines[i])
+        if not m or target not in m.group(4).strip().lower():
+            continue
+        cur = m.group(2)
+        already = (cur.lower() == "x") if checked else (cur == " ")
+        if already:
+            return {"ok": True, "phase": str(phase), "criterion": m.group(4).strip(),
+                    "checked": checked, "changed": False, "files_changed": [],
+                    "summary": f"exit criterion already {'checked' if checked else 'unchecked'}"}
+        lines[i] = f"{m.group(1)}{want}{m.group(3)}{m.group(4)}"
+        writer.upsert_section(path, "Phase Breakdown", "\n".join(lines))
+        return {"ok": True, "phase": str(phase), "criterion": m.group(4).strip(),
+                "checked": checked, "changed": True, "files_changed": [str(path)],
+                "summary": f"exit criterion {'checked' if checked else 'unchecked'}"}
+    return {"ok": False, "summary": f"no exit criterion matching {criterion!r} in phase {phase}"}
 
 
 # --- entities + status --------------------------------------------------------
