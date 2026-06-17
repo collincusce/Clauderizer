@@ -21,3 +21,8 @@ Append-only memory (decisions, invariants, hardening, lessons) is never deleted.
 ### INVARIANT-04 — The SessionStart hook never blocks a session — it always exits 0.
 
 The SessionStart hook never blocks a session — it always exits 0.
+
+### INVARIANT-05 — Discipline gates (clarify/open-items, exit-criteria, analyze-against-invariants) are advisory and judgment-based: they surface findings in tool results for the agent to act on, and MUST NOT hard-block a mutation or phase transition, nor introduce an enable/disable config flag. The engine surfaces candidates; the agent decides.
+**Introduced by**: D-015
+
+Discipline gates (clarify/open-items, exit-criteria, analyze-against-invariants) are advisory and judgment-based: they surface findings in tool results for the agent to act on, and MUST NOT hard-block a mutation or phase transition, nor introduce an enable/disable config flag. The engine surfaces candidates; the agent decides.
