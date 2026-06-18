@@ -2,9 +2,14 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [Unreleased]
+## [0.11.0] — 2026-06-18
 
-### Added — discipline gates (spec-kit-inspired; always-on, advisory, judgment-based — D-015 / D-016 / INVARIANT-05)
+Three spec-kit-inspired **discipline gates** — clarify, exit-criteria, analyze —
+land as five new tools (24 → 29), all advisory, judgment-based, and config-free.
+Borrowed from GitHub's spec-kit and adapted to Clauderizer's grain (the engine
+surfaces, the agent rules — never a hard block).
+
+### Added — discipline gates (D-015 / D-016 / INVARIANT-05)
 
 Three gates that surface findings in the tool result for the agent to rule on —
 they never hard-block a mutation/phase transition and add no config flags. The
@@ -23,7 +28,7 @@ model is `cz_cascade`'s: the engine finds and reports; it does not decide.
   text, for the agent to judge contradiction/supersession; `cz_add_decision` now
   enriches its result with related/possibly-superseded entries.
 - Tool surface **24 → 29**; every gate tool is reachable via both MCP and
-  `clauderize ops` (registry parity enforced). Suite 270 → 283.
+  `clauderize ops` (registry parity enforced). Suite 270 → 289.
 
 ## [0.10.0] — 2026-06-10
 
