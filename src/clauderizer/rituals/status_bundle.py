@@ -47,7 +47,7 @@ def engine_source_newer_than(started: float) -> bool:
 ACTIVE_LESSONS_WARN = 12
 PROJECT_LESSONS_WARN = 20
 
-_LESSON_LINE_RE = re.compile(r"\*\*\d+\.\*\*")
+_LESSON_LINE_RE = lesson_state.LESSON_LINE_RE  # shared grammar — see markdown/lesson_state
 
 
 def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:

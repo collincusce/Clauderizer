@@ -160,3 +160,13 @@ def test_cz_analyze_op_surfaces_adjacent(temp_repo):
     adj = {a["id"] for a in res["adjacent"]}
     assert "subsys.core" in adj and "subsys.top" in adj
     assert "adjacent" in res["summary"]
+
+
+def test_adjacent_matches_entity_id_ending_a_sentence(temp_repo):
+    """An entity id that ends a sentence (trailing '.') is still a mention — the
+    boundary lookahead must not treat the period as an id continuation."""
+    paths, _ = _ctx(temp_repo)
+    _seed_chain(paths)  # subsys.core <- subsys.mid <- subsys.top
+    res = analyze.analyze(paths, "we are changing subsys.mid.")
+    adj = {a["id"] for a in res["adjacent"]}
+    assert "subsys.core" in adj and "subsys.top" in adj  # subsys.mid was seeded despite the '.'

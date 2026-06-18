@@ -16,6 +16,11 @@ ACTIVE = "active"
 OBSOLETE = "obsolete"
 PROMOTED = "promoted"
 
+# A lesson line's anchor — the "**N.**" numbered-entry prefix. The single shared
+# matcher for "is this a lesson line", used by the memory gauge, handoff
+# roll-ups, and the critique gate (one grammar, one home).
+LESSON_LINE_RE = re.compile(r"\*\*\d+\.\*\*")
+
 # The trailing structured marker: "(obsolete 2026-06-09: reason)",
 # "(promoted 2026-06-09: L-04)". Anchored to end of line — that is the grammar.
 _STATE_RE = re.compile(r"\((obsolete|promoted)\b([^()]*)\)\s*$", re.IGNORECASE)

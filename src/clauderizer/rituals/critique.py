@@ -33,7 +33,7 @@ def _lessons_without_evidence(index_text: str) -> list[str]:
     out: list[str] = []
     for line in sec.splitlines():
         s = line.strip()
-        if not sb._LESSON_LINE_RE.match(s) or not lesson_state.is_active(s):
+        if not lesson_state.LESSON_LINE_RE.match(s) or not lesson_state.is_active(s):
             continue
         if _EVIDENCE_RE.search(s):
             continue
@@ -71,10 +71,16 @@ def critique(paths: RepoPaths, config: Config, target: str | None = None) -> dic
     gdir = paths.gameplan_dir(gid)
     index_file = gdir / "CHAT-HANDOFF-INDEX.md"
     status_file = gdir / "PHASE-STATUS.md"
-    source = index_file if index_file.exists() else status_file
-    text = source.read_text(encoding="utf-8") if source.exists() else ""
+    # Read the index once — it carries both the phase table and the lessons.
+    # Fall back to PHASE-STATUS.md for the phase table only when no index exists.
     index_text = index_file.read_text(encoding="utf-8") if index_file.exists() else ""
-    rows = _tables.parse_phase_table(text)
+    if index_file.exists():
+        source_text = index_text
+    elif status_file.exists():
+        source_text = status_file.read_text(encoding="utf-8")
+    else:
+        source_text = ""
+    rows = _tables.parse_phase_table(source_text)
 
     phase = _resolve_phase(target, rows)
     scope = f"phase {phase}" if phase else f"gameplan {gid}"

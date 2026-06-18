@@ -101,8 +101,12 @@ def _mentioned(text: str, ids) -> set[str]:
     Ids are dotted/hyphenated (``subsys.rituals``, ``feat.init-cli``); the boundary
     guard keeps ``subsys.graph`` from matching inside ``subsys.graph-index``.
     """
+    # Lookbehind blocks a longer id to the left; lookahead blocks a word/hyphen
+    # continuation to the right (so `subsys.graph` does not match inside
+    # `subsys.graph-index`) but allows a trailing `.` — an id ending a sentence
+    # ("…subsys.graph.") or naming a dotted child still counts as a mention.
     return {eid for eid in ids
-            if re.search(rf"(?<![\w.-]){re.escape(eid)}(?![\w.-])", text)}
+            if re.search(rf"(?<![\w.-]){re.escape(eid)}(?![\w-])", text)}
 
 
 def adjacent_entities(paths: RepoPaths, text: str, decision_ids,
@@ -135,9 +139,9 @@ def adjacent_entities(paths: RepoPaths, text: str, decision_ids,
                 out.append({"id": dep, "type": e.type, "status": e.status,
                             "via": f"{sid} depends on it ({reason})"})
         for dependent in graph_query.dependents(graph, sid):
-            if dependent not in seen:
+            e = graph.get(dependent)
+            if e is not None and dependent not in seen:
                 seen.add(dependent)
-                e = graph.get(dependent)
                 out.append({"id": dependent, "type": e.type, "status": e.status,
                             "via": f"depends on {sid} ({reason})"})
     out.sort(key=lambda a: a["id"])
