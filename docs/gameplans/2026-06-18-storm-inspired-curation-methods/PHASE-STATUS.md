@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Perspective-guided planning and multi-LM guidance | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Gap-finder: graph-adjacency surfacing in cz_analyze | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Provenance on lessons and decisions | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Provenance on lessons and decisions | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Docs, CHANGELOG, and final cascade | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
@@ -26,6 +26,13 @@ test command: .venv/bin/python -m pytest (run from ~/Clauderizer in WSL). pytest
 ```
 gap-finder (cz_analyze adjacent): analyze.adjacent_entities() in src/clauderizer/analyze.py — one-hop graph adjacency (deps + dependents) seeded by entities named in the text and entities introduced_by a surfaced decision; surfaced via ops.cz_analyze (single backend for the MCP tool AND `clauderize ops`), result key `adjacent` = [{id,type,status,via}], gap-aware prompt + summary count. Stdlib only, no new deps, advisory (INVARIANT-05). Live CLI proof: "subsys.rituals" -> [subsys.graph, subsys.markdown-core, subsys.mcp-server].
 test count: 294 passed, 4 skipped (was 289/4; +5 tests in tests/test_analyze.py: adjacency hit, exclude-already-named, honest-empty, introduced_by bridge, cz_analyze op surface).
+```
+
+### Phase 2 Outputs
+
+```
+provenance (evidence field): Optional `evidence` arg on cz_add_lesson (renders inline *(evidence: ...)*, survives handoff rollup) and cz_add_decision (renders an **Evidence**: field). Additive/backward-compatible (omitted = byte-identical to today); written via mutations + markdown/writer.py (INVARIANT-02). MCP schema auto-derives the param from the function signature (test_ops parity updated). Dogfooded live via `clauderize ops` -> gameplan lesson #2 carries evidence into the Phase 3 handoff.
+test count: 300 passed, 4 skipped (was 294/4; +6 in tests/test_provenance.py; tests/test_ops.py schema spot-check updated to include the new evidence param).
 ```
 
 ## Corrections Log

@@ -1,7 +1,7 @@
 # Chat Handoff Index — STORM-inspired curation methods
 
 > Last updated: 2026-06-18
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 289
+**Current baseline test count**: 294
 
 ## Ending Protocol
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Perspective-guided planning and multi-LM guidance | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Gap-finder: graph-adjacency surfacing in cz_analyze | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Provenance on lessons and decisions | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Provenance on lessons and decisions | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Docs, CHANGELOG, and final cascade | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -46,6 +46,10 @@ Imported STORM's perspective-guided question-asking (#1) and multi-LM cost-split
 
 Built the gap-finder (D-018): analyze.adjacent_entities() surfaces one-hop graph neighbors of what a text touches but hasn't named — seeded by entities named verbatim in the text and by entities introduced_by a keyword-surfaced decision (the introduced_by bridge from the flat-doc ADR world into the graph). It excludes seeds and already-named ids, returns {id,type,status,via}, and is honestly empty when nothing relates. Surfaced through ops.cz_analyze — the single backend shared by the MCP tool and `clauderize ops` — with a gap-aware prompt and a "+N adjacent" summary count. Pure stdlib, zero new deps, advisory only (INVARIANT-05). Live CLI run on this repo: "a change to subsys.rituals" returned adjacent [subsys.graph, subsys.markdown-core, subsys.mcp-server]. Tests +5 (adjacency hit, exclude-named, empty, introduced_by bridge, ops surface); full suite 294 passed, 4 skipped.
 
+### Phase 2 — completed 2026-06-18
+
+Added optional provenance/citation (D-017, STORM #4): an `evidence` argument on cz_add_lesson and cz_add_decision recording where a lesson/decision came from. Lessons render it inline as *(evidence: ...)* — placed so lesson_state never misreads it as an obsolete/promoted marker — so it survives every handoff rollup unchanged; decisions render an **Evidence**: field. Both are additive and backward-compatible (omitted produces byte-identical output to today) and flow through mutations + markdown/writer.py (INVARIANT-02); the MCP tool schema auto-derives the new param from the function signature (test_ops parity updated, confirming the surface). Verified end-to-end: dogfooded live via `clauderize ops` (a fresh build, since this session's MCP server is pinned to the pre-edit engine) — gameplan lesson #2 was recorded with evidence and rolled into the Phase 3 handoff with its marker intact. Tests +6 (tests/test_provenance.py); full suite 300 passed, 4 skipped.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -56,3 +60,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Design
 
 **1.** Decisions and invariants are flat-doc entries (### D-NNN in DECISIONS.md), not graph nodes — so to walk the project graph from a keyword-surfaced decision you must bridge through a node's `introduced_by` frontmatter, the only structural link from an ADR into the graph. The gap-finder (D-018) keyword-ranks decisions, then bridges + walks one hop. Structural graph adjacency is the embedding-free way to surface "related but not yet connected" (the complement to keyword-overlap relevance).
+
+**2.** When adding an inline marker to a line another parser also reads, place it where it cannot be mistaken for that parser's grammar, and prove both readers still work. Provenance (D-017) appends *(evidence: ...)* to a lesson line; lesson_state reads an (obsolete|promoted ...) marker only at line-end, so the evidence marker parses as ACTIVE and a real state marker still appends after it. Sibling to L-06: one writer, many readers - satisfy every reader's grammar. *(evidence: src/clauderizer/markdown/lesson_state.py + tests/test_provenance.py::test_evidence_marker_is_not_a_lesson_state_marker; recorded live via `clauderize ops` because this session's MCP server is pinned to the pre-edit build)*

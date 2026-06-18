@@ -110,6 +110,7 @@ def add_decision(
     scope: str = "project",
     gameplan_id: str | None = None,
     supersedes: str | None = None,
+    evidence: str | None = None,
     today: str | None = None,
 ) -> dict:
     if scope == "gameplan":
@@ -125,11 +126,12 @@ def add_decision(
     text = writer.full_text(path)
     new_id = next_numbered_id(text, prefix, sep=("" if width == 0 else "-"), width=width)
     sup = f"\n**Supersedes**: {supersedes}" if supersedes else ""
+    ev = f"\n**Evidence**: {evidence.strip()}" if evidence and evidence.strip() else ""
     entry = (
         f"### {new_id} — {title}\n\n"
         f"**Context**: {context}\n"
         f"**Decision**: {decision}\n"
-        f"**Consequences**: {consequences}{sup}"
+        f"**Consequences**: {consequences}{sup}{ev}"
     )
     writer.append_to_section(path, "Decisions", entry)
     result = {"ok": True, "id": new_id, "path": str(path),
@@ -272,7 +274,8 @@ def resolve_finding(paths: RepoPaths, *, finding_id: str, status: str = "resolve
 
 @_locked
 def add_lesson(
-    paths: RepoPaths, *, gameplan_id: str, text: str, category: str = "Process"
+    paths: RepoPaths, *, gameplan_id: str, text: str, category: str = "Process",
+    evidence: str | None = None,
 ) -> dict:
     path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
     full = writer.full_text(path)
@@ -282,6 +285,11 @@ def add_lesson(
     nums = [int(m.group(1)) for m in re.finditer(r"^\s*\*\*(\d+)\.\*\*", body, re.M)]
     n = (max(nums) + 1) if nums else 1
     lesson_line = f"**{n}.** {text.strip()}"
+    # Provenance rides inline so it survives every handoff rollup. The trailing
+    # italic marker is NOT a lesson-state marker (lesson_state reads an
+    # (obsolete|promoted …) marker at line end), so state parsing is unaffected.
+    if evidence and evidence.strip():
+        lesson_line += f" *(evidence: {evidence.strip()})*"
     new_section = _insert_under_category(body, category, lesson_line)
     writer.upsert_section(path, "Accumulated Lessons", new_section)
     return {"ok": True, "number": n, "path": str(path),

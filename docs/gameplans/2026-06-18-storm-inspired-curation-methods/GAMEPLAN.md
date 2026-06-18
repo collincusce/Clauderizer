@@ -77,10 +77,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_add_lesson accepts an optional provenance/evidence argument; when supplied it renders in the lesson entry, and when omitted the rendered output is byte-for-byte identical to today's (backward-compatible)
-- [ ] cz_add_decision accepts the same optional provenance, rendered in the ADR entry, written via markdown/writer.py (INVARIANT-02)
-- [ ] A recorded provenance survives into the assembled handoff (cz_write_handoff)
-- [ ] New unit tests cover with- and without-provenance for both write paths; existing mutation and handoff tests still pass; full suite green (0 failed)
+- [x] cz_add_lesson accepts an optional provenance/evidence argument; when supplied it renders in the lesson entry, and when omitted the rendered output is byte-for-byte identical to today's (backward-compatible)
+- [x] cz_add_decision accepts the same optional provenance, rendered in the ADR entry, written via markdown/writer.py (INVARIANT-02)
+- [x] A recorded provenance survives into the assembled handoff (cz_write_handoff)
+- [x] New unit tests cover with- and without-provenance for both write paths; existing mutation and handoff tests still pass; full suite green (0 failed)
 
 ### Phase 3: Docs, CHANGELOG, and final cascade
 

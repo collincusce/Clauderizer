@@ -252,13 +252,19 @@ def cz_add_amendment(title: str, affected_sections: str, affected_phases: str,
 
 
 def cz_add_decision(title: str, context: str, decision: str, consequences: str,
-                    scope: str = "project", supersedes: str = "", gameplan_id: str = "") -> dict:
-    """Append an ADR (D-NNN project-wide, or D-k gameplan-internal)."""
+                    scope: str = "project", supersedes: str = "", gameplan_id: str = "",
+                    evidence: str = "") -> dict:
+    """Append an ADR (D-NNN project-wide, or D-k gameplan-internal).
+
+    `evidence` optionally cites the concrete provenance behind the decision
+    (commit, file:line, benchmark, doc) as an **Evidence** line in the entry.
+    """
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
     return mutations.add_decision(paths, title=title, context=context, decision=decision,
                                   consequences=consequences, scope=scope,
-                                  gameplan_id=gid, supersedes=supersedes or None)
+                                  gameplan_id=gid, supersedes=supersedes or None,
+                                  evidence=evidence or None)
 
 
 def cz_add_invariant(text: str, introduced_by: str = "") -> dict:
@@ -309,11 +315,18 @@ def cz_resolve_finding(finding_id: str, status: str = "resolved", note: str = ""
                                      note=note or None)
 
 
-def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "") -> dict:
-    """Add an accumulated lesson (rolls into every future handoff)."""
+def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "",
+                  evidence: str = "") -> dict:
+    """Add an accumulated lesson (rolls into every future handoff).
+
+    `evidence` optionally cites the concrete provenance that produced the lesson
+    (commit, file:line, phase, output id); it renders inline and rides along in
+    every handoff rollup.
+    """
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
-    return mutations.add_lesson(paths, gameplan_id=gid, text=text, category=category)
+    return mutations.add_lesson(paths, gameplan_id=gid, text=text, category=category,
+                                evidence=evidence or None)
 
 
 def cz_consolidate_lessons(numbers: list[int], text: str, category: str = "Process",
