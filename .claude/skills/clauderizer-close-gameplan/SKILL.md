@@ -14,5 +14,5 @@ description: Close out a completed (or explicitly deferred) gameplan. Use when a
    - `cz_consolidate_lessons` overlapping ones first, then promote the synthesis.
    - The rest stay archived with the closed gameplan — promote deliberately, not in bulk.
 4. Update project-level docs (CHANGELOG, ARCHITECTURE, REQUIREMENTS) to reflect final state.
-5. Write a `POST-MORTEM.md` in the gameplan dir: what worked, what didn't (with root causes), and concrete improvements to the procedure. This is where the system itself gets better.
+5. Write a `POST-MORTEM.md` in the gameplan dir. Outline before you write — list the sections and what each must cover (what worked; what didn't, with root causes; procedure improvements; open threads), then synthesize each from the gameplan's outputs, corrections, and lessons. Outline-before-synthesize is how STORM keeps long-form writing complete — and the post-mortem is where the system itself gets better.
 6. Leave the gameplan directory on disk (nothing is deleted) and clear/replace `active_gameplan` in `.clauderizer/config.toml`.

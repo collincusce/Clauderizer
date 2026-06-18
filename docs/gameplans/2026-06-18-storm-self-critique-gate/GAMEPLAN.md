@@ -1,7 +1,7 @@
 # STORM self-critique gate Gameplan
 
 > Created: 2026-06-18
-> Status: Planning
+> Status: Executing
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -47,10 +47,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Outline-before-synthesize guidance is added to the close-gameplan and do-phase skills (draft a section/coverage outline before writing a handoff or post-mortem)
-- [ ] A perspective-from-related-entities clause is added to the new-gameplan skill (derive interrogation lenses from related graph entities, not only the fixed lens list)
-- [ ] Every edited skill's .claude mirror is byte-identical to its src/clauderizer/skills source (L-16)
-- [ ] pytest green, 0 failed (baseline 300 preserved — Phase 0 changes no engine code)
+- [x] Outline-before-synthesize guidance is added to the close-gameplan and do-phase skills (draft a section/coverage outline before writing a handoff or post-mortem)
+- [x] A perspective-from-related-entities clause is added to the new-gameplan skill (derive interrogation lenses from related graph entities, not only the fixed lens list)
+- [x] Every edited skill's .claude mirror is byte-identical to its src/clauderizer/skills source (L-16)
+- [x] pytest green, 0 failed (baseline 300 preserved — Phase 0 changes no engine code)
 
 ### Phase 1: Self-critique rubric gate (cz_critique)
 

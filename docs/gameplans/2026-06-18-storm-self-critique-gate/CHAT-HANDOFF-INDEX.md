@@ -1,7 +1,7 @@
 # Chat Handoff Index — STORM self-critique gate
 
 > Last updated: 2026-06-18
-> Status: Phase 0 ready
+> Status: Phase 1 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 0
+**Current baseline test count**: 300
 
 ## Ending Protocol
 
@@ -29,7 +29,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Synthesis-quality skill refinements | ⬜ READY | — | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Synthesis-quality skill refinements | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Self-critique rubric gate (cz_critique) | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Docs, CHANGELOG, cascade, and close | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 
@@ -37,7 +37,9 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 ## Per-Phase Completion Summaries
 
-_(None yet.)_
+### Phase 0 — completed 2026-06-18
+
+Imported STORM's remaining skill-level refinements. The new-gameplan skill now derives interrogation lenses from related graph entities via cz_graph_query (STORM's perspective-discovery-from-related-articles, adapted to the dependency graph), not only the fixed lens list. The close-gameplan (post-mortem) and do-phase (handoff Phase Notes) skills now prescribe outline-before-synthesize for long-form writing — STORM treats the outline as a separable, quality-predictive stage. Pure skill edits: source edited first, then mirrored byte-identical to .claude/ (L-16), verified by diff -rq across the whole skills tree (ALL-SKILLS-IDENTICAL). No engine change; suite 300 passed, 4 skipped.
 
 ## Accumulated Lessons
 

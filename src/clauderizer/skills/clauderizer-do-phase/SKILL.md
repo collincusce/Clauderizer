@@ -14,5 +14,5 @@ description: Execute or continue the current gameplan phase end-to-end — pre-f
    - Record outcomes: `cz_add_correction` for any divergence; `cz_add_lesson` for anything generalizable; `cz_obsolete_lesson` for lessons this phase made irrelevant; if the lessons list is repeating itself, `cz_consolidate_lessons`.
    - For each subsystem/feature whose state changed, `cz_transition_status` (this fires cascade automatically when enabled).
    - For any other tracked edit, run `cz_cascade`, then record the verdicts with `cz_resolve_cascade` (never hand-edit the report).
-   - `cz_write_handoff` for the next phase.
+   - `cz_write_handoff` for the next phase. If you enrich its agent-owned Phase Notes, outline what the next session must know (current state, key files, constraints) before writing it out — outline-before-synthesize keeps the handoff complete.
    - Run exit verification (the host test/build commands) and report the final count.
