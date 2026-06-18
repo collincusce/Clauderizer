@@ -93,27 +93,37 @@ def cz_graph_query(entity_id: str = "", kind: str = "lookup", transitive: bool =
 
 
 def cz_analyze(text: str, k: int = 5) -> dict:
-    """Surface the existing decisions/invariants most relevant to `text`, for you to
-    judge contradiction or supersession (the analyze gate, D-016).
+    """Surface the existing decisions/invariants most relevant to `text`, plus the
+    one-hop graph neighbors `text` touches but has not connected — for you to judge
+    contradiction/supersession AND gaps (the analyze gate, D-016/D-018).
 
-    Judgment-based like cz_cascade and read-only: the engine ASSEMBLES the most
-    relevant entries (by keyword + entity-id overlap) and prompts; it never decides.
-    Use before recording a decision, or to vet a phase/plan against recorded
-    invariants. If a surfaced entry is contradicted, record a correction or revise;
-    if one is superseded, set `supersedes` on cz_add_decision.
+    Judgment-based like cz_cascade and read-only: the engine ASSEMBLES candidates
+    (relevant entries by keyword + entity-id overlap; the `adjacent` graph entities
+    by one-hop structural adjacency) and prompts; it never decides. Use before
+    recording a decision, or to vet a phase/plan against recorded memory. If a
+    surfaced entry is contradicted, record a correction or revise; if superseded,
+    set `supersedes` on cz_add_decision; if an `adjacent` entity should have been
+    accounted for, that is a gap to close before proceeding.
     """
     paths, _ = repo_ctx()
     from . import analyze as _analyze
 
     res = _analyze.analyze(paths, text, k=k)
     n = len(res["decisions"]) + len(res["invariants"])
+    adj = res.get("adjacent") or []
     res["ok"] = True
     res["prompt"] = (
-        "Review these against the text: does it CONTRADICT any (record a correction "
-        "or revise) or SUPERSEDE one (set supersedes on cz_add_decision)? If none "
-        "apply, proceed — the engine surfaces candidates only; you decide."
+        "Review against the text. (1) CONTRADICTION/SUPERSESSION: does it contradict "
+        "any surfaced decision/invariant (record a correction or revise) or supersede "
+        "one (set supersedes on cz_add_decision)? (2) GAPS: the `adjacent` entries are "
+        "graph-neighbors of what you're touching that nothing here has connected to "
+        "this text — decide whether your change should account for them. The engine "
+        "surfaces candidates only; you decide."
     )
-    res["summary"] = f"surfaced {n} relevant entr{'y' if n == 1 else 'ies'} for review"
+    res["summary"] = (
+        f"surfaced {n} relevant entr{'y' if n == 1 else 'ies'} "
+        f"+ {len(adj)} adjacent for review"
+    )
     return res
 
 

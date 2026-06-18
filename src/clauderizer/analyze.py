@@ -1,16 +1,20 @@
-"""The analyze gate (D-016): surface the existing invariants/decisions most
-relevant to a piece of text, for the AGENT to judge contradiction or supersession.
+"""The analyze gate (D-016/D-018): surface the existing invariants/decisions most
+relevant to a piece of text — and the one-hop graph neighbors it touches but has
+not connected — for the AGENT to judge contradiction, supersession, or a gap.
 
 Judgment-based, exactly like ``cz_cascade``: the engine ASSEMBLES candidates and
 prompts; it never decides. Relevance is keyword + entity-id overlap (O-01:
 dependency-light, no embeddings — L-14), ranked and capped so the agent sees the
-right few, not the whole file.
+right few, not the whole file. The gap-finder is the structural complement
+(D-018): it walks the project graph's own edges one hop out from what the text
+already names, so "related but unconnected" needs no embeddings either.
 """
 
 from __future__ import annotations
 
 import re
 
+from .graph import index as graph_index, query as graph_query
 from .markdown import sections, writer
 from .paths import RepoPaths
 
@@ -78,13 +82,77 @@ def rank_relevant(query: str, entries: list[dict], k: int = 5,
     return scored[:k]
 
 
+# --- gap-finder: one-hop graph adjacency (D-018) ---------------------------------
+#
+# The keyword ranker above answers "what might this CONTRADICT?"; the gap-finder
+# answers the complementary "what have I NOT connected?" — Co-STORM's moderator
+# move, surfacing relevant-but-unmentioned context. It is structural, not semantic
+# (consistent with D-013/D-014): the signal is the project graph's own edges,
+# walked one hop from what the text already touches. Two seed sources feed it —
+# graph entities NAMED verbatim in the text, and graph entities a top-ranked
+# decision INTRODUCED (the ``introduced_by`` bridge, the only structural link from
+# a DECISIONS.md entry to a graph node). Neighbors already named or seeded are
+# dropped; an empty result is an honest negative (nothing in the graph relates).
+
+
+def _mentioned(text: str, ids) -> set[str]:
+    """Entity ids that appear verbatim in ``text``, matched on id boundaries.
+
+    Ids are dotted/hyphenated (``subsys.rituals``, ``feat.init-cli``); the boundary
+    guard keeps ``subsys.graph`` from matching inside ``subsys.graph-index``.
+    """
+    return {eid for eid in ids
+            if re.search(rf"(?<![\w.-]){re.escape(eid)}(?![\w.-])", text)}
+
+
+def adjacent_entities(paths: RepoPaths, text: str, decision_ids,
+                      k: int = 8) -> list[dict]:
+    """One-hop graph neighbors of what ``text`` touches but has not named (D-018).
+
+    Seeds = entities named in ``text`` plus entities ``introduced_by`` a surfaced
+    decision. Returns each seed's direct dependencies + dependents, minus the seeds
+    themselves and anything already named — ``{id, type, status, via}``. Empty when
+    nothing in the graph relates (an honest negative, never a failure).
+    """
+    graph = graph_index.build(paths.docs)
+    if not graph.entities:
+        return []
+    decision_ids = set(decision_ids)
+    seeds: dict[str, str] = {sid: "named in text"
+                             for sid in _mentioned(text, graph.entities.keys())}
+    for e in graph.all():
+        intro = str(e.raw.get("introduced_by") or "")
+        if intro and intro in decision_ids:
+            seeds.setdefault(e.id, f"introduced by {intro}")
+    seen = set(seeds)
+    out: list[dict] = []
+    for sid in sorted(seeds):
+        reason = seeds[sid]
+        for dep in sorted(graph_query.dependencies(graph, sid)):
+            e = graph.get(dep)
+            if e is not None and dep not in seen:
+                seen.add(dep)
+                out.append({"id": dep, "type": e.type, "status": e.status,
+                            "via": f"{sid} depends on it ({reason})"})
+        for dependent in graph_query.dependents(graph, sid):
+            if dependent not in seen:
+                seen.add(dependent)
+                e = graph.get(dependent)
+                out.append({"id": dependent, "type": e.type, "status": e.status,
+                            "via": f"depends on {sid} ({reason})"})
+    out.sort(key=lambda a: a["id"])
+    return out[:k]
+
+
 def analyze(paths: RepoPaths, text: str, k: int = 5,
             exclude_ids: tuple[str, ...] = ()) -> dict:
-    """Surface the most relevant existing decisions + invariants for ``text``."""
+    """Surface the most relevant decisions + invariants for ``text``, plus the
+    one-hop graph neighbors it has not yet connected (the gap-finder, D-018)."""
     decisions = rank_relevant(
         text, parse_entries(writer.full_text(paths.doc("DECISIONS")), "Decisions"),
         k=k, exclude_ids=exclude_ids)
     invariants = rank_relevant(
         text, parse_entries(writer.full_text(paths.doc("INVARIANTS")), "Invariants"),
         k=k, exclude_ids=exclude_ids)
-    return {"decisions": decisions, "invariants": invariants}
+    adjacent = adjacent_entities(paths, text, {d["id"] for d in decisions})
+    return {"decisions": decisions, "invariants": invariants, "adjacent": adjacent}

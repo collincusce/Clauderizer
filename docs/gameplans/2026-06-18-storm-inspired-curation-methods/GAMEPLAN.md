@@ -61,11 +61,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] analyze() returns an `adjacent` list: one-hop graph neighbors (dependents + dependencies) of the top-ranked decisions/invariants and of any entity-id named in the query text
-- [ ] `adjacent` excludes ids already returned in the decisions/invariants results and ids already mentioned in the query (only surfaces what the agent has NOT connected)
-- [ ] Adjacency is computed from the graph index (graph/index.py / query.py), uses no embeddings, adds no runtime dependency, and is empty when no graph edges relate (honest negative)
-- [ ] The cz_analyze tool result and `clauderize ops` both include `adjacent`, and the analyze prompt invites gap-judgment alongside contradiction-judgment
-- [ ] New unit tests cover an adjacency hit, exclusion of already-surfaced ids, and the empty-graph case; full suite green (0 failed)
+- [x] analyze() returns an `adjacent` list: one-hop graph neighbors (dependents + dependencies) of the top-ranked decisions/invariants and of any entity-id named in the query text
+- [x] `adjacent` excludes ids already returned in the decisions/invariants results and ids already mentioned in the query (only surfaces what the agent has NOT connected)
+- [x] Adjacency is computed from the graph index (graph/index.py / query.py), uses no embeddings, adds no runtime dependency, and is empty when no graph edges relate (honest negative)
+- [x] The cz_analyze tool result and `clauderize ops` both include `adjacent`, and the analyze prompt invites gap-judgment alongside contradiction-judgment
+- [x] New unit tests cover an adjacency hit, exclusion of already-surfaced ids, and the empty-graph case; full suite green (0 failed)
 
 ### Phase 2: Provenance on lessons and decisions
 

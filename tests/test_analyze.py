@@ -86,3 +86,77 @@ def test_analyze_surfaces_short_identifier_overlap(temp_repo):
     # the only meaningful overlap with the query is the short identifier "s3"
     res = analyze.analyze(paths, "revisit the s3 bucket policy")
     assert d in [x["id"] for x in res["decisions"]]
+
+
+# --- gap-finder: one-hop graph adjacency (D-018) ---------------------------------
+
+
+def _seed_chain(paths):
+    """core <- mid <- top: mid's dependency is core, mid's dependent is top."""
+    M.upsert_entity(paths, id="subsys.core", type="subsystem", version="1.0.0",
+                    status="active")
+    M.upsert_entity(paths, id="subsys.mid", type="subsystem", version="1.0.0",
+                    status="active", depends_on=["subsys.core"])
+    M.upsert_entity(paths, id="subsys.top", type="subsystem", version="1.0.0",
+                    status="active", depends_on=["subsys.mid"])
+
+
+def test_adjacent_surfaces_one_hop_neighbors(temp_repo):
+    """An entity named in the text surfaces its graph neighbors, never itself."""
+    paths, _ = _ctx(temp_repo)
+    _seed_chain(paths)
+    res = analyze.analyze(paths, "a change to subsys.mid behavior")
+    adj = {a["id"] for a in res["adjacent"]}
+    assert "subsys.core" in adj   # the seed's dependency
+    assert "subsys.top" in adj    # the seed's dependent
+    assert "subsys.mid" not in adj  # the seed itself is never a gap
+
+
+def test_adjacent_excludes_already_named(temp_repo):
+    """An entity the text already names is connected, not a gap."""
+    paths, _ = _ctx(temp_repo)
+    _seed_chain(paths)
+    res = analyze.analyze(paths, "change subsys.mid and subsys.core together")
+    adj = {a["id"] for a in res["adjacent"]}
+    assert "subsys.core" not in adj  # named -> already connected
+    assert "subsys.top" in adj        # still an unnamed neighbor of mid
+
+
+def test_adjacent_empty_when_nothing_relates(temp_repo):
+    """No named entity and no decision bridge -> an honest empty set, not a failure."""
+    paths, _ = _ctx(temp_repo)
+    res = analyze.analyze(paths, "lorem ipsum dolor sit amet consectetur")
+    assert res["adjacent"] == []
+
+
+def test_adjacent_bridges_via_introduced_by(temp_repo):
+    """A keyword-surfaced decision bridges (via introduced_by) to the entity it
+    created, whose unnamed neighbor then surfaces as a gap."""
+    paths, _ = _ctx(temp_repo)
+    d = M.add_decision(paths, title="Adopt the widget pipeline",
+                       context="widget throughput budget",
+                       decision="build a widget pipeline",
+                       consequences="more widgets")["id"]
+    M.upsert_entity(paths, id="subsys.widget", type="subsystem", version="1.0.0",
+                    status="active", fields={"introduced_by": d})
+    M.upsert_entity(paths, id="subsys.widget-store", type="subsystem", version="1.0.0",
+                    status="active", depends_on=["subsys.widget"])
+    res = analyze.analyze(paths, "revisit the widget pipeline throughput")
+    assert d in [x["id"] for x in res["decisions"]]      # surfaced by keyword
+    adj = {a["id"] for a in res["adjacent"]}
+    assert "subsys.widget-store" in adj  # reached through the introduced_by bridge
+    assert "subsys.widget" not in adj    # the bridged seed itself is not a gap
+
+
+def test_cz_analyze_op_surfaces_adjacent(temp_repo):
+    """The cz_analyze op — shared by the MCP tool and `clauderize ops` — carries
+    the adjacent gap set and reports its count in the summary."""
+    paths, _ = _ctx(temp_repo)
+    _seed_chain(paths)
+    from clauderizer import ops
+    with _chdir(temp_repo):
+        res = ops.cz_analyze("a change to subsys.mid behavior")
+    assert res["ok"] and "adjacent" in res
+    adj = {a["id"] for a in res["adjacent"]}
+    assert "subsys.core" in adj and "subsys.top" in adj
+    assert "adjacent" in res["summary"]
