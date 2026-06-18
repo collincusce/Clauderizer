@@ -62,11 +62,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_critique(target) assembles a reference-free dimensional rubric — Coverage (unresolved open items, unchecked exit criteria, phases missing outputs/summary), Coherence (drift, pending cascades, analyze-surfaced contradictions), Grounding (lessons/decisions lacking evidence) — for a phase, the gameplan, or a handoff
-- [ ] cz_critique is read-only and advisory: returns the rubric + a grading prompt, never scores or blocks (INVARIANT-05), named by effect (L-03)
-- [ ] Stdlib only: composes existing status_bundle signals + the analyze gate; no embeddings, no new runtime dependency
-- [ ] cz_critique is reachable via the MCP tool surface AND clauderize ops (registry parity test updated)
-- [ ] New unit tests cover each dimension firing on a gap and staying empty on a clean target; full suite green with new tests, 0 failed
+- [x] cz_critique(target) assembles a reference-free dimensional rubric — Coverage (unresolved open items, unchecked exit criteria, phases missing outputs/summary), Coherence (drift, pending cascades, analyze-surfaced contradictions), Grounding (lessons/decisions lacking evidence) — for a phase, the gameplan, or a handoff
+- [x] cz_critique is read-only and advisory: returns the rubric + a grading prompt, never scores or blocks (INVARIANT-05), named by effect (L-03)
+- [x] Stdlib only: composes existing status_bundle signals + the analyze gate; no embeddings, no new runtime dependency
+- [x] cz_critique is reachable via the MCP tool surface AND clauderize ops (registry parity test updated)
+- [x] New unit tests cover each dimension firing on a gap and staying empty on a clean target; full suite green with new tests, 0 failed
 
 ### Phase 2: Docs, CHANGELOG, cascade, and close
 

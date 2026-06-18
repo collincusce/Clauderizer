@@ -127,6 +127,24 @@ def cz_analyze(text: str, k: int = 5) -> dict:
     return res
 
 
+def cz_critique(target: str = "") -> dict:
+    """Self-critique gate (D-019): surface a reference-free Coverage/Coherence/
+    Grounding rubric for `target` — a phase number, "gameplan" (default), or
+    "handoff" (the current in-progress phase) — for YOU to grade.
+
+    Read-only and advisory like cz_analyze: the engine ASSEMBLES the gaps it can
+    detect deterministically (unresolved open items, unchecked exit criteria,
+    graph drift, pending cascades, lessons lacking provenance) grouped by
+    dimension, and prompts; it never scores or blocks (INVARIANT-05). Reference-
+    free and stdlib-only. Run it before completing a phase, before trusting a
+    handoff, or at gameplan close.
+    """
+    paths, config = repo_ctx()
+    from .rituals import critique as _critique
+
+    return _critique.critique(paths, config, target=target or None)
+
+
 # --- ritual ops ------------------------------------------------------------------
 
 
@@ -554,6 +572,7 @@ REGISTRY: dict[str, Op] = {
     "cz_set_exit_criteria": Op(cz_set_exit_criteria, writes=True),
     "cz_check_exit_criterion": Op(cz_check_exit_criterion, writes=True),
     "cz_analyze": Op(cz_analyze, writes=False),
+    "cz_critique": Op(cz_critique, writes=False),
 }
 
 
