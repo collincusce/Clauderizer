@@ -76,3 +76,13 @@ def test_cz_analyze_op_returns_candidates_and_prompt(temp_repo):
         res = ops.cz_analyze("billing ledger storage on postgres")
     assert res["ok"] and "prompt" in res
     assert any("Postgres" in d["title"] for d in res["decisions"])
+
+
+def test_analyze_surfaces_short_identifier_overlap(temp_repo):
+    """A distinctive short id (s3) is kept as a token, so it can signal overlap."""
+    paths, _ = _ctx(temp_repo)
+    d = M.add_decision(paths, title="Drop S3 for the object cache", context="latency",
+                       decision="use local disk", consequences="ops")["id"]
+    # the only meaningful overlap with the query is the short identifier "s3"
+    res = analyze.analyze(paths, "revisit the s3 bucket policy")
+    assert d in [x["id"] for x in res["decisions"]]

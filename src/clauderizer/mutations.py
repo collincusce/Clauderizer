@@ -538,19 +538,18 @@ def add_phase_summary(
     body = sections.get_section(writer.full_text(path), "Per-Phase Completion Summaries")
     if body is None:
         return {"ok": False, "summary": "no Per-Phase Completion Summaries section"}
+    from .rituals.status_bundle import phase_block
+
     block = f"### Phase {phase} — completed {_today(today)}\n\n{text.strip()}"
     replaced = False
     if not body.strip() or sections.is_placeholder(body):
         new_body = block
     else:
-        lines = body.splitlines()
-        pat = re.compile(rf"^###\s+Phase\s+{re.escape(str(phase))}\b")
-        start = next((i for i, ln in enumerate(lines) if pat.match(ln.strip())), None)
-        if start is None:
+        blk = phase_block(body, phase)  # shared ### Phase N block finder
+        if blk is None:
             new_body = body.rstrip() + "\n\n" + block
         else:
-            end = next((j for j in range(start + 1, len(lines))
-                        if lines[j].startswith("### ")), len(lines))
+            lines, start, end = blk
             new_body = "\n".join(lines[:start] + block.splitlines() + lines[end:])
             replaced = True
     writer.upsert_section(path, "Per-Phase Completion Summaries", new_body)
@@ -1020,8 +1019,9 @@ def resolve_open_item(
 # block of GAMEPLAN.md "Phase Breakdown" (gameplan D1: reuse what's there). Two
 # blessed writes — set (author/replace the list; no hand-edit) and check (toggle
 # one) — make them machine-trackable; cz_transition_phase surfaces the unchecked
-# ones on completion (advisory, never blocking — INVARIANT-05).
-_EC_LINE_RE = r"^\s*-\s*\[([ xX])\]\s*(.*)$"
+# ones on completion (advisory, never blocking — INVARIANT-05). The shared
+# checkbox regex `_EC_CHECK_RE` (group 1 = state, group 2 = text) lives in
+# status_bundle and is imported where used.
 
 
 @_locked
@@ -1036,7 +1036,7 @@ def set_exit_criteria(
     """
     if not gameplan_id:
         return {"ok": False, "error": "exit criteria require a gameplan_id"}
-    from .rituals.status_bundle import phase_block
+    from .rituals.status_bundle import _EC_CHECK_RE, phase_block
 
     path = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
     body = sections.get_section(writer.full_text(path), "Phase Breakdown")
@@ -1049,7 +1049,7 @@ def set_exit_criteria(
     block = lines[start:end]
     prior = {}
     for ln in block:
-        m = re.match(_EC_LINE_RE, ln)
+        m = _EC_CHECK_RE.match(ln)
         if m:
             prior[m.group(2).strip()] = m.group(1).lower() == "x"
     items = [c.strip() for c in criteria if c.strip()]
@@ -1068,7 +1068,7 @@ def set_exit_criteria(
         while j < len(block) and not block[j].strip():
             j += 1
         k = j
-        while k < len(block) and re.match(_EC_LINE_RE, block[k]):
+        while k < len(block) and _EC_CHECK_RE.match(block[k]):
             k += 1
         tail = block[k:]
         block = block[:ec + 1] + new_items + (tail if tail else [""])
@@ -1090,7 +1090,7 @@ def check_exit_criterion(
     """
     if not gameplan_id:
         return {"ok": False, "error": "exit criteria require a gameplan_id"}
-    from .rituals.status_bundle import phase_block
+    from .rituals.status_bundle import _EC_CHECK_RE, phase_block
 
     path = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
     body = sections.get_section(writer.full_text(path), "Phase Breakdown")
@@ -1104,31 +1104,31 @@ def check_exit_criterion(
     target = criterion.strip().lower()
     matches = []
     for i in range(start, end):
-        m = re.match(r"^(\s*-\s*\[)([ xX])(\]\s*)(.*)$", lines[i])
-        if m and target in m.group(4).strip().lower():
+        m = _EC_CHECK_RE.match(lines[i])  # group 1 = state, group 2 = text
+        if m and target in m.group(2).strip().lower():
             matches.append((i, m))
     if not matches:
         return {"ok": False, "summary": f"no exit criterion matching {criterion!r} in phase {phase}"}
     # Prefer an exact (case-insensitive) match; a substring must be unique, or we'd
     # silently toggle the wrong box when one criterion's text contains another's.
-    exact = [(i, m) for i, m in matches if m.group(4).strip().lower() == target]
+    exact = [(i, m) for i, m in matches if m.group(2).strip().lower() == target]
     if exact:
         i, m = exact[0]
     elif len(matches) == 1:
         i, m = matches[0]
     else:
-        hits = "; ".join(m.group(4).strip() for _, m in matches)
+        hits = "; ".join(m.group(2).strip() for _, m in matches)
         return {"ok": False, "summary": f"{criterion!r} matches {len(matches)} criteria in "
                 f"phase {phase} ({hits}) — pass the exact criterion text"}
-    cur = m.group(2)
-    already = (cur.lower() == "x") if checked else (cur == " ")
+    text = m.group(2).strip()
+    already = (m.group(1).lower() == "x") if checked else (m.group(1) == " ")
     if already:
-        return {"ok": True, "phase": str(phase), "criterion": m.group(4).strip(),
+        return {"ok": True, "phase": str(phase), "criterion": text,
                 "checked": checked, "changed": False, "files_changed": [],
                 "summary": f"exit criterion already {'checked' if checked else 'unchecked'}"}
-    lines[i] = f"{m.group(1)}{want}{m.group(3)}{m.group(4)}"
+    lines[i] = re.sub(r"\[[ xX]\]", f"[{want}]", lines[i], count=1)  # flip the box only
     writer.upsert_section(path, "Phase Breakdown", "\n".join(lines))
-    return {"ok": True, "phase": str(phase), "criterion": m.group(4).strip(),
+    return {"ok": True, "phase": str(phase), "criterion": text,
             "checked": checked, "changed": True, "files_changed": [str(path)],
             "summary": f"exit criterion {'checked' if checked else 'unchecked'}"}
 

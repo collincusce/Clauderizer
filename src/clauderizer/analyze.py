@@ -33,7 +33,11 @@ _STOP = {
 
 
 def _tokens(text: str) -> set[str]:
-    return {w for w in _WORD_RE.findall(text.lower()) if len(w) >= 4 and w not in _STOP}
+    # Keep distinctive alphanumeric identifiers (s3, v2, h2, k8) regardless of
+    # length — they are exactly the jargon that signals a conflict — alongside
+    # ordinary words (>= 4 chars); stopwords drop at any length.
+    return {w for w in _WORD_RE.findall(text.lower())
+            if w not in _STOP and (len(w) >= 4 or any(c.isdigit() for c in w))}
 
 
 def parse_entries(doc_text: str, section: str) -> list[dict]:
@@ -47,8 +51,8 @@ def parse_entries(doc_text: str, section: str) -> list[dict]:
             if cur:
                 entries.append(cur)
             cur = {"id": m.group(1), "title": m.group(2).strip(), "body": ""}
-        elif cur is not None:
-            cur["body"] += ln + "\n"
+        elif cur is not None and not ln.lstrip().startswith("### "):
+            cur["body"] += ln + "\n"  # don't fold a stray non-entry heading into the body
     if cur:
         entries.append(cur)
     return entries
