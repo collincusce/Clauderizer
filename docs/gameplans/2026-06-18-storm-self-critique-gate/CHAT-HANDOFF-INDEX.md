@@ -1,7 +1,7 @@
 # Chat Handoff Index — STORM self-critique gate
 
 > Last updated: 2026-06-18
-> Status: Phase 2 ready
+> Status: All 3 phases complete
 
 ## How This Works
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Synthesis-quality skill refinements | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Self-critique rubric gate (cz_critique) | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Docs, CHANGELOG, cascade, and close | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Docs, CHANGELOG, cascade, and close | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-2-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -44,6 +44,10 @@ Imported STORM's remaining skill-level refinements. The new-gameplan skill now d
 ### Phase 1 — completed 2026-06-18
 
 Built cz_critique (D-019), the STORM reference-free self-critique gate: a read-only, advisory tool that assembles a Coverage/Coherence/Grounding rubric for a target (phase, gameplan, or handoff) by composing signals the engine already computes — unresolved open items + unchecked exit criteria (Coverage), graph drift + pending cascades (Coherence), and lessons lacking provenance (Grounding, the D-017 tie-in) — and surfaces it with a grading prompt for the agent. Lives in rituals/critique.py; wired into the shared ops REGISTRY + tools_list (registry parity unchanged — appended to both in the same position). Stdlib only, no embeddings, never scores or blocks (INVARIANT-05). Proven live via clauderize ops on this gameplan (12 Coverage gaps, Coherence/Grounding clean — accurately flagging the then-incomplete phases). A test bug surfaced and fixed: mutations.create_gameplan does not flip active_gameplan (the ops layer does), so the helper must point config at the fresh gameplan. Tests +4; full suite 304 passed, 4 skipped.
+
+### Phase 2 — completed 2026-06-18
+
+Closed out the self-critique gameplan's work: documented cz_critique and the skill refinements. The unreleased 0.12.0 CHANGELOG entry now also covers the self-critique gate plus the graph-derived-lenses and outline-before-synthesize skill changes (Suite 289 -> 304). ARCHITECTURE lists cz_critique as the fourth discipline gate (D-019). subsys.rituals bumped 0.5.0 -> 0.6.0 (it owns rituals/critique.py); the cascade to dependent subsys.mcp-server resolved non-breaking (^0.1.0 satisfied; cz_critique auto-registers from the shared REGISTRY). Full suite 304 passed, 4 skipped; zero pending cascades. The tree is ready for the 0.12.0 release ritual.
 
 ## Accumulated Lessons
 

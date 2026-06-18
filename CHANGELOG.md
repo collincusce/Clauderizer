@@ -32,6 +32,18 @@ dependencies (the core stays stdlib-only; the agent reasons, the engine surfaces
   (omitted ⇒ byte-identical output to today); the MCP tool schema auto-derives
   the new param from the function signature.
 
+### Added — the self-critique gate (D-019)
+
+- **`cz_critique`** — a reference-free, advisory rubric over a target (a phase,
+  the gameplan, or a handoff). It composes the deterministic signals the engine
+  already computes into three dimensions — **Coverage** (unresolved open items,
+  unchecked exit criteria, incomplete phases), **Coherence** (graph drift, pending
+  cascades), **Grounding** (lessons lacking provenance) — and surfaces them with a
+  grading prompt for the agent. STORM grades drafts with a reference-free
+  LLM-judge rubric; adapted to the surface-don't-decide law, the engine assembles
+  the gaps and the agent grades — it never scores or blocks (INVARIANT-05). Stdlib
+  only, no embeddings; reachable via MCP and `clauderize ops`.
+
 ### Changed — perspective-guided planning (skill)
 
 - **The `clauderizer-new-gameplan` skill** now interrogates a goal from multiple
@@ -40,11 +52,16 @@ dependencies (the core stays stdlib-only; the agent reasons, the engine surfaces
   perspective-guided question asking — run as a cheap fan-out (a faster model per
   lens, the strong model for synthesis), with findings routed into decisions,
   phases, and tracked open items, and the goal vetted via `cz_analyze`'s
-  gap-finder.
+  gap-finder. It now also derives lenses from related graph entities
+  (`cz_graph_query`), not only the fixed list; and the close-gameplan
+  (post-mortem) and do-phase (handoff) skills gained an outline-before-synthesize
+  step for long-form writing.
 
-Suite 289 → 300. Out of scope, deferred to its own gameplan (gameplan-decision
-D1, open item O-01): the Co-STORM hierarchical lesson "mind map", which would
-change the lesson data model.
+Suite 289 → 304. Still deferred, each tracked as an open item: the Co-STORM
+hierarchical lesson "mind map" (changes the lesson data model), the
+consecutive-same-intent staleness counter (noise risk), and the mind-map's
+deterministic graph cleanup (singleton-collapse may be unsafe on a retention
+graph) — see the `storm-self-critique-gate` gameplan (O-01/O-02).
 
 ## [0.11.0] — 2026-06-18
 

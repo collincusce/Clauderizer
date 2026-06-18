@@ -10,9 +10,9 @@ _(Describe each subsystem. Create tracked entity docs with `cz_upsert_entity`.)_
 
 ## Capabilities
 
-### Discipline gates (D-015 / D-016)
+### Discipline gates (D-015 / D-016 / D-019)
 
-Three always-on, advisory, judgment-based gates (no config flags; INVARIANT-05)
+Four always-on, advisory, judgment-based gates (no config flags; INVARIANT-05)
 that surface findings in the tool result for the agent to rule on — modeled on
 `cz_cascade` ("the engine finds and reports; it does not decide"):
 
@@ -28,9 +28,15 @@ that surface findings in the tool result for the agent to rule on — modeled on
   entities named in the text, or `introduced_by` a surfaced decision — that
   nothing has connected to it yet. Structural adjacency, no embeddings; the
   gap-finder complement to contradiction-judgment.
+- **Self-critique** — `cz_critique` (D-019): a reference-free rubric over a
+  target (a phase, the gameplan, or a handoff) across **Coverage / Coherence /
+  Grounding**, composed from the signals above plus lessons-without-provenance,
+  for the agent to grade. STORM's reference-free LLM-judge rubric, adapted to
+  surface-don't-decide.
 
-All three reach the agent through the shared `result["advisories"]` shape on
-`cz_transition_phase` plus their dedicated tools; none ever blocks a write.
+Clarify, exit-criteria, and analyze surface through the shared
+`result["advisories"]` shape on `cz_transition_phase` plus their dedicated tools;
+`cz_critique` is run on demand. None ever blocks a write.
 
 ### Provenance / citations (D-017)
 

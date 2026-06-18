@@ -1,7 +1,7 @@
 # STORM self-critique gate Gameplan
 
 > Created: 2026-06-18
-> Status: Executing
+> Status: Complete
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -78,7 +78,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] The CHANGELOG [0.12.0] entry is extended with cz_critique and the skill refinements
-- [ ] ARCHITECTURE.md documents cz_critique in the discipline-gates section
-- [ ] Touched subsystem version(s) bumped; cascade run and resolved; cz_status shows zero pending cascades
-- [ ] Full suite green (0 failed) and cz_status shows all three phases complete
+- [x] The CHANGELOG [0.12.0] entry is extended with cz_critique and the skill refinements
+- [x] ARCHITECTURE.md documents cz_critique in the discipline-gates section
+- [x] Touched subsystem version(s) bumped; cascade run and resolved; cz_status shows zero pending cascades
+- [x] Full suite green (0 failed) and cz_status shows all three phases complete
