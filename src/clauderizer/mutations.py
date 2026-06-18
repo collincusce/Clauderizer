@@ -879,7 +879,8 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
 
             def _annot(t: str) -> str:
                 # Intelligence (D-015): link a test-ish criterion to the measured signal.
-                if baseline and re.search(r"test|suite|baseline", t, re.I):
+                # Word-boundary so "attest" / "establishes" don't trip the heuristic.
+                if baseline and re.search(r"\b(tests?|suite|baseline)\b", t, re.I):
                     return f"{t} [measured: baseline {baseline} tests]"
                 return t
 
@@ -997,12 +998,14 @@ def resolve_open_item(
     body = sections.get_section(writer.full_text(path), "Open Items")
     if body is None:
         return {"ok": False, "summary": "no Open Items section"}
+    from .rituals.status_bundle import _RESOLVED_RE
+
     lines = body.splitlines()
     prefix = f"**{oid}.**"
     idx = next((i for i, ln in enumerate(lines) if ln.strip().startswith(prefix)), None)
     if idx is None:
         return {"ok": False, "summary": f"open item {oid} not found"}
-    if "_(resolved" in lines[idx]:
+    if _RESOLVED_RE.search(lines[idx]):  # the marker's ISO-date shape, not bare prose
         return {"ok": True, "id": oid, "already_resolved": True,
                 "files_changed": [], "summary": f"open item {oid} already resolved"}
     lines[idx] = lines[idx].rstrip() + f" _(resolved {_today(today)}: {resolution.strip()})_"
@@ -1058,8 +1061,17 @@ def set_exit_criteria(
             block.pop()
         block += ["", "**Exit criteria**:"] + new_items + [""]
     else:
-        # criteria are the last element of a phase block — replace to its end
-        block = block[:ec + 1] + new_items + [""]
+        # Replace only the contiguous checkbox run after the header; preserve any
+        # content that follows the criteria within the phase block (data-loss fix:
+        # a block may hold notes/sub-lists after the list, not just the list).
+        j = ec + 1
+        while j < len(block) and not block[j].strip():
+            j += 1
+        k = j
+        while k < len(block) and re.match(_EC_LINE_RE, block[k]):
+            k += 1
+        tail = block[k:]
+        block = block[:ec + 1] + new_items + (tail if tail else [""])
     new_lines = lines[:start] + block + lines[end:]
     changed = writer.upsert_section(path, "Phase Breakdown", "\n".join(new_lines))
     return {"ok": True, "phase": str(phase), "count": len(new_items),
@@ -1090,22 +1102,35 @@ def check_exit_criterion(
     lines, start, end = blk
     want = "x" if checked else " "
     target = criterion.strip().lower()
+    matches = []
     for i in range(start, end):
         m = re.match(r"^(\s*-\s*\[)([ xX])(\]\s*)(.*)$", lines[i])
-        if not m or target not in m.group(4).strip().lower():
-            continue
-        cur = m.group(2)
-        already = (cur.lower() == "x") if checked else (cur == " ")
-        if already:
-            return {"ok": True, "phase": str(phase), "criterion": m.group(4).strip(),
-                    "checked": checked, "changed": False, "files_changed": [],
-                    "summary": f"exit criterion already {'checked' if checked else 'unchecked'}"}
-        lines[i] = f"{m.group(1)}{want}{m.group(3)}{m.group(4)}"
-        writer.upsert_section(path, "Phase Breakdown", "\n".join(lines))
+        if m and target in m.group(4).strip().lower():
+            matches.append((i, m))
+    if not matches:
+        return {"ok": False, "summary": f"no exit criterion matching {criterion!r} in phase {phase}"}
+    # Prefer an exact (case-insensitive) match; a substring must be unique, or we'd
+    # silently toggle the wrong box when one criterion's text contains another's.
+    exact = [(i, m) for i, m in matches if m.group(4).strip().lower() == target]
+    if exact:
+        i, m = exact[0]
+    elif len(matches) == 1:
+        i, m = matches[0]
+    else:
+        hits = "; ".join(m.group(4).strip() for _, m in matches)
+        return {"ok": False, "summary": f"{criterion!r} matches {len(matches)} criteria in "
+                f"phase {phase} ({hits}) — pass the exact criterion text"}
+    cur = m.group(2)
+    already = (cur.lower() == "x") if checked else (cur == " ")
+    if already:
         return {"ok": True, "phase": str(phase), "criterion": m.group(4).strip(),
-                "checked": checked, "changed": True, "files_changed": [str(path)],
-                "summary": f"exit criterion {'checked' if checked else 'unchecked'}"}
-    return {"ok": False, "summary": f"no exit criterion matching {criterion!r} in phase {phase}"}
+                "checked": checked, "changed": False, "files_changed": [],
+                "summary": f"exit criterion already {'checked' if checked else 'unchecked'}"}
+    lines[i] = f"{m.group(1)}{want}{m.group(3)}{m.group(4)}"
+    writer.upsert_section(path, "Phase Breakdown", "\n".join(lines))
+    return {"ok": True, "phase": str(phase), "criterion": m.group(4).strip(),
+            "checked": checked, "changed": True, "files_changed": [str(path)],
+            "summary": f"exit criterion {'checked' if checked else 'unchecked'}"}
 
 
 # --- entities + status --------------------------------------------------------

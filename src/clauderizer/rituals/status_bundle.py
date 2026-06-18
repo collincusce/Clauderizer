@@ -145,7 +145,13 @@ _pending_cascades = pending_cascades
 
 
 _OPEN_ITEM_RE = re.compile(r"^\*\*(O-\d+)\.\*\*(.*)$")
-_OPEN_PHASE_RE = re.compile(r"_\(phase ([^)]+)\)_")
+# The phase tag is written right after the id (add_open_item), so anchor it to the
+# start — a `_(phase N)_` inside the item's prose must not read as the tag.
+_OPEN_PHASE_RE = re.compile(r"\s*_\(phase ([^)]+)\)_")
+# The resolved marker carries an ISO date; matching that shape (not a bare
+# "_(resolved" substring) keeps item prose containing "_(resolved …" from reading
+# as resolved. Shared with mutations.resolve_open_item.
+_RESOLVED_RE = re.compile(r"_\(resolved \d{4}-\d{2}-\d{2}")
 
 
 def open_items(gameplan_dir: Path) -> list[dict]:
@@ -165,11 +171,11 @@ def open_items(gameplan_dir: Path) -> list[dict]:
         if not m:
             continue
         rest = m.group(2)
-        pm = _OPEN_PHASE_RE.search(rest)
+        pm = _OPEN_PHASE_RE.match(rest)
         items.append({
             "id": m.group(1),
             "phase": pm.group(1).strip() if pm else None,
-            "resolved": "_(resolved" in rest,
+            "resolved": bool(_RESOLVED_RE.search(rest)),
             "text": rest.strip(),
         })
     return items

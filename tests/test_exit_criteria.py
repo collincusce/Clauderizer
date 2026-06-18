@@ -108,3 +108,51 @@ def test_exit_criteria_advisory_auto_links_test_criterion_to_baseline(temp_repo)
     # the test-ish criterion is annotated with the measured baseline; the doc one is not
     assert any("[measured: baseline" in it for it in items if "suite" in it)
     assert all("[measured" not in it for it in items if "README" in it)
+
+
+# --- review regressions (bugs the scaffold-shaped tests above missed) ----------
+
+
+def test_set_exit_criteria_preserves_content_after_the_list(temp_repo):
+    """Re-setting criteria must not delete phase-block content that follows them."""
+    paths, _ = _ctx(temp_repo)
+    gid = _fresh(paths)
+    M.set_exit_criteria(paths, gameplan_id=gid, phase="0", criteria=["alpha"])
+    # Inject a notes line AFTER the criteria, still inside the Phase 0 block.
+    gp = paths.gameplan_dir(gid) / "GAMEPLAN.md"
+    gp.write_text(
+        gp.read_text(encoding="utf-8").replace(
+            "- [ ] alpha", "- [ ] alpha\n\n**Notes**: keep me", 1),
+        encoding="utf-8")
+    M.set_exit_criteria(paths, gameplan_id=gid, phase="0", criteria=["beta"])
+    body = _breakdown(paths, gid)
+    assert "- [ ] beta" in body and "- [ ] alpha" not in body
+    assert "**Notes**: keep me" in body  # content after the criteria survived
+
+
+def test_check_exit_criterion_prefers_exact_and_guards_ambiguity(temp_repo):
+    """An exact match wins over a substring; a non-exact substring matching >1 is refused."""
+    paths, _ = _ctx(temp_repo)
+    gid = _fresh(paths)
+    M.set_exit_criteria(paths, gameplan_id=gid, phase="0",
+                        criteria=["tests pass", "tests pass on CI"])
+    r = M.check_exit_criterion(paths, gameplan_id=gid, phase="0", criterion="tests pass")
+    assert r["ok"] and r["changed"] and r["criterion"] == "tests pass"
+    body = _breakdown(paths, gid)
+    assert "- [x] tests pass" in body and "- [ ] tests pass on CI" in body  # right box
+    r2 = M.check_exit_criterion(paths, gameplan_id=gid, phase="0", criterion="pass")
+    assert r2["ok"] is False and "matches 2" in r2["summary"]  # ambiguous, not mis-applied
+
+
+def test_exit_criteria_advisory_word_boundary_no_false_annotate(temp_repo):
+    """A criterion like 'attest …' must not be annotated as test-ish (word boundary)."""
+    paths, _ = _ctx(temp_repo)
+    gid = _fresh(paths)
+    idx = paths.gameplan_dir(gid) / "CHAT-HANDOFF-INDEX.md"
+    idx.write_text(idx.read_text(encoding="utf-8")
+                   + "\n**Current baseline test count**: 9\n", encoding="utf-8")
+    M.set_exit_criteria(paths, gameplan_id=gid, phase="0", criteria=["attest the contract"])
+    r = M.transition_phase(paths, gameplan_id=gid, phase_n="0",
+                           to_status="complete", today="2026-06-08")
+    ec = next(a for a in r["advisories"] if a["kind"] == "exit_criteria")
+    assert all("[measured" not in it for it in ec["items"])

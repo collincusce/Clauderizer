@@ -102,3 +102,28 @@ def test_transition_complete_no_advisory_when_all_resolved(temp_repo):
     r = M.transition_phase(paths, gameplan_id=gid, phase_n="0",
                            to_status="complete", today="2026-06-08")
     assert "advisories" not in r  # nothing unresolved → no advisory noise
+
+
+# --- review regressions (marker/prose collisions the tests above missed) -------
+
+
+def test_resolve_open_item_not_fooled_by_resolved_in_prose(temp_repo):
+    """Item text containing '_(resolved …' must not read as already-resolved."""
+    paths, _ = _ctx(temp_repo)
+    gid = _fresh(paths)
+    M.add_open_item(paths, gameplan_id=gid, text="is the _(resolved foo)_ path right?")
+    r = M.resolve_open_item(paths, gameplan_id=gid, id="O-01",
+                            resolution="yes", today="2026-06-08")
+    assert r["ok"] and r["already_resolved"] is False  # prose didn't block the resolve
+    assert status_bundle.open_items(paths.gameplan_dir(gid))[0]["resolved"] is True
+
+
+def test_open_item_phase_tag_only_from_the_writer_not_prose(temp_repo):
+    """A `_(phase N)_` mention in the item's prose must not be read as its phase tag."""
+    paths, _ = _ctx(temp_repo)
+    gid = _fresh(paths)
+    M.add_open_item(paths, gameplan_id=gid, text="blocked until _(phase 3)_ ships")  # no phase arg
+    M.add_open_item(paths, gameplan_id=gid, text="real blocker", phase="2")
+    by_id = {it["id"]: it for it in status_bundle.open_items(paths.gameplan_dir(gid))}
+    assert by_id["O-01"]["phase"] is None   # prose mention is not the tag
+    assert by_id["O-02"]["phase"] == "2"    # the writer-set tag still reads correctly
