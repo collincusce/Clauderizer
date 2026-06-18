@@ -1,12 +1,12 @@
 ---
 id: subsys.mutations
 type: subsystem
-version: 0.5.0
+version: 0.6.0
 status: active
 depends_on:
   - subsys.markdown-core@^0.1.0
   - subsys.graph@^0.1.0
-last_verified: 2026-06-09
+last_verified: 2026-06-18
 ---
 
 # Mutations

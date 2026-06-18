@@ -10,7 +10,7 @@
 | 0 | Perspective-guided planning and multi-LM guidance | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Gap-finder: graph-adjacency surfacing in cz_analyze | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Provenance on lessons and decisions | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Docs, CHANGELOG, and final cascade | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Docs, CHANGELOG, and final cascade | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -33,6 +33,13 @@ test count: 294 passed, 4 skipped (was 289/4; +5 tests in tests/test_analyze.py:
 ```
 provenance (evidence field): Optional `evidence` arg on cz_add_lesson (renders inline *(evidence: ...)*, survives handoff rollup) and cz_add_decision (renders an **Evidence**: field). Additive/backward-compatible (omitted = byte-identical to today); written via mutations + markdown/writer.py (INVARIANT-02). MCP schema auto-derives the param from the function signature (test_ops parity updated). Dogfooded live via `clauderize ops` -> gameplan lesson #2 carries evidence into the Phase 3 handoff.
 test count: 300 passed, 4 skipped (was 294/4; +6 in tests/test_provenance.py; tests/test_ops.py schema spot-check updated to include the new evidence param).
+```
+
+### Phase 3 Outputs
+
+```
+release staged (not released): Version 0.11.0 -> 0.12.0 in pyproject.toml + src/clauderizer/__init__.py (MINOR, additive). CHANGELOG [0.12.0] entry added (versioned-entry convention). Editable install reinstalled (`pip install -e . --no-deps`) to sync dist-info, which doctor's identity check requires. NOT released: no tag/push — release is the gated `clauderize release-check` ritual, left to the user.
+docs + graph: ARCHITECTURE.md: analyze gate gains the `adjacent` gap-finder (D-018) + a new Provenance (D-017) subsection. subsys.mutations 0.5.0 -> 0.6.0; cascade to dependent subsys.mcp-server resolved non-breaking (0.6.0 satisfies ^0.1.0; evidence param optional). cz_status: zero pending cascades, no drift.
 ```
 
 ## Corrections Log

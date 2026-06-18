@@ -23,7 +23,18 @@ that surface findings in the tool result for the agent to rule on — modeled on
   with test-ish criteria auto-linked to the baseline test count.
 - **Analyze** — `cz_analyze` and the `cz_add_decision` enrichment surface the
   existing decisions/invariants most relevant (lexical overlap; `analyze.py`) to
-  a new decision, for contradiction/supersession judgment.
+  a new decision for contradiction/supersession judgment, **plus an `adjacent`
+  set** (D-018): one-hop project-graph neighbors of what the text touches —
+  entities named in the text, or `introduced_by` a surfaced decision — that
+  nothing has connected to it yet. Structural adjacency, no embeddings; the
+  gap-finder complement to contradiction-judgment.
 
 All three reach the agent through the shared `result["advisories"]` shape on
 `cz_transition_phase` plus their dedicated tools; none ever blocks a write.
+
+### Provenance / citations (D-017)
+
+`cz_add_lesson` and `cz_add_decision` accept an optional `evidence` that cites
+where the entry came from (commit, `file:line`, phase, benchmark, doc). Lessons
+carry it inline (`*(evidence: …)*`) so it survives every handoff rollup;
+decisions render an **Evidence** field. Additive and backward-compatible.

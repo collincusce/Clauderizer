@@ -1,7 +1,7 @@
 # Chat Handoff Index — STORM-inspired curation methods
 
 > Last updated: 2026-06-18
-> Status: Phase 3 ready
+> Status: All 4 phases complete
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 294
+**Current baseline test count**: 300
 
 ## Ending Protocol
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Perspective-guided planning and multi-LM guidance | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Gap-finder: graph-adjacency surfacing in cz_analyze | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Provenance on lessons and decisions | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Docs, CHANGELOG, and final cascade | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Docs, CHANGELOG, and final cascade | ✅ COMPLETE | 2026-06-18 | 2026-06-18 | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -49,6 +49,10 @@ Built the gap-finder (D-018): analyze.adjacent_entities() surfaces one-hop graph
 ### Phase 2 — completed 2026-06-18
 
 Added optional provenance/citation (D-017, STORM #4): an `evidence` argument on cz_add_lesson and cz_add_decision recording where a lesson/decision came from. Lessons render it inline as *(evidence: ...)* — placed so lesson_state never misreads it as an obsolete/promoted marker — so it survives every handoff rollup unchanged; decisions render an **Evidence**: field. Both are additive and backward-compatible (omitted produces byte-identical output to today) and flow through mutations + markdown/writer.py (INVARIANT-02); the MCP tool schema auto-derives the new param from the function signature (test_ops parity updated, confirming the surface). Verified end-to-end: dogfooded live via `clauderize ops` (a fresh build, since this session's MCP server is pinned to the pre-edit engine) — gameplan lesson #2 was recorded with evidence and rolled into the Phase 3 handoff with its marker intact. Tests +6 (tests/test_provenance.py); full suite 300 passed, 4 skipped.
+
+### Phase 3 — completed 2026-06-18
+
+Closed out the gameplan: documented all three surfaces and staged the release. CHANGELOG gained a [0.12.0] entry (gap-finder, provenance, perspective-planning) in the repo's versioned-entry convention; pyproject + __init__ bumped 0.11.0 -> 0.12.0 (MINOR, additive). The editable install was reinstalled so doctor's dist-info/source identity check stays green — it caught the un-synced metadata immediately (7 doctor tests went red on the source-only bump, then 300 passed after the reinstall: the identity-check lineage doing its job). ARCHITECTURE.md now describes the analyze `adjacent` gap-finder and a Provenance subsection; subsys.mutations bumped to 0.6.0 with its cascade to subsys.mcp-server resolved non-breaking. No release performed (no tag/push) — that is the gated release-check ritual. Full suite 300 passed, 4 skipped; all four phases complete.
 
 ## Accumulated Lessons
 

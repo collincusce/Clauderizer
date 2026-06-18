@@ -1,7 +1,7 @@
 # STORM-inspired curation methods Gameplan
 
 > Created: 2026-06-18
-> Status: Executing
+> Status: Complete
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -92,7 +92,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] CHANGELOG.md records the gap-finder, provenance, and perspective-planning additions following the repo's existing release convention
-- [ ] The subsystem/feature docs covering the analyze gate and the mutation write paths reflect the new `adjacent` and provenance surfaces
-- [ ] Cascade has been run and resolved for every touched entity — cz_status shows zero pending cascades
-- [ ] Full suite green (0 failed) and cz_status shows all four phases complete
+- [x] CHANGELOG.md records the gap-finder, provenance, and perspective-planning additions following the repo's existing release convention
+- [x] The subsystem/feature docs covering the analyze gate and the mutation write paths reflect the new `adjacent` and provenance surfaces
+- [x] Cascade has been run and resolved for every touched entity — cz_status shows zero pending cascades
+- [x] Full suite green (0 failed) and cz_status shows all four phases complete

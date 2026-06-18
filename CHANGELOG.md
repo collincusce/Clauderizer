@@ -2,6 +2,50 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.12.0] — 2026-06-18
+
+**STORM-inspired curation** (D-017): methods from Stanford OVAL's STORM/Co-STORM,
+imported as deterministic engine-surfacing + skill guidance — never as runtime
+dependencies (the core stays stdlib-only; the agent reasons, the engine surfaces).
+
+### Added — the analyze-gate gap-finder (D-018)
+
+- **`cz_analyze` now surfaces an `adjacent` set** — Co-STORM's "moderator" move.
+  After ranking the most-relevant decisions/invariants (contradiction-judgment),
+  it walks the project graph ONE hop from what the text touches — entities named
+  in the text, plus entities `introduced_by` a surfaced decision (the only
+  structural link from a flat-doc ADR into the graph) — and surfaces the
+  neighbors nothing has connected to the text yet: gaps, not contradictions.
+  Structural, not semantic — no embeddings, no new dependency (the complement to
+  D-013's optional semantic recall); empty when nothing in the graph relates (an
+  honest negative). Reaches the agent through both the MCP tool and
+  `clauderize ops`; the prompt now invites gap-judgment alongside
+  contradiction/supersession-judgment.
+
+### Added — provenance on lessons and decisions (STORM citations)
+
+- **`cz_add_lesson` and `cz_add_decision` accept an optional `evidence`** citing
+  the concrete provenance behind the entry (commit, `file:line`, phase,
+  benchmark, doc). Lessons render it inline as `*(evidence: …)*` — placed so the
+  lesson-state grammar never misreads it — so it rides into every handoff rollup;
+  decisions render an **Evidence** field. Additive and backward-compatible
+  (omitted ⇒ byte-identical output to today); the MCP tool schema auto-derives
+  the new param from the function signature.
+
+### Changed — perspective-guided planning (skill)
+
+- **The `clauderizer-new-gameplan` skill** now interrogates a goal from multiple
+  named perspectives (security, performance, ops/release, testing, cost,
+  failure-modes, prerequisite-chains) before phases are drafted — STORM's
+  perspective-guided question asking — run as a cheap fan-out (a faster model per
+  lens, the strong model for synthesis), with findings routed into decisions,
+  phases, and tracked open items, and the goal vetted via `cz_analyze`'s
+  gap-finder.
+
+Suite 289 → 300. Out of scope, deferred to its own gameplan (gameplan-decision
+D1, open item O-01): the Co-STORM hierarchical lesson "mind map", which would
+change the lesson data model.
+
 ## [0.11.0] — 2026-06-18
 
 Three spec-kit-inspired **discipline gates** — clarify, exit-criteria, analyze —
