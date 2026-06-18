@@ -92,3 +92,54 @@ Candidate edits for the next `GAMEPLAN-PROCEDURE.md` / dev-workflow docs:
   (one-writer-many-readers grammar — close to L-06) are candidates for
   `docs/LESSONS.md` if the mind-map gameplan proceeds; left un-promoted now to
   respect cross-gameplan handoff cost (D-009).
+
+## Addendum — deep-research second-check (2026-06-18)
+
+A multi-source deep-research pass (repo HEAD `fb951af` + both papers; 19 sources,
+25 claims adversarially verified, 24 confirmed) independently re-derived STORM's
+method set and audited the original 5-opportunity analysis. Verdict: the framing
+held, with **one mischaracterization and three missed transfers** — net, new work
+for a future gameplan.
+
+**Correction — the Moderator.** The original analysis called the analyze-gate
+gap-finder (D-018) "Co-STORM's moderator move." Imprecise: the real Moderator's
+novelty signal is an EMBEDDING RERANKER over uncited retrieved snippets
+(`cos(i,t)·(1−cos(i,q))^(1−μ)`, sklearn cosine over an encoder) — infeasible here
+by construction. Our graph gap-finder captures the Moderator's *principle*
+(surface relevant-but-unconnected) via structural adjacency, deliberately NOT its
+mechanism. D-018's content is sound; only the prose equating it to the Moderator
+was loose. The Moderator's one portable piece is its deterministic TRIGGER — a
+consecutive-same-intent counter (`_should_generate_question`) — which was also
+missed.
+
+**Missed, transferable, feasible (ranked) — seeds for a future gameplan:**
+1. **Reference-free rubric / completeness self-critique** (highest leverage).
+   STORM grades drafts with a reference-free Prometheus rubric (Interest,
+   Coherence, Relevance, Coverage). Fit: the engine deterministically SURFACES a
+   coverage checklist (Coverage → every open item + exit criterion addressed;
+   Coherence → no contradiction with decisions/invariants, via the analyze gate)
+   and the AGENT grades — surface-don't-decide (D-016 / INVARIANT-05), never an
+   LLM-judge engine. Caveat: STORM's `eval/` code is deleted from current `main`;
+   the rubric lives in the NAACL-2024 paper.
+2. **Outline-before-synthesize** for handoffs/post-mortems — pure skill guidance;
+   STORM treats the outline as a separable, independently-evaluated stage.
+3. **Deterministic graph cleanup** — the mind-map's embedding-free half
+   (`trim_empty_leaf_nodes`, `merge_single_child_nodes`) over the derived graph.
+   OPEN RISK: "collapse singleton" may be unsafe for a RETENTION graph (could
+   collapse meaningful decision/invariant chains), unlike a discovered concept
+   tree — validate before adopting.
+4. **Consecutive-same-intent → staleness nudge** (advisory): "N phases/edits with
+   no new decision or invariant → run the analyze gate." Trivial stdlib; risk of
+   conflating conversational cadence with phase cadence.
+5. **Perspective-from-related-entities** — refine the new planning skill to derive
+   interrogation lenses from related GRAPH ENTITIES (STORM mines them from
+   related-article TOCs) rather than a fixed lens list.
+
+INFEASIBLE by construction (framing confirmed at code level): the embedding
+moderator reranker, the mind-map embedding insert/reorganize, the web-retrieval
+`rm.py` pipeline, and the DSPy declarative modules.
+
+Source caveats: the eval-rubric cluster verified 2-1 (one dissent each) and one
+supporting citation mis-pointed (DeFine `2503.07170` vs STORM's own `2402.14207`
+§2.2); STORM's outline metric (Heading Soft Recall) is itself Sentence-BERT-based,
+so only the rubric *idea* transfers, not that metric.
