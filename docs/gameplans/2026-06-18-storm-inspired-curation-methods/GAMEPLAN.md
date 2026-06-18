@@ -1,7 +1,7 @@
 # STORM-inspired curation methods Gameplan
 
 > Created: 2026-06-18
-> Status: Planning
+> Status: Executing
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -45,11 +45,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] clauderizer-new-gameplan SKILL.md adds a perspective-discovery step with a named lens set (e.g. security, performance, ops/release, testing, cost, failure-modes, prerequisite-chains) that interrogates the goal before phases are laid out
-- [ ] The skill adds a synthesis step that folds the interrogation findings into phases, decisions, and open items, and cross-references the cz_analyze gap-finder
-- [ ] The skill includes a multi-LM cost-split note: cheap models for the perspective fan-out, the strong model for synthesis
-- [ ] The .claude/skills/clauderizer-new-gameplan/SKILL.md mirror is byte-identical to the src/clauderizer/skills canonical copy
-- [ ] pytest is green with 0 failures (baseline 289 passed / 4 skipped preserved — Phase 0 changes no engine code)
+- [x] clauderizer-new-gameplan SKILL.md adds a perspective-discovery step with a named lens set (e.g. security, performance, ops/release, testing, cost, failure-modes, prerequisite-chains) that interrogates the goal before phases are laid out
+- [x] The skill adds a synthesis step that folds the interrogation findings into phases, decisions, and open items, and cross-references the cz_analyze gap-finder
+- [x] The skill includes a multi-LM cost-split note: cheap models for the perspective fan-out, the strong model for synthesis
+- [x] The .claude/skills/clauderizer-new-gameplan/SKILL.md mirror is byte-identical to the src/clauderizer/skills canonical copy
+- [x] pytest is green with 0 failures (baseline 289 passed / 4 skipped preserved — Phase 0 changes no engine code)
 
 ### Phase 1: Gap-finder: graph-adjacency surfacing in cz_analyze
 
