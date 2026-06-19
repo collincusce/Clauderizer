@@ -250,6 +250,93 @@ def test_preflight_distinguishes_unborn_branch_from_no_repo(sample_repo):
     assert "no commits yet" in names["branch_creation"][1]
 
 
+def _gameplan_with_phases(tmp_path, rows, present=()):
+    """Minimal gameplan dir: a phase-status table + a handoffs/ dir.
+
+    rows: (number, name, STATUS_WORD) tuples; present: handoff filenames to create.
+    """
+    gdir = tmp_path / "gp"
+    (gdir / "handoffs").mkdir(parents=True)
+    lines = ["| Phase | Name | Status | Started | Completed | Handoff |",
+             "|---|---|---|---|---|---|"]
+    for num, name, st in rows:
+        lines.append(f"| {num} | {name} | {st} | — | — | handoffs/PHASE-{num}-HANDOFF.md |")
+    (gdir / "CHAT-HANDOFF-INDEX.md").write_text(
+        "# Index\n\n## Phase Status\n\n" + "\n".join(lines) + "\n", encoding="utf-8")
+    for f in present:
+        (gdir / "handoffs" / f).write_text("h", encoding="utf-8")
+    return gdir
+
+
+def test_handoff_presence_flags_all_when_complete_but_absent(tmp_path):
+    # A closed gameplan whose phases all ran but left no handoffs -> all missing.
+    gdir = _gameplan_with_phases(
+        tmp_path, [("0", "A", "COMPLETE"), ("1", "B", "COMPLETE")])
+    assert preflight._missing_expected_handoffs(gdir) == (
+        True, ["PHASE-0-HANDOFF.md", "PHASE-1-HANDOFF.md"])
+
+
+def test_handoff_presence_clean_when_all_present(tmp_path):
+    gdir = _gameplan_with_phases(
+        tmp_path, [("0", "A", "COMPLETE"), ("1", "B", "COMPLETE")],
+        present=["PHASE-0-HANDOFF.md", "PHASE-1-HANDOFF.md"])
+    assert preflight._missing_expected_handoffs(gdir) == (True, [])
+
+
+def test_handoff_presence_future_phase_not_required(tmp_path):
+    # Phase 0 in progress, phase 1 not started: only phase 0 is expected, so a
+    # healthy mid-flight gameplan with phase 0's handoff is clean (no false alarm).
+    gdir = _gameplan_with_phases(
+        tmp_path, [("0", "A", "IN PROGRESS"), ("1", "B", "NOT STARTED")],
+        present=["PHASE-0-HANDOFF.md"])
+    assert preflight._missing_expected_handoffs(gdir) == (True, [])
+
+
+def test_handoff_presence_next_phase_expected_once_prev_complete(tmp_path):
+    # Phase 0 complete -> phase 1's handoff IS expected (written at phase 0 close).
+    gdir = _gameplan_with_phases(
+        tmp_path, [("0", "A", "COMPLETE"), ("1", "B", "READY")],
+        present=["PHASE-0-HANDOFF.md"])
+    assert preflight._missing_expected_handoffs(gdir) == (True, ["PHASE-1-HANDOFF.md"])
+
+
+def test_handoff_presence_skips_when_no_table(tmp_path):
+    gdir = tmp_path / "gp"
+    gdir.mkdir()
+    assert preflight._missing_expected_handoffs(gdir) == (False, [])
+
+
+def test_preflight_blocks_on_missing_expected_handoff(temp_repo):
+    # Wiring: a missing expected handoff fails preflight (blocking, by default).
+    paths, config = _paths_and_config(temp_repo)
+    config.preflight_checks = ["handoff_presence"]
+    gdir = paths.gameplan_dir(config.active_gameplan)
+    (gdir / "handoffs" / "PHASE-0-HANDOFF.md").unlink()  # phase 0 is always expected
+    result = preflight.run(paths, config, Profile(name="generic", commands={}),
+                           runner=_fake_runner({}))
+    by = {c.name: c for c in result.checks}
+    assert by["handoff_presence"].status == "fail"
+    assert "PHASE-0-HANDOFF.md" in by["handoff_presence"].detail
+    # the failure must spell out the recovery path (regenerate from the graph)
+    assert "regenerate" in by["handoff_presence"].detail
+    assert "cz_write_handoff" in by["handoff_presence"].detail
+    assert result.passed is False
+
+
+def test_preflight_handoff_presence_advisory_downgrades_to_warn(temp_repo):
+    # Escape hatch: listed as advisory, the same gap warns instead of blocking.
+    paths, config = _paths_and_config(temp_repo)
+    config.preflight_checks = ["handoff_presence"]
+    config.preflight_advisory = ["handoff_presence"]
+    gdir = paths.gameplan_dir(config.active_gameplan)
+    (gdir / "handoffs" / "PHASE-0-HANDOFF.md").unlink()
+    result = preflight.run(paths, config, Profile(name="generic", commands={}),
+                           runner=_fake_runner({}))
+    by = {c.name: c for c in result.checks}
+    assert by["handoff_presence"].status == "warn"
+    assert result.passed is True
+
+
 def test_engine_staleness_detection():
     from clauderizer.rituals import status_bundle
 

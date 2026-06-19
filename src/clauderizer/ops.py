@@ -530,6 +530,80 @@ def cz_check_exit_criterion(phase: str, criterion: str, checked: bool = True,
                                           criterion=criterion, checked=checked)
 
 
+def _default_transcripts_dir() -> str:
+    """Best-effort path to this project's Claude Code transcripts (``*.jsonl``).
+
+    Honors $CLAUDERIZER_TRANSCRIPTS_DIR; else derives the slug Claude Code uses
+    (~/.claude/projects/<path-with-non-alnum→dashes>), then falls back to a
+    projects subdir whose name ends with the repo dir name. Returns "" when it
+    cannot resolve — e.g. WSL-from-Windows, where the transcript tree is keyed by
+    the Windows path (invisible here) and the caller passes the dir explicitly.
+    """
+    import os
+    import re as _re
+
+    env = os.environ.get("CLAUDERIZER_TRANSCRIPTS_DIR")
+    if env:
+        return env
+    projects = Path.home() / ".claude" / "projects"
+    if not projects.exists():
+        return ""
+    try:
+        root = find_repo_root(Path.cwd())
+    except Exception:
+        return ""
+    cand = projects / _re.sub(r"[^A-Za-z0-9]+", "-", str(root))
+    if cand.exists():
+        return str(cand)
+    for p in sorted(projects.glob("*")):
+        if p.is_dir() and p.name.endswith(root.name):
+            return str(p)
+    return ""
+
+
+def cz_mine_failures(transcripts_dir: str = "", max_proposals: int = 40) -> dict:
+    """Mine Claude Code session transcripts for failure→fix patterns and PROPOSE
+    draft corrections/lessons (the Headroom `headroom learn` analog).
+
+    Read-only and advisory like cz_analyze/cz_critique: the engine scans the
+    transcript JSONL and SURFACES candidates — a tool error then a same-tool
+    success, a pytest fail→pass, or a short explicit user correction — and never
+    writes. Confirm a genuine proposal by recording it through cz_add_correction
+    (or cz_add_lesson); discard the rest. `transcripts_dir` defaults to this
+    project's Claude Code transcript directory (set $CLAUDERIZER_TRANSCRIPTS_DIR,
+    or pass it explicitly when auto-resolution fails). Deterministic, stdlib-only,
+    no enable/disable flag (D-015/INVARIANT-05).
+    """
+    from . import learn
+
+    d = transcripts_dir.strip() or _default_transcripts_dir()
+    if not d or not Path(d).exists():
+        return {
+            "ok": False,
+            "error": f"transcripts dir not found: {d or '(unresolved)'}",
+            "hint": "pass transcripts_dir (the ~/.claude/projects/<slug> path) "
+                    "or set $CLAUDERIZER_TRANSCRIPTS_DIR",
+        }
+    by_file = learn.mine_dir(d)
+    proposals = [{**p, "source": fname}
+                 for fname, props in by_file.items() for p in props]
+    capped = proposals[:max_proposals]
+    return {
+        "ok": True,
+        "transcripts_dir": str(d),
+        "files_scanned": len(by_file),
+        "proposal_count": len(proposals),
+        "shown": len(capped),
+        "proposals": capped,
+        "prompt": ("Each proposal is a DRAFT, not a write. For genuine failure→fix "
+                   "patterns, confirm and record via cz_add_correction (or "
+                   "cz_add_lesson); discard the rest. The engine proposes; you decide."),
+        "summary": (f"mined {len(proposals)} failure→fix proposal(s) from "
+                    f"{len(by_file)} transcript(s)"
+                    + (f"; showing {len(capped)}" if len(capped) < len(proposals) else "")),
+    }
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -573,6 +647,7 @@ REGISTRY: dict[str, Op] = {
     "cz_check_exit_criterion": Op(cz_check_exit_criterion, writes=True),
     "cz_analyze": Op(cz_analyze, writes=False),
     "cz_critique": Op(cz_critique, writes=False),
+    "cz_mine_failures": Op(cz_mine_failures, writes=False),
 }
 
 

@@ -26,7 +26,7 @@ from ..locking import LockHeld, write_lock
 from ..markdown import writer
 from ..paths import RepoPaths
 from ..profiles.detect import Profile
-from . import status_bundle
+from . import _tables, status_bundle
 
 _BASELINE_LABEL = "Current baseline test count"
 
@@ -141,6 +141,35 @@ def _git_branch_state(root: Path, runner: Runner) -> tuple[str, str]:
     return ("none", "")
 
 
+def _missing_expected_handoffs(gdir: Path) -> tuple[bool, list[str]]:
+    """Handoff files the phase table implies SHOULD exist on disk but don't.
+
+    A handoff is written when its phase would have begun — ``PHASE-0`` at scaffold,
+    ``PHASE-N`` when phase ``N-1`` completes — so a handoff is expected for the
+    first phase and for any phase whose predecessor is COMPLETE. Future
+    not-started phases are NOT required, so a healthy mid-flight gameplan stays
+    clean (no false positives on phases that simply haven't run yet).
+
+    Returns ``(had_table, missing_filenames)``; ``had_table`` is False when there
+    is no phase table to judge against, so the caller can skip rather than fail.
+    """
+    src = gdir / "CHAT-HANDOFF-INDEX.md"
+    if not src.exists():
+        src = gdir / "PHASE-STATUS.md"
+    if not src.exists():
+        return (False, [])
+    rows = _tables.parse_phase_table(src.read_text(encoding="utf-8"))
+    if not rows:
+        return (False, [])
+    missing: list[str] = []
+    for i, row in enumerate(rows):
+        if i == 0 or rows[i - 1].status == "complete":
+            fname = f"PHASE-{row.number}-HANDOFF.md"
+            if not (gdir / "handoffs" / fname).exists():
+                missing.append(fname)
+    return (True, missing)
+
+
 def run(
     paths: RepoPaths,
     config: Config,
@@ -248,5 +277,24 @@ def run(
             add("cascade_hygiene", "fail", f"pending cascade reports: {', '.join(pending)}")
         else:
             add("cascade_hygiene", "pass", "no pending cascade reports")
+
+    if "handoff_presence" in enabled:
+        gid = config.active_gameplan
+        if not gid:
+            add("handoff_presence", "skip", "no active gameplan")
+        else:
+            had_table, missing = _missing_expected_handoffs(paths.gameplan_dir(gid))
+            if not had_table:
+                add("handoff_presence", "skip", "no phase table to check")
+            elif missing:
+                add("handoff_presence", "fail",
+                    "expected handoff(s) missing on disk: " + ", ".join(missing)
+                    + ". These rebuild losslessly from the canonical graph, so a "
+                    "crashed session that never wrote one is recoverable. To unblock, "
+                    "reply 'regenerate' to rebuild each via cz_write_handoff(phase_n=…), "
+                    "or 'proceed anyway' to waive it once; for an intentionally "
+                    "single-session gameplan, add 'handoff_presence' to preflight_advisory.")
+            else:
+                add("handoff_presence", "pass", "all expected phase handoffs present")
 
     return result

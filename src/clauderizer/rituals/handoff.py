@@ -6,6 +6,12 @@ wasn't carried forward. The fix was the "self-contained handoff" rule — every
 handoff carries ALL still-relevant lessons. Here that's an operation, not a
 discipline: we read the single canonical lessons list and roll it up, pruning
 only items explicitly marked obsolete/struck-through.
+
+Relevance surfacing (idea #2) layers on top WITHOUT weakening that rule: the full
+list still rides along, and a small ranked pointer block above it focuses the
+agent on the lessons most relevant to the current phase (keyword + entity-id
+overlap, no ML — D-018; a pointer into canonical memory, never an authority —
+D-013).
 """
 
 from __future__ import annotations
@@ -13,6 +19,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from .. import analyze
 from ..config import Config
 from ..markdown import lesson_state, sections
 from ..paths import RepoPaths
@@ -69,6 +76,74 @@ def _phase_section(gameplan_text: str, phase_n: str) -> str | None:
     return sections.get_section(gameplan_text, f"Phase {phase_n}") or None
 
 
+def _phase_query(gameplan_text: str, phase_n: str) -> str:
+    """Text describing this phase, used to rank lesson relevance (idea #2).
+
+    Prefers a top-level ``Phase N`` section; falls back to the ``### Phase N``
+    block inside ``Phase Breakdown`` (name + goal + tasks + exit criteria) so the
+    query is rich even when the phase lives only in the breakdown table.
+    """
+    direct = _phase_section(gameplan_text, phase_n)
+    if direct and direct.strip():
+        return direct
+    from . import status_bundle  # lazy: status_bundle imports handoff (cycle guard)
+    breakdown = sections.get_section(gameplan_text, "Phase Breakdown") or ""
+    blk = status_bundle.phase_block(breakdown, phase_n)
+    if blk is None:
+        return ""
+    lines, start, end = blk
+    return "\n".join(lines[start:end])
+
+
+# --- relevance surfacing (idea #2) -------------------------------------------
+# Point at the lessons most relevant to the current phase WITHOUT reordering or
+# dropping the canonical roll-up. Reuses the shared keyword + entity-id ranker
+# (analyze.rank_relevant) — no ML (D-018) — and renders pointers into canonical
+# memory, never an authority over it (D-013). The full list rides along unchanged
+# (D-009 pressure-not-caps; the incomplete-propagation anti-pattern above).
+_LESSON_NUM_RE = re.compile(r"^\s*\*\*(\d+)\.\*\*\s*(.*)$")
+RELEVANCE_K = 5
+
+
+def _active_lesson_entries(index_text: str) -> list[dict]:
+    """Active lesson lines parsed as rank_relevant entries (``{id, title, body}``)."""
+    sec = sections.get_section(index_text, "Accumulated Lessons") or ""
+    entries: list[dict] = []
+    for line in sec.splitlines():
+        s = line.strip()
+        if not _LESSON_LINE.match(s) or not lesson_state.is_active(s):
+            continue
+        m = _LESSON_NUM_RE.match(s)
+        if m:
+            entries.append({"id": m.group(1), "title": m.group(2).strip(), "body": ""})
+    return entries
+
+
+def relevant_lesson_pointer(index_text: str, query: str,
+                            k: int = RELEVANCE_K) -> str | None:
+    """Ranked pointers to the lessons most relevant to the current phase.
+
+    Returns ``None`` when there is nothing to focus — no query, or the active
+    lesson count is already ``<= k`` (the whole list is short enough to read).
+    Pure surfacing: it never reorders or removes the canonical lessons.
+    """
+    if not query or not query.strip():
+        return None
+    entries = _active_lesson_entries(index_text)
+    if len(entries) <= k:
+        return None
+    ranked = analyze.rank_relevant(query, entries, k=k)
+    if not ranked:
+        return None
+    out = []
+    for r in ranked:
+        title = r["title"].rstrip()
+        if len(title) > 100:
+            title = title[:99].rstrip() + "…"
+        out.append(f"- **#{r['id']}** — {title}")
+    return "\n".join(out)
+
+
 # The engine owns only this marker-delimited region of a handoff file (D-008).
 # Everything outside it — agent enrichment — is preserved byte-for-byte when
 # the handoff is regenerated.
@@ -111,6 +186,9 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
     gameplan_text = _gameplan_text(paths, gid, "GAMEPLAN.md")
     lessons_md, lessons_count = collect_lessons(index_text)
     phase_body = _phase_section(gameplan_text, phase_n)
+    # Idea #2: surface the lessons most relevant to THIS phase as pointers above
+    # the (unchanged) cumulative list — focus without dropping anything.
+    pointer = relevant_lesson_pointer(index_text, _phase_query(gameplan_text, phase_n))
 
     # Distilled project lessons (docs/LESSONS.md) ride along in every handoff,
     # across gameplans — that's what promotion buys (D-009).
@@ -141,6 +219,19 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
         f"- `docs/gameplans/{gid}/PHASE-STATUS.md`",
         "- `CLAUDE.md`",
         "",
+    ]
+    if pointer:
+        parts += [
+            "## Most Relevant Lessons for This Phase",
+            "",
+            "_(Ranked pointers into the full list below — keyword + entity-id "
+            "overlap with this phase, no ML, no drops. The cumulative list is "
+            "unchanged.)_",
+            "",
+            pointer,
+            "",
+        ]
+    parts += [
         "## Accumulated Lessons (Cumulative — All Prior Phases)",
         "",
         lessons_md,

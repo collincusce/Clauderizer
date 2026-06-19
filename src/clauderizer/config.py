@@ -41,6 +41,7 @@ SIZE_MANIFESTS: dict[str, dict[str, Any]] = {
             "deps_spotcheck",
             "branch_creation",
             "cascade_hygiene",
+            "handoff_presence",
         ],
     },
     "saas": {
@@ -69,6 +70,7 @@ SIZE_MANIFESTS: dict[str, dict[str, Any]] = {
             "deps_spotcheck",
             "branch_creation",
             "cascade_hygiene",
+            "handoff_presence",
         ],
     },
 }

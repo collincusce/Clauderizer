@@ -1,7 +1,7 @@
 [clauderizer]
 version = "1"
 size = "standard"
-preflight_checks = ["branch_base", "clean_tree", "tests", "build", "deps_spotcheck", "branch_creation", "cascade_hygiene"]
+preflight_checks = ["branch_base", "clean_tree", "tests", "build", "deps_spotcheck", "branch_creation", "cascade_hygiene", "handoff_presence"]
 preflight_advisory = []
 
 [host]
@@ -25,4 +25,4 @@ cascade = true
 amendments = false
 
 [active_gameplan]
-id = "2026-06-18-storm-self-critique-gate"
+id = ""

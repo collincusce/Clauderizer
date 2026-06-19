@@ -35,4 +35,5 @@ TOOL_NAMES = [
     "cz_check_exit_criterion",
     "cz_analyze",
     "cz_critique",
+    "cz_mine_failures",
 ]

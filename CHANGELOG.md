@@ -2,6 +2,65 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.13.0] — 2026-06-19
+
+**Headroom-borrowed ideas** (gameplan 2026-06-19-headroom-borrowed-ideas): three
+ideas adapted from the Headroom project (chopratejas/headroom) were each tested
+as a falsifiable hypothesis with a machine-checkable keep/discard metric — two
+kept, two discarded. The core stays stdlib-only, deterministic, no ML (D-014/D-018).
+
+### Added — relevance-ranked lesson pointers in the handoff (idea #2a, D-021)
+
+- **The handoff now surfaces a "Most Relevant Lessons for This Phase" block** —
+  the top-k lessons ranked by the existing keyword + entity-id ranker
+  (`analyze.rank_relevant`, no ML) against the current phase's breakdown, placed
+  ABOVE the unchanged cumulative list and only when active lessons exceed k (=5).
+  It reorders nothing and drops nothing — a pointer into canonical memory (D-013),
+  so every lesson still propagates (D-009 + the incomplete-propagation
+  anti-pattern). `subsys.rituals` 0.6.0 → 0.7.0.
+
+### Added — `cz_mine_failures`, a failure-miner (idea #3, D-023)
+
+- **`cz_mine_failures`** scans Claude Code session transcripts (JSONL) for
+  failure→fix patterns — a tool error then a same-tool success, a pytest
+  fail→pass, or a short explicit user correction — and PROPOSES draft
+  `cz_add_correction` / `cz_add_lesson` entries for the agent to confirm.
+  Read-only, deterministic, stdlib-only; invoked, never auto-firing, no
+  enable/disable flag (D-015/INVARIANT-05). `is_error` is unreliable for shell
+  failures, so errors are detected by content signatures; benign search-tool
+  errors and tool-protocol hiccups are denied to protect precision (~80% on a
+  labeled sample of real transcripts). `subsys.mcp-server` 0.4.1 → 0.5.0.
+
+### Evaluated and discarded (with evidence)
+
+- **Prefix-stabilizing the SessionStart digest** (idea #1, à la Headroom
+  CacheAligner) — DISCARD (D-020). The reorder lifts the stable-prefix proxy
+  65→786 chars, but the digest is only ~888 chars (~222 tok), is rendered once per
+  session, and stable-first ordering buries the actionable state — a negligible,
+  unobservable gain for a real readability cost.
+- **Truncating the cumulative lessons tail** (idea #2b) — DISCARD (D-022).
+  Reintroduces incomplete-propagation for marginal savings; `cz_consolidate_lessons`
+  is the safe size lever.
+
+### Hardened (post-close verification)
+
+- A second, independent adversarial pass on the miner fixed three crash vectors
+  reachable via `cz_mine_failures` on real transcripts — non-UTF-8 bytes
+  (`UnicodeDecodeError`), an unhashable `tool_use_id`, and a non-str `text` block
+  (`TypeError`) — by extending tolerance past JSON validity to *shape* validity
+  (`open(..., errors="replace")`, `isinstance` guards, a per-file net in
+  `mine_dir`). Also one precision fix: `[1-9]\d* failed` (not `\d+`), so a clean
+  "0 failed" run is no longer mined as a failure — 3 fewer false positives on the
+  real corpus (C-01, C-02).
+- **New `handoff_presence` preflight check** — `cz_preflight` now blocks when the
+  phase table implies a handoff should exist (phase 0, or any phase whose
+  predecessor is COMPLETE) but the file is absent on disk — so a gameplan can no
+  longer close with dangling handoff links undetected. The failure message spells
+  out the recovery: reply `regenerate` to rebuild each from the graph via
+  `cz_write_handoff` (lossless — a handoff is derived state), or waive once.
+  Configurable: list it in `preflight_advisory` to downgrade to a warning for
+  intentionally single-session gameplans. Suite → 352 passed, 4 skipped.
+
 ## [0.12.0] — 2026-06-18
 
 **STORM-inspired curation** (D-017): methods from Stanford OVAL's STORM/Co-STORM,
