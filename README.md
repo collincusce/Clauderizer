@@ -303,6 +303,7 @@ clauderize status [--json]   # the current digest
 clauderize doctor            # present AND runnable for the session host of record;
                              # exit 0 ok · 1 not clauderized · 2 drift · 3 ok-but-unverifiable
 clauderize reindex           # rebuild the graph cache from markdown
+clauderize release-check     # maintainers: push ordering + the four version registries · exit 0 ok · 2 red · 3 unverifiable
 clauderize mcp               # launch the MCP server (stdio)
 clauderize ops <file.json|-> # execute a JSON batch of cz_* ops (the no-MCP write fallback)
 ```
@@ -316,6 +317,7 @@ clauderize ops <file.json|-> # execute a JSON batch of cz_* ops (the no-MCP writ
 · `cz_obsolete_lesson` · `cz_consolidate_lessons` · `cz_promote_lesson`
 · `cz_add_correction` · `cz_add_output` · `cz_add_phase_summary`
 · `cz_upsert_entity` · `cz_transition_status`
+**Discipline & analysis** (advisory, judgment-based; INVARIANT-05) · `cz_analyze` · `cz_critique` · `cz_mine_failures` · `cz_add_open_item` · `cz_resolve_open_item` · `cz_set_exit_criteria` · `cz_check_exit_criterion`
 **Resources** · `clauderizer://status` · `clauderizer://procedure` · `clauderizer://entity/{id}`
 
 The tools are deliberately separate and self-describing rather than one generic `mutate` — that's
@@ -364,7 +366,7 @@ Three guards keep the wiring honest after that:
 ## Configurable two ways
 
 **Size dial** — `pet` (just a gameplan + handoffs), `standard` (named docs + cascade + full
-7-check preflight), `saas` (the full doc set + incidents + amendments). It governs which doc
+8-check preflight), `saas` (the full doc set + incidents + amendments). It governs which doc
 modules and rituals are active. It's a data manifest, not a fork.
 
 **Host-language profiles** — the engine reads/writes markdown and is agnostic to your project's

@@ -11,7 +11,8 @@ of `clauderize doctor`.
 ## Scope and model
 
 Clauderizer writes repo-local files, two of which register commands that
-your agent harness executes (an MCP server and a SessionStart hook). The
+your agent harness executes (an MCP server and SessionStart/UserPromptSubmit
+hooks). The
 full statement of what is written, what executes when, under which
 contracts, and what happens when you clone a repo that already carries the
 wiring lives in **[docs/TRUST.md](docs/TRUST.md)** — behavioral claims

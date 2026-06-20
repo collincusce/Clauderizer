@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clauderizer"
-version = "0.14.0"
+version = "0.14.1"
 description = "Drop-in, MCP-native working memory for AI agents: gameplans, phases, a dependency graph, and post-hoc cascade — over plain markdown."
 readme = "README.md"
 requires-python = ">=3.11"

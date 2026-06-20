@@ -1,4 +1,4 @@
-"""The 7-check pre-flight verification — run for real, not claimed.
+"""The pre-flight verification — run for real, not claimed.
 
 The original system listed seven checks a session was *supposed* to run before
 writing code (CHECK 3 "tests pass", CHECK 4 "build passes", etc.) but nothing

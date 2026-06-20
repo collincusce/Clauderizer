@@ -31,6 +31,8 @@
 
 **L-20.** Before an irreversible release step (tag → GitHub Release → PyPI), run the suite on EVERY host leg the CI matrix covers — a green on one OS is a guess about the others, and the publish cannot be undone. New tests are the usual culprit: a path/separator assertion is itself a platform claim (assert the wrapper FILE hook.sh|hook.cmd, not the slash). 0.14.0 shipped to PyPI with 3 Windows CI cells red on exactly such an assertion; the product was fine but the red was avoidable by a local Windows-leg run. *(from 2026-06-19-kimi-lifecycle-integration)*
 
+**L-21.** Reference docs drift together on a taxonomy change. When hook events or the tool surface change, sweep every non-single-sourced present-tense doc at once: README's MCP-surface tool list, TRUST.md (what init writes / what executes), UPGRADING.md's uninstall script, and SECURITY.md's scope line. The single-sourced CLAUDE.md/AGENTS.md stanza (L-16) is safe; those four are not. Append-only history (CHANGELOG, gameplan handoffs and cascade reports) records the OLD counts on purpose — never 'correct' it to the new number. *(evidence: 0.14.0 docs audit (2026-06-20): README MCP surface listed 24 tools vs tools_list.py's 31; preflight 7-vs-8 checks; TRUST/UPGRADING/SECURITY still described pre-0.14 SessionStart-only wiring (no UserPromptSubmit / AGENTS.md / kimi-setup).)* *(from 2026-06-19-kimi-lifecycle-integration)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)*

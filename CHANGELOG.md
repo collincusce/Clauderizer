@@ -2,6 +2,36 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.14.1] — 2026-06-20
+
+**Documentation accuracy pass.** No behavior change — the engine is identical to
+0.14.0 apart from one docstring. This release ships the corrected README (the PyPI
+long-description) and a repo-wide docs overhaul.
+
+### Fixed (drift)
+- **README MCP surface** now lists all **31 tools** (was 24): the discipline-gate
+  and analysis tools added in 0.11.0–0.13.0 (`cz_add_open_item` /
+  `cz_resolve_open_item`, `cz_set_exit_criteria` / `cz_check_exit_criterion`,
+  `cz_analyze`, `cz_critique`, `cz_mine_failures`) were missing. `standard`
+  pre-flight corrected to **8 checks** (`handoff_presence`); `release-check` added
+  to the CLI reference.
+- **The 0.14.0 lifecycle additions** (the `UserPromptSubmit` hook, the `AGENTS.md`
+  stanza, `.clauderizer/kimi-setup.md`) are now reflected in the stranger docs —
+  `docs/TRUST.md` (what init writes / what executes), `SECURITY.md`, and, most
+  consequentially, `docs/UPGRADING.md`, whose uninstall script now removes the
+  `UserPromptSubmit` hook and the `AGENTS.md` stanza instead of leaving them behind.
+- `docs/ARCHITECTURE.md` gate provenance (adds D-018); the `preflight.py` docstring
+  no longer hardcodes "7-check".
+
+### Added (docs)
+- **All seven `docs/subsystems/*.md`** bodies written (graph, markdown-core,
+  mcp-server, mutations, profiles, rituals, scaffold) — previously stubs that
+  `ARCHITECTURE.md` delegates prose to — plus `docs/VISION.md`,
+  `docs/features/init-cli.md`, and a real `docs/TESTING.md` (baseline 403 tests).
+- **L-21** (project lesson): reference docs drift together on a hook-taxonomy or
+  tool-surface change — sweep the README MCP surface and TRUST/UPGRADING/SECURITY
+  together; append-only history records the old counts on purpose.
+
 ## [0.14.0] — 2026-06-19
 
 **kimi-code lifecycle integration** (gameplan 2026-06-19-kimi-lifecycle-integration):

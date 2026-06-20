@@ -65,31 +65,39 @@ d.get("mcpServers", {}).pop("clauderizer", None)
 p.write_text(json.dumps(d, indent=2) + "\n", encoding="utf-8")
 EOF
 
-# 2. the SessionStart hook entry (preserves unrelated hooks)
+# 2. the hook entries — SessionStart AND UserPromptSubmit (preserves unrelated hooks)
 python3 - <<'EOF'
 import json, pathlib
 p = pathlib.Path(".claude/settings.json")
 d = json.loads(p.read_text(encoding="utf-8"))
-groups = d.get("hooks", {}).get("SessionStart", [])
-for g in groups:
-    g["hooks"] = [h for h in g.get("hooks", [])
-                  if "clauderizer-hook" not in h.get("command", "")
-                  and ".clauderizer/hook." not in h.get("command", "")
-                  and ".clauderizer\\hook." not in h.get("command", "")]
-d["hooks"]["SessionStart"] = [g for g in groups if g.get("hooks")]
+for event in ("SessionStart", "UserPromptSubmit"):
+    groups = d.get("hooks", {}).get(event, [])
+    for g in groups:
+        g["hooks"] = [h for h in g.get("hooks", [])
+                      if "clauderizer-hook" not in h.get("command", "")
+                      and ".clauderizer/hook." not in h.get("command", "")
+                      and ".clauderizer\\hook." not in h.get("command", "")]
+    kept = [g for g in groups if g.get("hooks")]
+    if kept:
+        d["hooks"][event] = kept
+    elif "hooks" in d:
+        d["hooks"].pop(event, None)
 p.write_text(json.dumps(d, indent=2) + "\n", encoding="utf-8")
 EOF
 
 # 3. the engine's working directory (config, wrapper, disposable cache)
 rm -rf .clauderizer
 
-# 4. the CLAUDE.md stanza (keeps everything outside the markers)
+# 4. the CLAUDE.md and AGENTS.md stanzas (keeps everything outside the markers)
 python3 - <<'EOF'
 import pathlib, re
-p = pathlib.Path("CLAUDE.md")
-t = p.read_text(encoding="utf-8")
-t = re.sub(r"<!-- clauderizer:start -->.*?<!-- clauderizer:end -->\n?", "", t, flags=re.S)
-p.write_text(t, encoding="utf-8")
+for name in ("CLAUDE.md", "AGENTS.md"):
+    p = pathlib.Path(name)
+    if not p.exists():
+        continue
+    t = p.read_text(encoding="utf-8")
+    t = re.sub(r"<!-- clauderizer:start -->.*?<!-- clauderizer:end -->\n?", "", t, flags=re.S)
+    p.write_text(t, encoding="utf-8")
 EOF
 
 # 5. the skills

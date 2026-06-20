@@ -10,7 +10,7 @@ _(Describe each subsystem. Create tracked entity docs with `cz_upsert_entity`.)_
 
 ## Capabilities
 
-### Discipline gates (D-015 / D-016 / D-019)
+### Discipline gates (D-015 / D-016 / D-018 / D-019)
 
 Four always-on, advisory, judgment-based gates (no config flags; INVARIANT-05)
 that surface findings in the tool result for the agent to rule on — modeled on
