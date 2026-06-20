@@ -32,7 +32,18 @@ N_WRITERS = 8
 CHILD_SCRIPT = """\
 import pathlib, sys, time
 
-from clauderizer import mutations, paths
+from clauderizer import locking, mutations, paths
+
+# CI hardening (does NOT relax what this test checks). On a slow, contended
+# runner (observed: windows-latest / py3.11) serializing N real writer
+# processes can exceed the 10s default acquire timeout, and a live-but-
+# descheduled holder can age past the 30s stale window and be wrongly taken
+# over -- a spurious failure either way. The H-05 contract here is "none
+# lost, ids sequential", not the wall-clock budget, so widen both timeouts.
+# add_lesson locks with no explicit kwargs, so it reads these module globals;
+# the engine defaults shipped in src/ are unchanged.
+locking.DEFAULT_ACQUIRE_TIMEOUT = 60.0
+locking.DEFAULT_STALE_TIMEOUT = 60.0
 
 repo = pathlib.Path(sys.argv[1])
 idx = sys.argv[2]
