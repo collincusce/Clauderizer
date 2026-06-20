@@ -1,7 +1,7 @@
 # Chat Handoff Index — kimi-lifecycle-integration
 
 > Last updated: 2026-06-19
-> Status: Phase 4 of 5 in progress
+> Status: All 5 phases complete
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Event-dispatching hook engine | ✅ COMPLETE | 2026-06-19 | 2026-06-19 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Claude Code wiring of new events | ✅ COMPLETE | 2026-06-19 | 2026-06-19 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | AGENTS.md and kimi host target | ✅ COMPLETE | 2026-06-19 | 2026-06-19 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Docs, version bump, release to PyPI | 🟡 IN PROGRESS | 2026-06-19 | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Docs, version bump, release to PyPI | ✅ COMPLETE | 2026-06-19 | 2026-06-19 | handoffs/PHASE-4-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -55,6 +55,10 @@ Generalized init._register_hook to register the hook wrapper under both SessionS
 
 Added the cross-harness host target (D2). init injects the SAME host-agnostic Clauderizer stanza into AGENTS.md as into CLAUDE.md (one source, no drift — L-16), giving kimi (KIMI_AGENTS_MD) and other AGENTS.md-aware harnesses the memory pointer. init also emits .clauderizer/kimi-setup.md — a strictly non-destructive guide (a repo-local file, never the global ~/.kimi/config.toml) with [[hooks]] entries for all four events (kimi injects every hook's stdout, unlike Claude Code — D1), TOML literal-string commands pointing at the existing wrapper, and MCP-registration guidance that honestly cites O-01. Added RepoPaths.agents_md and RepoPaths.kimi_setup. 5 new tests; full suite 399 passed / 4 skipped; the generated TOML was validated to parse with tomllib.
 
+### Phase 4 — completed 2026-06-19
+
+Shipped 0.14.0 to PyPI. Bumped the version across pyproject + clauderizer.__init__ + CHANGELOG; subsys.scaffold 0.6.0→0.7.0 with the cascade resolved (feat.init-cli pin ^0.5.0 still satisfied). README updated (feature row + init tree). clauderize release-check green — all four registries unclaimed, clean tree, origin/main==HEAD. Committed f7da75a to main, pushed, tagged v0.14.0 (tag==pyproject, H-07 ok), pushed the tag, cut the GitHub Release → publish.yml OIDC build → clauderizer 0.14.0 live on PyPI (wheel + sdist; index latest=0.14.0). C-01 / lesson #1 (promoted): the release commit's three Windows CI cells went red AFTER publish on a Linux-centric test assertion (forward-slash hook path); the product was unaffected (the wheel ships no tests and kimi-setup generates correctly on Windows), fixed test-only in 7d708da → main CI 9/9 green. No re-release needed.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -63,3 +67,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Process
 
 _(none yet)_
+
+**1.** Before tagging a release, execute the suite on every host leg the CI matrix covers — a Linux-only green is a guess about Windows, and the Release→PyPI step is irreversible. A path/separator assertion in a test is itself a platform claim: assert the wrapper FILE (hook.sh|hook.cmd), never the slash. (promoted 2026-06-19: L-20)

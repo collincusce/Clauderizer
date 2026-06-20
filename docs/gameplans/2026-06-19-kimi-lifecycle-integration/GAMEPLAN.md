@@ -1,7 +1,7 @@
 # kimi-lifecycle-integration Gameplan
 
 > Created: 2026-06-19
-> Status: Executing
+> Status: Complete
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -46,7 +46,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 ## Open Items
 
-**O-01.** _(phase Phase 3)_ kimi's MCP-server registration TOML schema is undocumented in kimi-cli config-files docs (only client timeout + [[hooks]] are shown). Phase 3 therefore emits a setup snippet instead of auto-wiring the global ~/.kimi/config.toml. Resolve by confirming the schema from a real kimi install or upstream issue before any future auto-wiring.
+**O-01.** _(phase Phase 3)_ kimi's MCP-server registration TOML schema is undocumented in kimi-cli config-files docs (only client timeout + [[hooks]] are shown). Phase 3 therefore emits a setup snippet instead of auto-wiring the global ~/.kimi/config.toml. Resolve by confirming the schema from a real kimi install or upstream issue before any future auto-wiring. _(resolved 2026-06-19: Resolved by design (D2): Phase 3 emits .clauderizer/kimi-setup.md with the [[hooks]] snippet + manual MCP-registration guidance rather than auto-wiring the global ~/.kimi/config.toml, since kimi's MCP-server TOML schema is undocumented upstream. Revisit auto-wiring only if/when kimi documents that schema.)_
 
 ## Phase Breakdown
 
@@ -118,7 +118,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Version is 0.14.0 across pyproject.toml, clauderizer.__init__, and CHANGELOG; touched subsystem versions bumped and the cascade resolved
-- [ ] clauderize release-check passes and the full suite is green on this machine
-- [ ] Committed to main and tagged v0.14.0 (tag == pyproject version, H-07 guard), pushed to origin
-- [ ] GitHub Release published; publish.yml succeeds; clauderizer 0.14.0 is visible on PyPI
+- [x] Version is 0.14.0 across pyproject.toml, clauderizer.__init__, and CHANGELOG; touched subsystem versions bumped and the cascade resolved
+- [x] clauderize release-check passes and the full suite is green on this machine
+- [x] Committed to main and tagged v0.14.0 (tag == pyproject version, H-07 guard), pushed to origin
+- [x] GitHub Release published; publish.yml succeeds; clauderizer 0.14.0 is visible on PyPI

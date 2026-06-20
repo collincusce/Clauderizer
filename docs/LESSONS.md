@@ -29,6 +29,8 @@
 
 **L-19.** Tolerating malformed external input must wrap the WHOLE pipeline, not just the parse step. A try/except around json.loads catches syntax errors but not the file *decode* before it (non-UTF-8 bytes -> UnicodeDecodeError, a ValueError) nor *shape* errors after it (an unhashable value used as a dict key; a non-str field passed to str.join). Guard at the boundary (open(..., errors="replace"), isinstance checks) AND net per-item in any batch loop so one bad input never aborts the run. Corollary: a regex that encodes a domain rule must encode it precisely — "[1-9]\d* failed", not "\d+ failed", so a clean "0 failed" run isn't read as a failure. *(from 2026-06-19-headroom-borrowed-ideas)*
 
+**L-20.** Before an irreversible release step (tag → GitHub Release → PyPI), run the suite on EVERY host leg the CI matrix covers — a green on one OS is a guess about the others, and the publish cannot be undone. New tests are the usual culprit: a path/separator assertion is itself a platform claim (assert the wrapper FILE hook.sh|hook.cmd, not the slash). 0.14.0 shipped to PyPI with 3 Windows CI cells red on exactly such an assertion; the product was fine but the red was avoidable by a local Windows-leg run. *(from 2026-06-19-kimi-lifecycle-integration)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)*
