@@ -245,7 +245,9 @@ def test_init_writes_kimi_setup_with_all_four_events(empty_python_repo):
     for ev in ("SessionStart", "PreCompact", "PostCompact", "UserPromptSubmit"):
         assert f'event = "{ev}"' in text, ev
     assert "[[hooks]]" in text
-    assert ".clauderizer/hook." in text                 # the real wrapper command
+    # the real wrapper command — hook.sh (posix/wsl) or hook.cmd (native win32);
+    # the path separator differs per platform, so match the file, not the slash
+    assert "hook.sh" in text or "hook.cmd" in text
     assert "clauderizer-mcp" in text or "clauderizer.hook" in text or ".mcp.json" in text
 
 
