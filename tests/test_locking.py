@@ -35,15 +35,19 @@ import pathlib, sys, time
 from clauderizer import locking, mutations, paths
 
 # CI hardening (does NOT relax what this test checks). On a slow, contended
-# runner (observed: windows-latest / py3.11) serializing N real writer
-# processes can exceed the 10s default acquire timeout, and a live-but-
-# descheduled holder can age past the 30s stale window and be wrongly taken
-# over -- a spurious failure either way. The H-05 contract here is "none
-# lost, ids sequential", not the wall-clock budget, so widen both timeouts.
-# add_lesson locks with no explicit kwargs, so it reads these module globals;
-# the engine defaults shipped in src/ are unchanged.
-locking.DEFAULT_ACQUIRE_TIMEOUT = 60.0
-locking.DEFAULT_STALE_TIMEOUT = 60.0
+# runner (observed: windows-latest) a writer that has finished can briefly fail
+# to unlink its own lock file -- on Windows os.unlink raises a sharing violation
+# while another waiter is mid-read of the same file -- leaving the lock orphaned.
+# Waiters then recover it only via stale takeover at ~stale_timeout (30s). So the
+# per-child ACQUIRE budget must exceed the stale window with room to spare, or a
+# waiter gives up at the exact moment takeover becomes possible (seen as repeated
+# "waited Ns" LockHeld; the default 10s never reaches the 30s takeover at all).
+# Widen ONLY the acquire budget, far above the 30s stale window; stale_timeout
+# stays at the engine default so a live holder is never wrongly taken over. The
+# H-05 contract (none lost, ids sequential) is unchanged -- only the wall-clock
+# budget. add_lesson locks with no explicit kwargs, so it reads this global; the
+# engine defaults shipped in src/ are untouched.
+locking.DEFAULT_ACQUIRE_TIMEOUT = 120.0
 
 repo = pathlib.Path(sys.argv[1])
 idx = sys.argv[2]
@@ -90,7 +94,9 @@ def test_concurrent_writer_processes_lose_nothing(temp_repo, tmp_path):
         for i in range(N_WRITERS)
     ]
     (temp_repo / "GO").write_text("", encoding="utf-8")
-    results = [p.communicate(timeout=120) for p in procs]
+    # Above the child acquire budget (120s) so the parent never reaps a child
+    # that is legitimately waiting out a stale-takeover cycle.
+    results = [p.communicate(timeout=240) for p in procs]
     failures = [(p.returncode, out, err) for p, (out, err) in zip(procs, results)
                 if p.returncode != 0]
     assert not failures, f"writer children failed: {failures}"
