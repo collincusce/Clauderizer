@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from clauderizer import hosts
 from clauderizer.config import Config
 from clauderizer.scaffold import init as scaffold_init
 from clauderizer.scaffold.init import init
@@ -139,3 +140,125 @@ def test_resolve_invocation_venv_scripts_still_preferred(tmp_path, monkeypatch):
     mcp, hook = scaffold_init._resolve_invocation(None)
     assert mcp == [str(bindir / "clauderizer-mcp")]
     assert hook == [str(bindir / "clauderizer-hook")]
+
+
+# --- Phase 2: Claude Code wiring of the new hook events (D-025/D1) ----------------
+
+
+def _clauderizer_cmds(settings_json: Path, event: str) -> list[str]:
+    data = json.loads(settings_json.read_text(encoding="utf-8"))
+    return [h["command"]
+            for group in data.get("hooks", {}).get(event, [])
+            for h in group.get("hooks", [])
+            if hosts.is_hook_command(h.get("command", ""))]
+
+
+def test_init_registers_both_sessionstart_and_userpromptsubmit(empty_python_repo):
+    init(empty_python_repo, spawn_test=False)
+    sf = empty_python_repo / ".claude" / "settings.json"
+    ss = _clauderizer_cmds(sf, "SessionStart")
+    ups = _clauderizer_cmds(sf, "UserPromptSubmit")
+    assert len(ss) == 1 and len(ups) == 1
+    assert ss[0] == ups[0]  # the same wrapper command serves both events
+
+
+def test_init_does_not_register_compaction_events_on_claude_code(empty_python_repo):
+    # D1: Claude Code drops PreCompact/PostCompact stdout, so wiring them would be
+    # dead. SessionStart(source=compact) covers post-compaction there instead.
+    init(empty_python_repo, spawn_test=False)
+    data = json.loads((empty_python_repo / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    assert "PreCompact" not in data["hooks"]
+    assert "PostCompact" not in data["hooks"]
+
+
+def test_init_hook_registration_idempotent_per_event(empty_python_repo):
+    init(empty_python_repo, spawn_test=False)
+    init(empty_python_repo, spawn_test=False)
+    sf = empty_python_repo / ".claude" / "settings.json"
+    assert len(_clauderizer_cmds(sf, "SessionStart")) == 1
+    assert len(_clauderizer_cmds(sf, "UserPromptSubmit")) == 1
+
+
+def test_init_migrates_sessionstart_only_settings(empty_python_repo):
+    # the pre-0.14 shape: a clauderizer SessionStart hook, no UserPromptSubmit
+    sf = empty_python_repo / ".claude" / "settings.json"
+    sf.parent.mkdir(parents=True)
+    sf.write_text(json.dumps({"hooks": {"SessionStart": [{"hooks": [
+        {"type": "command",
+         "command": "wsl.exe -d ubuntu //bin/sh //x/.clauderizer/hook.sh"}]}]}}),
+        encoding="utf-8")
+    init(empty_python_repo, spawn_test=False)
+    assert len(_clauderizer_cmds(sf, "SessionStart")) == 1   # replaced, not duplicated
+    assert len(_clauderizer_cmds(sf, "UserPromptSubmit")) == 1  # added
+
+
+def test_init_preserves_foreign_hooks_under_events(empty_python_repo):
+    sf = empty_python_repo / ".claude" / "settings.json"
+    sf.parent.mkdir(parents=True)
+    foreign = {"type": "command", "command": "echo hi"}
+    sf.write_text(json.dumps({"hooks": {
+        "UserPromptSubmit": [{"hooks": [foreign]}],
+        "PreToolUse": [{"matcher": "Bash", "hooks": [foreign]}],
+    }}), encoding="utf-8")
+    init(empty_python_repo, spawn_test=False)
+    data = json.loads(sf.read_text(encoding="utf-8"))
+    ups_cmds = [h["command"] for g in data["hooks"]["UserPromptSubmit"] for h in g["hooks"]]
+    assert "echo hi" in ups_cmds                               # foreign preserved
+    assert len(_clauderizer_cmds(sf, "UserPromptSubmit")) == 1  # clauderizer added
+    assert data["hooks"]["PreToolUse"][0]["hooks"][0]["command"] == "echo hi"  # untouched
+
+
+# --- Phase 3: AGENTS.md stanza + non-destructive kimi setup snippet (D2) ----------
+
+
+def test_init_writes_agents_md_stanza(empty_python_repo):
+    init(empty_python_repo, spawn_test=False)
+    text = (empty_python_repo / "AGENTS.md").read_text(encoding="utf-8")
+    assert "<!-- clauderizer:start -->" in text
+    assert "Clauderizer" in text
+
+
+def test_init_agents_md_matches_claude_md_stanza(empty_python_repo):
+    # one source stanza -> the marker-block body is identical in both files (L-16)
+    init(empty_python_repo, spawn_test=False)
+    import re
+    block = re.compile(r"<!-- clauderizer:start -->(.*)<!-- clauderizer:end -->", re.S)
+    claude = block.search((empty_python_repo / "CLAUDE.md").read_text(encoding="utf-8"))
+    agents = block.search((empty_python_repo / "AGENTS.md").read_text(encoding="utf-8"))
+    assert claude and agents and claude.group(1) == agents.group(1)
+
+
+def test_init_agents_md_preserves_existing(empty_python_repo):
+    agents = empty_python_repo / "AGENTS.md"
+    agents.write_text("# House rules\n\nUse rg, not grep.\n", encoding="utf-8")
+    init(empty_python_repo, spawn_test=False)
+    text = agents.read_text(encoding="utf-8")
+    assert "Use rg, not grep." in text                  # human content preserved
+    assert "<!-- clauderizer:start -->" in text          # stanza added
+
+
+def test_init_writes_kimi_setup_with_all_four_events(empty_python_repo):
+    init(empty_python_repo, spawn_test=False)
+    setup = empty_python_repo / ".clauderizer" / "kimi-setup.md"
+    text = setup.read_text(encoding="utf-8")
+    # kimi injects ALL hook stdout, so the snippet wires every event (D1)
+    for ev in ("SessionStart", "PreCompact", "PostCompact", "UserPromptSubmit"):
+        assert f'event = "{ev}"' in text, ev
+    assert "[[hooks]]" in text
+    assert ".clauderizer/hook." in text                 # the real wrapper command
+    assert "clauderizer-mcp" in text or "clauderizer.hook" in text or ".mcp.json" in text
+
+
+def test_kimi_setup_is_non_destructive_and_repo_local(empty_python_repo):
+    from clauderizer.paths import resolve
+    init(empty_python_repo, spawn_test=False)
+    setup = resolve(empty_python_repo).kimi_setup
+    # the artifact lives under the repo's .clauderizer/, never the global config
+    assert setup.parent.name == ".clauderizer"
+    assert empty_python_repo in setup.parents
+    # the non-destructive promise (robust to line-wrapping in the prose)
+    text = " ".join(setup.read_text(encoding="utf-8").split())
+    assert "NOT applied automatically" in text
+    assert "never edits your global `~/.kimi/config.toml`" in text
+    # init created no kimi config anywhere in the repo tree
+    assert not (empty_python_repo / ".kimi").exists()

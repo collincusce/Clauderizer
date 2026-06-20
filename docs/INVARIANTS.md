@@ -26,3 +26,8 @@ The SessionStart hook never blocks a session — it always exits 0.
 **Introduced by**: D-015
 
 Discipline gates (clarify/open-items, exit-criteria, analyze-against-invariants) are advisory and judgment-based: they surface findings in tool results for the agent to act on, and MUST NOT hard-block a mutation or phase transition, nor introduce an enable/disable config flag. The engine surfaces candidates; the agent decides.
+
+### INVARIANT-06 — Every hook event handler is read-only and always exits 0 — a memory tool never mutates docs or blocks a session from inside a hook. Generalizes INVARIANT-04 from SessionStart to all dispatched events (SessionStart, UserPromptSubmit, PreCompact, PostCompact, ...).
+**Introduced by**: D-025
+
+Every hook event handler is read-only and always exits 0 — a memory tool never mutates docs or blocks a session from inside a hook. Generalizes INVARIANT-04 from SessionStart to all dispatched events (SessionStart, UserPromptSubmit, PreCompact, PostCompact, ...).

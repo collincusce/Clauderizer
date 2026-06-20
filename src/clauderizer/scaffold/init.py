@@ -248,10 +248,15 @@ def init(
         report.note("gameplan", r["dir"], bool(r["files_changed"]))
 
     # 8. CLAUDE.md stanza (marker block; preserves the rest)
-    changed = writer.upsert_marker_block(
-        paths.claude_md, "clauderizer", assets.template_text("claude_stanza.md")
-    )
+    stanza = assets.template_text("claude_stanza.md")
+    changed = writer.upsert_marker_block(paths.claude_md, "clauderizer", stanza)
     report.note("CLAUDE.md", paths.claude_md, changed)
+
+    # 8b. AGENTS.md stanza — the SAME host-agnostic marker block, so kimi
+    # (KIMI_AGENTS_MD) and any other AGENTS.md-aware harness get Clauderizer too
+    # (D2). One source stanza for both files means they cannot drift (L-16).
+    changed = writer.upsert_marker_block(paths.agents_md, "clauderizer", stanza)
+    report.note("AGENTS.md", paths.agents_md, changed)
 
     # 9. install skills (engine-owned: refresh)
     for skill_dir in assets.skill_dirs():
@@ -306,6 +311,14 @@ def init(
     changed = _register_hook(root / ".claude" / "settings.json", registered_hook)
     report.note("hook", root / ".claude" / "settings.json", changed)
 
+    # 11b. kimi-code setup snippet (D2): the [[hooks]] entries + MCP guidance the
+    # user merges into their kimi config. Non-destructive — a project file under
+    # .clauderizer/, never the global ~/.kimi/config.toml. kimi injects EVERY
+    # hook's stdout, so all four events are wired here (vs Claude Code's two — D1).
+    changed = _rewrite_if_diff(paths.kimi_setup,
+                               _render_kimi_setup(registered_hook, mcp_cmd))
+    report.note("kimi-setup", paths.kimi_setup, changed)
+
     # 12. gitignore the disposable cache; reindex
     changed = _ensure_gitignore(root / ".gitignore", ".clauderizer/index.json")
     report.note(".gitignore", root / ".gitignore", changed)
@@ -359,7 +372,18 @@ def _register_mcp(mcp_json: Path, mcp_cmd: list[str]) -> bool:
     return True
 
 
-def _register_hook(settings_json: Path, hook_argv: list[str]) -> bool:
+# The Claude Code hook events the wrapper is registered under (D-025/D1). The
+# SAME wrapper command serves both: SessionStart is the cold-start digest (and
+# re-fires with source=compact, so it also covers post-compaction re-injection);
+# UserPromptSubmit runs the analyze gate per prompt. PreCompact/PostCompact are
+# intentionally absent — Claude Code does not inject their stdout into context
+# (D1), so registering them would be dead wiring. The engine's dispatcher
+# implements every event regardless of which a host fires.
+HOOK_EVENTS = ("SessionStart", "UserPromptSubmit")
+
+
+def _register_hook(settings_json: Path, hook_argv: list[str],
+                   events: tuple[str, ...] = HOOK_EVENTS) -> bool:
     data = {}
     if settings_json.exists():
         try:
@@ -368,22 +392,24 @@ def _register_hook(settings_json: Path, hook_argv: list[str]) -> bool:
             data = {}
     hook_cmd = " ".join(hook_argv)
     hooks = data.setdefault("hooks", {})
-    sessionstart = hooks.get("SessionStart", [])
 
-    # Drop ANY existing clauderizer hook entry — direct entry-point wiring or
-    # the D4 wrapper (hosts.is_hook_command is the shared matcher) — not just
-    # an exact-string match. This makes re-running init with a changed
-    # invocation (e.g. uvx -> venv path -> wrapper) REPLACE the hook instead of
-    # appending a duplicate. Non-clauderizer hooks are preserved untouched.
-    cleaned: list[dict] = []
-    for group in sessionstart:
-        kept = [h for h in group.get("hooks", []) if not hosts.is_hook_command(h.get("command", ""))]
-        if kept:
-            cleaned.append({**group, "hooks": kept})
-        elif not group.get("hooks"):
-            cleaned.append(group)  # preserve unrelated empty groups verbatim
-    cleaned.append({"hooks": [{"type": "command", "command": hook_cmd}]})
-    hooks["SessionStart"] = cleaned
+    for event in events:
+        # Drop ANY existing clauderizer hook entry — direct entry-point wiring or
+        # the D4 wrapper (hosts.is_hook_command is the shared matcher) — not just
+        # an exact-string match. This makes re-running init with a changed
+        # invocation (e.g. uvx -> venv path -> wrapper) REPLACE the hook instead
+        # of appending a duplicate. Non-clauderizer hooks under this event are
+        # preserved untouched.
+        cleaned: list[dict] = []
+        for group in hooks.get(event, []):
+            kept = [h for h in group.get("hooks", [])
+                    if not hosts.is_hook_command(h.get("command", ""))]
+            if kept:
+                cleaned.append({**group, "hooks": kept})
+            elif not group.get("hooks"):
+                cleaned.append(group)  # preserve unrelated empty groups verbatim
+        cleaned.append({"hooks": [{"type": "command", "command": hook_cmd}]})
+        hooks[event] = cleaned
 
     new_text = json.dumps(data, indent=2) + "\n"
     if settings_json.exists() and settings_json.read_text(encoding="utf-8") == new_text:
@@ -391,6 +417,66 @@ def _register_hook(settings_json: Path, hook_argv: list[str]) -> bool:
     settings_json.parent.mkdir(parents=True, exist_ok=True)
     settings_json.write_text(new_text, encoding="utf-8")
     return True
+
+
+# kimi injects every hook's stdout into context (unlike Claude Code, which drops
+# PreCompact/PostCompact stdout — D1), so the generated snippet wires all four
+# events. The same wrapper command serves each; the engine dispatches on the
+# payload's hook_event_name and stays silent when it has nothing to add.
+_KIMI_HOOK_EVENTS = ("SessionStart", "PreCompact", "PostCompact", "UserPromptSubmit")
+
+
+def _render_kimi_setup(hook_argv: list[str], mcp_argv: list[str]) -> str:
+    """The non-destructive kimi-code wiring guide written to .clauderizer/
+    kimi-setup.md (D2). TOML literal strings (single quotes) carry the commands
+    verbatim so Windows backslashes are not read as escapes."""
+    hook_cmd = " ".join(hook_argv)
+    mcp_cmd = " ".join(mcp_argv)
+    hook_blocks = "\n\n".join(
+        f"[[hooks]]\nevent = \"{ev}\"\ncommand = '{hook_cmd}'"
+        for ev in _KIMI_HOOK_EVENTS
+    )
+    return f"""# Clauderizer × kimi-code setup
+
+Clauderizer is host-agnostic — the engine, the MCP server, and the hook digest
+all work under kimi-code. This file is generated by `clauderize init` (rewritten
+on every run; safe to delete). It is NOT applied automatically: Clauderizer never
+edits your global `~/.kimi/config.toml`. Copy what you need.
+
+## 1. Skills — already working
+
+kimi-code reads `.claude/skills/` (its "brand group"), so the Clauderizer skills
+this repo ships are already available in kimi. Nothing to do.
+
+## 2. AGENTS.md — already written
+
+`clauderize init` injects the Clauderizer stanza into `AGENTS.md` (inside a
+`<!-- clauderizer -->` marker block), which kimi loads via `KIMI_AGENTS_MD`.
+
+## 3. Hooks — add to `~/.kimi/config.toml`
+
+kimi adds a hook's stdout to context on exit 0 for every event, so all four are
+useful here (Claude Code drops PreCompact/PostCompact stdout, so it wires only
+SessionStart + UserPromptSubmit). One command serves all four — the engine routes
+on `hook_event_name`:
+
+```toml
+{hook_blocks}
+```
+
+## 4. MCP server — register the `clauderizer` server
+
+This repo's `.mcp.json` already defines the server command:
+
+```
+{mcp_cmd}
+```
+
+Register it with kimi (`kimi mcp`, or `/mcp-config` in a session). kimi's
+MCP-server TOML schema is not documented at the time of writing (tracked as
+gameplan open item O-01), so this step is manual — add an equivalent entry to
+your kimi MCP configuration pointing at that command.
+"""
 
 
 def _ensure_gitignore(gitignore: Path, line: str) -> bool:

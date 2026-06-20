@@ -2,6 +2,58 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.14.0] — 2026-06-19
+
+**kimi-code lifecycle integration** (gameplan 2026-06-19-kimi-lifecycle-integration):
+Clauderizer's durable memory now surfaces at more lifecycle points than cold start,
+and `init` can target AGENTS.md-aware hosts (kimi-code, Codex) — adapting the hook
+taxonomy that kimi-code and Claude Code share. Everything new is read-only and
+exits 0 (INVARIANT-06), with no enable/disable flag (INVARIANT-05); the core stays
+stdlib-only.
+
+### Added — an event-dispatching hook (D-025)
+
+- **`clauderizer-hook` now dispatches on `hook_event_name` (read from stdin)** to
+  read-only handlers, falling back to the SessionStart digest on empty/garbage/non-
+  object stdin — the exact shape the hardened no-arg digest probe sends, so the
+  H-08/H-09 legs are untouched. `--version`/`--help` still answer the identity probe
+  before any stdin or repo read. New handlers:
+  - **UserPromptSubmit** runs the analyze gate (D-016/D-018) against the prompt and
+    surfaces the most relevant recorded decisions/invariants + one-hop graph gaps —
+    a pointer into canonical memory (D-013), silent when nothing is relevant.
+  - **PreCompact** reminds the agent to record anything discovered-but-unsaved before
+    context is summarized; **PostCompact** re-injects the digest so the workflow
+    survives compaction (the kimi path — Claude Code instead re-fires SessionStart
+    with `source=compact`, D1).
+  - **SessionStart** is now source-aware (frames a post-compaction / post-clear
+    re-entry). `sessionstart.py` became a back-compat shim; the entry point now
+    targets `clauderizer.hook.dispatch:main`.
+
+### Added — Claude Code wiring of the new events
+
+- **`clauderize init` registers `UserPromptSubmit`** alongside `SessionStart` (same
+  wrapper command), idempotently, preserving foreign hooks per event and migrating
+  the pre-0.14 SessionStart-only shape. PreCompact/PostCompact are deliberately not
+  registered on Claude Code — it drops their stdout (D1).
+
+### Added — AGENTS.md stanza + a non-destructive kimi host target (D2)
+
+- **`init` injects the same Clauderizer stanza into `AGENTS.md`** (one source, so it
+  cannot drift from `CLAUDE.md`), so kimi-code (`KIMI_AGENTS_MD`) and other
+  AGENTS.md-aware harnesses get the memory pointer. Clauderizer's skills already work
+  in kimi-code, which reads `.claude/skills/`.
+- **`init` emits `.clauderizer/kimi-setup.md`** — a non-destructive guide with
+  `[[hooks]]` entries for all four events (kimi-code injects every hook's stdout) and
+  MCP-registration guidance. It never edits the global `~/.kimi/config.toml`.
+  `subsys.scaffold` 0.6.0 → 0.7.0.
+
+### Notes
+
+- New project decision **D-025** and **INVARIANT-06** (every hook handler is read-only
+  and exits 0, generalizing INVARIANT-04 to all events). kimi-code's MCP-server TOML
+  schema is undocumented upstream (tracked as gameplan open item O-01), so the kimi
+  MCP step is guided rather than auto-wired.
+
 ## [0.13.0] — 2026-06-19
 
 **Headroom-borrowed ideas** (gameplan 2026-06-19-headroom-borrowed-ideas): three

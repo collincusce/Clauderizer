@@ -65,6 +65,20 @@ class RepoPaths:
         return self.root / "CLAUDE.md"
 
     @property
+    def agents_md(self) -> Path:
+        """The cross-harness instructions file (kimi reads it via KIMI_AGENTS_MD;
+        Codex and others honor it too). init injects the same marker-block stanza
+        as CLAUDE.md here, so AGENTS.md-aware hosts get Clauderizer too (D2)."""
+        return self.root / "AGENTS.md"
+
+    @property
+    def kimi_setup(self) -> Path:
+        """The generated, non-destructive kimi-code wiring guide (D2): the
+        [[hooks]] snippet + MCP guidance the user merges into their own kimi
+        config. init never edits the global ~/.kimi/config.toml itself."""
+        return self.clauderizer_dir / "kimi-setup.md"
+
+    @property
     def mcp_json(self) -> Path:
         return self.root / ".mcp.json"
 

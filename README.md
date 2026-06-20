@@ -40,7 +40,7 @@ hope:
 
 | Goal | How |
 |---|---|
-| 🔎 **Discoverable** | Self-describing MCP tools + a SessionStart hook that injects current status into context. No "read these 7 files in this order" ritual. |
+| 🔎 **Discoverable** | Self-describing MCP tools + lifecycle hooks (SessionStart digest, analyze-on-prompt, compaction-survival) that inject status into context — in Claude Code and, via `AGENTS.md`, kimi-code. No "read these 7 files in this order" ritual. |
 | 🎛️ **Configurable** | A real `pet` / `standard` / `saas` size dial and host-language profiles — *data*, not prose advice. |
 | 🤖 **Agentic** | Cascade, pre-flight, and handoff assembly are real tool calls — not instructions the agent has to remember to run. |
 | 📦 **Drop-in** | One command clauderizes any repo, in any language. |
@@ -249,13 +249,15 @@ docs is `uvx --from clauderizer clauderize <cmd>` until you install properly.
 ```
 your-repo/
 ├── CLAUDE.md                    # a Clauderizer stanza (between markers — your text is preserved)
+├── AGENTS.md                    # the same stanza for AGENTS.md-aware hosts (kimi-code, Codex, …)
 ├── .mcp.json                    # registers the clauderizer MCP server
 ├── .claude/
-│   ├── settings.json            # SessionStart hook (registers the breadcrumb wrapper)
+│   ├── settings.json            # SessionStart + UserPromptSubmit hooks (the breadcrumb wrapper)
 │   └── skills/clauderizer-*/    # six workflow skills (/do-phase, /cascade, /record, …)
 ├── .clauderizer/
 │   ├── config.toml              # size dial + host profile + session host + active gameplan
 │   ├── hook.sh                  # breadcrumb hook wrapper (hook.cmd on native Windows)
+│   ├── kimi-setup.md            # non-destructive kimi-code wiring guide ([[hooks]] + MCP)
 │   ├── profile.lock.toml        # per-project test/build/lint commands (editable override)
 │   └── index.json               # disposable graph cache (gitignored)
 └── docs/                        # the canonical markdown memory
