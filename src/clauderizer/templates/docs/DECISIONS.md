@@ -1,7 +1,10 @@
 # Decisions
 
 Project-wide architectural decision records (ADRs). Append-only. Numbered `D-NNN`.
-Superseded decisions stay in the record with a `Status: superseded` note.
+Each entry carries a `**Status**` (`active` | `superseded` | `deprecated`). When a
+decision supersedes another, the predecessor stays in the record — annotated in place
+with a `**Superseded by**: D-NNN` back-ref and `**Status**: superseded` — so the
+lifecycle is navigable and the current decision is the one that surfaces.
 
 ## Decisions
 

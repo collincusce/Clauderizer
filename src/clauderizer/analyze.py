@@ -23,6 +23,10 @@ from .paths import RepoPaths
 _ENTRY_RE = re.compile(r"^###\s+([A-Z][A-Z0-9]*-\d+)\s+—\s+(.+)$")
 _ID_RE = re.compile(r"\b([A-Z][A-Z0-9]*-\d+)\b")
 _WORD_RE = re.compile(r"[a-z0-9]+")
+# A decision's lifecycle status (D-NNN gain ``**Status**: active|superseded|deprecated``
+# in mutations.add_decision). The first word after the label is the state; the trailing
+# ``(date)``/``by D-NNN`` annotation is ignored. Absent -> treated as active.
+_STATUS_RE = re.compile(r"^\s*\*\*Status\*\*\s*:\s*([a-z]+)", re.M | re.I)
 
 # Drop ADR boilerplate (in every entry) + very common words, so overlap reflects
 # the distinctive content, not the template.
@@ -44,8 +48,25 @@ def _tokens(text: str) -> set[str]:
             if w not in _STOP and (len(w) >= 4 or any(c.isdigit() for c in w))}
 
 
+def _entry_status(body: str) -> str:
+    """The lifecycle status parsed from an entry body's ``**Status**`` line.
+
+    Decisions carry ``active`` | ``superseded`` | ``deprecated`` (mutations.add_decision,
+    Phase 4 supersession lifecycle). Anything without the line — older entries,
+    invariants — is ``active`` (the rank-neutral default), so the demotion only ever
+    affects entries that explicitly declare a non-active status.
+    """
+    m = _STATUS_RE.search(body)
+    return m.group(1).lower() if m else "active"
+
+
 def parse_entries(doc_text: str, section: str) -> list[dict]:
-    """Parse ``### ID — title`` blocks under ``section`` into ``{id, title, body}``."""
+    """Parse ``### ID — title`` blocks under ``section`` into ``{id, title, body, status}``.
+
+    ``status`` is the entry's lifecycle state (``active`` by default; ``superseded`` /
+    ``deprecated`` once a back-ref is written) — the signal :func:`rank_relevant` uses
+    to keep a stale decision from outranking its replacement.
+    """
     body = sections.get_section(doc_text, section) or ""
     entries: list[dict] = []
     cur: dict | None = None
@@ -59,15 +80,31 @@ def parse_entries(doc_text: str, section: str) -> list[dict]:
             cur["body"] += ln + "\n"  # don't fold a stray non-entry heading into the body
     if cur:
         entries.append(cur)
+    for e in entries:
+        e["status"] = _entry_status(e["body"])
     return entries
+
+
+# Statuses that demote a decision below an active peer of equal lexical overlap
+# (Phase 4 supersession lifecycle): a superseded/deprecated decision is stale, so
+# it must not be handed to the agent as current when its replacement ties it.
+_STALE_STATUSES = {"superseded", "deprecated"}
 
 
 def rank_relevant(query: str, entries: list[dict], k: int = 5,
                   exclude_ids: tuple[str, ...] = ()) -> list[dict]:
     """Rank ``entries`` by keyword + entity-id overlap with ``query``.
 
-    Returns the top ``k`` with a positive score: ``{id, title, score}``. An
-    explicit id mention in the query (e.g. "supersedes D-007") boosts that entry.
+    Returns the top ``k`` with a positive score: ``{id, title, score}`` (plus a
+    ``status`` key on any entry that is not ``active``, so a surfaced stale entry is
+    visibly flagged). An explicit id mention in the query (e.g. "supersedes D-007")
+    boosts that entry.
+
+    A stale decision (``status`` superseded/deprecated) is demoted **below an active
+    one of equal lexical overlap** via a stable secondary sort key — never by
+    distorting the reported ``score`` (so lexical relevance stays honest). This is
+    what keeps a superseded decision from outranking its replacement when they tie on
+    query overlap (the knowledge-updates contradiction the eval harness measures).
     """
     qtok = _tokens(query)
     qids = set(_ID_RE.findall(query))
@@ -77,8 +114,16 @@ def rank_relevant(query: str, entries: list[dict], k: int = 5,
             continue
         score = len(qtok & _tokens(f"{e['title']} {e['body']}")) + (3 if e["id"] in qids else 0)
         if score > 0:
-            scored.append({"id": e["id"], "title": e["title"], "score": score})
-    scored.sort(key=lambda x: (-x["score"], x["id"]))
+            status = str(e.get("status") or "active").lower()
+            item = {"id": e["id"], "title": e["title"], "score": score}
+            if status != "active":
+                item["status"] = status  # annotate the surfaced stale entry
+            scored.append(item)
+    # Secondary key: stale entries sort after active ones at equal score; id breaks
+    # the remaining ties (deterministic). Score is the primary key, untouched.
+    scored.sort(key=lambda x: (-x["score"],
+                               1 if x.get("status") in _STALE_STATUSES else 0,
+                               x["id"]))
     return scored[:k]
 
 

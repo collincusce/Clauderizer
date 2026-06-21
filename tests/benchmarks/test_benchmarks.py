@@ -109,14 +109,15 @@ def test_harness_detects_ranker_regression():
 
 # --- engine-level abilities: knowledge-updates + abstention -----------------
 
-def test_supersession_contradiction_is_visible_at_baseline(temp_repo):
+def test_supersession_contradiction_is_resolved(temp_repo):
     paths, _ = _ctx(temp_repo)
     probes = corpora.seed_decisions(paths)
     res = harness.run_engine_probes(paths, probes, k=5)
-    # Baseline weakness the harness must SEE: the flat-status model lets the
-    # superseded decision outrank the current one. Phase 4's target is 0.0.
-    assert res["contradiction_rate"] > 0.0
-    # The current decision is still retrieved (recall intact); only ordering is wrong.
+    # The weakness the harness was built to SEE — the flat-status model let the
+    # superseded decision outrank the current one (baseline 1.0) — is now closed by
+    # Phase 4's supersession lifecycle (back-ref + status + ranker demotion): 0.0.
+    assert res["contradiction_rate"] == 0.0
+    # The current decision is still retrieved (recall intact); ordering is now right too.
     assert res["recall_at_k"] == 1.0
     # An absent topic surfaces nothing — deterministic abstention.
     assert res["abstention_rate"] == 1.0

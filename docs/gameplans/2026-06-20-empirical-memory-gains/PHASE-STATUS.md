@@ -11,7 +11,7 @@
 | 1 | Context-rot trims (evidence-gated removal) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | DAG integrity validation | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Edge-suggester (missing-edge surfacing) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Decision supersession back-refs and lifecycle | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Decision supersession back-refs and lifecycle | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bitemporal valid-time (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Persistent steering doc (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Close-out: consolidate, measure, post-mortem | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
@@ -44,6 +44,12 @@ phase2_result: src/clauderizer/graph/validate.py: deterministic dangling-edge + 
 
 ```
 phase3_result: KEPT. analyze.suggest_edges surfaces MISSING depends_on edges from distinctive-token overlap (>=2, boilerplate stripped) - the structural complement of D-018 (which walks EXISTING edges). Gate: precision=0.75, recall=1.0 on a labeled fixture that INCLUDES a generic-collision false positive (bar >=0.70). Advisory: extends cz_analyze result with suggested_edges (no new tool; test_ops parity green); never auto-writes an edge. Rejected-pair memory = not_related_to frontmatter (symmetric, round-trips via cz_upsert_entity). +11 tests; suite 438. Honest caveat: 0.75 is fixture-measured; real-world precision varies; advisory + agent-confirm + reject-memory absorbs false positives.
+```
+
+### Phase 4 Outputs
+
+```
+phase4_result: Decision supersession lifecycle SHIPPED. add_decision(supersedes=X) now writes a 'Superseded by' back-ref + flips X's Status to superseded (idempotent; append-only - X is annotated, never deleted, INVARIANT-03) and stamps the new decision Status: active + date. analyze demotes superseded/deprecated below active peers via a secondary sort key (score untouched). GATE: harness supersession contradiction_rate 1.0 -> 0.0, measured via the UNCHANGED corpora/harness (only the Phase-0 baseline-witness test flipped to assert the now-closed gap; verified corpora.py/harness.py/metrics.py untouched). +6 tests; suite 444 green.
 ```
 
 ## Corrections Log

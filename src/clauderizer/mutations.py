@@ -123,19 +123,34 @@ def add_decision(
         _ensure_doc(path, "DECISIONS")
         prefix, width = "D", 3  # project-wide: D-001
 
+    today = _today(today)
     text = writer.full_text(path)
     new_id = next_numbered_id(text, prefix, sep=("" if width == 0 else "-"), width=width)
     sup = f"\n**Supersedes**: {supersedes}" if supersedes else ""
     ev = f"\n**Evidence**: {evidence.strip()}" if evidence and evidence.strip() else ""
+    # A new decision is born active (Phase 4 supersession lifecycle): the Status field
+    # makes a decision's place in its lifecycle machine-readable, so the analyze ranker
+    # can keep a superseded predecessor from outranking it.
     entry = (
         f"### {new_id} — {title}\n\n"
         f"**Context**: {context}\n"
         f"**Decision**: {decision}\n"
-        f"**Consequences**: {consequences}{sup}{ev}"
+        f"**Consequences**: {consequences}{sup}{ev}\n"
+        f"**Status**: active ({today})"
     )
     writer.append_to_section(path, "Decisions", entry)
     result = {"ok": True, "id": new_id, "path": str(path),
               "files_changed": [str(path)], "summary": f"added decision {new_id}"}
+    # Bidirectional supersession (INVARIANT-03: memory is never deleted — the
+    # predecessor is annotated IN PLACE, never removed). Forward-only "Supersedes"
+    # leaves a stale decision with no pointer to its replacement; this writes the
+    # back-ref + flips the predecessor's Status to superseded so it is navigable and
+    # demoted. Best-effort and idempotent — surfaces only when the target is found.
+    if supersedes:
+        back = _mark_superseded(path, "Decisions", supersedes.strip(), new_id, today)
+        if back:
+            result["superseded"] = supersedes.strip()
+            result["summary"] += f" (supersedes {supersedes.strip()})"
     # Analyze gate (D-016): surface related / possibly-superseded existing entries so a
     # conflict is noticed at write time. Best-effort, judgment-based, never blocks.
     try:
@@ -153,6 +168,52 @@ def add_decision(
     except Exception:
         pass
     return result
+
+
+def _mark_superseded(path: Path, section: str, target_id: str, new_id: str,
+                     today: str) -> bool:
+    """Annotate decision ``target_id`` in place as superseded by ``new_id`` (D-018 / Phase 4).
+
+    Append-only safe (INVARIANT-03: memory is never deleted): the predecessor entry
+    is never removed — its block gains a ``**Superseded by**: <new_id> (<date>)``
+    pointer and its ``**Status**`` line is flipped to ``superseded (<date>)``. Both
+    fields are *upserted* (replaced if already present), so re-applying the same
+    supersession is a no-op — idempotent. Returns ``True`` if the block was found and
+    written, ``False`` if ``target_id`` is not an entry in ``section`` (advisory: the
+    caller treats a miss as "nothing to back-ref", never an error).
+    """
+    body = sections.get_section(writer.full_text(path), section)
+    if body is None:
+        return False
+    lines = body.splitlines()
+    anchor = f"### {target_id} "
+    start = next((i for i, ln in enumerate(lines) if ln.startswith(anchor)), None)
+    if start is None:
+        return False
+    end = next((j for j in range(start + 1, len(lines)) if lines[j].startswith("### ")),
+               len(lines))
+    block = lines[start:end]
+    status_line = f"**Status**: superseded ({today})"
+    backref_line = f"**Superseded by**: {new_id} ({today})"
+    new_block, did_status, did_backref = [], False, False
+    for ln in block:
+        st = ln.strip()
+        if st.startswith("**Status**:"):
+            new_block.append(status_line); did_status = True
+        elif st.startswith("**Superseded by**:"):
+            new_block.append(backref_line); did_backref = True
+        else:
+            new_block.append(ln)
+    if not did_status:
+        # No Status line yet (older entry): append one, after the back-ref.
+        new_block.append(status_line)
+    if not did_backref:
+        # Insert the back-ref directly before the Status line for a stable field order.
+        si = next((i for i, ln in enumerate(new_block)
+                   if ln.strip().startswith("**Status**:")), len(new_block))
+        new_block.insert(si, backref_line)
+    new_body = "\n".join(lines[:start] + new_block + lines[end:])
+    return writer.upsert_section(path, section, new_body)
 
 
 @_locked

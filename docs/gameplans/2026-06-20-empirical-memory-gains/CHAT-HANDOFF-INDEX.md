@@ -1,7 +1,7 @@
 # Chat Handoff Index — Empirical memory gains
 
 > Last updated: 2026-06-20
-> Status: Phase 4 ready
+> Status: Phase 5 ready
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Context-rot trims (evidence-gated removal) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | DAG integrity validation | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Edge-suggester (missing-edge surfacing) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Decision supersession back-refs and lifecycle | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Decision supersession back-refs and lifecycle | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bitemporal valid-time (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Persistent steering doc (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Close-out: consolidate, measure, post-mortem | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
@@ -58,6 +58,10 @@ Added src/clauderizer/graph/validate.py: deterministic dangling-edge + cycle (it
 
 Edge-suggester KEPT (precision 0.75 >= 0.70 bar, recall 1.0). analyze.suggest_edges proposes MISSING depends_on edges from distinctive-token overlap - the complement of D-018's existing-edge walk - surfaced advisorily via cz_analyze.suggested_edges (no new tool, parity green), never auto-writing. Rejected pairs persist as not_related_to frontmatter (symmetric, round-trips). The precision gate did its job: a naive id+type signal scored 0.103 (every entity shares subsys/subsystem), so the impl strips structural boilerplate; the fixture was then hardened with a generic-collision false positive to land an honest 0.75. +11 tests; suite 438 green. Orchestrator hardened the fixture and re-verified the number.
 
+### Phase 4 — completed 2026-06-20
+
+Decision supersession lifecycle: add_decision(supersedes=X) writes a bidirectional 'Superseded by' back-ref on X and flips X's Status to superseded (idempotent, append-only - X is annotated, never deleted), and stamps the new decision Status: active + date. analyze.rank_relevant demotes superseded/deprecated decisions below active peers of equal lexical score via a stable secondary sort key (the relevance score itself is untouched; the stale entry still surfaces, annotated, preserving the audit trail). GATE MET: the Phase 0 harness supersession contradiction_rate fell 1.0 -> 0.0, measured by the UNCHANGED corpora/harness (orchestrator confirmed via git diff that only the baseline-witness test flipped; the measurement core was not touched). +6 tests; suite 438->444 green.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -76,3 +80,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **3.** Semver-pin validation and structural-integrity validation are SEPARATE concerns: query.pin_violations deliberately skips a depends_on edge whose target is unknown (it cannot verify a semver it cannot find), so dangling edges fell through it silently for the life of the project. A graph needs a companion structural check (dangling targets + cycles) distinct from version-pin checks. Detect cycles with iterative Tarjan SCC, never recursive DFS, so a deep/long dependency chain cannot blow the stack. *(evidence: src/clauderizer/graph/query.py pin_violations (skips target is None); src/clauderizer/graph/validate.py; tests/test_dag_validity.py)*
 
 **4.** When measuring lexical similarity BETWEEN tracked entities (not query-to-entity), strip structural boilerplate FIRST: the id prefix (subsys./feat.), the type word (subsystem/feature), and scaffold placeholders are shared by every entity by construction, so naive overlap proposes every pair - measured: edge-suggester precision 0.103 with boilerplate vs 0.75-1.0 after stripping. Tokenize the id on ./- so the specific segment (invoice-ledger -> invoice, ledger) contributes but the prefix does not. This is the cross-entity analog of analyze._STOP dropping ADR template boilerplate, and a concrete instance of the over-retrieval finding (low-precision surfacing is net-negative noise). *(evidence: src/clauderizer/analyze.py suggest_edges / _ENTITY_STOP; tests/test_edge_suggester.py precision arc (0.103 naive -> 0.75 hardened fixture))*
+
+**5.** Demote a stale record by a stable SECONDARY sort key (tie-break), never by penalizing its relevance score. analyze.rank_relevant keeps lexical score as the untouched primary key and sorts superseded/deprecated decisions below an ACTIVE peer only at EQUAL score - driving the knowledge-updates contradiction rate 1.0->0 without distorting retrieval or hiding the audit trail (the superseded entry still surfaces, annotated). Status defaults to active for entries lacking the field, so the change is backward-compatible with every pre-existing decision/invariant. *(evidence: src/clauderizer/analyze.py rank_relevant (-score, stale_flag, id); tests/test_supersession.py; harness contradiction_rate 1.0->0.0)*

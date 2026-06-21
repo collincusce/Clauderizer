@@ -130,11 +130,11 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_add_decision writes a bidirectional superseded_by back-ref on the superseded decision
-- [ ] Decision status lifecycle (active/superseded/deprecated) and date fields are present and parsed
-- [ ] Knowledge-updates fixture: a 'current decision on X' query returns the non-stale entry
-- [ ] Measured stale-fact contradiction rate drops versus the flat-status baseline
-- [ ] Back-fill is append-only (no deletion); full suite green
+- [x] cz_add_decision writes a bidirectional superseded_by back-ref on the superseded decision
+- [x] Decision status lifecycle (active/superseded/deprecated) and date fields are present and parsed
+- [x] Knowledge-updates fixture: a 'current decision on X' query returns the non-stale entry
+- [x] Measured stale-fact contradiction rate drops versus the flat-status baseline
+- [x] Back-fill is append-only (no deletion); full suite green
 
 ### Phase 5: Bitemporal valid-time (must-earn)
 
