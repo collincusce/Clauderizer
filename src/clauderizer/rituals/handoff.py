@@ -144,6 +144,57 @@ def relevant_lesson_pointer(index_text: str, query: str,
     return "\n".join(out)
 
 
+# --- focused project-lesson injection (gameplan empirical-memory-gains, Phase 1)
+# The cumulative handoff carried ALL project lessons in full (measured: 87% of a
+# 3137-tok handoff = the 21 L-NN). A focused-vs-full agent-eval showed focused
+# top-k == full accuracy (5/6 each) at ~73% fewer tokens, with ranker recall@5 of
+# 100% (the answer lesson is always in the top-k). So under memory pressure the
+# handoff carries the top-k lessons most relevant to the phase + a pointer to the
+# canonical full set — focus, never a drop from canonical memory (reconciles
+# D-022: this is relevance-ranking + pointer-to-canonical, not tail truncation).
+_PROJECT_LESSON_NUM_RE = re.compile(r"^\*\*(L-\d+)\.\*\*\s*(.*)$")
+
+
+def _project_lesson_entries(lessons_text: str) -> list[dict]:
+    """Active ``L-NN`` lessons parsed for ranking, keeping the original markdown
+    line so the focused set re-renders byte-faithfully."""
+    sec = sections.get_section(lessons_text, "Lessons") or ""
+    entries: list[dict] = []
+    for line in sec.splitlines():
+        s = line.strip()
+        if not _PROJECT_LESSON_LINE.match(s) or not lesson_state.is_active(s):
+            continue
+        m = _PROJECT_LESSON_NUM_RE.match(s)
+        if m:
+            entries.append({"id": m.group(1), "title": m.group(2).strip(),
+                            "body": "", "line": line})
+    return entries
+
+
+def focused_project_lessons(lessons_text: str, query: str,
+                            k: int = RELEVANCE_K) -> tuple[str, int, int] | None:
+    """Top-``k`` project lessons most relevant to the phase, ranked, full text.
+
+    Returns ``(markdown, shown, total)`` when focusing applies (a real query AND
+    more than ``k`` active project lessons), else ``None`` so the caller renders
+    the full list unchanged (propagation-safe for small sets). The canonical set
+    always stays in ``docs/LESSONS.md``; this only changes what rides in the
+    handoff.
+    """
+    if not query or not query.strip():
+        return None
+    entries = _project_lesson_entries(lessons_text)
+    total = len(entries)
+    if total <= k:
+        return None
+    ranked = analyze.rank_relevant(query, entries, k=k)
+    by_id = {e["id"]: e["line"] for e in entries}
+    shown = [by_id[r["id"]] for r in ranked if r["id"] in by_id]
+    if not shown:
+        return None
+    return "\n".join(shown), len(shown), total
+
+
 # The engine owns only this marker-delimited region of a handoff file (D-008).
 # Everything outside it — agent enrichment — is preserved byte-for-byte when
 # the handoff is regenerated.
@@ -193,10 +244,13 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
     # Distilled project lessons (docs/LESSONS.md) ride along in every handoff,
     # across gameplans — that's what promotion buys (D-009).
     project_lessons_md, project_count = "", 0
+    project_focus = None
     lessons_doc = paths.doc("LESSONS")
     if lessons_doc.exists():
-        project_lessons_md, project_count = collect_project_lessons(
-            lessons_doc.read_text(encoding="utf-8"))
+        lessons_text = lessons_doc.read_text(encoding="utf-8")
+        project_lessons_md, project_count = collect_project_lessons(lessons_text)
+        project_focus = focused_project_lessons(
+            lessons_text, _phase_query(gameplan_text, phase_n))
 
     parts = [
         f"# Phase {phase_n} Handoff",
@@ -237,7 +291,20 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
         lessons_md,
         "",
     ]
-    if project_count:
+    if project_count and project_focus:
+        focused_md, shown, total = project_focus
+        parts += [
+            "## Project Lessons (most relevant to this phase)",
+            "",
+            f"_({shown} of {total} shown — ranked by keyword + entity-id overlap "
+            "with this phase, no ML. The full set is canonical in "
+            "`docs/LESSONS.md`; the handoff focuses under memory pressure without "
+            "dropping anything from canonical memory.)_",
+            "",
+            focused_md,
+            "",
+        ]
+    elif project_count:
         parts += [
             "## Project Lessons (distilled — survive across gameplans)",
             "",

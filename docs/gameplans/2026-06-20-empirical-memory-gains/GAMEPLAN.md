@@ -44,6 +44,13 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Consequences**: Phase 0 implements this harness; all feature phases reuse it for their gate.
 **Evidence**: LongMemEval ICLR 2025 (arxiv 2410.10813); repo xiaowu0162/longmemeval.
 
+### D4 — Handoff focuses project lessons under memory pressure (top-k ranked + pointer-to-canonical)
+
+**Context**: The cumulative handoff carried ALL project lessons in full — measured at 87% of a 3137-token handoff (2737 tok across 21 lessons), and the live status digest already warned 21 > 20. Research (lost-in-the-middle 2307.03172; focused>full, LongMemEval 2410.10813) plus a focused-vs-full agent-eval on the real lessons informed the change.
+**Decision**: When active project lessons exceed the relevance-pointer k, the handoff carries the top-k lessons most relevant to the phase (ranked, most-relevant first so they are not buried) plus a pointer to the canonical full set in docs/LESSONS.md, instead of dumping all. At or below k, the full list rides unchanged (propagation-safe for small sets).
+**Consequences**: Handoff cut 3137->1420 tok (55%); lesson payload 2737->994 (64%) at EQUAL agent-eval accuracy (focused 5/6 == full 5/6); ranker recall@5=100% so the relevant lesson is always present in the focused set. Reconciles D-022: this is relevance-ranking + pointer-to-canonical (nothing dropped from canonical memory), NOT the tail truncation D-022 rejected. Honest scope: the eval showed a TIE, not focused>full — the win is token-cost at held accuracy; active length-harm is expected only at larger scales.
+**Evidence**: _experiments/measure_baseline.py (handoff 3137->1420); _experiments/eval_focus.py + phase1-focus-eval workflow (focused 5/6 == full 5/6; recall@5 6/6); src/clauderizer/rituals/handoff.py focused_project_lessons; tests/test_handoff_focus.py
+
 ## Open Items
 
 _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Blockers and cross-phase questions — unresolved ones surface in cz_status and when a phase is completed.)_
@@ -77,11 +84,11 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Handoff and digest injection is focused (ranked top-k, front-loaded), not a full dump
-- [ ] Benchmark shows injected-token reduction versus the captured baseline corpus
-- [ ] Focused-vs-full agent-eval: accuracy on memory-dependent questions does not drop (ideally rises)
-- [ ] Buried-fact position fixture passes (a critical entity is not placed mid-context)
-- [ ] Full suite still green (400-test baseline preserved)
+- [x] Handoff and digest injection is focused (ranked top-k, front-loaded), not a full dump
+- [x] Benchmark shows injected-token reduction versus the captured baseline corpus
+- [x] Focused-vs-full agent-eval: accuracy on memory-dependent questions does not drop (ideally rises)
+- [x] Buried-fact position fixture passes (a critical entity is not placed mid-context)
+- [x] Full suite still green (400-test baseline preserved)
 
 ### Phase 2: DAG integrity validation
 
