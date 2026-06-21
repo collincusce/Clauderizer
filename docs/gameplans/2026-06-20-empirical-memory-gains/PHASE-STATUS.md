@@ -12,7 +12,7 @@
 | 2 | DAG integrity validation | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Edge-suggester (missing-edge surfacing) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Decision supersession back-refs and lifecycle | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Bitemporal valid-time (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Bitemporal valid-time (must-earn) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Persistent steering doc (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Close-out: consolidate, measure, post-mortem | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 
@@ -50,6 +50,12 @@ phase3_result: KEPT. analyze.suggest_edges surfaces MISSING depends_on edges fro
 
 ```
 phase4_result: Decision supersession lifecycle SHIPPED. add_decision(supersedes=X) now writes a 'Superseded by' back-ref + flips X's Status to superseded (idempotent; append-only - X is annotated, never deleted, INVARIANT-03) and stamps the new decision Status: active + date. analyze demotes superseded/deprecated below active peers via a secondary sort key (score untouched). GATE: harness supersession contradiction_rate 1.0 -> 0.0, measured via the UNCHANGED corpora/harness (only the Phase-0 baseline-witness test flipped to assert the now-closed gap; verified corpora.py/harness.py/metrics.py untouched). +6 tests; suite 444 green.
+```
+
+### Phase 5 Outputs
+
+```
+phase5_result: PARKED (no code shipped). Bitemporal valid-time cannot beat Phase 4: the contradiction-rate gate is already at its 0.0 floor, valid!=transaction time is irrelevant for project decisions (effective when made), and as-of queries have no demonstrated need while costing always-injected schema fields (anti D-027). Evidence-based must-earn park per D2.
 ```
 
 ## Corrections Log

@@ -51,6 +51,14 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Consequences**: Handoff cut 3137->1420 tok (55%); lesson payload 2737->994 (64%) at EQUAL agent-eval accuracy (focused 5/6 == full 5/6); ranker recall@5=100% so the relevant lesson is always present in the focused set. Reconciles D-022: this is relevance-ranking + pointer-to-canonical (nothing dropped from canonical memory), NOT the tail truncation D-022 rejected. Honest scope: the eval showed a TIE, not focused>full — the win is token-cost at held accuracy; active length-harm is expected only at larger scales.
 **Evidence**: _experiments/measure_baseline.py (handoff 3137->1420); _experiments/eval_focus.py + phase1-focus-eval workflow (focused 5/6 == full 5/6; recall@5 6/6); src/clauderizer/rituals/handoff.py focused_project_lessons; tests/test_handoff_focus.py
 
+### D5 — Bitemporal valid-time PARKED - no measurable gain over Phase 4's dated supersession lifecycle
+
+**Context**: Phase 5 was a must-earn candidate (D2): implement bitemporal valid_from/valid_until + as-of queries, keep ONLY if it beats Phase 4's back-refs+status on contradiction-rate or as-of correctness. Research flagged the schema as sound (ADBIS 2025) but its benefit over a simple superseded_by back-ref as unproven (Graphiti efficacy refuted 1-2).
+**Decision**: PARK bitemporal; ship no code. Phase 4's dated supersession lifecycle (superseded_by back-ref + Status active/superseded + dates + ranker demotion) already drove the knowledge-updates contradiction_rate to 0.0 - a floor bitemporal cannot beat. The second time axis (valid-time != transaction-time) addresses backdated facts, which do not arise in project-scoped decision memory (a decision is effective when made). As-of/time-travel queries are speculative with no demonstrated agent need, and always-present valid_from/valid_until fields would add injected-context weight conflicting with D-027 (trim-first).
+**Consequences**: Decision memory keeps the simpler, sufficient Phase 4 model. Revisit only if a concrete as-of query need emerges with a measured benefit. A disciplined, evidence-based park is a successful must-earn outcome (D2), not a failure.
+**Evidence**: Phase 4 contradiction_rate 1.0->0.0 (PHASE-STATUS output phase4_result); research-2 caveat (ADBIS schema sound, Graphiti efficacy refuted); D-027 trim-first
+**Status**: active (2026-06-20)
+
 ## Open Items
 
 _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Blockers and cross-phase questions — unresolved ones surface in cz_status and when a phase is completed.)_
@@ -148,8 +156,8 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 **Exit criteria**:
 - [ ] valid_from/valid_until plus recorded-at fields parse deterministically; as-of query implemented
 - [ ] As-of-query correctness fixture passes
-- [ ] Measured contradiction-rate / as-of benefit EXCEEDS Phase 4 back-refs alone, else PARK with a recorded finding
-- [ ] Keep-or-park decision recorded with the measured delta
+- [x] Measured contradiction-rate / as-of benefit EXCEEDS Phase 4 back-refs alone, else PARK with a recorded finding
+- [x] Keep-or-park decision recorded with the measured delta
 
 ### Phase 6: Persistent steering doc (must-earn)
 

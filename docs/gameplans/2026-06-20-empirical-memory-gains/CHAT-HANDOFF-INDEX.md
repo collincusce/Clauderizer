@@ -1,7 +1,7 @@
 # Chat Handoff Index — Empirical memory gains
 
 > Last updated: 2026-06-20
-> Status: Phase 5 ready
+> Status: Phase 6 ready
 
 ## How This Works
 
@@ -34,7 +34,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 2 | DAG integrity validation | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Edge-suggester (missing-edge surfacing) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Decision supersession back-refs and lifecycle | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Bitemporal valid-time (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Bitemporal valid-time (must-earn) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Persistent steering doc (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Close-out: consolidate, measure, post-mortem | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 
@@ -62,12 +62,18 @@ Edge-suggester KEPT (precision 0.75 >= 0.70 bar, recall 1.0). analyze.suggest_ed
 
 Decision supersession lifecycle: add_decision(supersedes=X) writes a bidirectional 'Superseded by' back-ref on X and flips X's Status to superseded (idempotent, append-only - X is annotated, never deleted), and stamps the new decision Status: active + date. analyze.rank_relevant demotes superseded/deprecated decisions below active peers of equal lexical score via a stable secondary sort key (the relevance score itself is untouched; the stale entry still surfaces, annotated, preserving the audit trail). GATE MET: the Phase 0 harness supersession contradiction_rate fell 1.0 -> 0.0, measured by the UNCHANGED corpora/harness (orchestrator confirmed via git diff that only the baseline-witness test flipped; the measurement core was not touched). +6 tests; suite 438->444 green.
 
+### Phase 5 — completed 2026-06-20
+
+PARKED (evidence-based, no code). Bitemporal valid-time was a must-earn candidate; its gate was to beat Phase 4 on contradiction-rate or as-of correctness. Phase 4 already drove contradiction to 0.0 (the floor - unbeatable), valid-time != transaction-time does not arise in project-scoped decision memory (decisions are effective when made), and as-of/time-travel queries have no demonstrated agent need while their always-present fields would add injected context against D-027 (trim-first). Building a speculative schema to measure zero marginal gain was correctly declined. Per D2, a disciplined park is a successful must-earn outcome. Two keep-path exit criteria (schema/as-of implemented) are intentionally left unchecked - this phase resolved via the park branch.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
 obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
+
+**6.** A must-earn feature whose TARGET metric is already saturated by a simpler earlier phase cannot earn its place - park it WITHOUT building it. Bitemporal's gate was 'beat Phase 4 on contradiction-rate', but Phase 4 already hit 0.0 (the floor), so no implementation could win; the only other axis (valid-time / as-of) had no demonstrated need and conflicts with trim-first. Park-by-analysis (cite the saturated metric + absent need + the cost) is a legitimate evidence-based verdict; building it first only to measure zero gain burns effort to reach the same conclusion. *(evidence: Phase 5 park decision; Phase 4 contradiction_rate 0.0; D-027)*
 
 ### Category: Testing
 
