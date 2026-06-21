@@ -2,6 +2,18 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.14.2] — 2026-06-20
+
+**Windows lock robustness (H-10).** `locking._release_file` now retries the unlink
+before falling back to stale takeover, so a finished writer can't orphan its own
+lock when Windows raises a sharing violation while another process is mid-read of
+the lock file. Previously the orphaned lock left a second writer waiting up to
+~30s for stale takeover and surfacing a spurious (retryable) `LockHeld`. POSIX is
+unaffected (unlink succeeds on open files). This fixes the flaky
+`test_concurrent_writer_processes_lose_nothing` on Windows CI cells at the source;
+a deterministic regression test (`test_release_retries_unlink_past_transient_oserror`)
+pins the retry. No API or behavior change on the happy path.
+
 ## [0.14.1] — 2026-06-20
 
 **Documentation accuracy pass.** No behavior change — the engine is identical to
