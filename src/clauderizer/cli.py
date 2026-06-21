@@ -164,7 +164,25 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     # launchability probing is Phase 13.
     host_target = config.host_target
     if host_target == hosttargets.CLAUDE_CODE:
-        check(".mcp.json registers clauderizer", _mcp_registered(paths.mcp_json))
+        mcp_ok = _mcp_registered(paths.mcp_json)
+        # Stripped-host_target guard: if the Claude Code wiring is absent but a
+        # per-host config still registers clauderizer, host_target was likely
+        # stripped — an older pre-host_target engine, or a config hand-edit,
+        # rewrote config.toml without [host] target, so it defaulted back to
+        # claude-code. Bare `init` would then write Claude Code wiring (the WRONG
+        # repair); name the right one. (Observed live in P9 cross-version testing.)
+        if not mcp_ok:
+            stray = next((h for h, em in hosttargets.HOST_EMITTERS.items()
+                          if em.auto_write
+                          and _host_mcp_registered(paths.root / em.config_path, em.servers_key)),
+                         None)
+            if stray:
+                warn("host target",
+                     f"Claude Code wiring is absent but {stray}'s config registers "
+                     f"clauderizer — host_target was likely stripped by an older engine "
+                     f"or a config hand-edit. Re-run `clauderize init --host {stray}` "
+                     f"(NOT bare `init`, which would wire Claude Code)")
+        check(".mcp.json registers clauderizer", mcp_ok)
         # Session host of record (D3): launchability is only meaningful relative to
         # the host that spawns sessions, so surface — and validate — the record.
         session_host = config.session_host

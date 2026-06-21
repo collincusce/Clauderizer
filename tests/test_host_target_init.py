@@ -312,6 +312,22 @@ def test_doctor_guide_only_host_notes_manual(empty_python_repo, monkeypatch, cap
     assert "guide-only" in out
 
 
+def test_doctor_warns_on_stripped_host_target(empty_python_repo, monkeypatch, capsys):
+    # The cross-version hazard observed live (P9): a pre-host_target engine or a
+    # config hand-edit rewrites config.toml without [host] target -> it defaults
+    # back to claude-code, but the repo is actually wired for cursor. Doctor must
+    # name the RIGHT repair (init --host cursor), not bare init (which would wire
+    # Claude Code).
+    init(empty_python_repo, spawn_test=False)              # claude-code default
+    (empty_python_repo / ".mcp.json").unlink()             # no Claude Code wiring
+    ht.emit_mcp("cursor", empty_python_repo)               # but cursor IS wired
+    monkeypatch.chdir(empty_python_repo)
+    cli.main(["doctor"])
+    out = capsys.readouterr().out
+    assert "host_target was likely stripped" in out
+    assert "init --host cursor" in out                     # the correct repair, named
+
+
 # --- security review HIGH: claude-code .mcp.json path-safety -----------------------
 
 def test_init_gitignores_machine_specific_mcp_json(empty_python_repo, monkeypatch):
