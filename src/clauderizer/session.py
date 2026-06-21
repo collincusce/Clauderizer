@@ -91,11 +91,13 @@ def best_tier(host_target: str | None) -> int:
     return 4
 
 
-def should_inject_on_write(host_target: str | None) -> bool:
-    """The write-first self-correction gate: inject a compact status onto a write's
-    result only when the host has no status-delivering hook AND nothing has
-    delivered status yet this session. Idempotent across repeated writes — once
-    delivered, it never fires again (INVARIANT-08)."""
+def should_inject(host_target: str | None) -> bool:
+    """The server-side bootstrap gate (P7): inject a compact status note onto the
+    result of the FIRST non-status tool call this session — read OR write — but only
+    when the host has no status-delivering hook AND nothing has delivered status yet.
+    Idempotent: once delivered it never fires again (INVARIANT-08). The two
+    status-delivering reads (cz_status, cz_next_phase_context) deliver status
+    directly and just mark the signal, so they never need this."""
     return not delivers_status_via_hook(host_target) and not status_delivered()
 
 

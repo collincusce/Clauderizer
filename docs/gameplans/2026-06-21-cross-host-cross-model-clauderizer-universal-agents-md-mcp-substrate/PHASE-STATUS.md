@@ -14,7 +14,7 @@
 | 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Cross-host verification execution & release gate | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-6-HANDOFF.md |
-| 7 | Server-side session bootstrap (fast-follow; non-gating) | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 7 | Server-side session bootstrap (fast-follow; non-gating) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-7-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -86,6 +86,15 @@ host_simulator: hosttargets.wiring_contract_sweep + verify_emitted_wiring (D-032
 path_audit: hosttargets.path_safety_audit (catches machine-specific paths, O-06)
 ci_gate: test_wiring_contract_sweep_all_green runs the sweep in CI via the suite
 tests: 3 new (wiring sweep, path-audit flag, path-audit clean)
+```
+
+### Phase 7 Outputs
+
+```
+bootstrap: mcp_server._deliver_aware wraps all non-status tools; first call on a hook-less host gets a clauderizer_status note
+gate_renamed: session.should_inject_on_write -> should_inject (now gates reads + writes)
+dedup: P1 in-memory signal; hook hosts stand down after first call (one lookup, no injection)
+tests: 2 new (read bootstrap on hook-less, silent on hook host)
 ```
 
 ## Corrections Log

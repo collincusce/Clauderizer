@@ -52,15 +52,16 @@ def _host_target() -> str | None:
 
 
 def _deliver_aware(name: str, spec):
-    """Register-time wrapper maintaining the session-delivery signal. Pure reads
-    pass through untouched; the two status-delivering reads mark the signal; write
-    tools apply the write-first self-correction when the gate is open. Uses
-    ``functools.wraps`` so the MCP schema (name, signature, docstring) is identical
-    to the bare op — the surface cannot drift (INVARIANT-07)."""
+    """Register-time wrapper maintaining the session-delivery signal. The two
+    status-delivering reads mark the signal directly. For EVERY other tool — read or
+    write — the server-side bootstrap (P7) attaches a compact status note to the
+    FIRST call's result on a hook-less host that has not seen status yet, so the
+    agent is never blind regardless of which tool it reaches for first. After that
+    first call the signal is set and the wrapper stands down — so a hook host pays a
+    single host-target lookup and never an injection. functools.wraps keeps the MCP
+    schema identical to the bare op (INVARIANT-07)."""
     fn = spec.fn
     delivers = name in _STATUS_TOOLS
-    if not spec.writes and not delivers:
-        return fn
 
     @functools.wraps(fn)
     def wrapped(*args, **kwargs):
@@ -68,11 +69,13 @@ def _deliver_aware(name: str, spec):
             session.mark_status_delivered()
             return fn(*args, **kwargs)
         result = fn(*args, **kwargs)
-        if session.should_inject_on_write(_host_target()):
-            note = session.status_note(_status_summary())
-            session.mark_status_delivered()
-            if isinstance(result, dict):
-                result.setdefault("clauderizer_status", note)
+        if not session.status_delivered():
+            if not session.should_inject(_host_target()):
+                session.mark_status_delivered()        # hook host: the hook delivers; stand down
+            elif isinstance(result, dict):
+                result.setdefault("clauderizer_status", session.status_note(_status_summary()))
+                session.mark_status_delivered()
+            # else hook-less + non-dict result: cannot attach the note; retry next call
         return result
 
     return wrapped

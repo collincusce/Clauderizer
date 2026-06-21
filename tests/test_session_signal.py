@@ -42,10 +42,10 @@ def test_hook_host_classification():
 
 
 def test_should_inject_gate():
-    assert session.should_inject_on_write("claude-code") is False   # hook host
-    assert session.should_inject_on_write("continue") is True        # hook-less, fresh
+    assert session.should_inject("claude-code") is False   # hook host
+    assert session.should_inject("continue") is True        # hook-less, fresh
     session.mark_status_delivered()
-    assert session.should_inject_on_write("continue") is False       # already delivered
+    assert session.should_inject("continue") is False       # already delivered
 
 
 def test_status_note_is_compact_one_line_and_points_to_cz_status():
@@ -68,9 +68,19 @@ def _op(writes: bool):
     return Op(lambda **k: {"ok": True}, writes=writes)
 
 
-def test_pure_read_passes_through_unwrapped():
-    op = _op(writes=False)
-    assert mcp_server._deliver_aware("cz_graph_query", op) is op.fn
+def test_nonstatus_read_bootstraps_on_hookless_host(monkeypatch):
+    monkeypatch.setattr(mcp_server, "_host_target", lambda: "continue")
+    monkeypatch.setattr(mcp_server, "_status_summary", lambda: "Phase 7 in progress")
+    # P7: a non-status READ (not cz_status) now triggers the server-side bootstrap
+    wrapped = mcp_server._deliver_aware("cz_graph_query", _op(writes=False))
+    assert "cz_status" in wrapped()["clauderizer_status"]
+    assert "clauderizer_status" not in wrapped()        # idempotent — at most once
+
+
+def test_nonstatus_read_silent_on_hook_host(monkeypatch):
+    monkeypatch.setattr(mcp_server, "_host_target", lambda: "claude-code")
+    wrapped = mcp_server._deliver_aware("cz_graph_query", _op(writes=False))
+    assert "clauderizer_status" not in wrapped()        # hook host: hook delivers, server stands down
 
 
 def test_status_read_marks_delivered():

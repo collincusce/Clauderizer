@@ -1,7 +1,7 @@
 # Chat Handoff Index — Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate)
 
 > Last updated: 2026-06-21
-> Status: Phase 7 ready
+> Status: All 8 phases complete
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 479
+**Current baseline test count**: 482
 
 ## Ending Protocol
 
@@ -36,7 +36,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Cross-host verification execution & release gate | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-6-HANDOFF.md |
-| 7 | Server-side session bootstrap (fast-follow; non-gating) | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 7 | Server-side session bootstrap (fast-follow; non-gating) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-7-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -69,6 +69,10 @@ Phase 5 handled the bespoke hosts - those needing more than AGENTS.md+MCP. Two n
 ### Phase 6 — completed 2026-06-21
 
 Phase 6 stood up the verification gate. wiring_contract_sweep() is the in-process host-simulator (D-032): for every auto-write host it emits the config, reads it back, and confirms the clauderizer entry is well-formed, path-safe, and launches clauderizer-mcp - the WIRING CONTRACT. It runs in CI through the test suite, so the gate is green only when every host's emitted config passes. path_safety_audit() scans committed configs for machine-specific absolute paths (catches the O-06 leak). Per D-032 the gate is the wiring contract, not a live launch: actually launching the stdio server to round-trip cz_status, and proving a REAL host reads the config, is consumption proof - irreducibly manual on the ~9 proprietary hosts and deferred to pre-GA (O-07). CHANGELOG Unreleased updated with the cross-host deliverables; the four-registry release sweep (L-20) is a release-time step. 3 tests; suite green via cz_preflight.
+
+### Phase 7 — completed 2026-06-21
+
+Phase 7 added the server-side bootstrap - the only AUTOMATIC status delivery for hook-less hosts (D-034 promoted it to primary fallback). P1 already injected status onto the first WRITE; P7 generalizes the _deliver_aware wrapper so the first non-status tool call of ANY kind (read or write) on a hook-less host attaches the compact status note as a SEPARATE clauderizer_status field - the tool's own result is never corrupted, so a write is not contaminated (D-027). The two status-delivering reads deliver status directly and just mark the signal. should_inject_on_write was renamed should_inject (it now gates reads + writes). Dedup via the P1 in-memory signal (INVARIANT-08, at most once); on a hook host the wrapper marks-and-stands-down on the first call, so Claude Code pays one host-target lookup and never an injection (INVARIANT-07). INVARIANT-06 honored: in-memory/read-only signal, the note never blocks, minimal (D-027). Non-gating confirmed: the Floor Release (P0-P2) shipped before this phase. 2 tests; suite green via cz_preflight.
 
 ## Accumulated Lessons
 

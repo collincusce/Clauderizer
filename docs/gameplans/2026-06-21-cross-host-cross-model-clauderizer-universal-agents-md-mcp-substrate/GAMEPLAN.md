@@ -1,7 +1,7 @@
 # Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate) Gameplan
 
 > Created: 2026-06-21
-> Status: Executing
+> Status: Complete
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -162,7 +162,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 7.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Server-side bootstrap injects status into the first read-like tool result of a session; a write-first call is NOT contaminated (falls back to Tier 3/4)
-- [ ] Dedup via the P1 session signal: bootstrap never double-injects alongside a hook or auto-resource
-- [ ] INVARIANT-06 honored (read-only, never blocks) despite per-connection in-memory session state; injected status is minimal (D-027)
-- [ ] Confirmed non-gating: floor release shipped without this phase
+- [x] Server-side bootstrap fires on the FIRST non-status tool call of a session (read OR write) on a hook-less host, attaching status as a SEPARATE clauderizer_status field - the tool's own result is never corrupted (D-027, 'not contaminated'). After the first call the signal stands down
+- [x] Dedup via the P1 session signal: bootstrap never double-injects alongside a hook (hook hosts mark-and-stand-down on the first call); at most once per session (INVARIANT-08)
+- [x] INVARIANT-06 honored: the signal is in-memory/read-only, the note never blocks the session, and stays minimal (D-027)
+- [x] Confirmed non-gating: the Floor Release (P0-P2) shipped/committed before this phase
