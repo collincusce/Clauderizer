@@ -177,3 +177,51 @@ _(Add entries with `cz_add_decision`.)_
 **Decision**: Treat injected-context size as a cost to minimize. Inject focused, front-loaded, ranked memory; gate and shrink the always-on digest, the cumulative handoff, and the lesson roll-up. The goal is injecting the right focused tokens, not remembering the most.
 **Consequences**: The context-rot trim phase is a first-class high-priority removal phase; any always-injected addition (e.g. a steering doc) must justify its token cost against this.
 **Evidence**: EMNLP 2025 context-length-alone-hurts (arxiv 2510.05381); TACL 2024 lost-in-the-middle (arxiv 2307.03172); Chroma Context Rot; LongMemEval focused>full (arxiv 2410.10813).
+
+### D-028 — Three orthogonal host axes: session-host x host-profile x host-target — never conflate
+
+**Context**: Clauderizer already has two host-ish concepts: 'session host' (where commands run: native vs windows-wsl:<distro>, in hosts.py) and 'host profile' (repo language -> build/test commands: python/node/go/ruby/generic; D-004 says host-language is profile data). Cross-tool support introduces a third: which agent tool/harness drives the session (Claude Code, Cursor, Copilot, ...). The analyze gate flagged the collision risk.
+**Decision**: Treat 'host target' (the agent tool) as a NEW first-class axis, orthogonal to session-host and host-profile. A HostTarget capability descriptor (hooks? mcp-tools? mcp-resource-autoload? mcp-prompts? rules-file format and location? slash-commands?) is distinct data from the language profile and the execution host. No code path may infer one axis from another.
+**Consequences**: Config, capability detection, and emitters key on host-target; preflight/profiles stay language-keyed; wiring/shimming stays session-host-keyed. Prevents a class of mis-detection bugs but adds a third dimension to the test matrix.
+**Evidence**: cz_analyze surfaced D-004; current hosts.py (session host) and profiles/ (language) are the two existing axes
+**Status**: active (2026-06-21)
+
+### D-029 — AGENTS.md + MCP is the universal substrate; Claude Code hooks are a premium enforcement TIER, not a dependency
+
+**Context**: Deep research: the ecosystem is converging on AGENTS.md + MCP under the Linux Foundation Agentic AI Foundation (Anthropic MCP + OpenAI AGENTS.md + Block goose, 2025-12-09); AGENTS.md is read by ~23 tools across 60k+ repos. Claude Code hooks deterministically inject context but have no clean cross-host equivalent; MCP Resources/Prompts are optional, per-connection-negotiated, and Prompts are user-controlled by design.
+**Decision**: Standardize the portable contract on AGENTS.md (instructions) + MCP tools (the cz_* surface). Claude Code keeps CLAUDE.md (which imports/symlinks AGENTS.md) and its hooks as the top, ENFORCED injection tier. Hook-driven auto-injection is demoted from a hard requirement to a Claude-Code/kimi-only enhancement; everything below degrades gracefully.
+**Consequences**: Most hosts become reachable with little or no bespoke code. Non-Claude hosts get a best-effort (suggested, not enforced) experience. Betting with the consolidating standard. Claude Code experience is unchanged.
+**Evidence**: Linux Foundation AAIF announcement 2025-12-09; agents.md; MCP spec rev 2025-11-25
+**Status**: active (2026-06-21)
+
+### D-030 — Injection-parity ladder: hook -> auto-resource -> prompt -> AGENTS.md floor, graceful degradation, single delivery
+
+**Context**: No portable equivalent to Claude Code's deterministic hook injection exists. Different hosts support different MCP primitives and capability is a moving target (Cursor added Resources in v1.6, Sept 2025).
+**Decision**: Every host gets the BEST injection tier it supports and never less than the Tier-4 AGENTS.md 'call cz_status first' floor: Tier1 lifecycle hook (Claude Code, kimi) -> Tier2 auto-loaded MCP resource -> Tier3 MCP prompt -> Tier4 floor instruction. Capability is re-probed at session start; any mismatch downgrades safely toward the floor. Status is delivered to the model at most once per session across all active tiers (dedup via the P1 in-memory signal), honoring trim-first.
+**Consequences**: Uniform mental model and predictable degradation; no double-injection bloat. Requires per-host capability detection plus a session-scoped delivery signal.
+**Evidence**: deep research dimensions 2-3; cz_analyze surfaced D-027 (trim-first)
+**Status**: active (2026-06-21)
+
+### D-031 — Config-safety: global config -> guide-only; project config -> non-destructive merge; never commit machine paths
+
+**Context**: Writing wiring into 13 hosts multiplies blast radius. kimi already gets a guide (Clauderizer never edits global ~/.kimi/config.toml). init currently leaks absolute venv / wsl.exe paths into .mcp.json / .claude/settings.json. Re-running init for a second host can clobber the first's registration (top config-safety risk).
+**Decision**: Classify every host on (1) project-level vs global config location and (2) MCP-capable vs absent. Emitter rules: a host whose config is GLOBAL/user-level is GUIDE-ONLY (never auto-edited); project-level config is written via non-destructive marker-block/structured merge that preserves co-resident hosts' keys; any wiring whose command contains an absolute user/venv/wsl.exe path is guide-only or warned, never silently committed. A `clauderize uninstall [--host]` must exist before any host ships.
+**Consequences**: No silent data loss across co-resident hosts; no machine-specific paths in shared repos; reversible installs. More per-host classification work in P0/P4.
+**Evidence**: config-safety lens; init.py _register_mcp/_resolve_invocation; kimi guide precedent
+**Status**: active (2026-06-21)
+
+### D-032 — Release gate = wiring-contract (well-formed + server launches + simulator round-trips), not 'tested on 13 live hosts'
+
+**Context**: 11 of 13 target hosts are proprietary and cannot be installed/run headless in CI. Proving the host actually READS the emitted config and injects context is irreducibly manual for those. Proving model-agnosticism live needs a paid multi-model fleet.
+**Decision**: The automated release gate verifies the WIRING CONTRACT only: emitted config is well-formed and path-safe, the MCP server launches, and an in-process host-simulator stub round-trips cz_status. CONSUMPTION PROOF (a real host reads it and injects) is a manual pre-GA spot-check on 2-3 representative hosts, documented as such. The model-agnostic claim is defined narrowly — the shared surface emits no Claude-specific syntax; any model that can call MCP tools or read AGENTS.md can participate — and verified by static analysis (no model-specific tokens), with live cross-model smoke tests reserved for a manual checklist.
+**Consequences**: A credible, achievable green gate that does not overclaim. The README/claims must state the wiring-contract-vs-consumption distinction honestly.
+**Evidence**: verification lens; L-20; doctor verify_wiring/verify_hook_wiring
+**Status**: active (2026-06-21)
+
+### D-033 — Ship cross-host support incrementally per tier (Floor Release first); fix beta-gate impact up front
+
+**Context**: Seven-plus phases imply a big-bang, but subsystems are independently versioned and the floor hosts are claimable after only P0-P2. D-012: Beta is an evidence claim gated by B1-B6 — adding 13 hosts could either hollow the Beta claim or trigger a gate explosion.
+**Decision**: Release incrementally per injection tier: cut a 'Floor Release' once P0-P2 land (AGENTS.md+MCP-native hosts at Tier 4), then middle-tier (P3) and bespoke (P5) hosts as they verify. Up front, decide whether cross-host coverage adds a new Beta evidence gate or is covered by the P6 wiring-contract CI, and record the answer in the parity contract so release criteria are fixed before the work starts. Define a subsystem version-coordination policy (or a doctor coherence check) so users never get mismatched scaffold/mcp-server host support.
+**Consequences**: Value ships early; long-tail bespoke hosts do not block release; Beta stays an honest evidence claim. Requires a per-tier release checklist.
+**Evidence**: release lens; D-012; independently-versioned subsystems (scaffold 0.7.0, mcp-server 0.5.0)
+**Status**: active (2026-06-21)

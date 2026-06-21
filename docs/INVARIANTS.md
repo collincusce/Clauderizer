@@ -31,3 +31,11 @@ Discipline gates (clarify/open-items, exit-criteria, analyze-against-invariants)
 **Introduced by**: D-025
 
 Every hook event handler is read-only and always exits 0 — a memory tool never mutates docs or blocks a session from inside a hook. Generalizes INVARIANT-04 from SessionStart to all dispatched events (SessionStart, UserPromptSubmit, PreCompact, PostCompact, ...).
+
+### INVARIANT-07 — Claude Code parity never regresses: any change that degrades the current Claude Code experience (hook-driven SessionStart/UserPromptSubmit auto-injection, the cz_* tool surface, skills, or the status digest) is a release blocker. Cross-host generalization is strictly additive.
+
+Claude Code parity never regresses: any change that degrades the current Claude Code experience (hook-driven SessionStart/UserPromptSubmit auto-injection, the cz_* tool surface, skills, or the status digest) is a release blocker. Cross-host generalization is strictly additive.
+
+### INVARIANT-08 — Cross-host status injection reaches the model at most once per session, across all active tiers (hook, auto-resource, prompt, AGENTS.md floor, and the server-side bootstrap), deduplicated via an in-memory, read-only, session-scoped signal — never a persisted/config flag (per INVARIANT-05) and never from a path that mutates docs or blocks the session (per INVARIANT-06). Injected status stays focused and minimal (per D-027).
+
+Cross-host status injection reaches the model at most once per session, across all active tiers (hook, auto-resource, prompt, AGENTS.md floor, and the server-side bootstrap), deduplicated via an in-memory, read-only, session-scoped signal — never a persisted/config flag (per INVARIANT-05) and never from a path that mutates docs or blocks the session (per INVARIANT-06). Injected status stays focused and minimal (per D-027).
