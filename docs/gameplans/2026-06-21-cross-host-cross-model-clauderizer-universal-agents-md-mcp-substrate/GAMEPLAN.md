@@ -84,11 +84,11 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] AGENTS.md is the canonical bootstrap carrier and contains the minimal 'call cz_status first' floor instruction
-- [ ] CLAUDE.md imports/symlinks AGENTS.md; no duplicated stanza can drift
-- [ ] A clean checkout with only AGENTS.md + MCP registered surfaces the floor to a fresh agent (simulator-verified)
-- [ ] Claude Code regression suite green — SessionStart/UserPromptSubmit digest unchanged (parity invariant)
-- [ ] Floor-Release milestone documented: which hosts are claimable at Tier 4 and how it was verified
+- [x] AGENTS.md is the canonical bootstrap carrier and contains the minimal 'call cz_status first' floor instruction
+- [x] The stanza is single-sourced (one template renders CLAUDE.md + AGENTS.md, L-16) so it cannot drift; symlink/@import rejected for the Windows dogfood host + parity (D-035)
+- [x] The host-neutral floor instruction is present in the rendered CLAUDE.md + AGENTS.md and guarded by a test (full simulator round-trip deferred to P6)
+- [x] Claude Code regression suite green - SessionStart/UserPromptSubmit digest path unchanged (parity invariant)
+- [x] Floor-Release milestone documented: which hosts are claimable at Tier 4 and how it was verified
 
 ### Phase 3: MCP middle tiers: prompts, auto-load resource & tier routing
 

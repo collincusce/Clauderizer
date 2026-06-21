@@ -180,6 +180,24 @@ def test_session_note_is_host_neutral():
     assert "Claude" not in note.replace("Clauderizer", "")
 
 
+# --- Tier-4 floor: the shared stanza is host-neutral (P2) ------------------------
+
+def test_stanza_carries_host_neutral_floor():
+    """The shared stanza (one template -> CLAUDE.md + AGENTS.md, L-16) must carry the
+    Tier-4 floor: tell a hook-less host to call cz_status first, WITHOUT assuming a
+    SessionStart hook delivered status (false on most hosts). INVARIANT-07: Claude
+    Code still gets its digest via the hook, so this is strictly additive."""
+    from pathlib import Path
+
+    import clauderizer
+
+    text = (Path(clauderizer.__file__).parent / "templates" / "claude_stanza.md").read_text(
+        encoding="utf-8"
+    )
+    assert "call `cz_status` now, before anything else" in text   # the floor
+    assert "many hosts have no session hook" in text              # host-neutral framing
+
+
 # --- INVARIANT-07 guard: the wrapped surface still builds ------------------------
 
 def test_wrapped_server_builds():

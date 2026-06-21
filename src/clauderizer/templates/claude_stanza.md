@@ -3,15 +3,19 @@
 This repo uses **Clauderizer** for durable, cross-session working memory. Markdown
 under `docs/` is the source of truth; an MCP server exposes it as live tools.
 
-**Start of every session**: the SessionStart hook injects current gameplan status
-into context automatically — no manual reading order. To refresh on demand, call
-`cz_status`. To begin/continue a phase, call `cz_next_phase_context` then
-`cz_preflight`. **If the `cz_*` tools are absent** (no `[Clauderizer]` digest
-appeared), the wiring is broken, not the memory: run `clauderize doctor` in a
-shell, use `clauderize status` for this digest, and make tracked writes with
-`clauderize ops <file.json|->` — a JSON batch `[{"op": "cz_add_lesson",
-"args": {...}}, ...]` against the exact tool names and schemas — until the
-wiring is repaired. Every `cz_*` tool is reachable that way.
+**Start of every session — load memory first.** If a `[Clauderizer]` status digest
+appeared at the top of this session, your host has a session hook and memory is
+already loaded. **If no digest appeared, call `cz_status` now, before anything
+else** — many hosts have no session hook, and `cz_status` is your durable project
+memory (where the gameplan stands, the baseline, open items). Either way, to
+begin or continue a phase, call `cz_next_phase_context` then `cz_preflight`.
+
+**If the `cz_*` tools themselves are absent** (the call fails, not just a missing
+digest), the wiring is broken, not the memory: run `clauderize doctor` in a shell,
+use `clauderize status` for the digest, and make tracked writes with `clauderize
+ops <file.json|->` — a JSON batch `[{"op": "cz_add_lesson", "args": {...}}, ...]`
+against the exact tool names and schemas — until the wiring is repaired. Every
+`cz_*` tool is reachable that way.
 
 **Key tools** (MCP server `clauderizer`):
 - `cz_status` / `cz_next_phase_context` — where things stand; the next phase bundle.

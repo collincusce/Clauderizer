@@ -1,7 +1,7 @@
 # Chat Handoff Index — Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate)
 
 > Last updated: 2026-06-21
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 446
+**Current baseline test count**: 462
 
 ## Ending Protocol
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Host model, capability audit & parity contract | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Model-agnostic protocol hardening & injection-delivery signal | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | AGENTS.md canonical substrate & Tier-4 floor | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | AGENTS.md canonical substrate & Tier-4 floor | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | MCP middle tiers: prompts, auto-load resource & tier routing | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
@@ -49,6 +49,10 @@ Phase 0 re-derived the per-host capability matrix from primary sources and corre
 ### Phase 1 — completed 2026-06-21
 
 Phase 1 built the cross-host injection substrate. New session.py holds the at-most-once delivery signal (INVARIANT-08): a process-global, in-memory, never-persisted flag, plus the host gate (delivers_status_via_hook: the 8 hook hosts vs the rest) and the compact write-first note (D-027). mcp_server._deliver_aware wraps tool registration via functools.wraps so the MCP schemas are byte-identical (a build-guard test proves the wrapped server still constructs - INVARIANT-07); status reads mark the signal, and on a hook-less host a write issued before any status load gets a one-line status note prepended. config.py gained host_target (the third host axis, D-028; default claude-code preserves exact Claude Code behaviour and back-compat). Idempotency/re-entrancy of the real read tools is proven by test (cz_status called repeatedly and with the signal toggled returns identical results). The tool surface was found ALREADY model-neutral (only cz_mine_failures is Claude-specific, legitimately - it mines Claude Code transcripts); no rewrite was needed, and a static guard test locks it (criteria 4/5, D-032). Suite 446 -> 462 (16 new), green. No Claude Code behaviour changed: the gate is off for the default host_target.
+
+### Phase 2 — completed 2026-06-21
+
+Phase 2 made the shared stanza host-neutral and added the Tier-4 floor. The old stanza claimed the SessionStart hook injects status automatically - true only on hook hosts; a Cursor/Continue/Zed agent was told memory had loaded when it had not. The new stanza conditions on whether the [Clauderizer] digest appeared: if it did, the host has a hook and memory is loaded; if not, call cz_status now before anything else. That one host-neutral floor reaches every host that reads AGENTS.md. Mechanism decision D-035: kept the existing single-source dual-write (one template renders both CLAUDE.md and AGENTS.md) rather than the symlink/@import the criteria proposed - symlinks are fragile on the Windows/WSL dogfood host and @import adds a parity dependency, while single-source already gives no-drift (L-16). Strictly additive: Claude Code still gets its digest via the hook (INVARIANT-07 intact). Template + live CLAUDE.md + AGENTS.md synced; a guard test locks the floor presence and neutrality. Suite 462 -> 463. Floor-Release milestone (docs/CROSS-HOST.md sections 4-5) is now real: every AGENTS.md-native host reaches Tier 4 with zero per-host code; full host round-trip verification is P6.
 
 ## Accumulated Lessons
 

@@ -235,3 +235,11 @@ _(Add entries with `cz_add_decision`.)_
 **Supersedes**: D-030
 **Evidence**: docs/CROSS-HOST.md sections 3-5; per-host primary docs verified 2026-06-21
 **Status**: active (2026-06-21)
+
+### D-035 — Keep single-source dual-write of the stanza (CLAUDE.md + AGENTS.md); reject symlink and @import
+
+**Context**: P2 exit criteria proposed CLAUDE.md imports/symlinks AGENTS.md so there is one rendered copy. Two facts make that the wrong call: Clauderizer is dogfooded on Windows/WSL where symlinks are fragile/unreliable, and a CLAUDE.md @AGENTS.md import adds a Claude-Code-parity dependency (the import must resolve) for no functional gain over what already exists.
+**Decision**: Keep the existing single-source dual-write: one template (src/clauderizer/templates/claude_stanza.md) is rendered by init into BOTH CLAUDE.md and AGENTS.md within marker blocks. This gives the anti-drift property the criterion wanted (one source, L-16 - the renders cannot diverge) without a symlink (Windows-fragile) or an @import (parity-risky). AGENTS.md is the portable carrier every non-Claude host reads; CLAUDE.md is its Claude Code twin.
+**Consequences**: Two rendered copies exist but cannot drift (regenerated together from one source). No Windows symlink fragility, no import-resolution dependency. The host-neutral Tier-4 floor lives in the one template and reaches every host.
+**Evidence**: docs/CROSS-HOST.md; INVARIANT-07; L-16; Windows/WSL dogfood host
+**Status**: active (2026-06-21)
