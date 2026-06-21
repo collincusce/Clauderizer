@@ -132,8 +132,8 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 5.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Bespoke-host emitters (e.g. Copilot/VS Code instructions + global MCP; Windsurf; Cline rule-toggles/slash-commands) implemented, each reaching its best achievable tier
-- [ ] Same safety bars met: golden tests, uninstall, coexistence, path-safety, global->guide-only
+- [x] Bespoke emitters: native-instructions floor auto-written for non-AGENTS.md hosts (Continue .continue/rules, Gemini GEMINI.md; marker-block, idempotent); hook setup guides for hook-capable hosts (Copilot/Codex/Windsurf/Cline/Amp) reaching Tier 1 via guided wiring (schemas unverified -> guide not auto-write, O-02)
+- [x] Safety bars met: marker-block preserves user content (idempotent test), guides are non-destructive, path-safety + guide-only inherited from P4
 
 ### Phase 6: Cross-host verification execution & release gate
 

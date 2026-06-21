@@ -12,7 +12,7 @@
 | 2 | AGENTS.md canonical substrate & Tier-4 floor | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | MCP middle tiers: prompts, auto-load resource & tier routing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Cross-host verification execution & release gate | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Server-side session bootstrap (fast-follow; non-gating) | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 
@@ -68,6 +68,15 @@ guide_only_hosts: codex, windsurf, kimi (TOML/global)
 cli_command: clauderize uninstall [--host]
 portable_command: uvx --from clauderizer clauderizer-mcp (path-safe, committable)
 tests: tests/test_hosttargets.py (9 tests)
+```
+
+### Phase 5 Outputs
+
+```
+native_floor_hosts: continue (.continue/rules/clauderizer.md), gemini-cli (GEMINI.md) - they do not read AGENTS.md
+hook_guide_hosts: copilot, codex, windsurf, cline, amp, gemini-cli (Tier-1 via guided wiring)
+functions: hosttargets.emit_instructions + hook_setup_guide
+tests: 4 new in tests/test_hosttargets.py
 ```
 
 ## Corrections Log

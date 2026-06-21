@@ -15,6 +15,7 @@ which is exactly what the local dogfood .mcp.json carries and what must NOT ship
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -122,3 +123,82 @@ def remove_mcp(host_id: str, repo_root: Path) -> bool:
     del servers["clauderizer"]
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return True
+
+
+# --- P5: bespoke hosts — native instructions floor + hook setup guides ----------
+
+# The Tier-4 floor, condensed for a host's NATIVE instructions file (Continue,
+# Gemini) which do not read AGENTS.md. Same intent as the AGENTS.md floor (P2),
+# host-neutral: load memory first.
+FLOOR_INSTRUCTION = (
+    "## Clauderizer\n\n"
+    "This repo uses Clauderizer for durable, cross-session memory (an MCP server "
+    "exposes it as cz_* tools). **At the start of every session, call `cz_status` "
+    "first** — it loads the gameplan, phase, baseline, and open items. To begin or "
+    "continue work, call `cz_next_phase_context` then `cz_preflight`. Never hand-edit "
+    "tracked docs; use the cz_* tools.\n"
+)
+
+# Hosts that do NOT read AGENTS.md -> the floor must go in their native rules file.
+NATIVE_INSTRUCTIONS: dict[str, str] = {
+    "continue": ".continue/rules/clauderizer.md",
+    "gemini-cli": "GEMINI.md",
+}
+
+_MARK = re.compile(r"<!-- clauderizer:start -->.*?<!-- clauderizer:end -->\n?", re.S)
+
+
+def emit_instructions(host_id: str, repo_root: Path) -> Path | None:
+    """Write the Tier-4 floor into a host's NATIVE instructions file (Continue,
+    Gemini — they do not read AGENTS.md). Marker-block upsert preserves the user's
+    own content. Returns None for hosts that already read AGENTS.md (floor already
+    there, P2)."""
+    rel = NATIVE_INSTRUCTIONS.get(host_id)
+    if rel is None:
+        return None
+    path = repo_root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    block = f"<!-- clauderizer:start -->\n{FLOOR_INSTRUCTION}<!-- clauderizer:end -->\n"
+    existing = path.read_text(encoding="utf-8") if path.exists() else ""
+    if _MARK.search(existing):
+        new = _MARK.sub(block, existing)                       # replace in place
+    else:
+        sep = "\n" if existing and not existing.endswith("\n") else ""
+        new = existing + sep + block                            # append, preserve rest
+    path.write_text(new, encoding="utf-8")
+    return path
+
+
+# Bespoke hosts have lifecycle hooks (Tier 1) but each uses a different config
+# format; rather than emit an unverified schema we ship a setup guide (the kimi
+# pattern, D-031). Event names verified 2026-06-21 (docs/CROSS-HOST.md §3); the exact
+# config shape is confirmed at integration (O-02 residual).
+HOOK_GUIDE_HOSTS: dict[str, tuple[str, list[str]]] = {
+    "copilot":    (".github/hooks/*.json", ["SessionStart", "UserPromptSubmit"]),
+    "codex":      ("~/.codex/config.toml or .codex/hooks.json",
+                   ["SessionStart", "UserPromptSubmit"]),
+    "gemini-cli": (".gemini/settings.json (hooks)", ["SessionStart", "BeforeAgent"]),
+    "windsurf":   (".windsurf/hooks.json", ["pre_user_prompt"]),
+    "cline":      (".clinerules/hooks/ (POSIX only)", ["TaskStart", "UserPromptSubmit"]),
+    "amp":        (".amp/plugins/*.ts", ["session.start", "agent.start"]),
+}
+
+
+def hook_setup_guide(host_id: str, hook_argv: list[str] | None = None) -> str | None:
+    """A per-host hook setup guide (the kimi pattern): wire `clauderizer-hook` to the
+    host's session-start-equivalent events for Tier-1 automatic status injection.
+    Returns None for hosts with no hook system (the floor + prompt still apply)."""
+    spec = HOOK_GUIDE_HOSTS.get(host_id)
+    if spec is None:
+        return None
+    location, events = spec
+    cmd = " ".join(hook_argv or ["uvx", "--from", "clauderizer", "clauderizer-hook"])
+    return (
+        f"# Clauderizer hook setup for {host_id}\n\n"
+        f"For Tier-1 automatic status injection, wire this command to {host_id}'s "
+        f"session hook ({location}) on these events: {', '.join(events)}.\n\n"
+        f"Command: `{cmd}`\n\n"
+        f"The hook prints the `[Clauderizer]` digest, which {host_id} injects into "
+        f"context. Without it you still have the floor (Tier 4) and /cz-status "
+        f"(Tier 3).\n"
+    )

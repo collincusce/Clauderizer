@@ -101,3 +101,37 @@ def test_cli_uninstall_removes_only_clauderizer(tmp_path, monkeypatch):
     servers = _read(cfg)["mcpServers"]
     assert "clauderizer" not in servers
     assert servers["other"] == {"command": "x"}
+
+
+# --- P5: bespoke native instructions + hook guides -------------------------------
+
+def test_emit_instructions_writes_floor_for_non_agents_hosts(tmp_path):
+    p = ht.emit_instructions("continue", tmp_path)
+    assert p == tmp_path / ".continue" / "rules" / "clauderizer.md"
+    text = p.read_text(encoding="utf-8")
+    assert "call `cz_status` first" in text
+    assert "clauderizer:start" in text and "clauderizer:end" in text
+    assert ht.emit_instructions("gemini-cli", tmp_path) == tmp_path / "GEMINI.md"
+
+
+def test_emit_instructions_none_for_agents_md_hosts(tmp_path):
+    # cursor reads AGENTS.md, so the floor is already there (P2) — no native file
+    assert ht.emit_instructions("cursor", tmp_path) is None
+
+
+def test_emit_instructions_preserves_user_content_and_is_idempotent(tmp_path):
+    g = tmp_path / "GEMINI.md"
+    g.write_text("# My project rules\nDo the thing.\n", encoding="utf-8")
+    ht.emit_instructions("gemini-cli", tmp_path)
+    text = g.read_text(encoding="utf-8")
+    assert "My project rules" in text            # user content preserved
+    assert "call `cz_status` first" in text      # floor appended
+    ht.emit_instructions("gemini-cli", tmp_path)  # second emit replaces, not duplicates
+    assert g.read_text(encoding="utf-8").count("clauderizer:start") == 1
+
+
+def test_hook_setup_guide(tmp_path):
+    guide = ht.hook_setup_guide("copilot")
+    assert "clauderizer-hook" in guide and "SessionStart" in guide
+    assert ht.hook_setup_guide("continue") is None   # no hook system
+    assert ht.hook_setup_guide("zed") is None
