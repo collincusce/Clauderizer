@@ -17,7 +17,7 @@
 | 7 | Server-side session bootstrap (fast-follow; non-gating) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-7-HANDOFF.md |
 | 8 | Wire host_target end-to-end (make cross-host functional via init) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-8-HANDOFF.md |
 | 9 | Real-host & cross-model verification (close O-06, O-07; kill engine_stale) | 🟡 IN PROGRESS | 2026-06-21 | — | handoffs/PHASE-9-HANDOFF.md |
-| 10 | Adversarial sweep: integration seams & state (codebase-wide) | ⬜ NOT STARTED | — | — | handoffs/PHASE-10-HANDOFF.md |
+| 10 | Adversarial sweep: integration seams & state (codebase-wide) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-10-HANDOFF.md |
 | 11 | Adversarial sweep: concurrency, I/O robustness & failure modes | ⬜ NOT STARTED | — | — | handoffs/PHASE-11-HANDOFF.md |
 | 12 | Security & trust hardening | ⬜ NOT STARTED | — | — | handoffs/PHASE-12-HANDOFF.md |
 | 13 | UX completeness, doc truth-up & release gate; close the gameplan | ⬜ NOT STARTED | — | — | handoffs/PHASE-13-HANDOFF.md |
@@ -117,6 +117,12 @@ baseline_tests: 507 (was 484; +23 in tests/test_host_target_init.py). Commit 915
 ```
 o06_fix: .mcp.json + .claude/settings.json git rm --cached + gitignored (machine-path leak removed from version control; dogfood keeps them locally for its editable-engine build). path_safety_audit made gitignore-aware (hosttargets._is_git_ignored). Audit clean on real repo. Commit on cross-host-cross-model branch.
 live_server_verification: Launched clauderizer-mcp over real stdio MCP client (mcp SDK ClientSession): serves P3 prompts [cz-next-phase, cz-status], 31 tools, cz-status prompt returns live [Clauderizer] digest, cz_status tool round-trips. CI-pinned: test_mcp_tools.py::test_server_serves_prompts + test_server_bootstrap_injects_only_on_hookless_host (P7 bootstrap fires for cursor, silent for claude-code). engine_stale for THIS session is unrelated to correctness — the running server holds pre-edit modules; clears on session restart (user action).
+```
+
+### Phase 10 Outputs
+
+```
+seam_sweep_results: 3 independent reviewers over 6 shared functions. CLEAN: config.py (host_target threaded 14/14 fields through to_toml/load/merge_missing), status_bundle, ops signatures (all 31), graph/index.py (always-rebuild = no stale cache), writer.remove_marker_block. FIXED (2 HIGH hook-dispatcher seams, commit 42140f3): (1) native cross-host event names not aliased -> windsurf pre_user_prompt emitted full digest every prompt; added _EVENT_ALIASES. (2) unhashable hook_event_name raised TypeError vs graceful fallback; coerce non-str -> None. Regression tests at the seam in test_hook_dispatch.py.
 ```
 
 ## Corrections Log

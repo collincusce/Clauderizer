@@ -28,6 +28,33 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 - **What changed**: Adds P8 (wire the per-host emitters through init - revisits P4), P9 (real-host + cross-model verification, closes O-06/O-07/engine_stale), P10 (integration-seam sweep codebase-wide), P11 (concurrency/IO/failure sweep), P12 (security/trust hardening), P13 (UX + doc truth-up + release gate + gameplan close-out).
 - **Why**: Review found init never references host_target/hosttargets/emit_mcp: the P4 emitters are tested but unreachable through the user-facing command, so a non-Claude host gets the AGENTS.md floor but no MCP registration (the tool is absent) - not functional end-to-end. The user also asked to apply the same red-team/blue-team, gate-verified method across the entire codebase.
 
+### A-002 — Retire Tier-2 (auto-loaded MCP resource) from the injection ladder
+
+- **Date**: 2026-06-21
+- **Affected sections in GAMEPLAN.md**: Phase Breakdown (P3 exit criteria); the D-030 injection ladder; docs/CROSS-HOST.md §4
+- **Affected phases**: 0,3
+- **Triggered by**: Phase 0 primary-source capability audit, 2026-06-21 (C-02)
+- **What changed**: Removed Tier 2 (an auto-loaded MCP resource as the portable substitute for hook injection) from the injection-parity ladder. The ladder is now Tier 1 (lifecycle hook) → Tier 3 (MCP prompt slash command) → Tier 4 (AGENTS.md floor). best_tier() never returns 2.
+- **Why**: No verified host auto-loads MCP resources into model context — across Cursor, Copilot, Continue, Gemini, Windsurf, Cline, and Zed (no resources at all), resources are model-requested or manual @-mention only. The auto-load assumption had no primary-source basis (MCP resources are user/model-controlled by spec). Designing a delivery tier around an unverified host behavior is L-2. (This amendment was decided in P0 but never formally recorded as an A-NNN due to the O-08 cz_add_amendment arg-name drift; re-recorded in P10.)
+
+### A-003 — Scope the host set from 13 candidates to 11 in-scope
+
+- **Date**: 2026-06-21
+- **Affected sections in GAMEPLAN.md**: Open Items O-01; Phase 0 Outputs (in_scope_hosts/dropped_hosts); docs/CROSS-HOST.md §3
+- **Affected phases**: 0
+- **Triggered by**: Phase 0 per-host capability matrix re-derivation, 2026-06-21
+- **What changed**: Reduced the cross-host target set from 13 researched candidates to 11 in-scope: claude-code, kimi, copilot, codex, gemini-cli, windsurf, cline, amp, cursor, continue, zed. Dropped Roo Code (archived 2026-05-15) and deferred Aider (no native MCP client).
+- **Why**: Roo Code was archived upstream (dead target); Aider has no native MCP client so it cannot reach even the floor tier via MCP — both fail the "mechanism exists on the target host" bar (L-2). Building the matrix from each host's own primary docs (the canonical modelcontextprotocol.io/clients matrix URL was dead, 308) surfaced both. (Decided in P0, never formally recorded as A-NNN due to the O-08 arg-name drift; re-recorded in P10.)
+
+### A-004 — Promote the server-side session bootstrap to a full phase (P7)
+
+- **Date**: 2026-06-21
+- **Affected sections in GAMEPLAN.md**: Phase Breakdown (added Phase 7); the Floor-Release milestone sequencing
+- **Affected phases**: 0,7
+- **Triggered by**: Phase 0 ladder design review, 2026-06-21
+- **What changed**: Promoted the server-side session bootstrap (the MCP server injecting status into the first non-status tool result on a hook-less host, to recover hook-like determinism) from an inline idea to a first-class phase, Phase 7, sequenced as a non-gating fast-follow after the Floor Release (P0-P2/P6).
+- **Why**: On hook-less hosts the MCP server is the only automatic delivery path; making the bootstrap explicit gave it its own exit criteria (fires once per session, separate clauderizer_status field so the tool result is never contaminated per D-027, dedup via the P1 in-memory signal per INVARIANT-08, read-only per INVARIANT-06) and a clear non-gating position. (Decided in P0, never formally recorded as A-NNN due to the O-08 arg-name drift; re-recorded in P10.)
+
 ## Decisions
 
 _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECISIONS.md.)_
@@ -48,7 +75,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 **O-07.** _(phase 6)_ Manual consumption spot-check: install Clauderizer into 2-3 representative real hosts (e.g. Cursor, Copilot/VS Code) and confirm each actually READS the emitted config and the agent loads status. D-032: this consumption proof is irreducibly manual (no real proprietary host runs in CI); the automated gate covers only the wiring contract. Deferred to pre-GA.
 
-**O-08.** _(phase 10)_ Silent contract drift in the cz_* ops surface. cz_add_amendment was called with a wrong arg name (rationale, vs the real triggered_by/what/why) in P0 AND in this amendment's first attempt — so the THREE P0 amendments (retire Tier-2, scope 13->11, promote P7) were never written as A-NNN records (their substance survives only in the P0 phase summary + D-034). cz_add_finding had the same kind of mismatch. For P10: (a) re-record the 3 missing P0 amendments; (b) add a test/guard that every cz_* op's advertised signature matches its implementation and that an ops-batch arg error is surfaced loudly, not swallowed as a single ok:false among successes (a wrong-arg op in a batch should be hard to miss).
+**O-08.** _(phase 10)_ Silent contract drift in the cz_* ops surface. cz_add_amendment was called with a wrong arg name (rationale, vs the real triggered_by/what/why) in P0 AND in this amendment's first attempt — so the THREE P0 amendments (retire Tier-2, scope 13->11, promote P7) were never written as A-NNN records (their substance survives only in the P0 phase summary + D-034). cz_add_finding had the same kind of mismatch. For P10: (a) re-record the 3 missing P0 amendments; (b) add a test/guard that every cz_* op's advertised signature matches its implementation and that an ops-batch arg error is surfaced loudly, not swallowed as a single ok:false among successes (a wrong-arg op in a batch should be hard to miss). _(resolved 2026-06-21: Both parts done in P10. (a) The 3 missing P0 amendments are now first-class records: A-002 (retire Tier-2), A-003 (scope 13->11 hosts), A-004 (promote P7 server-side bootstrap). (b) Added tests/test_ops.py::test_no_op_dispatch_signature_drift — a static AST guard that every kwarg each cz_* op passes to an engine fn (mutations/handoff/preflight/cascade/status_bundle/index/query) is a real parameter; this catches the exact cz_add_amendment(`rationale`)/cz_add_finding drift class permanently. Independent review also confirmed all 31 current ops are clean and that batch arg-errors are surfaced loudly (top-level ok:false + exit 1, op names itself) — never swallowed.)_
 
 **O-09.** _(phase 8)_ clauderize doctor (cli.py cmd_doctor) hard-checks the claude-code wiring only (.mcp.json registers clauderizer, SessionStart hook registered, hook wrapper). After `init --host cursor` (or any non-claude host) those files do not exist, so doctor reports false drift (exit 2) for a correctly-wired non-claude repo. P8 wires init but not doctor; making doctor verify the CONFIGURED host_target's wiring is Phase 13's exit criterion ("Doctor verifies the CONFIGURED host's wiring, not just Claude Code"). Branch cmd_doctor on config.host_target there. _(resolved 2026-06-21: Core complaint (doctor false-fails a healthy non-claude repo with exit 2) fixed in P8 review-commit 82328aa: cmd_doctor now branches on config.host_target — non-claude hosts verify their own per-host MCP config + floor instead of the Claude Code files. Remaining depth (full per-host launchability probing, not just presence) is Phase 13's exit criterion "Doctor verifies the CONFIGURED host's wiring, not just Claude Code" — tracked there, not as a duplicate open item.)_
 
@@ -224,10 +251,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 10.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Documented seam audit across config merge/load/save, the markdown writer, graph index/rebuild, status_bundle, the ops registry, and the hook dispatcher
-- [ ] Each confirmed (2/3 adversarial) seam bug fixed with a regression test AT the seam
-- [ ] A final independent review round returns dry (no new confirmed seams)
-- [ ] Full suite green via cz_preflight
+- [x] Documented seam audit across config merge/load/save, the markdown writer, graph index/rebuild, status_bundle, the ops registry, and the hook dispatcher
+- [x] Each confirmed (2/3 adversarial) seam bug fixed with a regression test AT the seam
+- [x] A final independent review round returns dry (no new confirmed seams)
+- [x] Full suite green via cz_preflight
 
 ### Phase 11: Adversarial sweep: concurrency, I/O robustness & failure modes
 
