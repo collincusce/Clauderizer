@@ -20,7 +20,7 @@
 | 10 | Adversarial sweep: integration seams & state (codebase-wide) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-10-HANDOFF.md |
 | 11 | Adversarial sweep: concurrency, I/O robustness & failure modes | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-11-HANDOFF.md |
 | 12 | Security & trust hardening | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-12-HANDOFF.md |
-| 13 | UX completeness, doc truth-up & release gate; close the gameplan | ⬜ NOT STARTED | — | — | handoffs/PHASE-13-HANDOFF.md |
+| 13 | UX completeness, doc truth-up & release gate; close the gameplan | 🟡 IN PROGRESS | 2026-06-21 | — | handoffs/PHASE-13-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -135,6 +135,13 @@ failure_mode_hardening: config.ConfigError (subclasses ValueError) — Config.lo
 
 ```
 security_review_results: Independent security review: 4 threat categories CLEAN (path traversal via host id/config_path — parse_host_target allow-list; config command-injection — hostile host_target re-validated, hooks read-only so cloning doesn't auto-exec; secret leakage — none; uninstall data-loss — preserves docs/foreign servers/foreign hooks, fully reverses). Findings: H-11 HIGH (claude-code .mcp.json/.claude writers skipped path-safety -> machine-path leak on commit) RESOLVED via gitignore-when-machine-specific; H-12 LOW (symlinked skill aborts uninstall) RESOLVED; H-13 LOW (engine writes follow symlinks) OPEN/deferred (needs malicious working tree, content not attacker-controlled). Docs: TRUST.md + SECURITY.md trued-up to P8 reality (uninstall full footprint, claude-code-only hooks, setup-guide filenames). Suite 541.
+```
+
+### Phase 13 Outputs
+
+```
+ux_and_doc_truthup: clauderize init --list-hosts (cli._print_host_list). Doctor verifies configured host (P10 branch: per-host MCP presence + floor). L-21 doc sweep: README CLI block (+--host/--list-hosts, full-footprint uninstall line), README switch-hosts/uninstall prose, UPGRADING uninstall section (full footprint, manual rm -rf removed), TRUST.md + SECURITY.md (P12), CHANGELOG Unreleased extended P7-P12 with honest wiring-vs-consumption verification note. Lessons L-29 (destructive-op isolation) + L-30 (subagent artifact isolation) promoted to docs/LESSONS.md (16->18). Suite 542.
+release_gate_state: ASSEMBLED (automatable): CHANGELOG Unreleased through P7-P12; wiring-contract CI evidence (wiring_contract_sweep green for all auto-write hosts); suite 483->542; branch cross-host-cross-model with per-phase commits. PENDING (irreducibly manual / user's): (1) the four-registry sweep + tag + GitHub Release + PyPI publish (L-08, irreversible — must run release-check + every CI host leg green BEFORE tagging per L-20); (2) real-host consumption evidence + non-Claude-model drive (O-07/O-11, D-032 manual); (3) merge cross-host-cross-model -> main. NOT executed autonomously: the release push is outward-facing/irreversible and the real-host proof needs the user's machine.
 ```
 
 ## Corrections Log
