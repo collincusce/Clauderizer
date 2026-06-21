@@ -202,3 +202,60 @@ def hook_setup_guide(host_id: str, hook_argv: list[str] | None = None) -> str | 
         f"context. Without it you still have the floor (Tier 4) and /cz-status "
         f"(Tier 3).\n"
     )
+
+
+# --- P6: wiring-contract verification — the in-process host-simulator (D-032) ----
+
+def verify_emitted_wiring(host_id: str, repo_root: Path) -> tuple[bool, str]:
+    """Wiring-contract check (D-032): emit the host's config, read it back, and
+    confirm the clauderizer entry is well-formed (command + args), path-safe, and
+    launches clauderizer-mcp. The 'does the real host actually read it' consumption
+    proof is irreducibly manual (D-032) — not this."""
+    em = HOST_EMITTERS[host_id]
+    if not em.auto_write:
+        return True, "guide-only (nothing auto-written to verify)"
+    path = emit_mcp(host_id, repo_root)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return False, f"emitted config is not valid JSON: {exc}"
+    entry = (data.get(em.servers_key) or {}).get("clauderizer")
+    if not isinstance(entry, dict) or "command" not in entry:
+        return False, "missing or malformed clauderizer entry"
+    argv = [entry["command"], *entry.get("args", [])]
+    if not is_path_safe(argv):
+        return False, f"path-unsafe (machine-specific) command: {argv}"
+    if not any("clauderizer-mcp" in tok for tok in argv):
+        return False, "command does not launch clauderizer-mcp"
+    return True, "wiring contract OK"
+
+
+def wiring_contract_sweep(repo_root: Path) -> dict[str, tuple[bool, str]]:
+    """The release gate (D-032): run the wiring-contract check for every auto-write
+    host. Green only when every host's emitted config passes. Runs in CI via the
+    test suite; consumption proof (a real host reading it) is a manual spot-check."""
+    return {h: verify_emitted_wiring(h, repo_root)
+            for h, em in HOST_EMITTERS.items() if em.auto_write}
+
+
+def path_safety_audit(repo_root: Path) -> list[str]:
+    """Scan a repo's committed host MCP configs for a machine-specific absolute path
+    (the O-06 leak). Returns offending 'path: argv' strings — empty is clean. A
+    committable config must carry only a portable command (D-031)."""
+    offenders: list[str] = []
+    rels = [".mcp.json", *(em.config_path for em in HOST_EMITTERS.values() if em.auto_write)]
+    for rel in rels:
+        p = repo_root / rel
+        if not p.exists():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        for key in ("mcpServers", "servers", "context_servers", "amp.mcpServers"):
+            entry = (data.get(key) or {}).get("clauderizer")
+            if isinstance(entry, dict):
+                argv = [entry.get("command", ""), *entry.get("args", [])]
+                if not is_path_safe(argv):
+                    offenders.append(f"{rel}: {argv}")
+    return offenders

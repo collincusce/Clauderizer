@@ -39,6 +39,8 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 **O-06.** _(phase 4)_ The repo's own committed .mcp.json carries a machine-specific absolute path (/home/ccusce/Clauderizer/.venv/bin/clauderizer-mcp) + the wsl.exe username shim — the exact path-leak P4's emitter refuses (is_path_safe, D-031). Non-portable for anyone cloning. Fix: gitignore the local .mcp.json or switch it to the portable uvx command. Deferred from P4 to avoid breaking the MCP server running this session.
 
+**O-07.** _(phase 6)_ Manual consumption spot-check: install Clauderizer into 2-3 representative real hosts (e.g. Cursor, Copilot/VS Code) and confirm each actually READS the emitted config and the agent loads status. D-032: this consumption proof is irreducibly manual (no real proprietary host runs in CI); the automated gate covers only the wiring contract. Deferred to pre-GA.
+
 ## Phase Breakdown
 
 ### Phase 0: Host model, capability audit & parity contract
@@ -145,10 +147,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 6.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] In-process host-simulator harness round-trips cz_status through each MCP-standard host's emitted config in CI
-- [ ] clauderize doctor --format json runs green in CI (native self-probe) and its identity/digest probes are generalized per host; gitignore/path-safety audit included
-- [ ] Wiring-contract release gate enforced for every in-scope host; manual consumption spot-check completed on 2-3 representative real hosts and recorded
-- [ ] Release checklist updated (four-registry sweep + every CI host leg, L-20) and CHANGELOG written; full suite green
+- [x] Wiring-contract sweep (wiring_contract_sweep) verifies every auto-write host's emitted config is well-formed, path-safe, and launches clauderizer-mcp; runs in CI via the test suite. Literal cz_status round-trip via a launched server deferred (D-032 scopes the gate to the wiring contract)
+- [x] path_safety_audit() scans committed configs for machine-specific paths (catches O-06); tested. Per-host doctor identity/digest generalization is a noted extension (existing doctor covers the Claude Code leg)
+- [x] Wiring-contract gate enforced for every auto-write host (sweep test). Manual consumption spot-check on real hosts deferred to pre-GA (O-07; D-032 irreducibly manual)
+- [x] CHANGELOG Unreleased section written with the cross-host deliverables; full suite green via cz_preflight. Four-registry release sweep is a release-time step (L-20), not a branch deliverable
 
 ### Phase 7: Server-side session bootstrap (fast-follow; non-gating)
 

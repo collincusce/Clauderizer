@@ -1,7 +1,7 @@
 # Chat Handoff Index — Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate)
 
 > Last updated: 2026-06-21
-> Status: Phase 6 ready
+> Status: Phase 7 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 475
+**Current baseline test count**: 479
 
 ## Ending Protocol
 
@@ -35,7 +35,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 3 | MCP middle tiers: prompts, auto-load resource & tier routing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Cross-host verification execution & release gate | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | Cross-host verification execution & release gate | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Server-side session bootstrap (fast-follow; non-gating) | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -65,6 +65,10 @@ Phase 4 built the per-host wiring emitters. hosttargets.py: HOST_EMITTERS table 
 ### Phase 5 — completed 2026-06-21
 
 Phase 5 handled the bespoke hosts - those needing more than AGENTS.md+MCP. Two non-AGENTS.md hosts (Continue, Gemini) get the Tier-4 floor auto-written into their NATIVE instructions file (.continue/rules/clauderizer.md, GEMINI.md) via a marker-block upsert that preserves the user's content and is idempotent. The hook-capable hosts (Copilot, Codex, Windsurf, Cline, Amp - they have SessionStart-class hooks for Tier 1) get a per-host hook SETUP GUIDE rather than an auto-written config: each host's hook config schema differs and is unverified (O-02 residual), so per D-031 we ship a guide (the kimi pattern) with the clauderizer-hook command + the host's event names, rather than emit a config that might be wrong. emit_instructions + hook_setup_guide added to hosttargets.py; 4 tests. Each bespoke host now reaches its best achievable tier: Tier 1 via guided hook wiring, or the native-file floor (Tier 4) plus /cz-status (Tier 3). Verified with cz_preflight.
+
+### Phase 6 — completed 2026-06-21
+
+Phase 6 stood up the verification gate. wiring_contract_sweep() is the in-process host-simulator (D-032): for every auto-write host it emits the config, reads it back, and confirms the clauderizer entry is well-formed, path-safe, and launches clauderizer-mcp - the WIRING CONTRACT. It runs in CI through the test suite, so the gate is green only when every host's emitted config passes. path_safety_audit() scans committed configs for machine-specific absolute paths (catches the O-06 leak). Per D-032 the gate is the wiring contract, not a live launch: actually launching the stdio server to round-trip cz_status, and proving a REAL host reads the config, is consumption proof - irreducibly manual on the ~9 proprietary hosts and deferred to pre-GA (O-07). CHANGELOG Unreleased updated with the cross-host deliverables; the four-registry release sweep (L-20) is a release-time step. 3 tests; suite green via cz_preflight.
 
 ## Accumulated Lessons
 

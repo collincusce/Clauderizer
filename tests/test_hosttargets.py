@@ -135,3 +135,27 @@ def test_hook_setup_guide(tmp_path):
     assert "clauderizer-hook" in guide and "SessionStart" in guide
     assert ht.hook_setup_guide("continue") is None   # no hook system
     assert ht.hook_setup_guide("zed") is None
+
+
+# --- P6: wiring-contract verification (the host-simulator) ------------------------
+
+def test_wiring_contract_sweep_all_green(tmp_path):
+    report = ht.wiring_contract_sweep(tmp_path)
+    assert report  # non-empty — the auto-write hosts
+    for host, (ok, detail) in report.items():
+        assert ok, f"{host} failed the wiring contract: {detail}"
+
+
+def test_path_safety_audit_flags_machine_specific_path(tmp_path):
+    cfg = tmp_path / ".cursor" / "mcp.json"
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text(json.dumps({"mcpServers": {"clauderizer": {
+        "command": "/home/me/.venv/bin/clauderizer-mcp", "args": []}}}), encoding="utf-8")
+    offenders = ht.path_safety_audit(tmp_path)
+    assert offenders and ".cursor/mcp.json" in offenders[0]
+
+
+def test_path_safety_audit_clean_after_portable_emit(tmp_path):
+    ht.emit_mcp("cursor", tmp_path)
+    ht.emit_mcp("zed", tmp_path)
+    assert ht.path_safety_audit(tmp_path) == []   # portable commands -> clean

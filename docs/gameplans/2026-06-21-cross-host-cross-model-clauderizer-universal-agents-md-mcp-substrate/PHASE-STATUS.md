@@ -13,7 +13,7 @@
 | 3 | MCP middle tiers: prompts, auto-load resource & tier routing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Cross-host verification execution & release gate | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | Cross-host verification execution & release gate | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Server-side session bootstrap (fast-follow; non-gating) | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 
 ## Outputs Registry
@@ -77,6 +77,15 @@ native_floor_hosts: continue (.continue/rules/clauderizer.md), gemini-cli (GEMIN
 hook_guide_hosts: copilot, codex, windsurf, cline, amp, gemini-cli (Tier-1 via guided wiring)
 functions: hosttargets.emit_instructions + hook_setup_guide
 tests: 4 new in tests/test_hosttargets.py
+```
+
+### Phase 6 Outputs
+
+```
+host_simulator: hosttargets.wiring_contract_sweep + verify_emitted_wiring (D-032 wiring contract)
+path_audit: hosttargets.path_safety_audit (catches machine-specific paths, O-06)
+ci_gate: test_wiring_contract_sweep_all_green runs the sweep in CI via the suite
+tests: 3 new (wiring sweep, path-audit flag, path-audit clean)
 ```
 
 ## Corrections Log

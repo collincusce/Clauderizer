@@ -9,11 +9,20 @@ kimi to ~11 agentic coding hosts via the AGENTS.md + MCP substrate, without regr
 Claude Code parity (INVARIANT-07). Design + verified capability matrix in
 `docs/CROSS-HOST.md`. Gameplan: `cross-host-cross-model`.
 
-### Planned
-- Per-host wiring emitters (GitHub Copilot, Codex CLI, Gemini CLI, Windsurf, Cline, Amp,
-  Cursor, Continue.dev, Zed); `clauderize uninstall [--host]`; the injection-parity ladder
-  (hook → MCP prompt → AGENTS.md floor) with a server-side bootstrap fallback for hook-less
-  hosts. Tier-2 (auto-loaded MCP resource) retired — verification found no host supports it.
+### Added (on the cross-host branch — not yet released)
+- **Host-target axis & injection ladder.** New `host_target` config axis (D-028) and the
+  injection-parity ladder (Tier-1 hook → Tier-3 MCP prompt → Tier-4 AGENTS.md floor; Tier-2
+  retired, D-034). In-memory at-most-once delivery signal (INVARIANT-08) + write-first
+  self-correction; `session.best_tier()`.
+- **Host-neutral floor.** The shared stanza no longer assumes a SessionStart hook; it tells
+  hook-less hosts to call `cz_status` first (P2).
+- **MCP prompts.** `cz-status` / `cz-next-phase` surface as slash commands on prompt-capable
+  hosts (Cursor, Copilot, Continue, Gemini, Zed).
+- **Per-host wiring emitters** (`hosttargets.py`): non-destructive, portable (uvx) MCP
+  registration for Cursor/Copilot/Continue/Zed/Gemini/Cline/Amp; native-instructions floor
+  for Continue & Gemini; hook setup guides for hook-capable hosts; guide-only for TOML/global
+  (Codex/Windsurf/kimi). `clauderize uninstall [--host]`. Wiring-contract verification +
+  path-safety audit (D-032).
 - Dropped from scope: Roo Code (repo archived 2026-05-15), Aider (no native MCP client yet).
 
 ## [0.15.0] — 2026-06-21
