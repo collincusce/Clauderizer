@@ -16,7 +16,7 @@
 | 6 | Cross-host verification execution & release gate | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Server-side session bootstrap (fast-follow; non-gating) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-7-HANDOFF.md |
 | 8 | Wire host_target end-to-end (make cross-host functional via init) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-8-HANDOFF.md |
-| 9 | Real-host & cross-model verification (close O-06, O-07; kill engine_stale) | ⬜ NOT STARTED | — | — | handoffs/PHASE-9-HANDOFF.md |
+| 9 | Real-host & cross-model verification (close O-06, O-07; kill engine_stale) | 🟡 IN PROGRESS | 2026-06-21 | — | handoffs/PHASE-9-HANDOFF.md |
 | 10 | Adversarial sweep: integration seams & state (codebase-wide) | ⬜ NOT STARTED | — | — | handoffs/PHASE-10-HANDOFF.md |
 | 11 | Adversarial sweep: concurrency, I/O robustness & failure modes | ⬜ NOT STARTED | — | — | handoffs/PHASE-11-HANDOFF.md |
 | 12 | Security & trust hardening | ⬜ NOT STARTED | — | — | handoffs/PHASE-12-HANDOFF.md |
@@ -110,6 +110,13 @@ cli_flag: clauderize init --host <name> (dest=host); resolves flag > config.host
 new_functions: hosttargets: parse_host_target/valid_host_targets/HostTargetError (friendly validation), detect_host_target (cheap auto-detect), mcp_setup_guide (guide-only hosts), emit_host_wiring + EmitResult (idempotent per-host orchestrator). init branches on host_target==claude-code (byte-identical) else emit_host_wiring.
 uninstall_module: src/clauderizer/scaffold/uninstall.py: uninstall(root, host=None) -> UninstallReport. Full footprint = .mcp.json key + .claude hooks + every per-host MCP + CLAUDE.md/AGENTS.md stanzas + native floor blocks + clauderizer-* skills + .clauderizer/ + gitignore line. --host scopes to one. Preserves docs/ and unrelated entries. Uses new markdown.remove_marker_block (sections.py+writer.py).
 baseline_tests: 507 (was 484; +23 in tests/test_host_target_init.py). Commit 91561ed.
+```
+
+### Phase 9 Outputs
+
+```
+o06_fix: .mcp.json + .claude/settings.json git rm --cached + gitignored (machine-path leak removed from version control; dogfood keeps them locally for its editable-engine build). path_safety_audit made gitignore-aware (hosttargets._is_git_ignored). Audit clean on real repo. Commit on cross-host-cross-model branch.
+live_server_verification: Launched clauderizer-mcp over real stdio MCP client (mcp SDK ClientSession): serves P3 prompts [cz-next-phase, cz-status], 31 tools, cz-status prompt returns live [Clauderizer] digest, cz_status tool round-trips. CI-pinned: test_mcp_tools.py::test_server_serves_prompts + test_server_bootstrap_injects_only_on_hookless_host (P7 bootstrap fires for cursor, silent for claude-code). engine_stale for THIS session is unrelated to correctness — the running server holds pre-edit modules; clears on session restart (user action).
 ```
 
 ## Corrections Log
