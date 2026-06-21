@@ -37,6 +37,10 @@
 
 **L-24.** A 'degrades gracefully' claim is only as strong as the input diversity it was tested against (non-dict valid JSON, BOM/CRLF, unicode, empty), AND tolerance must wrap the WHOLE pipeline, not just json.loads: guard the file decode before it (non-UTF-8 -> UnicodeDecodeError) and the shape after it (unhashable key, non-str field), and net per-item in any batch loop so one bad input never aborts the run. Corollary: a regex encoding a domain rule must encode it precisely ([1-9]\d* failed, not \d+ failed). Adversarial-input tests belong in the same phase that makes the robustness claim. (Consolidates L-18, L-19.) *(from 2026-06-20-empirical-memory-gains)*
 
+**L-26.** Re-distill curated, append-only memory behind a COVERAGE GATE, never by taste: auto-derive a query from each lesson's OWN distinctive tokens (no hand-picked probes) and require that after consolidation the lesson's synthesis still surfaces in the ranker top-k; merge only the tightest clusters, mark sources obsolete with a "consolidated into L-NN" pointer (never delete — INVARIANT-03), and prove coverage both BEFORE apply (simulated) and AFTER apply (on the live file, with the marker stripped so the check cannot cheat). Instance: docs/LESSONS.md 21 → 16 active at 9/9 post-apply coverage, rollup −20%. *(from 2026-06-20-empirical-memory-gains)*
+
+**L-27.** A must-earn / gated feature whose TARGET metric is already SATURATED by a simpler earlier phase cannot earn its place — park it by analysis WITHOUT building it (cite the saturated metric + the absent need + the cost). Building first only to measure zero marginal gain burns effort to reach a verdict the prior phase's number already implies. The saturation corollary to L-17 (test as a falsifiable hypothesis, measure before shipping, a discard is a success): when the gate is pre-saturated you can PREDICT the zero — don't build to confirm it. Instance: bitemporal parked because Phase 4 already drove contradiction-rate to its 0.0 floor. *(from 2026-06-20-empirical-memory-gains)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)* (obsolete 2026-06-21: consolidated into L-25)
@@ -64,3 +68,7 @@
 **L-04.** Every file the engine writes must round-trip through its own parser in tests; never swallow config parse errors silently. *(from 2026-06-09-discipline-seams)*
 
 **L-16.** Generated/managed content has a source template — edit the source, not just the render. Clauderizer renders CLAUDE.md's stanza and .claude/skills from src/clauderizer/templates/claude_stanza.md and src/clauderizer/skills/ at init time; editing only the rendered copy leaves the source stale (and a future init would overwrite the render), while editing only the source leaves the live repo stale until re-init. No test enforces sync, so the drift is silent — update both, source first. *(from 2026-06-17-spec-kit-discipline-gates)*
+
+### Category: Testing
+
+**L-28.** A behaviour/adherence eval must ISOLATE the variable and not PRIME the behaviour it measures, or its null result is uninterpretable. Use self-contained arms (the "absent" arm must not reach the signal by another path — repo/CLAUDE.md access defeats a "with-vs-without handoff pointer" test), NEUTRAL framing ("here is a task, proceed" — not "would you refuse if this breaks a rule?", which triggers the very check the feature exists to prompt), and subtler violations; beware ceiling scores (4/4 both arms proves nothing). Corollary: if the control can reach the signal another way, you are measuring the path, not your feature. *(from 2026-06-20-empirical-memory-gains)*

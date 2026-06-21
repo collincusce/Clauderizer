@@ -85,3 +85,28 @@ only what brings gains, and trim what doesn't. Test suite **400 → 446**, green
   (open item recorded).
 - **Monitor edge-suggester real-world precision**; tune `min_shared` if noise appears.
 - **Bitemporal** remains parked; revisit only if a concrete as-of query need emerges.
+
+## Formal close-out (2026-06-21)
+
+Gameplan formally closed after all 8 phases completed and the work shipped as
+**0.15.0**. Close-out actions:
+
+- **Lessons curated.** Three enduring *methodology* lessons promoted to project scope
+  (they now ride every future handoff): **L-26** (re-distill curated memory behind a
+  coverage gate, never by taste), **L-27** (park a must-earn feature by analysis when
+  its gate metric is already saturated — the saturation corollary to L-17), **L-28**
+  (a behaviour/adherence eval must isolate the variable and not prime it). The other
+  seven active gameplan lessons stay archived here: they are implementation-specific
+  (now living in code + `ARCHITECTURE.md`) or restate canonical decisions
+  (D4/D6/INVARIANT-05). Phase 7's re-distill (L-22–L-25) already consolidated the
+  overlapping project lessons.
+- **Final self-critique clean on Coherence** (`cz_critique`): graph reconciled, zero
+  pending cascades. The four unchecked Phase 5/6 exit criteria are *keep-branch*
+  criteria mooted by the evidence-based park/drop (a successful must-earn outcome per
+  D2), not open work; lesson #13's missing evidence cite is cosmetic (provenance is
+  C-01, and it stays archived, not promoted).
+- **Docs reflect final state.** `docs/ARCHITECTURE.md` gained a "Memory quality — the
+  gain-gate features" capability section; the CHANGELOG already carried the 0.15.0
+  entry; no `REQUIREMENTS.md` exists to update.
+- **`active_gameplan` cleared** in `.clauderizer/config.toml` (`cz_status` now reports
+  "No active gameplan"); the gameplan directory is retained on disk — nothing deleted.
