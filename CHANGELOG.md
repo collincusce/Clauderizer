@@ -2,14 +2,14 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [Unreleased] — cross-host & cross-model substrate
+## [0.16.0] — 2026-06-21
 
-**Universal host support (in progress).** Generalizing Clauderizer beyond Claude Code +
-kimi to ~11 agentic coding hosts via the AGENTS.md + MCP substrate, without regressing
-Claude Code parity (INVARIANT-07). Design + verified capability matrix in
-`docs/CROSS-HOST.md`. Gameplan: `cross-host-cross-model`.
+**Universal host support — the cross-host & cross-model substrate.** Generalizes Clauderizer
+beyond Claude Code + kimi to ~11 agentic coding hosts via the AGENTS.md + MCP substrate,
+without regressing Claude Code parity (INVARIANT-07). Design + verified capability matrix in
+`docs/CROSS-HOST.md`. Still `Development Status :: 4 - Beta`. Suite 446 → 548.
 
-### Added (on the cross-host branch — not yet released)
+### Added
 - **Host-target axis & injection ladder.** New `host_target` config axis (D-028) and the
   injection-parity ladder (Tier-1 hook → Tier-3 MCP prompt → Tier-4 AGENTS.md floor; Tier-2
   retired, D-034). In-memory at-most-once delivery signal (INVARIANT-08) + write-first
@@ -25,27 +25,36 @@ Claude Code parity (INVARIANT-07). Design + verified capability matrix in
 - **Server-side session bootstrap** (P7): the MCP server attaches a compact status note to
   the first non-status tool result on a hook-less host, in a separate `clauderizer_status`
   field (never corrupting the tool's own result, D-027), deduped via the P1 signal.
-- **`clauderize init --host <name>`** (P8): finally wires the emitters through the
-  user-facing command — sets `host_target`, branches init (claude-code byte-identical per
-  INVARIANT-07; other hosts get their MCP config + AGENTS.md floor + hook/MCP setup guides),
-  with cheap auto-detection and a friendly error listing valid hosts. `--list-hosts` lists
-  them. `clauderize uninstall` now reverses the **full footprint** (MCP keys + hooks +
-  marker stanzas + skills + `.clauderizer/`), `--host` scopes to one; `docs/` always preserved.
-- **Hardening** (P9–P12): the dogfood `.mcp.json`/`.claude/settings.json` and any
-  machine-specific committable wiring are gitignored, not leaked (O-06, H-11); the live MCP
-  server verified to serve the prompts + bootstrap over a real stdio client; cross-host hook
-  event names (windsurf `pre_user_prompt`, amp `agent.start`, …) routed correctly; a corrupt
-  `config.toml` degrades to a clean error instead of crashing the CLI; an op↔engine signature
-  guard (O-08); uninstall is symlink-safe (H-12). Independent seam + security reviews; suite
-  → 541.
-- Dropped from scope: Roo Code (repo archived 2026-05-15), Aider (no native MCP client yet).
+- **`clauderize init --host <name>` + `--list-hosts`** (P8): finally wires the emitters
+  through the user-facing command — sets `host_target`, branches init (claude-code
+  byte-identical per INVARIANT-07; other hosts get their MCP config + AGENTS.md floor +
+  hook/MCP setup guides), cheap auto-detection, a friendly error listing valid hosts.
+  `clauderize uninstall` now reverses the **full footprint** (MCP keys + hooks + marker
+  stanzas + skills + `.clauderizer/`), `--host` scopes to one; `docs/` always preserved.
+- **doctor is host-aware** — verifies the CONFIGURED host's wiring, not just Claude Code, and
+  names the right repair (`init --host <name>`) when `host_target` was stripped.
 
-> **Verification status (honest):** the **wiring contract** (every auto-write host's emitted
-> config is well-formed, path-safe, and launches `clauderizer-mcp`) is verified in CI for all
-> hosts. The **real-host consumption proof** (a real Cursor/Copilot/… actually loading the
-> config and the agent reaching `cz_status`) and a **non-Claude model** driving the protocol
-> are irreducibly manual (D-032) and **pending** before any "verified on N hosts" claim — do
-> not state a real-host count beyond what has actually been walked.
+### Hardened (P9–P13)
+- The dogfood `.mcp.json`/`.claude/settings.json` and any machine-specific committable wiring
+  are gitignored, not leaked (O-06, H-11); cross-host hook event names (windsurf
+  `pre_user_prompt`, amp `agent.start`, …) routed correctly; a corrupt `config.toml` degrades
+  to a clean `ConfigError` instead of crashing the CLI; an op↔engine signature guard (O-08);
+  uninstall is symlink-safe (H-12). Independent seam + security reviews.
+- **Config round-trip preserves unmodeled fields.** `Config.load`/`to_toml` capture and
+  re-emit any keys/sections the engine doesn't model, so a config rewrite (init, the
+  active-gameplan flip, or an older engine) never silently drops a field — closing the
+  `host_target`-strip class found in real-host testing.
+
+### Verified
+- **Wiring contract** (every auto-write host's emitted config is well-formed, path-safe, and
+  launches `clauderizer-mcp`) — in CI for all auto-write hosts.
+- **Real-host consumption** — confirmed on **2 real hosts**: Cursor (Remote-WSL; the prompts
+  surface as slash commands) and VS Code / Copilot, both reading the clauderize-emitted config.
+- **Cross-model** — Cursor's Composer 2.5 Fast (a non-Claude model) drove a full gameplan
+  end-to-end; adherence findings recorded — it leaned on the `clauderize ops` CLI fallback
+  (validating L-05) and also hand-edited tracked docs, which drove the doctor + config
+  preservation fixes above. Per-host consumption beyond these two remains a manual spot-check.
+- Dropped from scope: Roo Code (repo archived 2026-05-15), Aider (no native MCP client yet).
 
 ## [0.15.0] — 2026-06-21
 
