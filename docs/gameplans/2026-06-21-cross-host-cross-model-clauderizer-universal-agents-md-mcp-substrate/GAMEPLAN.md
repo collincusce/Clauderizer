@@ -48,6 +48,8 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 **O-07.** _(phase 6)_ Manual consumption spot-check: install Clauderizer into 2-3 representative real hosts (e.g. Cursor, Copilot/VS Code) and confirm each actually READS the emitted config and the agent loads status. D-032: this consumption proof is irreducibly manual (no real proprietary host runs in CI); the automated gate covers only the wiring contract. Deferred to pre-GA.
 
+**O-08.** _(phase 10)_ Silent contract drift in the cz_* ops surface. cz_add_amendment was called with a wrong arg name (rationale, vs the real triggered_by/what/why) in P0 AND in this amendment's first attempt — so the THREE P0 amendments (retire Tier-2, scope 13->11, promote P7) were never written as A-NNN records (their substance survives only in the P0 phase summary + D-034). cz_add_finding had the same kind of mismatch. For P10: (a) re-record the 3 missing P0 amendments; (b) add a test/guard that every cz_* op's advertised signature matches its implementation and that an ops-batch arg error is surfaced loudly, not swallowed as a single ok:false among successes (a wrong-arg op in a batch should be hard to miss).
+
 ## Phase Breakdown
 
 ### Phase 0: Host model, capability audit & parity contract
