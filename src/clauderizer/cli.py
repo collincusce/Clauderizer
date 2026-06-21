@@ -139,37 +139,68 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     check("config.toml present", paths.config_file.exists())
     check("procedure shipped", paths.procedure_file.exists())
     check("CLAUDE.md stanza", _has_marker(paths.claude_md, "clauderizer"))
-    check(".mcp.json registers clauderizer", _mcp_registered(paths.mcp_json))
-    # Session host of record (D3): launchability is only meaningful relative to
-    # the host that spawns sessions, so surface — and validate — the record.
-    session_host = config.session_host
-    wiring = hosts.read_wiring(paths.mcp_json)
-    if session_host:
-        try:
-            hosts.parse(session_host)
-            print(f"✓ session host of record: {session_host}")
-        except hosts.SessionHostError as exc:
-            ok = False
-            print(f"✗ session host of record — {exc}")
-    elif hosts.is_wsl_shim(wiring):
-        unverified += 1
-        print("? session host of record — not recorded, but the wiring is wsl.exe-shimmed "
-              "(a Windows session host); re-run `clauderize init` to record it")
+    # The MCP + SessionStart-hook wiring is host_target-specific: init writes the
+    # Claude Code files (.mcp.json + .claude/settings.json) ONLY for claude-code,
+    # so checking them for a cursor/continue/… repo would false-fail a healthy
+    # install (O-09). Branch on the recorded host_target; full per-host
+    # launchability probing is Phase 13.
+    host_target = config.host_target
+    if host_target == hosttargets.CLAUDE_CODE:
+        check(".mcp.json registers clauderizer", _mcp_registered(paths.mcp_json))
+        # Session host of record (D3): launchability is only meaningful relative to
+        # the host that spawns sessions, so surface — and validate — the record.
+        session_host = config.session_host
+        wiring = hosts.read_wiring(paths.mcp_json)
+        if session_host:
+            try:
+                hosts.parse(session_host)
+                print(f"✓ session host of record: {session_host}")
+            except hosts.SessionHostError as exc:
+                ok = False
+                print(f"✗ session host of record — {exc}")
+        elif hosts.is_wsl_shim(wiring):
+            unverified += 1
+            print("? session host of record — not recorded, but the wiring is wsl.exe-shimmed "
+                  "(a Windows session host); re-run `clauderize init` to record it")
+        else:
+            print("✓ session host of record: native (default — not recorded)")
+        # Fidelity: registration present is not enough — the command must be
+        # launchable BY THE SESSION HOST OF RECORD, or doctor must say it cannot tell.
+        verdict("MCP server launchable for session host",
+                hosts.verify_wiring(wiring, session_host))
+        settings = paths.root / ".claude" / "settings.json"
+        check("SessionStart hook registered", _hook_registered(settings))
+        hook_argv = _hook_command(settings)
+        # D-010: the hook is executed as a STRING through the harness's executor
+        # shell from an arbitrary cwd — the verdict must traverse that leg (Git
+        # Bash + non-repo cwd) or say honestly that it cannot. The direct argv
+        # probe alone stayed green through the entire H-08 outage.
+        verdict("SessionStart hook launchable for session host",
+                hosts.verify_hook_wiring(hook_argv, session_host))
     else:
-        print("✓ session host of record: native (default — not recorded)")
-    # Fidelity: registration present is not enough — the command must be
-    # launchable BY THE SESSION HOST OF RECORD, or doctor must say it cannot tell.
-    verdict("MCP server launchable for session host",
-            hosts.verify_wiring(wiring, session_host))
-    settings = paths.root / ".claude" / "settings.json"
-    check("SessionStart hook registered", _hook_registered(settings))
-    hook_argv = _hook_command(settings)
-    # D-010: the hook is executed as a STRING through the harness's executor
-    # shell from an arbitrary cwd — the verdict must traverse that leg (Git
-    # Bash + non-repo cwd) or say honestly that it cannot. The direct argv
-    # probe alone stayed green through the entire H-08 outage.
-    verdict("SessionStart hook launchable for session host",
-            hosts.verify_hook_wiring(hook_argv, session_host))
+        # Non-claude host: verify ITS config (init does not write .mcp.json /
+        # .claude hooks for these). Presence + floor only here; launchability is
+        # P13 (O-09). hook_argv left None so the wrapper block below self-skips.
+        hook_argv = None
+        em = hosttargets.HOST_EMITTERS.get(host_target)
+        if em is None:
+            check(f"host target '{host_target}' known", False, "unknown host")
+        elif em.auto_write:
+            check(f"{host_target} MCP config registers clauderizer",
+                  _host_mcp_registered(paths.root / em.config_path, em.servers_key),
+                  f"{em.config_path} missing or lacks the clauderizer entry — "
+                  f"re-run `clauderize init --host {host_target}`")
+        else:
+            print(f"✓ host target '{host_target}': guide-only — register MCP by hand "
+                  f"(see .clauderizer/{host_target}-mcp-setup.md)")
+        # the floor reaches the agent via AGENTS.md, or a native rules file for
+        # the hosts that do not read AGENTS.md (Continue, Gemini)
+        rel = hosttargets.NATIVE_INSTRUCTIONS.get(host_target)
+        if rel is not None:
+            check(f"{host_target} native floor present",
+                  _has_marker(paths.root / rel, "clauderizer"))
+        else:
+            check("AGENTS.md floor present", _has_marker(paths.agents_md, "clauderizer"))
     # D4 breadcrumb wrapper: when the registered command is the wrapper, its
     # file must exist and its baked engine command should match what a fresh
     # init would compose (staleness = the engine moved since the last init).
@@ -365,6 +396,19 @@ def _mcp_registered(mcp_json: Path) -> bool:
     except json.JSONDecodeError:
         return False
     return "clauderizer" in data.get("mcpServers", {})
+
+
+def _host_mcp_registered(path: Path, servers_key: str) -> bool:
+    """A per-host config (``.cursor/mcp.json`` etc.) registers clauderizer under
+    its own servers key — doctor's presence check for a non-claude host_target."""
+    if not path.exists():
+        return False
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return False
+    servers = data.get(servers_key)
+    return isinstance(servers, dict) and "clauderizer" in servers
 
 
 def _hook_registered(settings: Path) -> bool:

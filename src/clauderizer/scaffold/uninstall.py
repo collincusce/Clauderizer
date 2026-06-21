@@ -152,6 +152,11 @@ def uninstall(root: Path, *, host: str | None = None) -> UninstallReport:
                 report.note(".mcp.json clauderizer key")
             if _remove_hooks(root / ".claude" / "settings.json"):
                 report.note(".claude/settings.json clauderizer hooks")
+            for wrapper in ("hook.sh", "hook.cmd"):  # D4 wrapper goes with the hook
+                p = root / ".clauderizer" / wrapper
+                if p.exists():
+                    p.unlink()
+                    report.note(f".clauderizer/{wrapper}")
         else:
             _uninstall_host(root, host, report)
         report.kept.append("docs/ and .clauderizer/ config preserved (host-scoped uninstall)")

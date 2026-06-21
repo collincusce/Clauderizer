@@ -260,3 +260,44 @@ def test_cli_uninstall_full_reports(empty_python_repo, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "Uninstalled Clauderizer (full footprint)" in out
     assert "kept" in out                                      # docs/ preservation noted
+
+
+# --- amp dotted-key consistency (review finding #1: round-trip guard) -------------
+
+def test_amp_emit_remove_roundtrip_is_consistent(tmp_path):
+    # amp uses a FLAT dotted settings.json key ("amp.mcpServers", VS Code family);
+    # emit/detect/remove must all agree on it and never touch foreign entries
+    cfg = tmp_path / ".amp" / "settings.json"
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text(json.dumps({"amp.notifications": True,
+                               "amp.mcpServers": {"other": {"command": "x"}}}),
+                   encoding="utf-8")
+    ht.emit_mcp("amp", tmp_path)
+    assert ht.detect_host_target(tmp_path) == "amp"           # detect agrees on the key
+    assert ht.remove_mcp("amp", tmp_path) is True             # remove finds what emit wrote
+    data = _read(cfg)
+    assert "clauderizer" not in data["amp.mcpServers"]        # ours gone
+    assert data["amp.mcpServers"]["other"] == {"command": "x"}  # foreign server intact
+    assert data["amp.notifications"] is True                  # foreign key intact
+
+
+# --- doctor verifies the CONFIGURED host (O-09 minimal guard) ---------------------
+
+def test_doctor_does_not_false_fail_cursor_repo(empty_python_repo, monkeypatch, capsys):
+    init(empty_python_repo, host_target="cursor", spawn_test=False)
+    monkeypatch.chdir(empty_python_repo)
+    code = cli.main(["doctor"])
+    out = capsys.readouterr().out
+    assert "Drift detected" not in out                        # healthy cursor repo
+    assert code != 2
+    assert "cursor MCP config registers clauderizer" in out
+    assert "✗" not in out                                     # no failed check
+
+
+def test_doctor_guide_only_host_notes_manual(empty_python_repo, monkeypatch, capsys):
+    init(empty_python_repo, host_target="codex", spawn_test=False)
+    monkeypatch.chdir(empty_python_repo)
+    code = cli.main(["doctor"])
+    out = capsys.readouterr().out
+    assert code != 2
+    assert "guide-only" in out
