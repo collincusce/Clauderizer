@@ -15,6 +15,15 @@ from typing import Any
 
 CONFIG_VERSION = "1"
 
+
+class ConfigError(ValueError):
+    """``.clauderizer/config.toml`` exists but cannot be parsed — corrupt TOML,
+    non-UTF-8 bytes, or a non-integer memory threshold (L-04: a malformed
+    threshold must be visible, never silently defaulted). Raised by
+    :meth:`Config.load` so callers report it cleanly instead of dying on a raw
+    ``TOMLDecodeError``/``UnicodeDecodeError`` traceback. Subclasses ``ValueError``
+    so any existing ``except ValueError`` still catches it."""
+
 # Default module/ritual manifests per size. Mirrors the procedure's sizing
 # matrix, but as a real dial instead of prose advice.
 SIZE_MANIFESTS: dict[str, dict[str, Any]] = {
@@ -122,33 +131,43 @@ class Config:
 
     @classmethod
     def load(cls, path: Path) -> "Config":
-        with path.open("rb") as fh:
-            raw = tomllib.load(fh)
-        cz = raw.get("clauderizer", {})
-        host = raw.get("host", {})
-        paths = raw.get("paths", {})
-        modules = raw.get("modules", {})
-        rituals = raw.get("rituals", {})
-        active = raw.get("active_gameplan", {})
-        memory = raw.get("memory", {})
-        return cls(
-            version=str(cz.get("version", CONFIG_VERSION)),
-            size=str(cz.get("size", "standard")),
-            host_profile=str(host.get("profile", "generic")),
-            session_host=(str(host["session_host"]) if host.get("session_host") else None),
-            host_target=str(host.get("target", "claude-code")),
-            docs=str(paths.get("docs", "docs")),
-            gameplans=str(paths.get("gameplans", "docs/gameplans")),
-            modules=list(modules.get("enabled", [])),
-            rituals={k: bool(v) for k, v in rituals.items()},
-            preflight_checks=list(cz.get("preflight_checks", [])),
-            preflight_advisory=list(cz.get("preflight_advisory", [])),
-            active_gameplan=(active.get("id") or None),
-            # int() raises on garbage — a malformed threshold must be visible,
-            # never silently replaced by a default (L-04).
-            active_lessons_warn=int(memory.get("active_lessons_warn", 12)),
-            project_lessons_warn=int(memory.get("project_lessons_warn", 20)),
-        )
+        # Wrap the parse so a corrupt config surfaces as a clean, named ConfigError
+        # rather than a raw TOMLDecodeError/UnicodeDecodeError traceback. The hook
+        # already degrades (dispatch catches → breadcrumb → exit 0); this lets the
+        # CLI (doctor/status/reindex) and MCP report the corruption instead of
+        # crashing on it (P11 failure-mode hardening).
+        try:
+            with path.open("rb") as fh:
+                raw = tomllib.load(fh)
+            cz = raw.get("clauderizer", {})
+            host = raw.get("host", {})
+            paths = raw.get("paths", {})
+            modules = raw.get("modules", {})
+            rituals = raw.get("rituals", {})
+            active = raw.get("active_gameplan", {})
+            memory = raw.get("memory", {})
+            return cls(
+                version=str(cz.get("version", CONFIG_VERSION)),
+                size=str(cz.get("size", "standard")),
+                host_profile=str(host.get("profile", "generic")),
+                session_host=(str(host["session_host"]) if host.get("session_host") else None),
+                host_target=str(host.get("target", "claude-code")),
+                docs=str(paths.get("docs", "docs")),
+                gameplans=str(paths.get("gameplans", "docs/gameplans")),
+                modules=list(modules.get("enabled", [])),
+                rituals={k: bool(v) for k, v in rituals.items()},
+                preflight_checks=list(cz.get("preflight_checks", [])),
+                preflight_advisory=list(cz.get("preflight_advisory", [])),
+                active_gameplan=(active.get("id") or None),
+                # int() raises on garbage — a malformed threshold must be visible,
+                # never silently replaced by a default (L-04).
+                active_lessons_warn=int(memory.get("active_lessons_warn", 12)),
+                project_lessons_warn=int(memory.get("project_lessons_warn", 20)),
+            )
+        except (tomllib.TOMLDecodeError, UnicodeDecodeError, ValueError) as exc:
+            raise ConfigError(
+                f"{path} is malformed ({exc}); fix it or re-run `clauderize init`"
+            ) from exc
 
     def to_toml(self) -> str:
         lines = [

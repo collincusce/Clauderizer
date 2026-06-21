@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 from . import PROCEDURE_VERSION, __version__, hosts, hosttargets
-from .config import Config
+from .config import Config, ConfigError
 from .graph import index
 from .paths import find_repo_root, resolve
 from .rituals import status_bundle
@@ -573,7 +573,13 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
-    return args.func(args)
+    try:
+        return args.func(args)
+    except ConfigError as exc:
+        # A corrupt .clauderizer/config.toml must not crash any command with a raw
+        # traceback — the diagnostic tools especially should report it (P11).
+        print(f"✗ {exc}")
+        return 1
 
 
 if __name__ == "__main__":
