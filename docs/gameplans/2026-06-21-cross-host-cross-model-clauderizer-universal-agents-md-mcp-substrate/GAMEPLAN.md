@@ -281,10 +281,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 12.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Path-safety enforced on ALL config emitters, including init's original .mcp.json/.claude writers (the O-06 class) - tested
-- [ ] No machine path or secret can land in a committable file; uninstall fully reverses the footprint (tested)
-- [ ] An independent security-review pass completed; its confirmed findings fixed
-- [ ] SECURITY.md and TRUST.md verified line-by-line against the code; full suite green
+- [x] Path-safety enforced on ALL config emitters, including init's original .mcp.json/.claude writers (the O-06 class) - tested
+- [x] No machine path or secret can land in a committable file; uninstall fully reverses the footprint (tested)
+- [x] An independent security-review pass completed; its confirmed findings fixed
+- [x] SECURITY.md and TRUST.md verified line-by-line against the code; full suite green
 
 ### Phase 13: UX completeness, doc truth-up & release gate; close the gameplan
 
