@@ -30,6 +30,10 @@ clauderizes any repo).
   handoffs assemble cumulatively — operations, not instructions to remember.
 - **Append-only memory with consolidation pressure, not caps.** Nothing is ever
   auto-deleted; overlap is synthesized and the enduring promoted.
+- **Host- and model-portable, not a Claude-only bet.** A host-neutral MCP server plus an
+  `AGENTS.md` floor reach 11 agents (Claude Code, Cursor, Copilot, Codex, Gemini CLI,
+  Windsurf, Cline, Amp, Continue, Zed, kimi); an injection-parity ladder delivers status by
+  the best tier each host supports (hook → `/cz-status` prompt → instructions floor).
 - **Zero runtime dependencies**; works on native Linux/macOS and Windows→WSL alike.
 
 ## Scope Boundaries

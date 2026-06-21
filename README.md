@@ -40,10 +40,11 @@ hope:
 
 | Goal | How |
 |---|---|
-| 🔎 **Discoverable** | Self-describing MCP tools + lifecycle hooks (SessionStart digest, analyze-on-prompt, compaction-survival) that inject status into context — in Claude Code and, via `AGENTS.md`, kimi-code. No "read these 7 files in this order" ritual. |
+| 🔎 **Discoverable** | Self-describing MCP tools + lifecycle hooks (SessionStart digest, analyze-on-prompt, compaction-survival) that inject status into context — automatically on hook-capable hosts, via `/cz-status` on prompt-capable ones, and via the `AGENTS.md` floor everywhere else. No "read these 7 files in this order" ritual. |
 | 🎛️ **Configurable** | A real `pet` / `standard` / `saas` size dial and host-language profiles — *data*, not prose advice. |
 | 🤖 **Agentic** | Cascade, pre-flight, and handoff assembly are real tool calls — not instructions the agent has to remember to run. |
 | 📦 **Drop-in** | One command clauderizes any repo, in any language. |
+| 🧩 **Host-portable** | One install targets your agent — Claude Code, Cursor, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp, Continue, Zed, or kimi. Host-neutral MCP + an injection-parity ladder, not a Claude-only bet. |
 
 > **Markdown is the source of truth.** The graph index is a disposable cache rebuilt from the
 > markdown on demand — if they ever disagree, markdown wins. No database, no lock-in: your
@@ -127,8 +128,9 @@ session.
 ## Quickstart: into an existing project
 
 Already have a codebase? Clauderizer drops in without disturbing it — `init` is idempotent and
-never clobbers your files: it adds a marker stanza to an existing `CLAUDE.md`, key-merges
-`.mcp.json`, and skips any doc that already exists.
+never clobbers your files: it adds a marker stanza to an existing `CLAUDE.md`, key-merges your
+host's MCP config (`.mcp.json` for Claude Code; see [Works with your agent](#works-with-your-agent)),
+and skips any doc that already exists.
 
 **1. Clauderize the repo.** Run it on a clean working tree (or a fresh branch) so the change is
 easy to review:
@@ -249,15 +251,18 @@ docs is `uvx --from clauderizer clauderize <cmd>` until you install properly.
 ```
 your-repo/
 ├── CLAUDE.md                    # a Clauderizer stanza (between markers — your text is preserved)
-├── AGENTS.md                    # the same stanza for AGENTS.md-aware hosts (kimi-code, Codex, …)
-├── .mcp.json                    # registers the clauderizer MCP server
+├── AGENTS.md                    # the same stanza for AGENTS.md-aware hosts (most of them)
+├── <host MCP config>            # registers the clauderizer MCP server — path is host-specific:
+│                                #   .mcp.json (Claude Code), .cursor/mcp.json, .vscode/mcp.json,
+│                                #   .zed/settings.json, … (auto-written for hosts with a JSON config;
+│                                #   TOML/global hosts get a setup guide instead — see docs/CROSS-HOST.md)
 ├── .claude/
-│   ├── settings.json            # SessionStart + UserPromptSubmit hooks (the breadcrumb wrapper)
+│   ├── settings.json            # SessionStart + UserPromptSubmit hooks — only on hook-capable hosts
 │   └── skills/clauderizer-*/    # six workflow skills (/do-phase, /cascade, /record, …)
 ├── .clauderizer/
-│   ├── config.toml              # size dial + host profile + session host + active gameplan
+│   ├── config.toml              # size dial + host profile + session host + host target + active gameplan
 │   ├── hook.sh                  # breadcrumb hook wrapper (hook.cmd on native Windows)
-│   ├── kimi-setup.md            # non-destructive kimi-code wiring guide ([[hooks]] + MCP)
+│   ├── <host>-setup.md          # non-destructive wiring guide for guide-only hosts (kimi, Codex, Windsurf)
 │   ├── profile.lock.toml        # per-project test/build/lint commands (editable override)
 │   └── index.json               # disposable graph cache (gitignored)
 └── docs/                        # the canonical markdown memory
@@ -272,6 +277,30 @@ clobbers your content (marker blocks, key-scoped JSON merges, exists-checks). Ru
 `clauderize doctor` any time to verify the install is not just *present* but actually
 *runnable by the host that spawns your sessions* — and that the engine it reaches is the
 version answering the doctor (a green check on a broken setup is worse than no check).
+
+## Works with your agent
+
+The MCP server is host-neutral (`uvx --from clauderizer clauderizer-mcp` — never a machine
+path), so one install targets whichever agent you drive. `init` reads the **host target** from
+config (`[host] target`, default `claude-code`) and writes that host's MCP config in its own
+place — non-destructively, preserving any other servers:
+
+**11 supported hosts** — Claude Code · Cursor · GitHub Copilot / VS Code · OpenAI Codex CLI ·
+Google Gemini CLI · Windsurf · Cline · Amp · Continue.dev · Zed · kimi.
+
+How a session learns where things stand degrades gracefully — best reachable tier wins, and
+status is delivered at most once per session:
+
+- **Hook hosts** get it **automatically** — the lifecycle hook injects the status digest at
+  session start (Claude Code, kimi, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp).
+- **Prompt hosts** get a **`/cz-status`** slash command (Cursor, Copilot, Continue, Gemini, Zed).
+- **Everyone** gets the floor: `AGENTS.md` (or a native rules file for the few hosts that don't
+  read it) tells the agent to call `cz_status` first — and the MCP server attaches a status note
+  to the first tool call as an automatic fallback for hook-less hosts.
+
+See **[docs/CROSS-HOST.md](https://github.com/collincusce/Clauderizer/blob/main/docs/CROSS-HOST.md)**
+for the full per-host capability matrix. Switching hosts later is a config edit plus a re-`init`;
+`clauderize uninstall` cleanly removes the registration from any host.
 
 ## The model
 
@@ -306,6 +335,7 @@ clauderize reindex           # rebuild the graph cache from markdown
 clauderize release-check     # maintainers: push ordering + the four version registries · exit 0 ok · 2 red · 3 unverifiable
 clauderize mcp               # launch the MCP server (stdio)
 clauderize ops <file.json|-> # execute a JSON batch of cz_* ops (the no-MCP write fallback)
+clauderize uninstall [--host <name>]   # remove the clauderizer MCP registration (only that key) from each host; no --host cleans all
 ```
 
 ## MCP surface
@@ -319,6 +349,9 @@ clauderize ops <file.json|-> # execute a JSON batch of cz_* ops (the no-MCP writ
 · `cz_upsert_entity` · `cz_transition_status`
 **Discipline & analysis** (advisory, judgment-based; INVARIANT-05) · `cz_analyze` · `cz_critique` · `cz_mine_failures` · `cz_add_open_item` · `cz_resolve_open_item` · `cz_set_exit_criteria` · `cz_check_exit_criterion`
 **Resources** · `clauderizer://status` · `clauderizer://procedure` · `clauderizer://entity/{id}`
+**Prompts** · `cz-status` · `cz-next-phase` — surface as slash commands (e.g. `/cz-status`) on prompt-capable hosts
+
+In total: **31 tools + 3 resources + 2 prompts**.
 
 The tools are deliberately separate and self-describing rather than one generic `mutate` — that's
 the whole point of going MCP-native: an agent dropped into the repo *discovers* the workflow from

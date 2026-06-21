@@ -10,13 +10,18 @@ of `clauderize doctor`.
 
 ## Scope and model
 
-Clauderizer writes repo-local files, two of which register commands that
-your agent harness executes (an MCP server and SessionStart/UserPromptSubmit
-hooks). The
-full statement of what is written, what executes when, under which
-contracts, and what happens when you clone a repo that already carries the
-wiring lives in **[docs/TRUST.md](docs/TRUST.md)** — behavioral claims
-there that disagree with the code are treated as bugs.
+Clauderizer writes repo-local files that register commands your agent
+harness executes: its MCP server (and, on hook-capable hosts,
+SessionStart/UserPromptSubmit hooks). It supports a range of hosts, so the
+registration lands in a **host-specific config file** (e.g. `.mcp.json`,
+`.cursor/mcp.json`, `.vscode/mcp.json`) — always as a non-destructive
+key-merge that preserves any other servers. The full statement of what is
+written per host, what executes when, under which contracts, and what
+happens when you clone a repo that already carries the wiring lives in
+**[docs/TRUST.md](docs/TRUST.md)** — behavioral claims there that disagree
+with the code are treated as bugs. To remove the registration cleanly from
+every host, run `clauderize uninstall` (it strips only the `clauderizer`
+key).
 
 ## Supported versions
 

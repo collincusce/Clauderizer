@@ -53,7 +53,30 @@ Clauderizer's value lives in `docs/` — and that is **your project's
 memory, not the tool's**. Uninstalling removes the machinery and keeps the
 memory.
 
-From the repo root:
+**Recommended: `clauderize uninstall`.** It removes the clauderizer MCP
+registration across **all** hosts it can find — peeling out only the
+`clauderizer` key and leaving every other server untouched:
+
+```bash
+uvx --from clauderizer clauderize uninstall              # all known hosts
+uvx --from clauderizer clauderize uninstall --host cursor   # or just one
+```
+
+Then drop the rest of the machinery and the package (the memory in `docs/`
+stays):
+
+```bash
+rm -rf .clauderizer .claude/skills/clauderizer-*
+pipx uninstall clauderizer    # or: uv tool uninstall clauderizer (zero-install uvx users skip this)
+```
+
+### Manual fallback (Claude Code wiring only)
+
+If you cannot run the engine, the blocks below remove the **Claude Code**
+wiring by hand (`.mcp.json`, the `.claude/settings.json` hooks, the
+CLAUDE.md/AGENTS.md stanzas). For any other host, remove its `clauderizer`
+MCP entry from that host's config file (see the per-host paths in
+[TRUST.md](TRUST.md)). From the repo root:
 
 ```bash
 # 1. the MCP registration (preserves any other servers in the file)

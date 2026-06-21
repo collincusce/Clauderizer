@@ -76,3 +76,29 @@ a simpler baseline. All of the below surface advisorily — none blocks a write
 The harness itself (LongMemEval 5-ability taxonomy + 3-stage ablation, stdlib-only)
 is the reusable asset future memory-feature work pre-registers its hypothesis
 against (see `docs/LESSONS.md` L-26/L-27/L-28 and the gameplan post-mortem).
+
+### Host targeting & the injection-parity ladder
+
+**`host_target`** is a third host axis, orthogonal to `session_host` (where commands
+run) and `host_profile` (the repo's language): the `[host] target` line in
+`.clauderizer/config.toml` (default `claude-code`) selects which agent `init` wires.
+The MCP command it emits is machine-independent (`uvx --from clauderizer
+clauderizer-mcp`); the registration is written into that host's own config file —
+auto-merged for hosts with a JSON config, emitted as a `.clauderizer/<host>-setup.md`
+guide for TOML/global hosts.
+
+Because hosts vary in what they can auto-load, status reaches the agent by the **best
+reachable tier** (delivered at most once per session):
+
+- **Tier 1 — hook (automatic):** the lifecycle hook injects the status digest at
+  session start (Claude Code, kimi, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp).
+- **Tier 3 — prompt:** a user-invoked `/cz-status` slash command (Cursor, Copilot,
+  Continue, Gemini, Zed).
+- **Tier 4 — floor (always present):** the instructions file (`AGENTS.md`, or a native
+  `.continue/rules/` / `GEMINI.md`) tells the agent to call `cz_status` first.
+- **Server-side bootstrap:** an automatic fallback for hook-less hosts — the MCP server
+  attaches a status note to the first tool call's result (covers Continue, Zed, and
+  Cursor when its hooks are governance-only).
+
+The full per-host capability matrix and the decisions behind it live in
+`docs/CROSS-HOST.md`.
