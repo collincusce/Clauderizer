@@ -59,6 +59,52 @@ def test_registry_is_exactly_the_tool_surface():
         assert spec.fn.__doc__  # every op self-describes
 
 
+def test_no_op_dispatch_signature_drift():
+    """O-08 guard: every keyword a cz_* op passes to an engine function
+    (mutations.*, handoff.*, preflight.*, cascade.*, status_bundle.*) must be a
+    REAL parameter of that function. The historical bug was exactly this drift —
+    cz_add_amendment passing `rationale` when the impl wanted triggered_by/what/why,
+    and cz_add_finding mismatched — silently producing ok:false at call time. This
+    static-checks the op<->engine contract so it cannot rot again."""
+    import ast
+    import inspect
+
+    from clauderizer import mutations
+    from clauderizer.graph import cascade as cascade_mod
+    from clauderizer.graph import index, query
+    from clauderizer.rituals import handoff, preflight, status_bundle
+
+    modules = {
+        "mutations": mutations, "cascade_mod": cascade_mod, "index": index,
+        "query": query, "handoff": handoff, "preflight": preflight,
+        "status_bundle": status_bundle,
+    }
+    tree = ast.parse(inspect.getsource(ops))
+    violations = []
+    for fdef in tree.body:
+        if not (isinstance(fdef, ast.FunctionDef) and fdef.name.startswith("cz_")):
+            continue
+        for node in ast.walk(fdef):
+            if not isinstance(node, ast.Call):
+                continue
+            f = node.func
+            if not (isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name)):
+                continue
+            mod = modules.get(f.value.id)
+            target = getattr(mod, f.attr, None) if mod else None
+            if not callable(target):
+                continue
+            sig = inspect.signature(target)
+            if any(p.kind == p.VAR_KEYWORD for p in sig.parameters.values()):
+                continue  # **kwargs accepts anything
+            valid = set(sig.parameters)
+            for kw in node.keywords:
+                if kw.arg and kw.arg not in valid:
+                    violations.append(
+                        f"{fdef.name}() -> {f.value.id}.{f.attr}(): unknown kwarg '{kw.arg}'")
+    assert not violations, "op<->engine signature drift (O-08):\n" + "\n".join(violations)
+
+
 def test_mcp_registers_the_registry_functions(temp_repo):
     pytest.importorskip("mcp")
     import asyncio

@@ -108,6 +108,41 @@ def test_unknown_event_falls_back_to_session_start(monkeypatch, capsys):
     assert rc == 0 and out.strip() == "MARK:SS"
 
 
+# --- P10 seam fix: native cross-host event names route to the right handler -------
+
+
+def test_windsurf_pre_user_prompt_routes_to_user_prompt_submit(monkeypatch, capsys):
+    # windsurf's native prompt-submit event must route to the LIGHT analyze pointer
+    # (user_prompt_submit), NOT the full cold-start digest (session_start) — else a
+    # guide-wired windsurf gets the whole digest spammed on every prompt.
+    mark_handlers(monkeypatch)
+    rc, out = run(monkeypatch, capsys,
+                  stdin=json.dumps({"hook_event_name": "pre_user_prompt", "prompt": "x"}).encode())
+    assert rc == 0 and out.strip() == "MARK:UPS"
+
+
+@pytest.mark.parametrize("event", ["BeforeAgent", "TaskStart", "session.start", "agent.start"])
+def test_native_session_start_analogues_route_to_session_start(monkeypatch, capsys, event):
+    # gemini/cline/amp session-start analogues map explicitly to the digest handler
+    mark_handlers(monkeypatch)
+    rc, out = run(monkeypatch, capsys,
+                  stdin=json.dumps({"hook_event_name": event}).encode())
+    assert rc == 0 and out.strip() == "MARK:SS"
+
+
+@pytest.mark.parametrize("bad_event", [["SessionStart"], {"x": 1}, 42, True])
+def test_unhashable_or_nonstr_event_falls_back_gracefully(monkeypatch, capsys, bad_event):
+    # an unhashable (list/dict) or non-str hook_event_name must reach the graceful
+    # SessionStart fallback, NOT raise inside dict.get and emit the error breadcrumb
+    # (L-24 robustness class — read_payload tolerates every malformed shape).
+    mark_handlers(monkeypatch)
+    rc, out = run(monkeypatch, capsys,
+                  stdin=json.dumps({"hook_event_name": bad_event}).encode())
+    assert rc == 0
+    assert out.strip() == "MARK:SS"
+    assert "hook error" not in out               # graceful fallback, not the breadcrumb
+
+
 def test_missing_event_name_falls_back_to_session_start(monkeypatch, capsys):
     mark_handlers(monkeypatch)
     rc, out = run(monkeypatch, capsys, stdin=json.dumps({"prompt": "hi"}).encode())

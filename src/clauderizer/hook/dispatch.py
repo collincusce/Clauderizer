@@ -30,6 +30,22 @@ EVENT_HANDLERS = {
     "UserPromptSubmit": handlers.user_prompt_submit,
 }
 
+# Native cross-host event names (the ones hosttargets.HOOK_GUIDE_HOSTS tells each
+# host to wire) normalized to the canonical handler vocabulary, so a host wired per
+# its OWN setup guide routes to the RIGHT handler instead of the SessionStart
+# fallback. The load-bearing one is windsurf's `pre_user_prompt` — a prompt-submit
+# event: without this it falls through to session_start and emits the full
+# cold-start digest on EVERY prompt instead of the light analyze pointer. The
+# session-start analogues are listed explicitly so the cross-host event contract is
+# documented in one place (they would fall back to session_start anyway).
+_EVENT_ALIASES = {
+    "pre_user_prompt": "UserPromptSubmit",  # windsurf
+    "BeforeAgent": "SessionStart",          # gemini-cli (pre-run = cold start)
+    "TaskStart": "SessionStart",            # cline
+    "session.start": "SessionStart",        # amp
+    "agent.start": "SessionStart",          # amp (per-agent start)
+}
+
 
 def read_payload() -> dict:
     """Parse the hook payload from stdin, tolerating every malformed shape
@@ -71,7 +87,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     try:
         payload = read_payload()
-        handler = EVENT_HANDLERS.get(payload.get("hook_event_name"), handlers.session_start)
+        event = payload.get("hook_event_name")
+        # A non-str event name (an unhashable list/dict, an int, None) must reach
+        # the graceful SessionStart fallback, NOT raise inside dict.get and trip the
+        # error breadcrumb (L-24 robustness class: tolerate every malformed shape).
+        if not isinstance(event, str):
+            event = None
+        event = _EVENT_ALIASES.get(event, event)  # native host event -> canonical
+        handler = EVENT_HANDLERS.get(event, handlers.session_start)
         out = handler(payload)
     except Exception as exc:  # last-resort net: a hook must never break a session
         print(f"[Clauderizer] hook error: {exc} — run `clauderize doctor`")
