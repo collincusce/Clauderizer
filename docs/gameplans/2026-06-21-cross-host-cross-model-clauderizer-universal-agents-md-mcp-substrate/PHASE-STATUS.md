@@ -10,7 +10,7 @@
 | 0 | Host model, capability audit & parity contract | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Model-agnostic protocol hardening & injection-delivery signal | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | AGENTS.md canonical substrate & Tier-4 floor | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | MCP middle tiers: prompts, auto-load resource & tier routing | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | MCP middle tiers: prompts, auto-load resource & tier routing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Cross-host verification execution & release gate | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
@@ -50,6 +50,15 @@ stanza_mechanism: single-source dual-write (D-035); no symlink/import
 baseline_tests: 463
 ```
 
+### Phase 3 Outputs
+
+```
+prompts: cz-status, cz-next-phase (MCP prompts, Tier-3 slash commands)
+tier_fn: session.best_tier(host_target) -> 1 hook / 3 prompt / 4 floor
+prompt_hosts: cursor, continue, zed (Tier-3, hook-less)
+p2_test_fixed: floor guard test made whitespace-robust (was red in 00159ef)
+```
+
 ## Corrections Log
 
 ### C-01 — Phase 0
@@ -75,3 +84,11 @@ baseline_tests: 463
 **What was actually correct**: The first cz_preflight of a fresh gameplan FAILS clean_tree, because creating the gameplan writes uncommitted docs (DECISIONS/INVARIANTS/gameplan dir/config pointer) and nothing commits the plan.
 **Why**: new-gameplan had no commit step; do-phase preflight clean_tree guard then trips on the plan own creation artifacts.
 **Lesson**: A new gameplan must be committed before its first do-phase. Fixed: added step 8 (Commit the plan before executing) to clauderizer-new-gameplan source + rendered (L-16), including the rule to separate pre-existing unrelated changes into their own commit.
+
+### C-04 — Phase 3
+
+**Phase**: 3
+**What gameplan said**: P2 was reported green (suite 463) and committed (00159ef).
+**What was actually correct**: P2 actually shipped with the floor guard test RED: it asserted the contiguous phrase 'before anything else' but the template wraps it across a line break ('before anything' + newline + 'else'). cz_preflight at P3-start (the authoritative gate) caught it; the ad-hoc pytest-to-file + EXIT read through wsl.exe had reported a misleading exit 0.
+**Why**: P2 was closed on an ad-hoc shell exit-code read (unreliable through the wsl.exe layer - summary lines are carriage-return-eaten and exit codes mis-captured) instead of cz_preflight, and the guard assertion was brittle to markdown line-wrapping.
+**Lesson**: Close every phase with cz_preflight (the engine gate that runs AND parses the suite), never an ad-hoc 'pytest > file; EXIT=$?' through wsl.exe - that capture is flaky. And make guard assertions whitespace-robust: normalize with ' '.join(text.split()) before matching a multi-word phrase, because markdown wraps lines.

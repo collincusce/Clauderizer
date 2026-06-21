@@ -100,10 +100,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] MCP prompts (/cz-status, /cz-do-phase, ...) exposed by the server and listed on a prompt-supporting host
-- [ ] clauderizer://status shaped for auto-load; tier-selection logic implemented (hook -> resource -> prompt -> floor)
-- [ ] Capability re-probe at session start with safe downgrade-to-floor on mismatch
-- [ ] Tier-routing unit tests: for each host capability profile the correct tier fires and higher tiers are skipped; double-injection prevented via the P1 signal
+- [x] MCP prompts (cz-status, cz-next-phase) exposed by the server and listed on a prompt-supporting host (FastMCP list_prompts test)
+- [x] Tier-selection implemented (best_tier: hook -> prompt -> floor); Tier-2 auto-resource retired per D-034 (no host supports it)
+- [x] Capability is read fresh per call (stateless server = no stale cache) with safe downgrade-to-floor for unknown hosts (best_tier -> 4)
+- [x] Tier-routing unit tests: correct tier per host profile; double-injection prevented via the P1 session signal
 
 ### Phase 4: Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence
 

@@ -194,8 +194,39 @@ def test_stanza_carries_host_neutral_floor():
     text = (Path(clauderizer.__file__).parent / "templates" / "claude_stanza.md").read_text(
         encoding="utf-8"
     )
-    assert "call `cz_status` now, before anything else" in text   # the floor
-    assert "many hosts have no session hook" in text              # host-neutral framing
+    # collapse line-wraps so phrase checks do not depend on where the markdown wraps
+    flat = " ".join(text.split())
+    assert "call `cz_status` now, before anything else" in flat   # the floor
+    assert "many hosts have no session hook" in flat              # host-neutral framing
+
+
+# --- P3: tier routing + MCP prompts ----------------------------------------------
+
+def test_best_tier_per_host():
+    assert session.best_tier("claude-code") == 1     # lifecycle hook
+    assert session.best_tier("copilot") == 1
+    assert session.best_tier("cursor") == 3          # MCP prompt, hook-less
+    assert session.best_tier("continue") == 3
+    assert session.best_tier("zed") == 3
+    assert session.best_tier("totally-unknown") == 4  # safe downgrade to the floor
+    assert session.best_tier(None) == 1               # unset -> default claude-code
+
+
+def test_prompt_cz_status_returns_digest_and_marks(temp_repo, monkeypatch):
+    monkeypatch.chdir(temp_repo)
+    assert session.status_delivered() is False
+    out = mcp_server._prompt_cz_status()
+    assert "cz_status" in out                          # the digest lists the tools
+    assert session.status_delivered() is True          # invoking marks it (INVARIANT-08)
+
+
+def test_prompts_registered_on_server():
+    pytest.importorskip("mcp")
+    import asyncio
+
+    server = mcp_server.build_server()
+    names = {p.name for p in asyncio.run(server.list_prompts())}
+    assert {"cz-status", "cz-next-phase"} <= names
 
 
 # --- INVARIANT-07 guard: the wrapped surface still builds ------------------------

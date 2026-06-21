@@ -1,7 +1,7 @@
 # Chat Handoff Index — Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate)
 
 > Last updated: 2026-06-21
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Host model, capability audit & parity contract | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Model-agnostic protocol hardening & injection-delivery signal | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | AGENTS.md canonical substrate & Tier-4 floor | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | MCP middle tiers: prompts, auto-load resource & tier routing | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | MCP middle tiers: prompts, auto-load resource & tier routing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Cross-host verification execution & release gate | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
@@ -54,6 +54,10 @@ Phase 1 built the cross-host injection substrate. New session.py holds the at-mo
 
 Phase 2 made the shared stanza host-neutral and added the Tier-4 floor. The old stanza claimed the SessionStart hook injects status automatically - true only on hook hosts; a Cursor/Continue/Zed agent was told memory had loaded when it had not. The new stanza conditions on whether the [Clauderizer] digest appeared: if it did, the host has a hook and memory is loaded; if not, call cz_status now before anything else. That one host-neutral floor reaches every host that reads AGENTS.md. Mechanism decision D-035: kept the existing single-source dual-write (one template renders both CLAUDE.md and AGENTS.md) rather than the symlink/@import the criteria proposed - symlinks are fragile on the Windows/WSL dogfood host and @import adds a parity dependency, while single-source already gives no-drift (L-16). Strictly additive: Claude Code still gets its digest via the hook (INVARIANT-07 intact). Template + live CLAUDE.md + AGENTS.md synced; a guard test locks the floor presence and neutrality. Suite 462 -> 463. Floor-Release milestone (docs/CROSS-HOST.md sections 4-5) is now real: every AGENTS.md-native host reaches Tier 4 with zero per-host code; full host round-trip verification is P6.
 
+### Phase 3 — completed 2026-06-21
+
+Phase 3 added the Tier-3 prompt mechanism and the tier-routing function. Two MCP prompts (cz-status, cz-next-phase) are registered on the server; on prompt-supporting hosts (Cursor, Copilot, Continue, Gemini, Zed) they surface as /cz-status etc. - a one-shot pull of memory where no hook does it. Invoking one marks the P1 delivery signal so the write-first self-correction and the P7 bootstrap do not double-fire (INVARIANT-08). session.best_tier(host_target) returns the highest reachable tier (1 hook / 3 prompt / 4 floor); Tier-2 (auto-resource) stays retired (D-034). Unknown hosts downgrade safely to the floor; capability is read fresh per call (the stateless server has no stale cache to re-probe). Also fixed forward a brittle P2 guard test that asserted a phrase the template wraps across a line - it shipped RED in 00159ef because P2 was closed on an unreliable ad-hoc shell exit read instead of cz_preflight (correction recorded). Verified this time with cz_preflight, the authoritative gate.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -66,6 +70,8 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **2.** Do not design a delivery tier around an unverified host behavior; confirm the mechanism exists on at least one target host before giving it a phase.
 
 **3.** A new gameplan must be committed before its first do-phase. Fixed: added step 8 (Commit the plan before executing) to clauderizer-new-gameplan source + rendered (L-16), including the rule to separate pre-existing unrelated changes into their own commit.
+
+**5.** Close every phase with cz_preflight (the engine gate that runs AND parses the suite), never an ad-hoc 'pytest > file; EXIT=$?' through wsl.exe - that capture is flaky. And make guard assertions whitespace-robust: normalize with ' '.join(text.split()) before matching a multi-word phrase, because markdown wraps lines.
 
 ### Category: Testing
 

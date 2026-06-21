@@ -78,6 +78,23 @@ def _deliver_aware(name: str, spec):
     return wrapped
 
 
+def _prompt_cz_status() -> str:
+    """Load the current Clauderizer project status — gameplan, phase, baseline,
+    open items. Run this first on a host with no session hook."""
+    session.mark_status_delivered()
+    paths, config = repo_ctx()
+    return status_bundle.render_digest(
+        status_bundle.compute(paths, config), tools=TOOL_NAMES
+    )
+
+
+def _prompt_cz_next_phase() -> str:
+    """Load the next or current phase bundle — tasks, key files, exit criteria —
+    so you can begin or continue the work."""
+    session.mark_status_delivered()
+    return str(REGISTRY["cz_next_phase_context"].fn().get("handoff_md", ""))
+
+
 def build_server():
     """Construct the FastMCP app. Imports the SDK lazily."""
     from mcp.server.fastmcp import FastMCP
@@ -109,6 +126,14 @@ def build_server():
         if ent is None:
             return f"unknown entity: {entity_id}"
         return ent.path.read_text(encoding="utf-8")
+
+    # --- prompts: Tier-3 user-invoked slash commands (D-034) -------------------
+    # On hosts that surface MCP prompts (Cursor, Copilot, Continue, Gemini, Zed)
+    # these appear as /cz-status etc. — a one-shot pull of memory into context where
+    # no session hook does it. Invoking one marks status delivered so the write-first
+    # self-correction and the bootstrap do not double-fire (INVARIANT-08).
+    mcp.prompt(name="cz-status")(_prompt_cz_status)
+    mcp.prompt(name="cz-next-phase")(_prompt_cz_next_phase)
 
     # --- tools: the shared ops registry, registered verbatim -------------------
     # The op functions ARE the tool implementations — names, signatures, and

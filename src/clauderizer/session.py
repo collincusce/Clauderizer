@@ -39,6 +39,11 @@ _HOOK_HOSTS = frozenset(
 
 DEFAULT_HOST_TARGET = "claude-code"
 
+# Hosts that surface MCP prompts as slash commands (Tier 3) but have no
+# status-delivering hook — the prompt is a user-invoked convenience above the floor.
+# (Cursor's hooks are governance-only, so it routes here.) docs/CROSS-HOST.md §4.
+_PROMPT_HOSTS = frozenset({"cursor", "continue", "zed"})
+
 # Module-global: has the status digest reached the model this server session?
 _delivered = False
 
@@ -71,6 +76,19 @@ def delivers_status_via_hook(host_target: str | None) -> bool:
     default ``host_target`` is ``claude-code`` (a hook host), so an unconfigured
     repo keeps exact Claude Code behaviour — INVARIANT-07."""
     return (host_target or DEFAULT_HOST_TARGET) in _HOOK_HOSTS
+
+
+def best_tier(host_target: str | None) -> int:
+    """Highest injection tier the host supports (D-034 ladder): 1 = lifecycle hook
+    (automatic), 3 = MCP prompt slash command (user-invoked), 4 = AGENTS.md floor
+    (the universal minimum). Tier 2 (auto-loaded resource) was retired — no host
+    has it. Unknown hosts downgrade safely to the floor (4)."""
+    ht = host_target or DEFAULT_HOST_TARGET
+    if ht in _HOOK_HOSTS:
+        return 1
+    if ht in _PROMPT_HOSTS:
+        return 3
+    return 4
 
 
 def should_inject_on_write(host_target: str | None) -> bool:
