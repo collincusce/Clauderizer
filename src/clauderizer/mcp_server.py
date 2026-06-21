@@ -17,13 +17,65 @@ it is imported lazily so the rest of the package works without it.
 
 from __future__ import annotations
 
+import functools
 import sys
 
-from . import __version__
+from . import __version__, session
 from .graph import index
 from .ops import REGISTRY, repo_ctx
 from .rituals import status_bundle
 from .tools_list import TOOL_NAMES
+
+# --- cross-host injection: write-first self-correction (P1, INVARIANT-08) -------
+# On a hook-less host_target, if the agent issues a write before any status was
+# delivered this session, prefix a compact status note to the result so it is not
+# operating blind. On a hook host (default "claude-code") the gate is off and these
+# wrappers are exact no-ops — INVARIANT-07. The signal lives in `session` (in
+# memory, never persisted); this is the server seam that maintains it.
+
+_STATUS_TOOLS = ("cz_status", "cz_next_phase_context")
+
+
+def _status_summary() -> str:
+    try:
+        paths, config = repo_ctx()
+        return str(status_bundle.compute(paths, config).get("summary") or "")
+    except Exception:
+        return ""
+
+
+def _host_target() -> str | None:
+    try:
+        return repo_ctx()[1].host_target
+    except Exception:
+        return None
+
+
+def _deliver_aware(name: str, spec):
+    """Register-time wrapper maintaining the session-delivery signal. Pure reads
+    pass through untouched; the two status-delivering reads mark the signal; write
+    tools apply the write-first self-correction when the gate is open. Uses
+    ``functools.wraps`` so the MCP schema (name, signature, docstring) is identical
+    to the bare op — the surface cannot drift (INVARIANT-07)."""
+    fn = spec.fn
+    delivers = name in _STATUS_TOOLS
+    if not spec.writes and not delivers:
+        return fn
+
+    @functools.wraps(fn)
+    def wrapped(*args, **kwargs):
+        if delivers:
+            session.mark_status_delivered()
+            return fn(*args, **kwargs)
+        result = fn(*args, **kwargs)
+        if session.should_inject_on_write(_host_target()):
+            note = session.status_note(_status_summary())
+            session.mark_status_delivered()
+            if isinstance(result, dict):
+                result.setdefault("clauderizer_status", note)
+        return result
+
+    return wrapped
 
 
 def build_server():
@@ -62,8 +114,8 @@ def build_server():
     # The op functions ARE the tool implementations — names, signatures, and
     # docstrings carry the schema, so MCP and `clauderize ops` stay identical.
 
-    for spec in REGISTRY.values():
-        mcp.tool()(spec.fn)
+    for name, spec in REGISTRY.items():
+        mcp.tool()(_deliver_aware(name, spec))
 
     return mcp
 

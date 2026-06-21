@@ -8,7 +8,7 @@
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Host model, capability audit & parity contract | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Model-agnostic protocol hardening & injection-delivery signal | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Model-agnostic protocol hardening & injection-delivery signal | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | AGENTS.md canonical substrate & Tier-4 floor | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | MCP middle tiers: prompts, auto-load resource & tier routing | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
@@ -28,6 +28,17 @@ tier2_status: RETIRED - no host auto-loads MCP resources
 design_doc: docs/CROSS-HOST.md
 baseline_tests: 446
 agents_md_floor_exceptions: continue (.continue/rules), gemini-cli (GEMINI.md), aider (CONVENTIONS via read:)
+```
+
+### Phase 1 Outputs
+
+```
+new_module: src/clauderizer/session.py - in-memory delivery signal + host gate + write-first note
+config_field: host_target (third host axis, default claude-code) in config.py
+server_seam: mcp_server._deliver_aware wraps tool registration; functools.wraps preserves schemas (build-guard test)
+hook_hosts: claude-code,kimi,copilot,codex,gemini-cli,windsurf,cline,amp (session._HOOK_HOSTS - the gate)
+tests_added: tests/test_session_signal.py (16 tests)
+baseline_tests: 462
 ```
 
 ## Corrections Log

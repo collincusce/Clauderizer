@@ -85,6 +85,12 @@ class Config:
     # (D3, agent-autonomy). None = recorded by no init yet — treated as native,
     # but doctor can tell the difference and nudge a re-init.
     session_host: str | None = None
+    # Which agent tool drives the session: "claude-code" (default), "cursor",
+    # "copilot", "continue", "zed", ... — the THIRD host axis (D-028), orthogonal
+    # to host_profile (language) and session_host (where commands run). Gates the
+    # cross-host injection ladder (session.py). Default keeps exact Claude Code
+    # behaviour (INVARIANT-07).
+    host_target: str = "claude-code"
     docs: str = "docs"
     gameplans: str = "docs/gameplans"
     modules: list[str] = field(default_factory=list)
@@ -130,6 +136,7 @@ class Config:
             size=str(cz.get("size", "standard")),
             host_profile=str(host.get("profile", "generic")),
             session_host=(str(host["session_host"]) if host.get("session_host") else None),
+            host_target=str(host.get("target", "claude-code")),
             docs=str(paths.get("docs", "docs")),
             gameplans=str(paths.get("gameplans", "docs/gameplans")),
             modules=list(modules.get("enabled", [])),
@@ -153,6 +160,7 @@ class Config:
             "",
             "[host]",
             f'profile = "{self.host_profile}"',
+            f'target = "{self.host_target}"',
             *([f'session_host = "{self.session_host}"'] if self.session_host else []),
             "",
             "[paths]",

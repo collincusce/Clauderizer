@@ -67,12 +67,12 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_status, cz_next_phase_context, cz_preflight and the other read tools proven idempotent and re-entrant by tests, with no hidden dependence on hook-injected context
-- [ ] Session-scoped, in-memory, read-only 'status-delivered' signal implemented (no config flag; never blocks; never mutates docs)
-- [ ] Write-first self-correction floor implemented and tested: a write tool with no prior status this session prepends a compact status summary to its result
-- [ ] Tool descriptions rewritten to work in both native-function-calling and prompt-mode and to survive prompt-format variation
-- [ ] Static check passes: the shared instruction/tool surface contains no Claude-specific syntax
-- [ ] Full suite green (baseline 450 tests) plus new tests for the above
+- [x] cz_status, cz_next_phase_context, cz_preflight and the other read tools proven idempotent and re-entrant by tests, with no hidden dependence on hook-injected context
+- [x] Session-scoped, in-memory, read-only 'status-delivered' signal implemented (no config flag; never blocks; never mutates docs)
+- [x] Write-first self-correction floor implemented and tested: a write tool with no prior status this session prepends a compact status summary to its result
+- [x] Tool descriptions rewritten to work in both native-function-calling and prompt-mode and to survive prompt-format variation
+- [x] Static check passes: the shared instruction/tool surface contains no Claude-specific syntax
+- [x] Full suite green (baseline 450 tests) plus new tests for the above
 
 ### Phase 2: AGENTS.md canonical substrate & Tier-4 floor
 
