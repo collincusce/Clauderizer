@@ -6,6 +6,7 @@ preflight_advisory = []
 
 [host]
 profile = "python"
+target = "claude-code"
 session_host = "windows-wsl:ubuntu"
 
 [paths]
@@ -25,4 +26,4 @@ cascade = true
 amendments = false
 
 [active_gameplan]
-id = "2026-06-21-cross-host-cross-model-clauderizer-universal-agents-md-mcp-substrate"
+id = ""

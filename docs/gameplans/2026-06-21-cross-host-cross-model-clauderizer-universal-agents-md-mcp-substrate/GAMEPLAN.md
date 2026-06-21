@@ -1,7 +1,7 @@
 # Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate) Gameplan
 
 > Created: 2026-06-21
-> Status: Executing
+> Status: Complete
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -299,5 +299,5 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 - [x] Every user scenario (new/existing/switch/dual/clone/uninstall/recovery) walked, made clean + discoverable (--list-hosts, doctor per configured host), and documented
 - [x] Doctor verifies the CONFIGURED host's wiring, not just Claude Code
 - [x] Every doc claim matches verified reality (no '11 hosts' beyond what P9 proved); the L-21 sweep redone
-- [ ] Release checklist complete: four version registries (L-08), every CI host leg (L-20), CHANGELOG, wiring-contract + real-host evidence
-- [ ] Gameplan closed out: post-mortem written, enduring lessons promoted to docs/LESSONS.md
+- [x] Release checklist complete: four version registries (L-08), every CI host leg (L-20), CHANGELOG, wiring-contract + real-host evidence
+- [x] Gameplan closed out: post-mortem written, enduring lessons promoted to docs/LESSONS.md
