@@ -13,7 +13,7 @@
 | 3 | Edge-suggester (missing-edge surfacing) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Decision supersession back-refs and lifecycle | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bitemporal valid-time (must-earn) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Persistent steering doc (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | Persistent steering doc (must-earn) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Close-out: consolidate, measure, post-mortem | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 
 ## Outputs Registry
@@ -56,6 +56,12 @@ phase4_result: Decision supersession lifecycle SHIPPED. add_decision(supersedes=
 
 ```
 phase5_result: PARKED (no code shipped). Bitemporal valid-time cannot beat Phase 4: the contradiction-rate gate is already at its 0.0 floor, valid!=transaction time is irrelevant for project decisions (effective when made), and as-of queries have no demonstrated need while costing always-injected schema fields (anti D-027). Evidence-based must-earn park per D2.
+```
+
+### Phase 6 Outputs
+
+```
+phase6_result: Steering doc DROPPED (redundant with auto-loaded CLAUDE.md + INVARIANTS + analyze; anti D-027; Kiro gated-steering refuted). KEPT a trim-consistent adaptation: handoff.relevant_invariant_pointer surfaces the top-k phase-relevant INVARIANTS (focused; injects nothing when none relevant) - filling a real gap (invariants were never surfaced during phase work). Gain is measured-capability + Phase-1-inherited mechanism; a dedicated adherence eval is a recorded follow-up (open item). +2 tests; suite green (446).
 ```
 
 ## Corrections Log

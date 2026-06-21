@@ -195,6 +195,39 @@ def focused_project_lessons(lessons_text: str, query: str,
     return "\n".join(shown), len(shown), total
 
 
+# --- focused governing-invariant surfacing (Phase 6: trim-consistent steering) --
+# A persistent always-injected "steering"/"constitution" doc (Spec-Kit) was DROPPED
+# as redundant (CLAUDE.md is already auto-loaded; INVARIANTS.md + the analyze gate
+# exist) and anti-trim (D-027). But a real gap remained: the must-hold INVARIANTS
+# were never surfaced during phase work — the handoff carried lessons, not rules,
+# and analyze only surfaces them when ADDING a decision. This is the trim-consistent
+# fix: the top-k invariants whose text overlaps the phase, focused (never an
+# always-injected dump), reusing the same lexical ranker Phase 1 validated.
+
+
+def relevant_invariant_pointer(paths: RepoPaths, query: str,
+                               k: int = RELEVANCE_K) -> tuple[str, int, int] | None:
+    """The phase-relevant governing INVARIANTS, as focused pointers.
+
+    Returns ``(markdown, shown, total)`` or ``None`` when there is no query, no
+    invariants doc, or no invariant lexically relevant to this phase (an honest
+    negative — irrelevant rules are not injected, per D-027 trim-first).
+    """
+    if not query or not query.strip():
+        return None
+    doc = paths.doc("INVARIANTS")
+    if not doc.exists():
+        return None
+    entries = analyze.parse_entries(doc.read_text(encoding="utf-8"), "Invariants")
+    if not entries:
+        return None
+    ranked = analyze.rank_relevant(query, entries, k=k)
+    if not ranked:
+        return None
+    md = "\n".join(f"- **{r['id']}** — {r['title']}" for r in ranked)
+    return md, len(ranked), len(entries)
+
+
 # The engine owns only this marker-delimited region of a handoff file (D-008).
 # Everything outside it — agent enrichment — is preserved byte-for-byte when
 # the handoff is regenerated.
@@ -240,6 +273,9 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
     # Idea #2: surface the lessons most relevant to THIS phase as pointers above
     # the (unchanged) cumulative list — focus without dropping anything.
     pointer = relevant_lesson_pointer(index_text, _phase_query(gameplan_text, phase_n))
+    # Phase 6 (trim-consistent steering): surface the phase-relevant governing
+    # invariants — the must-hold rules the handoff never carried before.
+    invariants_focus = relevant_invariant_pointer(paths, _phase_query(gameplan_text, phase_n))
 
     # Distilled project lessons (docs/LESSONS.md) ride along in every handoff,
     # across gameplans — that's what promotion buys (D-009).
@@ -274,6 +310,18 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
         "- `CLAUDE.md`",
         "",
     ]
+    if invariants_focus:
+        inv_md, inv_shown, inv_total = invariants_focus
+        parts += [
+            "## Governing Invariants for This Phase",
+            "",
+            f"_({inv_shown} of {inv_total} surfaced — the must-hold rules whose text "
+            "overlaps this phase (keyword + entity-id, no ML). Honor these; the full "
+            "set is in `docs/INVARIANTS.md`.)_",
+            "",
+            inv_md,
+            "",
+        ]
     if pointer:
         parts += [
             "## Most Relevant Lessons for This Phase",

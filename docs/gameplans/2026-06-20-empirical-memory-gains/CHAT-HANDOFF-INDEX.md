@@ -1,7 +1,7 @@
 # Chat Handoff Index — Empirical memory gains
 
 > Last updated: 2026-06-20
-> Status: Phase 6 ready
+> Status: Phase 7 ready
 
 ## How This Works
 
@@ -35,7 +35,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 3 | Edge-suggester (missing-edge surfacing) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Decision supersession back-refs and lifecycle | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bitemporal valid-time (must-earn) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Persistent steering doc (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | Persistent steering doc (must-earn) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Close-out: consolidate, measure, post-mortem | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -66,6 +66,10 @@ Decision supersession lifecycle: add_decision(supersedes=X) writes a bidirection
 
 PARKED (evidence-based, no code). Bitemporal valid-time was a must-earn candidate; its gate was to beat Phase 4 on contradiction-rate or as-of correctness. Phase 4 already drove contradiction to 0.0 (the floor - unbeatable), valid-time != transaction-time does not arise in project-scoped decision memory (decisions are effective when made), and as-of/time-travel queries have no demonstrated agent need while their always-present fields would add injected context against D-027 (trim-first). Building a speculative schema to measure zero marginal gain was correctly declined. Per D2, a disciplined park is a successful must-earn outcome. Two keep-path exit criteria (schema/as-of implemented) are intentionally left unchecked - this phase resolved via the park branch.
 
+### Phase 6 — completed 2026-06-20
+
+DROP the always-injected steering/constitution doc (redundant with auto-loaded CLAUDE.md + INVARIANTS.md + the analyze gate; anti-trim D-027; the research evidence was weakest - Kiro's gated steering was refuted, only the always-loaded anti-pattern survived). KEPT the trim-consistent adaptation that fills the real gap underneath: handoff.relevant_invariant_pointer surfaces the top-k phase-relevant INVARIANTS (focused, never an always-all dump, injects nothing when none are relevant). Invariants were never surfaced during phase work before this. Honest scope: the kept feature passes a deterministic CAPABILITY gate (surfaces relevant / skips irrelevant - tested) and its reading-stage benefit is inherited from Phase 1's focused-surfacing result; a dedicated invariant-adherence agent-eval was not run and is recorded as an open item. Two keep-path criteria (build the doc / run the adherence ablation) left intentionally unchecked - resolved via the drop-the-doc branch.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -88,3 +92,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **4.** When measuring lexical similarity BETWEEN tracked entities (not query-to-entity), strip structural boilerplate FIRST: the id prefix (subsys./feat.), the type word (subsystem/feature), and scaffold placeholders are shared by every entity by construction, so naive overlap proposes every pair - measured: edge-suggester precision 0.103 with boilerplate vs 0.75-1.0 after stripping. Tokenize the id on ./- so the specific segment (invoice-ledger -> invoice, ledger) contributes but the prefix does not. This is the cross-entity analog of analyze._STOP dropping ADR template boilerplate, and a concrete instance of the over-retrieval finding (low-precision surfacing is net-negative noise). *(evidence: src/clauderizer/analyze.py suggest_edges / _ENTITY_STOP; tests/test_edge_suggester.py precision arc (0.103 naive -> 0.75 hardened fixture))*
 
 **5.** Demote a stale record by a stable SECONDARY sort key (tie-break), never by penalizing its relevance score. analyze.rank_relevant keeps lexical score as the untouched primary key and sorts superseded/deprecated decisions below an ACTIVE peer only at EQUAL score - driving the knowledge-updates contradiction rate 1.0->0 without distorting retrieval or hiding the audit trail (the superseded entry still surfaces, annotated). Status defaults to active for entries lacking the field, so the change is backward-compatible with every pre-existing decision/invariant. *(evidence: src/clauderizer/analyze.py rank_relevant (-score, stale_flag, id); tests/test_supersession.py; harness contradiction_rate 1.0->0.0)*
+
+**7.** When a borrowed 'always-inject X' pattern (e.g. a steering/constitution doc) duplicates a surface the system already has (auto-loaded CLAUDE.md + INVARIANTS + the analyze gate), the gain is in NOT adding the redundant always-injected context (it would only add context-rot cost), and the real opportunity is usually a FOCUSED surfacing of existing structured data that wasn't being surfaced - here, the phase-relevant invariants the handoff never carried. Reject the bloat form; keep the focused adaptation. *(evidence: Phase 6 decision; handoff.relevant_invariant_pointer; D-027)*

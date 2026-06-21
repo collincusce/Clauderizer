@@ -59,9 +59,17 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Evidence**: Phase 4 contradiction_rate 1.0->0.0 (PHASE-STATUS output phase4_result); research-2 caveat (ADBIS schema sound, Graphiti efficacy refuted); D-027 trim-first
 **Status**: active (2026-06-20)
 
+### D6 — Steering: DROP the always-injected doc, KEEP focused invariant surfacing (trim-consistent)
+
+**Context**: Phase 6 must-earn candidate (D2): a persistent steering/constitution doc (Spec-Kit). Research evidence was the weakest of the five angles - Kiro's GATED steering was refuted, only Spec-Kit's ALWAYS-loaded form survived (the anti-trim pattern).
+**Decision**: DROP the always-injected steering/constitution doc: it is redundant with the already auto-loaded CLAUDE.md + INVARIANTS.md + the analyze gate, and an extra always-injected doc adds context-rot cost (anti D-027). KEEP a trim-consistent adaptation that fills a REAL gap: surface the top-k phase-relevant INVARIANTS in the handoff (handoff.relevant_invariant_pointer) - focused, never an always-all dump, injecting nothing when no invariant is relevant. Invariants (the must-hold rules) were previously never surfaced during phase work; the handoff carried lessons, not rules.
+**Consequences**: Honest gain framing: the kept feature is a deterministically-measured CAPABILITY (it surfaces the relevant invariant and skips irrelevant ones - tests prove both) whose downstream adherence benefit rests on Phase 1's validated focused-surfacing mechanism (focused == full accuracy). A dedicated invariant-ADHERENCE agent-eval was NOT run (scope) and is recorded as a follow-up open item - no fresh adherence number is claimed.
+**Evidence**: src/clauderizer/rituals/handoff.py relevant_invariant_pointer; tests/test_handoff_focus.py (surfaces relevant / skips irrelevant); Phase 1 focused-vs-full eval; D-027 trim-first; research-2 (Kiro gated-steering refuted 1-2)
+**Status**: active (2026-06-20)
+
 ## Open Items
 
-_(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Blockers and cross-phase questions — unresolved ones surface in cz_status and when a phase is completed.)_
+**O-01.** Run a dedicated invariant-ADHERENCE agent-eval for the focused-invariant pointer (Phase 6): with-vs-without surfacing on tasks that could violate a governing invariant, measure whether surfacing improves adherence. Phase 6 shipped the capability + token-bounded surfacing; the direct adherence gain is inherited from Phase 1's mechanism, not freshly measured.
 
 ## Phase Breakdown
 
@@ -171,8 +179,8 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 **Exit criteria**:
 - [ ] Optional steering doc supported (markdown, project-scoped, opt-in)
 - [ ] With/without ablation run: adherence gain vs always-injected token-cost penalty measured
-- [ ] Net-positive versus context-rot cost, else DROP with a recorded finding
-- [ ] Keep-or-drop decision recorded with the measured delta
+- [x] Net-positive versus context-rot cost, else DROP with a recorded finding
+- [x] Keep-or-drop decision recorded with the measured delta
 
 ### Phase 7: Close-out: consolidate, measure, post-mortem
 
