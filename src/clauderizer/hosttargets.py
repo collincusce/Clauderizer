@@ -302,10 +302,28 @@ def wiring_contract_sweep(repo_root: Path) -> dict[str, tuple[bool, str]]:
             for h, em in HOST_EMITTERS.items() if em.auto_write}
 
 
+def _is_git_ignored(repo_root: Path, rel: str) -> bool:
+    """True if ``rel`` is gitignored (and thus NOT a committed config). Best-effort
+    — if git is unreachable or this is no repo, returns False so the file is still
+    audited (fail safe toward MORE scanning, never less)."""
+    import subprocess
+    try:
+        r = subprocess.run(["git", "-C", str(repo_root), "check-ignore", "-q", rel],
+                           capture_output=True, stdin=subprocess.DEVNULL, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 0
+
+
 def path_safety_audit(repo_root: Path) -> list[str]:
-    """Scan a repo's committed host MCP configs for a machine-specific absolute path
-    (the O-06 leak). Returns offending 'path: argv' strings — empty is clean. A
-    committable config must carry only a portable command (D-031)."""
+    """Scan a repo's COMMITTED host MCP configs for a machine-specific absolute
+    path (the O-06 leak). Returns offending 'path: argv' strings — empty is clean.
+    A committable config must carry only a portable command (D-031).
+
+    Gitignored configs are skipped: a dogfood repo deliberately keeps a LOCAL
+    machine-specific .mcp.json (pointing at its editable engine build) that is
+    gitignored, not committed — auditing it would be a false alarm (O-06: 'the
+    dogfood .mcp.json is gitignored or portable')."""
     offenders: list[str] = []
     rels = [".mcp.json", *(em.config_path for em in HOST_EMITTERS.values() if em.auto_write)]
     # derive the JSON keys to inspect from the emitter table, not a hardcoded list,
@@ -316,6 +334,8 @@ def path_safety_audit(repo_root: Path) -> list[str]:
         p = repo_root / rel
         if not p.exists():
             continue
+        if _is_git_ignored(repo_root, rel):
+            continue                           # local-only config — not committed
         try:
             data = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError:

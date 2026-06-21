@@ -159,3 +159,27 @@ def test_path_safety_audit_clean_after_portable_emit(tmp_path):
     ht.emit_mcp("cursor", tmp_path)
     ht.emit_mcp("zed", tmp_path)
     assert ht.path_safety_audit(tmp_path) == []   # portable commands -> clean
+
+
+def test_path_safety_audit_skips_gitignored_config(tmp_path):
+    # O-06: a dogfood repo keeps a LOCAL machine-specific .mcp.json (its editable
+    # engine build) that is GITIGNORED, not committed — the audit must not flag it,
+    # but must still flag a non-ignored committed config with the same leak.
+    import shutil
+    import subprocess
+    if shutil.which("git") is None:
+        pytest.skip("git not available")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / ".gitignore").write_text(".mcp.json\n", encoding="utf-8")
+    leak = {"mcpServers": {"clauderizer": {
+        "command": "/home/me/.venv/bin/clauderizer-mcp", "args": []}}}
+    (tmp_path / ".mcp.json").write_text(json.dumps(leak), encoding="utf-8")
+    # gitignored .mcp.json -> skipped (not a committed config)
+    assert ht.path_safety_audit(tmp_path) == []
+    # but a NON-ignored host config with the same leak is still caught
+    cfg = tmp_path / ".cursor" / "mcp.json"
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text(json.dumps(leak), encoding="utf-8")
+    offenders = ht.path_safety_audit(tmp_path)
+    assert offenders and ".cursor/mcp.json" in offenders[0]
+    assert not any(".mcp.json:" in o and ".cursor" not in o for o in offenders)

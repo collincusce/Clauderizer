@@ -130,3 +130,38 @@ def test_cz_preflight_runs(temp_repo):
         server = build_server()
         result = _call(server, "cz_preflight")
     assert "checks" in result and "passed" in result
+
+
+# --- P3 prompts + P7 bootstrap, exercised through the real server (P9 criterion 2) ---
+
+def test_server_serves_prompts(temp_repo):
+    # the Tier-3 slash-command prompts must be discoverable on a prompt-host; the
+    # launched-server stdio round-trip confirmed this live, this pins it in CI
+    with _chdir(temp_repo):
+        server = build_server()
+        prompts = asyncio.run(server.list_prompts())
+        names = {p.name for p in prompts}
+        assert {"cz-status", "cz-next-phase"} <= names
+        got = asyncio.run(server.get_prompt("cz-status", {}))
+        text = got.messages[0].content.text
+    assert "[Clauderizer]" in text                     # the live digest, via the prompt
+
+
+def test_server_bootstrap_injects_only_on_hookless_host(temp_repo, monkeypatch):
+    from clauderizer import mcp_server, session
+    with _chdir(temp_repo):
+        server = build_server()
+        try:
+            # hook-less host (cursor): the first non-status tool call carries the note
+            monkeypatch.setattr(mcp_server, "_host_target", lambda: "cursor")
+            session.reset()
+            result = _call(server, "cz_graph_query")
+            assert "clauderizer_status" in result
+            assert "cz_status" in result["clauderizer_status"]
+            # hook host (claude-code): the hook delivers; the server stays silent
+            monkeypatch.setattr(mcp_server, "_host_target", lambda: "claude-code")
+            session.reset()
+            result2 = _call(server, "cz_graph_query")
+            assert "clauderizer_status" not in result2
+        finally:
+            session.reset()                            # don't leak the signal to other tests

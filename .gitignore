@@ -17,6 +17,13 @@ env/
 # Clauderizer disposable cache (rebuilt from markdown)
 .clauderizer/index.json
 
+# Dogfood wiring: machine-specific (this repo dogfoods its OWN editable engine,
+# so .mcp.json / the hook registration carry a local venv path + wsl.exe shim —
+# never committable, D-031/O-06). Each clone regenerates them with `clauderize
+# init`; doctor nudges if they're missing.
+.mcp.json
+.claude/settings.json
+
 # Local Claude Code settings
 .claude/settings.local.json
 
