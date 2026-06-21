@@ -53,20 +53,22 @@ Clauderizer's value lives in `docs/` — and that is **your project's
 memory, not the tool's**. Uninstalling removes the machinery and keeps the
 memory.
 
-**Recommended: `clauderize uninstall`.** It removes the clauderizer MCP
-registration across **all** hosts it can find — peeling out only the
-`clauderizer` key and leaving every other server untouched:
+**Recommended: `clauderize uninstall`.** With no flag it reverses the **full
+footprint** in one step — the `clauderizer` MCP key from `.mcp.json` and every
+per-host config, the clauderizer hooks + wrapper from `.claude/settings.json`,
+the `CLAUDE.md`/`AGENTS.md` marker stanzas and native-instructions floors, the
+`clauderizer-*` skills, and the `.clauderizer/` directory — each removal
+key/marker-scoped so other servers, foreign hooks, and your own content survive.
+`--host <name>` scopes it to one host. Your `docs/` memory is never touched:
 
 ```bash
-uvx --from clauderizer clauderize uninstall              # all known hosts
-uvx --from clauderizer clauderize uninstall --host cursor   # or just one
+uvx --from clauderizer clauderize uninstall              # full footprint, every host
+uvx --from clauderizer clauderize uninstall --host cursor   # or just one host
 ```
 
-Then drop the rest of the machinery and the package (the memory in `docs/`
-stays):
+Then drop the package itself (the memory in `docs/` stays):
 
 ```bash
-rm -rf .clauderizer .claude/skills/clauderizer-*
 pipx uninstall clauderizer    # or: uv tool uninstall clauderizer (zero-install uvx users skip this)
 ```
 

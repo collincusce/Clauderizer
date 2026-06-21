@@ -21,9 +21,31 @@ Claude Code parity (INVARIANT-07). Design + verified capability matrix in
 - **Per-host wiring emitters** (`hosttargets.py`): non-destructive, portable (uvx) MCP
   registration for Cursor/Copilot/Continue/Zed/Gemini/Cline/Amp; native-instructions floor
   for Continue & Gemini; hook setup guides for hook-capable hosts; guide-only for TOML/global
-  (Codex/Windsurf/kimi). `clauderize uninstall [--host]`. Wiring-contract verification +
-  path-safety audit (D-032).
+  (Codex/Windsurf/kimi). Wiring-contract verification + path-safety audit (D-032).
+- **Server-side session bootstrap** (P7): the MCP server attaches a compact status note to
+  the first non-status tool result on a hook-less host, in a separate `clauderizer_status`
+  field (never corrupting the tool's own result, D-027), deduped via the P1 signal.
+- **`clauderize init --host <name>`** (P8): finally wires the emitters through the
+  user-facing command — sets `host_target`, branches init (claude-code byte-identical per
+  INVARIANT-07; other hosts get their MCP config + AGENTS.md floor + hook/MCP setup guides),
+  with cheap auto-detection and a friendly error listing valid hosts. `--list-hosts` lists
+  them. `clauderize uninstall` now reverses the **full footprint** (MCP keys + hooks +
+  marker stanzas + skills + `.clauderizer/`), `--host` scopes to one; `docs/` always preserved.
+- **Hardening** (P9–P12): the dogfood `.mcp.json`/`.claude/settings.json` and any
+  machine-specific committable wiring are gitignored, not leaked (O-06, H-11); the live MCP
+  server verified to serve the prompts + bootstrap over a real stdio client; cross-host hook
+  event names (windsurf `pre_user_prompt`, amp `agent.start`, …) routed correctly; a corrupt
+  `config.toml` degrades to a clean error instead of crashing the CLI; an op↔engine signature
+  guard (O-08); uninstall is symlink-safe (H-12). Independent seam + security reviews; suite
+  → 541.
 - Dropped from scope: Roo Code (repo archived 2026-05-15), Aider (no native MCP client yet).
+
+> **Verification status (honest):** the **wiring contract** (every auto-write host's emitted
+> config is well-formed, path-safe, and launches `clauderizer-mcp`) is verified in CI for all
+> hosts. The **real-host consumption proof** (a real Cursor/Copilot/… actually loading the
+> config and the agent reaching `cz_status`) and a **non-Claude model** driving the protocol
+> are irreducibly manual (D-032) and **pending** before any "verified on N hosts" claim — do
+> not state a real-host count beyond what has actually been walked.
 
 ## [0.15.0] — 2026-06-21
 

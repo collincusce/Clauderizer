@@ -74,6 +74,15 @@ def test_cli_init_default_prints_nudge(empty_python_repo, monkeypatch, capsys):
     assert "defaulted to claude-code" in capsys.readouterr().out
 
 
+def test_cli_init_list_hosts(capsys):
+    code = cli.main(["init", "--list-hosts"])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "claude-code" in out and "cursor" in out and "codex" in out
+    assert "auto-write" in out and "guide-only" in out
+    assert ".cursor/mcp.json" in out                        # shows where each lands
+
+
 def test_cli_init_unknown_host_friendly_error(empty_python_repo, capsys):
     code = cli.main(["init", str(empty_python_repo), "--host", "emacs", "--no-spawn-test"])
     assert code == 1                                          # refused, not a crash

@@ -35,7 +35,25 @@ def _load(root: Path | None = None):
     return paths, Config.load(paths.config_file)
 
 
+def _print_host_list() -> None:
+    """Discoverability for `clauderize init --list-hosts`: the host ids `--host`
+    accepts, each with where its MCP registration lands and whether it's
+    auto-written or guide-only."""
+    from . import hosttargets
+    print("Host targets for `clauderize init --host <name>`:\n")
+    print(f"  {'host':<12} {'mode':<11} MCP config")
+    print(f"  {'claude-code':<12} {'auto-write':<11} .mcp.json + .claude/settings.json hooks (default)")
+    for hid, em in hosttargets.HOST_EMITTERS.items():
+        mode = "auto-write" if em.auto_write else "guide-only"
+        print(f"  {hid:<12} {mode:<11} {em.config_path}")
+    print("\n  Omit --host to default to claude-code. Other hosts also get the "
+          "AGENTS.md floor;\n  guide-only hosts get a .clauderizer/<host>-mcp-setup.md guide.")
+
+
 def cmd_init(args: argparse.Namespace) -> int:
+    if getattr(args, "list_hosts", False):
+        _print_host_list()
+        return 0
     run_cmd = args.run_cmd.split() if args.run_cmd else None
     try:
         report = run_init(
@@ -532,6 +550,8 @@ def build_parser() -> argparse.ArgumentParser:
                          "auto-detected when omitted). Other hosts get their own MCP "
                          "config + AGENTS.md floor + setup guide: "
                          + ", ".join(hosttargets.HOST_EMITTERS))
+    pi.add_argument("--list-hosts", action="store_true", dest="list_hosts",
+                    help="list the valid --host values (and where each writes) and exit")
     pi.add_argument("--no-spawn-test", action="store_true",
                     help="skip the pre-write launch probes (escape hatch for sandboxes "
                          "that cannot spawn; the probes are the mis-wiring guard)")

@@ -299,8 +299,9 @@ status is delivered at most once per session:
   to the first tool call as an automatic fallback for hook-less hosts.
 
 See **[docs/CROSS-HOST.md](https://github.com/collincusce/Clauderizer/blob/main/docs/CROSS-HOST.md)**
-for the full per-host capability matrix. Switching hosts later is a config edit plus a re-`init`;
-`clauderize uninstall` cleanly removes the registration from any host.
+for the full per-host capability matrix. Switching hosts later is `clauderize init --host <name>` (or a `[host] target`
+config edit + re-`init`); `clauderize uninstall` cleanly reverses the wiring,
+keeping your `docs/` memory.
 
 ## The model
 
@@ -327,6 +328,7 @@ for the full per-host capability matrix. Switching hosts later is a config edit 
 ```bash
 clauderize init [--size pet|standard|saas] [--profile auto|node|python|go|ruby]
                 [--gameplan "Name"] [--run-cmd "uvx --from clauderizer"]
+                [--host <name>] [--list-hosts]   # which agent tool drives this repo (default claude-code)
                 [--session-host native|windows-wsl:<distro>] [--no-spawn-test]
 clauderize status [--json]   # the current digest
 clauderize doctor            # present AND runnable for the session host of record;
@@ -335,7 +337,7 @@ clauderize reindex           # rebuild the graph cache from markdown
 clauderize release-check     # maintainers: push ordering + the four version registries · exit 0 ok · 2 red · 3 unverifiable
 clauderize mcp               # launch the MCP server (stdio)
 clauderize ops <file.json|-> # execute a JSON batch of cz_* ops (the no-MCP write fallback)
-clauderize uninstall [--host <name>]   # remove the clauderizer MCP registration (only that key) from each host; no --host cleans all
+clauderize uninstall [--host <name>]   # reverse the full footprint (MCP config + hooks + stanzas + skills + .clauderizer/); --host scopes to one; docs/ always kept
 ```
 
 ## MCP surface
