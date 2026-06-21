@@ -184,19 +184,35 @@ def uninstall(root: Path, *, host: str | None = None) -> UninstallReport:
         if writer.remove_marker_block(md, "clauderizer"):
             report.note(f"{md.name} stanza")
 
-    # 4. skills installed by init (only clauderizer-* dirs)
+    # 4. skills installed by init (only clauderizer-* dirs). A planted SYMLINK is
+    # unlinked (never followed — shutil.rmtree refuses a symlink and would otherwise
+    # abort the whole uninstall mid-footprint); each removal is isolated so one
+    # hostile entry can't strand the rest (security review LOW).
     skills_dir = root / ".claude" / "skills"
     if skills_dir.exists():
         for d in sorted(skills_dir.iterdir()):
-            if d.is_dir() and d.name.startswith("clauderizer-"):
-                shutil.rmtree(d)
+            if not d.name.startswith("clauderizer-"):
+                continue
+            try:
+                if d.is_symlink():
+                    d.unlink()                 # remove the link, never its target
+                elif d.is_dir():
+                    shutil.rmtree(d)
+                else:
+                    continue
                 report.note(f".claude/skills/{d.name}")
+            except OSError:
+                continue                       # don't let one bad entry abort uninstall
         _rmdir_if_empty(skills_dir)
         _rmdir_if_empty(root / ".claude")
 
-    # 5. the disposable .clauderizer dir (config + cache + wrapper + guides)
-    if paths.clauderizer_dir.exists():
-        shutil.rmtree(paths.clauderizer_dir)
+    # 5. the disposable .clauderizer dir (config + cache + wrapper + guides). If it
+    # is a symlink, unlink it rather than rmtree-following it outside the repo.
+    if paths.clauderizer_dir.is_symlink():
+        paths.clauderizer_dir.unlink()
+        report.note(".clauderizer/ (symlink)")
+    elif paths.clauderizer_dir.exists():
+        shutil.rmtree(paths.clauderizer_dir, ignore_errors=True)
         report.note(".clauderizer/")
 
     # 6. the one gitignore line init added

@@ -140,3 +140,37 @@ resolved with a date instead. This is a permanent audit trail. Numbered `H-NN`.
 - **Recommended fix**: _release_file should retry the unlink for a short window (with the nonce guard re-checked each pass) before falling back to stale takeover. Deterministic regression test that simulates a transient unlink failure. (Defense in depth: the concurrent-writer test also widens the child acquire budget far above the stale window so takeover can rescue a waiter if an orphan ever slips through.)
 - **Regression tests**: tests/test_locking.py::test_release_retries_unlink_past_transient_oserror (monkeypatched unlink fails twice then succeeds; asserts retry and no orphan).
 - **Resolution**: Fixed in PR #15 (branch fix/windows-lock-orphan-release-retry): locking._release_file now retries the unlink (~2s, _RELEASE_UNLINK_ATTEMPTS, with the nonce guard re-checked each pass) before falling back to stale takeover, so a finished writer no longer orphans its lock when os.unlink loses a race with a concurrent reader on Windows. POSIX returns on the first attempt. Regression test tests/test_locking.py::test_release_retries_unlink_past_transient_oserror added (monkeypatched unlink fails twice then succeeds; asserts retry + no orphan); the concurrent-writer test retains the widened acquire budget from PR #14 as a backstop. Verified: full suite green locally; CI matrix green across 3 consecutive runs (all windows cells, py3.11/3.12/3.13).
+
+### H-11 — claude-code .mcp.json/.claude writers skip path-safety — machine-specific command leaks on commit
+
+- **Severity**: HIGH
+- **Status**: resolved (2026-06-21)
+- **Affected**: src/clauderizer/scaffold/init.py _register_mcp/_register_hook (claude-code branch); contrast hosttargets.emit_mcp which gates via is_path_safe
+- **Invariant violated**: D-031 (committable configs carry no machine-specific path)
+- **Preconditions**: init on a venv/pipx install (the common case), OR --session-host windows-wsl:<distro>, OR --run-cmd /abs/path; then the repo's .mcp.json/.claude/settings.json get committed (init gitignored only .clauderizer/index.json).
+- **Impact**: Committing a repo init'd on a venv/pipx/split-host install leaks the author's absolute home path (username) + WSL distro into .mcp.json/.claude/settings.json and ships wiring dead on every other machine. Asymmetric with the cross-host emitters, which REFUSE such commands.
+- **Root cause**: is_path_safe was enforced only on the non-claude per-host emitter path (emit_mcp raises); the default claude-code branch wrote the resolved command straight to .mcp.json/.claude/settings.json with no gate, and those files were not gitignored.
+- **Reproduction**: init(repo) on a venv -> .mcp.json carries the absolute venv path; init --session-host windows-wsl:ubuntu -> wsl.exe shim in both files; path_safety_audit reports them as offenders yet init wrote them.
+- **Recommended fix**: RESOLVED: init now gitignores .mcp.json when its resolved command is not path-safe (the local-wiring case) — same protection the dogfood uses; a portable uvx command stays committable. Refusal was rejected because split-host wiring legitimately needs the shim. .claude/settings.json (a potentially user-shared file with an always-absolute hook path) is documented in TRUST.md and left for the user to gitignore.
+- **Regression tests**: tests/test_host_target_init.py::test_init_gitignores_machine_specific_mcp_json, test_init_portable_mcp_json_stays_committable
+
+### H-12 — A symlinked .claude/skills/clauderizer-* entry aborts uninstall mid-footprint
+
+- **Severity**: LOW
+- **Status**: resolved (2026-06-21)
+- **Affected**: src/clauderizer/scaffold/uninstall.py (skill-removal loop; the .clauderizer rmtree)
+- **Invariant violated**: uninstall fully reverses the footprint
+- **Preconditions**: attacker pre-plants a symlink in the cloned working tree at .claude/skills/clauderizer-evil
+- **Impact**: A planted symlink masquerading as a clauderizer skill makes shutil.rmtree raise (refuses to rmtree a symlink), aborting `clauderize uninstall` partway and leaving a partial footprint. No data loss (Python's rmtree guard prevents following the link), but uninstall does not complete.
+- **Recommended fix**: RESOLVED: skill removal now unlinks a symlink (never follows it) and rmtree's only real dirs, each in its own try/except so one hostile entry can't abort the run; the .clauderizer dir is unlinked-not-rmtree'd if it is a symlink, and rmtree uses ignore_errors.
+- **Regression tests**: tests/test_host_target_init.py::test_uninstall_handles_symlinked_skill_without_aborting
+
+### H-13 — Engine file writes follow symlinks (a pre-planted symlink redirects an init write outside the repo)
+
+- **Severity**: LOW
+- **Status**: open (2026-06-21)
+- **Affected**: src/clauderizer/scaffold/init.py (_register_mcp/_register_hook write_text), src/clauderizer/markdown/writer.py (all write paths use write_text, which follows symlinks)
+- **Invariant violated**: init writes inside the repo only
+- **Preconditions**: attacker pre-plants a symlink in the cloned working tree AND the user runs `clauderize init` on it before reviewing
+- **Impact**: A pre-planted symlink (e.g. .mcp.json -> /outside/file) in a hostile cloned working tree causes init to write its config through the link to the outside path. The written content is the benign, NON-attacker-controlled clauderizer config (no arbitrary-content write), so impact is limited to writing a known config to an attacker-chosen path within the user's write permissions.
+- **Recommended fix**: OPEN (deferred, low severity): add an os.path.islink guard (or O_NOFOLLOW where available; islink+refuse on Windows) before engine-owned config writes in writer.py and init's _register_* — refuse or replace-not-follow a symlinked target. Not auto-fixed now because the fix spans writer.py cross-platform and the vector requires a malicious working tree the user chose to init; tracked for a future hardening pass.

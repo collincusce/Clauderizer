@@ -301,3 +301,49 @@ def test_doctor_guide_only_host_notes_manual(empty_python_repo, monkeypatch, cap
     out = capsys.readouterr().out
     assert code != 2
     assert "guide-only" in out
+
+
+# --- security review HIGH: claude-code .mcp.json path-safety -----------------------
+
+def test_init_gitignores_machine_specific_mcp_json(empty_python_repo, monkeypatch):
+    # a machine-specific .mcp.json command (venv path / wsl shim) is dead on any
+    # other machine and leaks the author's path if committed — init must gitignore
+    # the clauderizer-owned .mcp.json so it can't leak (O-06 / security review)
+    from clauderizer.scaffold import init as scaffold_init
+    monkeypatch.setattr(scaffold_init, "_resolve_invocation",
+                        lambda run_cmd: (["/abs/venv/bin/clauderizer-mcp"],
+                                         ["/abs/venv/bin/clauderizer-hook"]))
+    init(empty_python_repo, spawn_test=False)
+    gi = (empty_python_repo / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert ".mcp.json" in gi
+    assert (empty_python_repo / ".mcp.json").exists()      # kept locally, just un-committed
+
+
+def test_init_portable_mcp_json_stays_committable(empty_python_repo, monkeypatch):
+    from clauderizer.scaffold import init as scaffold_init
+    monkeypatch.setattr(scaffold_init, "_resolve_invocation",
+                        lambda run_cmd: (["uvx", "--from", "clauderizer", "clauderizer-mcp"],
+                                         ["uvx", "--from", "clauderizer", "clauderizer-hook"]))
+    init(empty_python_repo, spawn_test=False)
+    gi = (empty_python_repo / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert ".mcp.json" not in gi                            # portable uvx -> committable
+
+
+def test_uninstall_handles_symlinked_skill_without_aborting(empty_python_repo):
+    # a planted symlink masquerading as a clauderizer skill must NOT be followed and
+    # must NOT abort the uninstall mid-footprint (security review LOW)
+    import os
+    init(empty_python_repo, spawn_test=False)
+    r = empty_python_repo
+    outside = r.parent / "outside_target"
+    outside.mkdir()
+    (outside / "keep.txt").write_text("important", encoding="utf-8")
+    link = r / ".claude" / "skills" / "clauderizer-evil"
+    try:
+        os.symlink(outside, link, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks not supported in this environment")
+    uninstall(r)
+    assert not link.is_symlink() and not link.exists()      # the link removed
+    assert (outside / "keep.txt").exists()                  # its target never followed
+    assert not (r / ".clauderizer").exists()                # uninstall completed past it

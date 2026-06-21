@@ -348,6 +348,20 @@ def init(
         changed = _rewrite_if_diff(paths.kimi_setup,
                                    _render_kimi_setup(registered_hook, mcp_cmd))
         report.note("kimi-setup", paths.kimi_setup, changed)
+
+        # 11c. Path-safety for the local wiring (O-06/D-031, security review HIGH).
+        # claude-code's .mcp.json prefers your LOCAL install for launch reliability,
+        # so it can carry a machine-specific command (a venv path, or a wsl.exe shim
+        # for a split host) — dead on any other machine and a path leak if committed.
+        # The cross-host emitters REFUSE such commands (their configs are meant to be
+        # shared); .mcp.json is your local wiring, so we keep it but gitignore it when
+        # it is not portable — the same protection the dogfood repo uses. (A portable
+        # uvx command stays committable. .claude/settings.json may also hold your own
+        # settings, so it is left for you to gitignore — see docs/TRUST.md.)
+        if not hosttargets.is_path_safe(mcp_cmd):
+            gi = _ensure_gitignore(root / ".gitignore", paths.mcp_json.name)
+            report.note(".gitignore (.mcp.json — local wiring, not committable)",
+                        root / ".gitignore", gi)
     else:
         # A non-claude host: emit its MCP registration (or setup guide for a
         # guide-only host), the native floor where it does not read AGENTS.md, and
