@@ -2,6 +2,44 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.15.0] — 2026-06-21
+
+**Empirical memory gains (Beta 2).** A gain-gated initiative: every feature was proven
+against a deterministic + agent-eval harness or parked. Test suite 400 → 446; no
+breaking changes; still `Development Status :: 4 - Beta`.
+
+### Added
+- **Focused handoff lessons.** The cumulative handoff now carries the top-k project
+  lessons most relevant to the phase (ranked, front-loaded) plus a pointer to the
+  canonical full set in `docs/LESSONS.md`, instead of dumping all of them. Measured:
+  handoff **−55% tokens at equal agent-eval accuracy** (focused 5/6 = full 5/6),
+  ranker recall@5 = 100%. Relevance-focus + pointer-to-canonical, never truncation.
+- **DAG integrity validation** (`graph/validate.py`) — deterministic dangling-edge +
+  cycle (iterative Tarjan SCC) detection over the project DAG, surfaced advisorily via
+  the status drift channel. Closes a gap where `pin_violations` skipped unknown targets,
+  so dangling `depends_on` edges went silently undetected. 100% detection, 0 false
+  positives on the fixture battery.
+- **Edge-suggester.** `cz_analyze` now surfaces plausibly-*missing* `depends_on` edges
+  from distinctive-token overlap (the structural complement of the D-018 existing-edge
+  walk), agent-confirmed, with a markdown-canonical rejected-pair memory
+  (`not_related_to` frontmatter). Precision 0.75 on a labeled fixture; advisory only.
+- **Decision supersession lifecycle.** `cz_add_decision(supersedes=…)` now writes a
+  bidirectional **Superseded by** back-ref, a **Status** field
+  (active/superseded/deprecated), and dates; `analyze` demotes superseded decisions
+  below their replacement via a secondary sort key (lexical score untouched). Stale-fact
+  contradiction rate **1.0 → 0.0**. Append-only (annotated, never deleted).
+- **Focused governing-invariant surfacing.** The handoff now surfaces the top-k
+  phase-relevant invariants (the must-hold rules), focused — never an always-all dump.
+- **Memory-eval harness** (`tests/benchmarks/`) — deterministic metrics (recall@k,
+  nDCG, MRR, contradiction, abstention, token estimate, DAG validity) plus a
+  focused-vs-full agent-eval; the gain-gate the above were measured against.
+
+### Changed
+- **`docs/LESSONS.md` re-distilled.** Nine overlapping project lessons consolidated into
+  four syntheses (`L-22`–`L-25`), gated on a coverage proof (every original concept
+  still retrievable in the ranker top-k): **21 → 16 active**, rollup −20%, append-only
+  (sources marked obsolete, never deleted).
+
 ## [0.14.2] — 2026-06-20
 
 **Windows lock robustness (H-10).** `locking._release_file` now retries the unlink
