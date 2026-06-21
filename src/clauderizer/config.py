@@ -202,6 +202,7 @@ def merge_missing(existing: Config, defaults: Config) -> Config:
         size=existing.size or defaults.size,
         host_profile=existing.host_profile or defaults.host_profile,
         session_host=existing.session_host or defaults.session_host,
+        host_target=existing.host_target or defaults.host_target,
         docs=existing.docs or defaults.docs,
         gameplans=existing.gameplans or defaults.gameplans,
         modules=existing.modules or defaults.modules,

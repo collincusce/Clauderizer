@@ -66,8 +66,9 @@ def _deliver_aware(name: str, spec):
     @functools.wraps(fn)
     def wrapped(*args, **kwargs):
         if delivers:
-            session.mark_status_delivered()
-            return fn(*args, **kwargs)
+            result = fn(*args, **kwargs)          # mark only AFTER a successful delivery —
+            session.mark_status_delivered()        # if fn() raises, the bootstrap can still fire
+            return result
         result = fn(*args, **kwargs)
         if not session.status_delivered():
             if not session.should_inject(_host_target()):

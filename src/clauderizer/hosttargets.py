@@ -65,10 +65,13 @@ def is_path_safe(argv: list[str]) -> bool:
     path: no POSIX '/...', no 'X:\\' drive path, no wsl.exe shim (D-031). The
     portable uvx form passes; the local dogfood absolute venv path does not."""
     for tok in argv:
-        if tok.startswith("/") or (len(tok) > 1 and tok[1] == ":"):
-            return False
-        if "wsl.exe" in tok.lower():
-            return False
+        low = tok.lower()
+        if tok.startswith("/") or tok.startswith("\\\\") or tok.startswith("//"):
+            return False                       # POSIX absolute or UNC path
+        if len(tok) > 1 and tok[1] == ":":
+            return False                       # Windows drive path (C:\...)
+        if "wsl.exe" in low or low == "wsl":
+            return False                       # the WSL shim, with or without .exe
     return True
 
 
@@ -244,6 +247,10 @@ def path_safety_audit(repo_root: Path) -> list[str]:
     committable config must carry only a portable command (D-031)."""
     offenders: list[str] = []
     rels = [".mcp.json", *(em.config_path for em in HOST_EMITTERS.values() if em.auto_write)]
+    # derive the JSON keys to inspect from the emitter table, not a hardcoded list,
+    # so a newly-added host is audited automatically.
+    keys = {"mcpServers"} | {em.servers_key for em in HOST_EMITTERS.values()
+                             if em.auto_write and em.servers_key}
     for rel in rels:
         p = repo_root / rel
         if not p.exists():
@@ -252,7 +259,7 @@ def path_safety_audit(repo_root: Path) -> list[str]:
             data = json.loads(p.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             continue
-        for key in ("mcpServers", "servers", "context_servers", "amp.mcpServers"):
+        for key in keys:
             entry = (data.get(key) or {}).get("clauderizer")
             if isinstance(entry, dict):
                 argv = [entry.get("command", ""), *entry.get("args", [])]

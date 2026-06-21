@@ -102,14 +102,13 @@ def should_inject(host_target: str | None) -> bool:
 
 
 def status_note(summary: str) -> str:
-    """The compact write-first note (D-027: focused, one line, not the full
-    digest). Surfaced when an agent issues a write before ever loading status, so
-    it is not operating blind. Points at cz_status for detail rather than dumping
-    it inline."""
+    """The compact bootstrap note (D-027: focused, one line, not the full digest).
+    Surfaced on the first tool call of a session on a hook-less host — read OR write
+    — so the agent is not operating blind. Neutral wording (the trigger may be
+    either); points at cz_status for detail rather than dumping it inline."""
     summary = (summary or "").strip()
     tail = f" {summary}" if summary else ""
     return (
-        "[Clauderizer] You issued a write before loading project status this "
-        "session." + tail + " Call cz_status for the full picture before "
-        "continuing."
+        "[Clauderizer] Project status was not loaded yet this session." + tail
+        + " Call cz_status for the full picture before continuing."
     )

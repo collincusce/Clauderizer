@@ -54,6 +54,7 @@ def test_status_note_is_compact_one_line_and_points_to_cz_status():
     assert "Phase 2 in progress" in note
     assert "\n" not in note          # one line — D-027 trim-first
     assert len(note) < 300
+    assert "write" not in note.lower()   # P7 fires on reads too — wording must be neutral
 
 
 def test_status_note_tolerates_empty_summary():
@@ -134,6 +135,14 @@ def test_config_missing_target_defaults_to_claude_code(tmp_path):
     p.write_text('[clauderizer]\nversion = "1"\n[host]\nprofile = "python"\n',
                  encoding="utf-8")
     assert Config.load(p).host_target == "claude-code"
+
+
+def test_merge_missing_preserves_host_target():
+    # a re-run of `clauderize init` must NOT revert a configured host_target to the
+    # default — merge_missing fills only EMPTY fields (review finding, P-review).
+    from clauderizer.config import merge_missing
+    merged = merge_missing(Config(host_target="cursor"), Config())
+    assert merged.host_target == "cursor"
 
 
 # --- idempotency / re-entrancy of the read tools (exit-criterion 1) --------------
