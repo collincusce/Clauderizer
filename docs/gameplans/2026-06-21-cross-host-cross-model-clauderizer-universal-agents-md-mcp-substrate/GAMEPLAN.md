@@ -1,7 +1,7 @@
 # Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate) Gameplan
 
 > Created: 2026-06-21
-> Status: Planning
+> Status: Executing
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -27,15 +27,15 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 ## Open Items
 
-**O-01.** _(phase 0)_ Re-derive a FRESH per-host MCP-primitive matrix (tools/resources/prompts/sampling/roots/elicitation) for all 13 hosts. Deep research found the canonical modelcontextprotocol.io/clients matrix URL dead (308 redirect) and could not verify primitive support for Windsurf, Codex CLI, Gemini CLI, Roo Code, Continue.dev, Zed, Amp — reconstruct from the GitHub clients.mdx plus each host's own docs.
+**O-01.** _(phase 0)_ Re-derive a FRESH per-host MCP-primitive matrix (tools/resources/prompts/sampling/roots/elicitation) for all 13 hosts. Deep research found the canonical modelcontextprotocol.io/clients matrix URL dead (308 redirect) and could not verify primitive support for Windsurf, Codex CLI, Gemini CLI, Roo Code, Continue.dev, Zed, Amp — reconstruct from the GitHub clients.mdx plus each host's own docs. _(resolved 2026-06-21: Resolved. Per-host capability matrix built and verified from primary sources for all 13 candidates (docs/CROSS-HOST.md section 3). Net 11 in-scope after dropping Roo Code (archived) and deferring Aider (no MCP).)_
 
-**O-02.** _(phase 0)_ Confirm whether ANY non-Claude host exposes a true lifecycle-hook system (session-start / pre-post-prompt / pre-post-tool-use) that could reach Tier 1. Research established this only for Claude Code (and Clauderizer's kimi wiring); no non-Claude hook system was confirmed. If none exist, deterministic auto-injection is a hard Claude-only capability and the ladder's Tier 1 stays Claude-Code/kimi-only.
+**O-02.** _(phase 0)_ Confirm whether ANY non-Claude host exposes a true lifecycle-hook system (session-start / pre-post-prompt / pre-post-tool-use) that could reach Tier 1. Research established this only for Claude Code (and Clauderizer's kimi wiring); no non-Claude hook system was confirmed. If none exist, deterministic auto-injection is a hard Claude-only capability and the ladder's Tier 1 stays Claude-Code/kimi-only. _(resolved 2026-06-21: Resolved (overturned). Lifecycle hooks are NOT Claude-only: Copilot/VS Code, Codex CLI, Gemini CLI, Windsurf, Cline (POSIX), and Amp expose SessionStart/UserPromptSubmit-class hooks; Cursor has governance hooks (context-injection TBD at emitter time). See C-01. Residual: confirm each host hook context-injection semantics when building its emitter (Phase 4/5).)_
 
-**O-03.** _(phase 0)_ Determine, per host, whether MCP Resources are AUTO-LOADED into model context vs only listed for manual @-mention. This decides whether Tier 2 is actually reachable on each host (the cleanest portable substitute for SessionStart injection). The spec allows Resources but host behavior varies and was not resolved by research.
+**O-03.** _(phase 0)_ Determine, per host, whether MCP Resources are AUTO-LOADED into model context vs only listed for manual @-mention. This decides whether Tier 2 is actually reachable on each host (the cleanest portable substitute for SessionStart injection). The spec allows Resources but host behavior varies and was not resolved by research. _(resolved 2026-06-21: Resolved (negative). No host auto-loads MCP resources into context; all are model-requested or manual @-mention (Zed has no resources at all). Tier 2 retired. See C-02.)_
 
-**O-04.** _(phase 0)_ Zero-runtime-dep format audit: enumerate every in-scope host's config format (JSON / INI / TOML / YAML / markdown) and flag any that would require a non-stdlib parser to edit comment/key-order-safely (e.g. YAML for Windsurf/Cline/Zed). Each such host is either guide-only or gets a stdlib-only serializer — the stdlib-only invariant must not break. Blocks the floor/bespoke emitter phases.
+**O-04.** _(phase 0)_ Zero-runtime-dep format audit: enumerate every in-scope host's config format (JSON / INI / TOML / YAML / markdown) and flag any that would require a non-stdlib parser to edit comment/key-order-safely (e.g. YAML for Windsurf/Cline/Zed). Each such host is either guide-only or gets a stdlib-only serializer — the stdlib-only invariant must not break. Blocks the floor/bespoke emitter phases. _(resolved 2026-06-21: Resolved. Zero-dep audit (docs/CROSS-HOST.md section 6): JSON hosts auto-write via stdlib json; Continue written as JSON not YAML to avoid PyYAML; TOML hosts (Codex, kimi) stay guide-only/append-only (no stdlib TOML writer). Stdlib-only invariant preserved.)_
 
-**O-05.** _(phase 0)_ Decide the subsystem version-coordination policy across scaffold / mcp-server / rituals as they grow host support: lock versions at release boundaries vs a clauderize doctor coherence check, so a user can never end up with mismatched host capability across subsystems.
+**O-05.** _(phase 0)_ Decide the subsystem version-coordination policy across scaffold / mcp-server / rituals as they grow host support: lock versions at release boundaries vs a clauderize doctor coherence check, so a user can never end up with mismatched host capability across subsystems. _(resolved 2026-06-21: Resolved (decided). clauderize doctor gains a subsystem-version-coherence check: installed scaffold/mcp-server versions must declare support for every host_target in config; a mismatch surfaces as advisory drift. Recorded in docs/CROSS-HOST.md section 8.)_
 
 ## Phase Breakdown
 
@@ -49,13 +49,13 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] HostTarget capability descriptor defined (hooks / mcp-tools / mcp-resource-autoload / mcp-prompts / rules-file format+location / slash-commands) and the three-axis host model (session-host x host-profile x host-target) recorded as a decision
-- [ ] Fresh per-host MCP-primitive + config-format + config-location matrix completed for all 13 hosts (O1 resolved); each host classified auto-write vs guide-only and assigned a target injection tier
-- [ ] Zero-dep format audit done (O4 resolved): no in-scope auto-write host requires a non-stdlib parser, or it is reclassified guide-only
-- [ ] Injection-parity ladder, tier-routing rules, and the 'status delivered at most once per session' rule written into a cross-host design doc
-- [ ] Verification strategy documented: wiring-contract vs consumption-proof split, host-simulator design, and the narrow static-analysis model-agnostic claim
-- [ ] Release decisions recorded: incremental-per-tier cadence, beta-gate impact, and subsystem version-coordination policy
-- [ ] Parity invariant 'Claude Code never regresses' recorded; CHANGELOG entry stub drafted
+- [x] HostTarget capability descriptor defined (hooks / mcp-tools / mcp-resource-autoload / mcp-prompts / rules-file format+location / slash-commands) and the three-axis host model (session-host x host-profile x host-target) recorded as a decision
+- [x] Fresh per-host MCP-primitive + config-format + config-location matrix completed for all 13 hosts (O1 resolved); each host classified auto-write vs guide-only and assigned a target injection tier
+- [x] Zero-dep format audit done (O4 resolved): no in-scope auto-write host requires a non-stdlib parser, or it is reclassified guide-only
+- [x] Injection-parity ladder, tier-routing rules, and the 'status delivered at most once per session' rule written into a cross-host design doc
+- [x] Verification strategy documented: wiring-contract vs consumption-proof split, host-simulator design, and the narrow static-analysis model-agnostic claim
+- [x] Release decisions recorded: incremental-per-tier cadence, beta-gate impact, and subsystem version-coordination policy
+- [x] Parity invariant 'Claude Code never regresses' recorded; CHANGELOG entry stub drafted
 
 ### Phase 1: Model-agnostic protocol hardening & injection-delivery signal
 

@@ -200,7 +200,8 @@ _(Add entries with `cz_add_decision`.)_
 **Decision**: Every host gets the BEST injection tier it supports and never less than the Tier-4 AGENTS.md 'call cz_status first' floor: Tier1 lifecycle hook (Claude Code, kimi) -> Tier2 auto-loaded MCP resource -> Tier3 MCP prompt -> Tier4 floor instruction. Capability is re-probed at session start; any mismatch downgrades safely toward the floor. Status is delivered to the model at most once per session across all active tiers (dedup via the P1 in-memory signal), honoring trim-first.
 **Consequences**: Uniform mental model and predictable degradation; no double-injection bloat. Requires per-host capability detection plus a session-scoped delivery signal.
 **Evidence**: deep research dimensions 2-3; cz_analyze surfaced D-027 (trim-first)
-**Status**: active (2026-06-21)
+**Superseded by**: D-034 (2026-06-21)
+**Status**: superseded (2026-06-21)
 
 ### D-031 — Config-safety: global config -> guide-only; project config -> non-destructive merge; never commit machine paths
 
@@ -224,4 +225,13 @@ _(Add entries with `cz_add_decision`.)_
 **Decision**: Release incrementally per injection tier: cut a 'Floor Release' once P0-P2 land (AGENTS.md+MCP-native hosts at Tier 4), then middle-tier (P3) and bespoke (P5) hosts as they verify. Up front, decide whether cross-host coverage adds a new Beta evidence gate or is covered by the P6 wiring-contract CI, and record the answer in the parity contract so release criteria are fixed before the work starts. Define a subsystem version-coordination policy (or a doctor coherence check) so users never get mismatched scaffold/mcp-server host support.
 **Consequences**: Value ships early; long-tail bespoke hosts do not block release; Beta stays an honest evidence claim. Requires a per-tier release checklist.
 **Evidence**: release lens; D-012; independently-versioned subsystems (scaffold 0.7.0, mcp-server 0.5.0)
+**Status**: active (2026-06-21)
+
+### D-034 — Revised injection-parity ladder: Tier-1 hooks broadly reachable, Tier-2 auto-resource retired, server-side bootstrap is the hook-less automatic fallback
+
+**Context**: Phase 0 primary-source verification (docs/CROSS-HOST.md) corrected the two premises behind the original ladder D-030: hooks are NOT Claude-only (C-01) and no host auto-loads MCP resources (C-02).
+**Decision**: The ladder is Tier 1 lifecycle hook injects status (Claude Code, kimi, Copilot, Codex, Gemini, Windsurf, Cline[POSIX], Amp, possibly Cursor) -> Tier 3 MCP prompt as /cz-status slash command (Cursor, Copilot, Continue, Gemini, Zed) -> Tier 4 instructions-file call-cz_status-first floor (AGENTS.md where native, else the host native file: .continue/rules, GEMINI.md). Tier 2 (auto-loaded resource) is RETIRED. The P7 server-side bootstrap (status on first read-like tool result) is the only AUTOMATIC delivery for hook-less hosts (Continue, Zed, Cursor-if-governance) and is promoted from optional polish to primary fallback. Deliver at most once per session (INVARIANT-08).
+**Consequences**: P3 drops the auto-resource tier (prompts + routing only). P7 rises in importance. The floor emitter writes per-host native instructions for the 3 non-AGENTS.md hosts. Tier-1 parity is achievable on ~9 hosts, far beyond the original 2.
+**Supersedes**: D-030
+**Evidence**: docs/CROSS-HOST.md sections 3-5; per-host primary docs verified 2026-06-21
 **Status**: active (2026-06-21)

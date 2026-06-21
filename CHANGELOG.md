@@ -2,6 +2,20 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [Unreleased] — cross-host & cross-model substrate
+
+**Universal host support (in progress).** Generalizing Clauderizer beyond Claude Code +
+kimi to ~11 agentic coding hosts via the AGENTS.md + MCP substrate, without regressing
+Claude Code parity (INVARIANT-07). Design + verified capability matrix in
+`docs/CROSS-HOST.md`. Gameplan: `cross-host-cross-model`.
+
+### Planned
+- Per-host wiring emitters (GitHub Copilot, Codex CLI, Gemini CLI, Windsurf, Cline, Amp,
+  Cursor, Continue.dev, Zed); `clauderize uninstall [--host]`; the injection-parity ladder
+  (hook → MCP prompt → AGENTS.md floor) with a server-side bootstrap fallback for hook-less
+  hosts. Tier-2 (auto-loaded MCP resource) retired — verification found no host supports it.
+- Dropped from scope: Roo Code (repo archived 2026-05-15), Aider (no native MCP client yet).
+
 ## [0.15.0] — 2026-06-21
 
 **Empirical memory gains (Beta 2).** A gain-gated initiative: every feature was proven
