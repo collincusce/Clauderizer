@@ -1,7 +1,7 @@
 # Chat Handoff Index — Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate)
 
 > Last updated: 2026-06-21
-> Status: Phase 9 of 14 in progress
+> Status: Phase 13 of 14 in progress
 
 ## How This Works
 
@@ -38,7 +38,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 6 | Cross-host verification execution & release gate | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Server-side session bootstrap (fast-follow; non-gating) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-7-HANDOFF.md |
 | 8 | Wire host_target end-to-end (make cross-host functional via init) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-8-HANDOFF.md |
-| 9 | Real-host & cross-model verification (close O-06, O-07; kill engine_stale) | 🟡 IN PROGRESS | 2026-06-21 | — | handoffs/PHASE-9-HANDOFF.md |
+| 9 | Real-host & cross-model verification (close O-06, O-07; kill engine_stale) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-9-HANDOFF.md |
 | 10 | Adversarial sweep: integration seams & state (codebase-wide) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-10-HANDOFF.md |
 | 11 | Adversarial sweep: concurrency, I/O robustness & failure modes | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-11-HANDOFF.md |
 | 12 | Security & trust hardening | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-12-HANDOFF.md |
@@ -106,6 +106,12 @@ Closed the user-facing loop and trued-up the docs, completing everything in P13 
 
 GAMEPLAN NOT FULLY CLOSED — by design, an honest stop, not an omission. Two exit criteria remain the user's: the release checklist's irreversible tail (four-registry sweep + every CI host leg + tag + GitHub Release + PyPI publish, L-08/L-20) and the gameplan's formal close-out, both of which depend on P9's still-pending manual real-host/cross-model evidence (O-07/O-10/O-11). The automatable deliverables of the close-out (per-phase post-mortems, promoted lessons, trued-up docs, green suite) are done; the irreversible publish and the real-host proof are left for the user with a precise checklist (release_gate_state output, O-11). Suite 483 -> 542 across the branch; phases 8,10,11,12 complete, 9 and 13 in_progress pending their manual tails.
 
+### Phase 9 — completed 2026-06-21
+
+Moved from paper-verified to product-verified — partly autonomously, partly via the user's real-host testing. Autonomous: fixed O-06 (the committed .mcp.json/.claude machine-path leak, now gitignored + the gitignore-aware path_safety_audit), and verified the launched dev-build MCP server serves the P3 prompts + P7 bootstrap + tools over a real stdio MCP client. User-run real-host proof (2026-06-21): TWO real hosts — Cursor (Remote-WSL) and VS Code/Copilot — confirmed to read the clauderize-emitted per-host config and surface the clauderizer MCP; Cursor showed the /cz-status, /cz-next-phase prompts as slash commands, which also proves the dev build (those prompts are unreleased) and the D-034 Tier-3 path live (O-07 resolved). No per-host key/path corrections were needed — the as-emitted configs worked, validating the emitters.
+
+Cross-model drive (criterion 4) was the richest result: Cursor's Composer 2.5 Fast (a non-Claude model) drove a full self-created gameplan end-to-end (142 tool calls) — and the ADHERENCE GAPS are the deliverable (L-28). It made 0 cz_* MCP calls despite the tools being live, instead reaching for built-ins + the CLI; it recovered from a PATH miss by discovering the portable `uvx --from clauderizer clauderize ops -` JSON-batch path on its own (independently validating L-05's CLI-fallback design for cross-model), but ALSO hand-edited tracked docs directly (the frontmatter/graph-corruption anti-pattern). Recorded as output cross_model_adherence + gameplan lesson #12. Residual: amp on-disk shape (O-10) untested; engine_stale clears on a session restart (both non-blocking). All 5 P9 exit criteria met.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -130,6 +136,8 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **10.** Test a borrowed or proposed idea as a falsifiable hypothesis with a pre-named, machine-checkable keep/discard metric, and MEASURE before shipping — a discard is a successful outcome, not a failure; the deliverable is the verdicts plus the survivors (a digest reorder 'worked' by its prefix-stability proxy yet was discarded because the payload was ~222 tokens rendered once per session). Corollary: when the gate's TARGET metric is already SATURATED by a simpler earlier phase, you can PREDICT the zero marginal gain — park the feature by analysis WITHOUT building it (cite the saturated metric + the absent need + the cost), rather than building only to measure the zero the prior phase's number already implies (bitemporal parked because Phase 4 already drove contradiction-rate to its 0.0 floor). (Consolidates L-17, L-27.) (promoted 2026-06-21: L-32)
 
 **11.** A subagent's output needs two guards. (1) Its factual file:line CLAIMS are leads to VERIFY at the point of edit, not facts — fan-out exploration locates code fast but doesn't certify it (an exploration map asserted the MCP/CLI parity test lived in test_blessed_surfaces.py; it was test_ops.py, so editing on the map alone would have changed the wrong test). (2) A subagent that RUNS code leaks probe ARTIFACTS into the real repo despite a 'use a throwaway dir' instruction — and an .md left in docs/ is ingested by the graph builder as a phantom entity. Give it an ABSOLUTE artifact dir ('write under /tmp/<unique>/, never the repo; verify pwd before any write') — the explicit instruction measurably worked where the vague one leaked — and after any code-running subagent round, git-status + remove untracked junk (then reindex) BEFORE committing, never a blanket git add -A. (Consolidates L-15, L-30.) (promoted 2026-06-21: L-33)
+
+**12.** Cross-model adherence is NOT guaranteed by exposing the MCP tools — a non-Claude model may bypass the cz_* MCP surface entirely and reach for its own built-in tools, the CLI, and raw file edits. Real instance: Cursor's Composer 2.5 Fast, with the clauderizer MCP tools live in the session, made 0 MCP calls across 142 tool calls driving a self-created gameplan — it instead (a) looked for the tools as files, (b) recovered from a PATH miss by discovering the portable `uvx --from clauderizer clauderize ops -` JSON-batch path ON ITS OWN and even introspected op signatures to get args right — strongly VALIDATING L-05 ('every tracked write needs a CLI-reachable fallback') as load-bearing for cross-model, not just no-MCP sessions — but (c) ALSO hand-edited tracked docs (GAMEPLAN.md, handoffs, config.toml, CLAUDE.md/AGENTS.md) directly, the exact frontmatter/graph-corruption anti-pattern the blessed writes exist to prevent. Implications: the CLI/ops fallback earns its place for cross-host/cross-model; and the 'never hand-edit tracked docs' floor instruction alone does not steer a non-Claude model — consider a stronger guardrail (e.g. a doctor/repair pass that detects hand-edits, or making the ops path more discoverable than raw editing). The adherence GAP is the deliverable (L-28), not a failure. *(evidence: P9 cross-model drive, 2026-06-21: Cursor Composer 2.5 Fast transcript (cursor_chat_clauderizer_phase_execution.json) — 142 built-in tool calls, 0 cz_* MCP calls, uvx ops fallback used, tracked docs hand-edited)*
 
 ### Category: Testing
 
