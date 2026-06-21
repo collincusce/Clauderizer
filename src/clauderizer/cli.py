@@ -272,6 +272,26 @@ def cmd_mcp(args: argparse.Namespace) -> int:
     return mcp_main()
 
 
+def cmd_uninstall(args: argparse.Namespace) -> int:
+    """Remove Clauderizer's per-host MCP registration(s) — only the 'clauderizer'
+    server key, leaving every other server and the host's config intact (P4).
+    ``--host`` limits to one host; default cleans all known hosts."""
+    from pathlib import Path
+
+    from . import hosttargets
+    from .paths import find_repo_root
+
+    if args.host and args.host not in hosttargets.HOST_EMITTERS:
+        print(f"unknown host: {args.host}")
+        return 2
+    repo = find_repo_root(Path.cwd())
+    targets = [args.host] if args.host else list(hosttargets.HOST_EMITTERS)
+    removed = [h for h in targets if hosttargets.remove_mcp(h, repo)]
+    print("removed clauderizer MCP registration from: "
+          + (", ".join(removed) if removed else "(none found)"))
+    return 0
+
+
 def cmd_ops(args: argparse.Namespace) -> int:
     """Execute ``[{op, args}, ...]`` against the shared ops registry (L-05).
 
@@ -472,6 +492,11 @@ def build_parser() -> argparse.ArgumentParser:
     po = sub.add_parser("ops", help="execute a JSON batch of cz_* operations (no-MCP fallback)")
     po.add_argument("file", help="JSON file of [{op, args}, ...], or '-' for stdin")
     po.set_defaults(func=cmd_ops)
+
+    pu = sub.add_parser("uninstall", help="remove Clauderizer's per-host MCP registration")
+    pu.add_argument("--host", default=None,
+                    help="limit to one host id (default: all known hosts)")
+    pu.set_defaults(func=cmd_uninstall)
     return p
 
 

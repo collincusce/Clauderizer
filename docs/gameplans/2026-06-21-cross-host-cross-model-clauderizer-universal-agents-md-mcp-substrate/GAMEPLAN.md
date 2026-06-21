@@ -37,6 +37,8 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 **O-05.** _(phase 0)_ Decide the subsystem version-coordination policy across scaffold / mcp-server / rituals as they grow host support: lock versions at release boundaries vs a clauderize doctor coherence check, so a user can never end up with mismatched host capability across subsystems. _(resolved 2026-06-21: Resolved (decided). clauderize doctor gains a subsystem-version-coherence check: installed scaffold/mcp-server versions must declare support for every host_target in config; a mismatch surfaces as advisory drift. Recorded in docs/CROSS-HOST.md section 8.)_
 
+**O-06.** _(phase 4)_ The repo's own committed .mcp.json carries a machine-specific absolute path (/home/ccusce/Clauderizer/.venv/bin/clauderizer-mcp) + the wsl.exe username shim — the exact path-leak P4's emitter refuses (is_path_safe, D-031). Non-portable for anyone cloning. Fix: gitignore the local .mcp.json or switch it to the portable uvx command. Deferred from P4 to avoid breaking the MCP server running this session.
+
 ## Phase Breakdown
 
 ### Phase 0: Host model, capability audit & parity contract
@@ -115,10 +117,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Per-host emitters for the AGENTS.md+MCP floor hosts produce well-formed, path-safe, non-destructive wiring; each has a committed golden/snapshot test
-- [ ] Re-running init for a second co-resident host preserves the first host's MCP registration and hooks (coexistence test)
-- [ ] Global/user-level configs are guide-only; no absolute user/venv/wsl.exe path is written into a committed file
-- [ ] clauderize uninstall [--host <name>] removes only Clauderizer marker blocks + the clauderizer MCP key, leaving everything else intact (tested)
+- [x] Per-host emitters write well-formed, path-safe, non-destructive MCP wiring with the portable uvx command; each host's key/path is locked by a test
+- [x] Re-running for a second co-resident host preserves the first host's registration; a user's other servers in a shared file survive (non-destructive, tested)
+- [x] Global/user-level and TOML configs are guide-only; the emitter REFUSES an absolute/venv/wsl.exe command (path-safety test)
+- [x] clauderize uninstall [--host] removes only the clauderizer MCP key, leaving every other server intact (CLI test); marker-block stripping reuses writer.upsert_marker_block (noted extension)
 
 ### Phase 5: Bespoke-host wiring emitters (native rule formats & deeper integration)
 

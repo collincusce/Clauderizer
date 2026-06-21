@@ -11,7 +11,7 @@
 | 1 | Model-agnostic protocol hardening & injection-delivery signal | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | AGENTS.md canonical substrate & Tier-4 floor | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | MCP middle tiers: prompts, auto-load resource & tier routing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Cross-host verification execution & release gate | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Server-side session bootstrap (fast-follow; non-gating) | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
@@ -57,6 +57,17 @@ prompts: cz-status, cz-next-phase (MCP prompts, Tier-3 slash commands)
 tier_fn: session.best_tier(host_target) -> 1 hook / 3 prompt / 4 floor
 prompt_hosts: cursor, continue, zed (Tier-3, hook-less)
 p2_test_fixed: floor guard test made whitespace-robust (was red in 00159ef)
+```
+
+### Phase 4 Outputs
+
+```
+module: src/clauderizer/hosttargets.py - emit_mcp/remove_mcp/is_path_safe + HOST_EMITTERS table
+auto_write_hosts: cursor, copilot, continue, zed, gemini-cli, cline, amp (project JSON)
+guide_only_hosts: codex, windsurf, kimi (TOML/global)
+cli_command: clauderize uninstall [--host]
+portable_command: uvx --from clauderizer clauderizer-mcp (path-safe, committable)
+tests: tests/test_hosttargets.py (9 tests)
 ```
 
 ## Corrections Log

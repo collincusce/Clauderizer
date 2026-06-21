@@ -1,7 +1,7 @@
 # Chat Handoff Index — Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate)
 
 > Last updated: 2026-06-21
-> Status: Phase 4 ready
+> Status: Phase 5 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 462
+**Current baseline test count**: 466
 
 ## Ending Protocol
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Model-agnostic protocol hardening & injection-delivery signal | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | AGENTS.md canonical substrate & Tier-4 floor | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | MCP middle tiers: prompts, auto-load resource & tier routing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Floor-host wiring emitters (AGENTS.md+MCP hosts) + uninstall & coexistence | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Cross-host verification execution & release gate | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Server-side session bootstrap (fast-follow; non-gating) | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
@@ -57,6 +57,10 @@ Phase 2 made the shared stanza host-neutral and added the Tier-4 floor. The old 
 ### Phase 3 — completed 2026-06-21
 
 Phase 3 added the Tier-3 prompt mechanism and the tier-routing function. Two MCP prompts (cz-status, cz-next-phase) are registered on the server; on prompt-supporting hosts (Cursor, Copilot, Continue, Gemini, Zed) they surface as /cz-status etc. - a one-shot pull of memory where no hook does it. Invoking one marks the P1 delivery signal so the write-first self-correction and the P7 bootstrap do not double-fire (INVARIANT-08). session.best_tier(host_target) returns the highest reachable tier (1 hook / 3 prompt / 4 floor); Tier-2 (auto-resource) stays retired (D-034). Unknown hosts downgrade safely to the floor; capability is read fresh per call (the stateless server has no stale cache to re-probe). Also fixed forward a brittle P2 guard test that asserted a phrase the template wraps across a line - it shipped RED in 00159ef because P2 was closed on an unreliable ad-hoc shell exit read instead of cz_preflight (correction recorded). Verified this time with cz_preflight, the authoritative gate.
+
+### Phase 4 — completed 2026-06-21
+
+Phase 4 built the per-host wiring emitters. hosttargets.py: HOST_EMITTERS table (verified key/path per host), emit_mcp() writing/merging the clauderizer MCP registration into each host project config NON-DESTRUCTIVELY (preserving every other server, D-031), remove_mcp() for uninstall. Emitted command is the portable uvx form (machine-independent); emit_mcp REFUSES an absolute/venv/wsl.exe command (is_path_safe). Auto-write hosts: cursor, copilot (servers key), continue, zed (context_servers), gemini-cli, cline, amp (amp.mcpServers). Guide-only: codex, windsurf, kimi (TOML/global, O-04). New CLI clauderize uninstall [--host] removes only the clauderizer key. Coexistence two-level: different files per host, other servers survive within a file. Finding: dogfood .mcp.json carries the machine-specific path the emitter prevents (deferred). 9 tests; cz_preflight green.
 
 ## Accumulated Lessons
 
