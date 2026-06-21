@@ -266,10 +266,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 11.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] A concurrency stress test exercises the write lock under interleaved cz_* writes (H-05/H-10) without corruption or lost writes
-- [ ] An adversarial-input battery (non-UTF-8, BOM/CRLF, unhashable, empty, malformed frontmatter) covers every file the engine parses; each degrades gracefully
-- [ ] Every hook event handler proven read-only and exit-0 under induced failure (INVARIANT-04/06)
-- [ ] Confirmed failures fixed; full suite green
+- [x] A concurrency stress test exercises the write lock under interleaved cz_* writes (H-05/H-10) without corruption or lost writes
+- [x] An adversarial-input battery (non-UTF-8, BOM/CRLF, unhashable, empty, malformed frontmatter) covers every file the engine parses; each degrades gracefully
+- [x] Every hook event handler proven read-only and exit-0 under induced failure (INVARIANT-04/06)
+- [x] Confirmed failures fixed; full suite green
 
 ### Phase 12: Security & trust hardening
 

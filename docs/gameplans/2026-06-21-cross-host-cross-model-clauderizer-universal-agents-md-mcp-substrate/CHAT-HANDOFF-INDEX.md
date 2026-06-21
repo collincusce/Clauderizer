@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 510
+**Current baseline test count**: 523
 
 ## Ending Protocol
 
@@ -40,7 +40,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 8 | Wire host_target end-to-end (make cross-host functional via init) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-8-HANDOFF.md |
 | 9 | Real-host & cross-model verification (close O-06, O-07; kill engine_stale) | 🟡 IN PROGRESS | 2026-06-21 | — | handoffs/PHASE-9-HANDOFF.md |
 | 10 | Adversarial sweep: integration seams & state (codebase-wide) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-10-HANDOFF.md |
-| 11 | Adversarial sweep: concurrency, I/O robustness & failure modes | ⬜ NOT STARTED | — | — | handoffs/PHASE-11-HANDOFF.md |
+| 11 | Adversarial sweep: concurrency, I/O robustness & failure modes | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-11-HANDOFF.md |
 | 12 | Security & trust hardening | ⬜ NOT STARTED | — | — | handoffs/PHASE-12-HANDOFF.md |
 | 13 | UX completeness, doc truth-up & release gate; close the gameplan | ⬜ NOT STARTED | — | — | handoffs/PHASE-13-HANDOFF.md |
 
@@ -91,6 +91,10 @@ An independent post-implementation review (lesson #6 discipline) caught two real
 Generalized the merge_missing seam lesson (#6) across the engine via three independent adversarial reviewers over the six shared functions, then a fourth final dry-round reviewer. Five areas came back clean on first pass: config.py (host_target threaded through all 14 fields' to_toml/load/merge_missing round-trip — the lesson-#6 class is closed), status_bundle, the ops registry signatures (all 31 ops match their mutations.* dispatch targets), graph/index.py (always-rebuild-from-disk makes stale-cache seams structurally impossible), and writer.remove_marker_block. The hook dispatcher had two HIGH-confidence seams, both fixed with a regression test AT the seam (commit 42140f3): (1) native cross-host event names were not threaded — a host wired per its own setup guide (windsurf pre_user_prompt, gemini BeforeAgent, cline TaskStart, amp session.start/agent.start) fell through to session_start; critically windsurf's pre_user_prompt is a prompt-submit event, so it would emit the full cold-start digest on EVERY prompt instead of the light analyze pointer — fixed with _EVENT_ALIASES. (2) an unhashable hook_event_name (list/dict) raised TypeError inside dict.get and tripped the error breadcrumb instead of the graceful SessionStart fallback (the L-24 robustness class) — fixed by coercing non-str event names to None before lookup.
 
 O-08 (silent cz_* contract drift) fully resolved: re-recorded the 3 missing P0 amendments as first-class records (A-002 retire Tier-2, A-003 scope 13->11 hosts, A-004 promote P7), and added test_no_op_dispatch_signature_drift — a static AST guard that every kwarg each cz_* op passes to an engine function is a real parameter, so the cz_add_amendment(`rationale`)/cz_add_finding drift class can never silently recur. The final independent review round returned DRY across cascade.py, mutations.py, frontmatter.py, and analyze.py (the new not_related_to/supersedes fields thread correctly; frontmatter round-trips every field type). Two process incidents recovered + captured: a destructive-CLI-smoke isolation failure (lesson #7) and reviewer-subagent artifact leakage (lesson #8). Suite 510 -> 523.
+
+### Phase 11 — completed 2026-06-21
+
+Hardened the engine against concurrent agents and hostile inputs, finding the work mostly already done by prior gameplans and closing the one real gap. An empirical adversarial-input probe across every parse path the engine has (config.toml/tomllib, doc frontmatter, the graph index + its disposable cache, on top of the already-covered hook payload and transcript .jsonl) surfaced exactly one crash: Config.load raised an uncaught TOMLDecodeError/UnicodeDecodeError on a corrupt .clauderizer/config.toml, so clauderize doctor/status/reindex — the very tools meant to diagnose corruption — died with a traceback instead of reporting it. Fixed by adding config.ConfigError (subclasses ValueError so existing except-ValueError paths and L-04's must-be-visible threshold rule both still hold): Config.load wraps its parse and re-raises ConfigError naming the file, and cli.main catches it for an actionable message + exit 1. The hook path already degraded (dispatch catches → breadcrumb → exit 0) and is unchanged. The remaining parsers (frontmatter.parse, index.build, load_or_rebuild) were already graceful and are now locked with regression tests. Added a mixed-op concurrency stress (add_lesson + add_decision racing through the write lock on distinct files/counters) to complement the existing 8-process same-op race. Concurrency (test_locking: H-05/H-10 process race, stale takeover, unlink-retry, reentrancy), the L-24 input battery (test_diverse_robustness), and hook read-only+exit-0-under-failure (test_hook_dispatch) were already proven from prior phases. New tests/test_failure_modes.py (15 tests). Suite 523 -> 538. Confirmed the lesson-#7 isolation-failure root cause along the way (shell vars/$() in wsl.exe bash -lc are expanded by the outer Git Bash, not WSL) — recorded to persistent memory; the case-guard fired and prevented a repeat incident.
 
 ## Accumulated Lessons
 

@@ -18,7 +18,7 @@
 | 8 | Wire host_target end-to-end (make cross-host functional via init) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-8-HANDOFF.md |
 | 9 | Real-host & cross-model verification (close O-06, O-07; kill engine_stale) | 🟡 IN PROGRESS | 2026-06-21 | — | handoffs/PHASE-9-HANDOFF.md |
 | 10 | Adversarial sweep: integration seams & state (codebase-wide) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-10-HANDOFF.md |
-| 11 | Adversarial sweep: concurrency, I/O robustness & failure modes | ⬜ NOT STARTED | — | — | handoffs/PHASE-11-HANDOFF.md |
+| 11 | Adversarial sweep: concurrency, I/O robustness & failure modes | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-11-HANDOFF.md |
 | 12 | Security & trust hardening | ⬜ NOT STARTED | — | — | handoffs/PHASE-12-HANDOFF.md |
 | 13 | UX completeness, doc truth-up & release gate; close the gameplan | ⬜ NOT STARTED | — | — | handoffs/PHASE-13-HANDOFF.md |
 
@@ -123,6 +123,12 @@ live_server_verification: Launched clauderizer-mcp over real stdio MCP client (m
 
 ```
 seam_sweep_results: 3 independent reviewers over 6 shared functions. CLEAN: config.py (host_target threaded 14/14 fields through to_toml/load/merge_missing), status_bundle, ops signatures (all 31), graph/index.py (always-rebuild = no stale cache), writer.remove_marker_block. FIXED (2 HIGH hook-dispatcher seams, commit 42140f3): (1) native cross-host event names not aliased -> windsurf pre_user_prompt emitted full digest every prompt; added _EVENT_ALIASES. (2) unhashable hook_event_name raised TypeError vs graceful fallback; coerce non-str -> None. Regression tests at the seam in test_hook_dispatch.py.
+```
+
+### Phase 11 Outputs
+
+```
+failure_mode_hardening: config.ConfigError (subclasses ValueError) — Config.load wraps its parse, re-raises naming the file; cli.main catches -> actionable msg + exit 1. Fixes doctor/status/reindex crashing on corrupt config.toml. Other parse paths (frontmatter.parse, index.build, index.load_or_rebuild) already graceful — locked by tests. tests/test_failure_modes.py (15 tests): corrupt-config battery, frontmatter/index adversarial inputs, mixed-op (add_lesson+add_decision) concurrency stress. Suite 538. Existing coverage confirmed sufficient for: 8-process lock race (test_locking), L-24 input battery (test_diverse_robustness), hook read-only+exit-0 (test_hook_dispatch).
 ```
 
 ## Corrections Log
