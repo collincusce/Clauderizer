@@ -43,6 +43,21 @@ def test_emit_is_non_destructive(tmp_path):
     assert "clauderizer" in servers                       # added alongside
 
 
+def test_emit_mcp_preserves_unknown_top_level_keys(tmp_path):
+    # the per-host JSON config is a generic dict merged key-scoped — an unrelated
+    # top-level key (a user's own host setting) must survive the clauderizer emit,
+    # the same no-drop guarantee config.toml now has (the host_target-strip class).
+    cfg = tmp_path / ".cursor" / "mcp.json"
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text(json.dumps({"theme": "dark",
+                               "mcpServers": {"other": {"command": "x"}}}), encoding="utf-8")
+    ht.emit_mcp("cursor", tmp_path)
+    data = _read(cfg)
+    assert data["theme"] == "dark"                       # unknown top-level key kept
+    assert "clauderizer" in data["mcpServers"]
+    assert data["mcpServers"]["other"] == {"command": "x"}
+
+
 def test_coexistence_across_hosts(tmp_path):
     # the top config-safety risk: a second host must not clobber the first
     ht.emit_mcp("cursor", tmp_path)

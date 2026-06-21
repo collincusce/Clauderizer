@@ -24,6 +24,21 @@ class ConfigError(ValueError):
     ``TOMLDecodeError``/``UnicodeDecodeError`` traceback. Subclasses ``ValueError``
     so any existing ``except ValueError`` still catches it."""
 
+
+# The keys each config section models. Anything else under a known section, and
+# any unknown whole section, is captured into Config.extra and re-emitted verbatim
+# so a rewrite never drops it. [rituals] is intentionally absent — every key there
+# is modeled by the dynamic ``rituals`` dict.
+_MODELED_KEYS: dict[str, set[str]] = {
+    "clauderizer": {"version", "size", "preflight_checks", "preflight_advisory"},
+    "host": {"profile", "session_host", "target"},
+    "paths": {"docs", "gameplans"},
+    "memory": {"active_lessons_warn", "project_lessons_warn"},
+    "modules": {"enabled"},
+    "active_gameplan": {"id"},
+}
+_KNOWN_SECTIONS = set(_MODELED_KEYS) | {"rituals"}
+
 # Default module/ritual manifests per size. Mirrors the procedure's sizing
 # matrix, but as a real dial instead of prose advice.
 SIZE_MANIFESTS: dict[str, dict[str, Any]] = {
@@ -114,6 +129,13 @@ class Config:
     # (these ride in every handoff across ALL gameplans, O2).
     active_lessons_warn: int = 12
     project_lessons_warn: int = 20
+    # Any config keys/sections this engine version does NOT model, captured on
+    # load and re-emitted by to_toml so a rewrite never silently DROPS a field
+    # the engine doesn't recognize. Forward/cross-version safe: a newer config
+    # rewritten by this engine keeps its newer fields, and a hand-added key
+    # survives — closing the host_target-strip class (P9) for every config field,
+    # not just host_target. ([rituals] is excluded — it is fully modeled.)
+    extra: dict = field(default_factory=dict)
 
     @classmethod
     def for_size(cls, size: str, host_profile: str = "generic") -> "Config":
@@ -146,6 +168,19 @@ class Config:
             rituals = raw.get("rituals", {})
             active = raw.get("active_gameplan", {})
             memory = raw.get("memory", {})
+            # Capture anything this engine doesn't model so to_toml can re-emit it
+            # (forward/cross-version safe — never drop an unrecognized field).
+            extra: dict = {}
+            for section, body in raw.items():
+                if not isinstance(body, dict) or section == "rituals":
+                    continue
+                modeled = _MODELED_KEYS.get(section)
+                if modeled is None:
+                    extra[section] = dict(body)              # unknown whole section
+                else:
+                    leftover = {k: v for k, v in body.items() if k not in modeled}
+                    if leftover:
+                        extra[section] = leftover            # unknown keys in a known section
             return cls(
                 version=str(cz.get("version", CONFIG_VERSION)),
                 size=str(cz.get("size", "standard")),
@@ -163,6 +198,7 @@ class Config:
                 # never silently replaced by a default (L-04).
                 active_lessons_warn=int(memory.get("active_lessons_warn", 12)),
                 project_lessons_warn=int(memory.get("project_lessons_warn", 20)),
+                extra=extra,
             )
         except (tomllib.TOMLDecodeError, UnicodeDecodeError, ValueError) as exc:
             raise ConfigError(
@@ -170,44 +206,68 @@ class Config:
             ) from exc
 
     def to_toml(self) -> str:
+        # ex(section) re-emits any captured unknown keys for a known section. Empty
+        # for a config with no extras, so to_toml stays byte-identical to before
+        # the preservation change (init idempotency / INVARIANT-07 unaffected).
+        def ex(section: str) -> list[str]:
+            return [_toml_kv(k, v) for k, v in (self.extra.get(section) or {}).items()]
+
         lines = [
             "[clauderizer]",
             f'version = "{self.version}"',
             f'size = "{self.size}"',
             _toml_kv("preflight_checks", self.preflight_checks),
             _toml_kv("preflight_advisory", self.preflight_advisory),
+            *ex("clauderizer"),
             "",
             "[host]",
             f'profile = "{self.host_profile}"',
             f'target = "{self.host_target}"',
             *([f'session_host = "{self.session_host}"'] if self.session_host else []),
+            *ex("host"),
             "",
             "[paths]",
             f'docs = "{self.docs}"',
             f'gameplans = "{self.gameplans}"',
+            *ex("paths"),
             "",
             "[memory]",
             f"active_lessons_warn = {self.active_lessons_warn}",
             f"project_lessons_warn = {self.project_lessons_warn}",
+            *ex("memory"),
             "",
             "[modules]",
             _toml_kv("enabled", self.modules),
+            *ex("modules"),
             "",
             "[rituals]",
         ]
         for k, v in self.rituals.items():
             lines.append(f"{k} = {'true' if v else 'false'}")
-        lines += ["", "[active_gameplan]", f'id = "{self.active_gameplan or ""}"', ""]
+        lines += ["", "[active_gameplan]", f'id = "{self.active_gameplan or ""}"',
+                  *ex("active_gameplan"), ""]
+        # unknown WHOLE sections, preserved verbatim (forward/cross-version safe).
+        for section, body in self.extra.items():
+            if section in _KNOWN_SECTIONS:
+                continue
+            lines.append(f"[{section}]")
+            lines += [_toml_kv(k, v) for k, v in body.items()]
+            lines.append("")
         return "\n".join(lines)
+
+
+def _toml_scalar(v: Any) -> str:
+    if isinstance(v, bool):            # bool is an int subclass — check it first
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return str(v)
+    return f'"{v}"'
 
 
 def _toml_kv(key: str, value: Any) -> str:
     if isinstance(value, list):
-        inner = ", ".join(f'"{v}"' for v in value)
-        return f"{key} = [{inner}]"
-    if isinstance(value, bool):
-        return f"{key} = {'true' if value else 'false'}"
-    return f'{key} = "{value}"'
+        return f"{key} = [{', '.join(_toml_scalar(v) for v in value)}]"
+    return f"{key} = {_toml_scalar(value)}"
 
 
 def merge_missing(existing: Config, defaults: Config) -> Config:
@@ -233,4 +293,7 @@ def merge_missing(existing: Config, defaults: Config) -> Config:
         # would clobber a deliberate 0 ("warn always"), so pass through as-is.
         active_lessons_warn=existing.active_lessons_warn,
         project_lessons_warn=existing.project_lessons_warn,
+        # carry the existing config's unmodeled keys forward (an init re-run must
+        # not drop a field the engine doesn't recognize — the whole point).
+        extra=existing.extra or defaults.extra,
     )

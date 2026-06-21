@@ -47,6 +47,61 @@ def test_empty_config_is_defaults_not_error(tmp_path):
     assert cfg.size == "standard" and cfg.host_target == "claude-code"
 
 
+# --- forward/cross-version preservation: a rewrite never drops unmodeled data ----
+# (generalizes the host_target-strip class observed in P9: an engine that does not
+# model a config field must NOT silently drop it on rewrite.)
+
+def test_config_preserves_unknown_keys_and_sections(tmp_path):
+    p = tmp_path / "config.toml"
+    p.write_text(
+        '[clauderizer]\nversion = "1"\nsize = "standard"\nfuture_flag = "keepme"\n\n'
+        '[host]\nprofile = "python"\ntarget = "cursor"\nnew_axis = "preserved"\n\n'
+        '[memory]\nactive_lessons_warn = 12\nproject_lessons_warn = 20\n\n'
+        '[experimental]\nbeta = true\nratio = 3\nitems = ["a", "b"]\n',
+        encoding="utf-8")
+    cfg = Config.load(p)
+    assert cfg.host_target == "cursor"               # modeled fields still load
+    p.write_text(cfg.to_toml(), encoding="utf-8")    # rewrite through to_toml
+    again = Config.load(p)
+    text = p.read_text(encoding="utf-8")
+    assert again.host_target == "cursor"
+    assert 'future_flag = "keepme"' in text          # unknown key in a known section
+    assert 'new_axis = "preserved"' in text          # unknown key under [host]
+    assert "[experimental]" in text                  # unknown WHOLE section
+    assert "beta = true" in text and "ratio = 3" in text and 'items = ["a", "b"]' in text
+    assert again.extra["experimental"]["ratio"] == 3  # int preserved as int, not "3"
+
+
+def test_config_to_toml_unchanged_without_extras(empty_python_repo):
+    # the preservation change must NOT alter a normal config's bytes (idempotency)
+    init(empty_python_repo, spawn_test=False)
+    p = empty_python_repo / ".clauderizer" / "config.toml"
+    cfg = Config.load(p)
+    assert cfg.extra == {}
+    assert cfg.to_toml() == p.read_text(encoding="utf-8")   # round-trips byte-identical
+
+
+def test_config_merge_missing_preserves_extra(tmp_path):
+    from clauderizer.config import merge_missing
+    p = tmp_path / "config.toml"
+    p.write_text('[clauderizer]\nversion = "1"\nsize = "standard"\n\n'
+                 '[host]\ntarget = "zed"\n\n[future]\nx = 1\n', encoding="utf-8")
+    merged = merge_missing(Config.load(p), Config.for_size("standard"))
+    assert "future" in merged.extra and "x = 1" in merged.to_toml()  # re-run keeps it
+
+
+def test_frontmatter_write_preserves_unmodeled_fields(tmp_path):
+    # the markdown writer round-trips arbitrary frontmatter (generic dict, not a
+    # typed model) — confirm an unmodeled entity field survives a structured write
+    from clauderizer.markdown import writer
+    p = tmp_path / "e.md"
+    p.write_text("---\nid: subsys.x\ntype: subsystem\ncustom_field: keep\n---\nbody\n",
+                 encoding="utf-8")
+    writer.set_frontmatter_fields(p, {"status": "active"})
+    text = p.read_text(encoding="utf-8")
+    assert "custom_field: keep" in text and "status: active" in text
+
+
 @pytest.mark.parametrize("cmd", [["doctor"], ["status"], ["reindex"]])
 def test_cli_degrades_on_corrupt_config(empty_python_repo, monkeypatch, capsys, cmd):
     from clauderizer import cli
