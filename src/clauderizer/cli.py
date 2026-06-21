@@ -8,6 +8,7 @@ Subcommands:
     release-check  preflight the four version registries + push ordering (O3)
     mcp            launch the MCP server (stdio)
     ops            execute a JSON batch of cz_* operations (the no-MCP fallback)
+    uninstall      reverse the wiring footprint (preserves docs/ memory)
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ import re
 import sys
 from pathlib import Path
 
-from . import PROCEDURE_VERSION, __version__, hosts
+from . import PROCEDURE_VERSION, __version__, hosts, hosttargets
 from .config import Config
 from .graph import index
 from .paths import find_repo_root, resolve
@@ -45,14 +46,15 @@ def cmd_init(args: argparse.Namespace) -> int:
             run_cmd=run_cmd,
             workflow=args.workflow,
             session_host=args.session_host,
+            host_target=args.host,
             spawn_test=not args.no_spawn_test,
         )
-    except (WiringRefused, hosts.SessionHostError) as exc:
+    except (WiringRefused, hosts.SessionHostError, hosttargets.HostTargetError) as exc:
         print(f"✗ init refused: {exc}")
         return 1
     print(f"Clauderized {report.repo}")
     print(f"  size={report.size}  host profile={report.host_profile}"
-          f"  session host={report.session_host}")
+          f"  host target={report.host_target}  session host={report.session_host}")
     n_changed = len(report.changed)
     print(f"  {n_changed} file(s) written/updated, {len(report.actions) - n_changed} kept as-is")
     if args.verbose:
@@ -60,8 +62,17 @@ def cmd_init(args: argparse.Namespace) -> int:
             print(f"    {a}")
     for w in report.warnings:
         print(f"  ! {w}")
-    print("\nNext: open a Claude Code session here — the SessionStart hook will show status.")
-    print("Or run `clauderize status`.")
+    if report.host_target_auto:
+        print(f"  · host target defaulted to claude-code; pass `--host <name>` to target "
+              f"another agent tool ({', '.join(hosttargets.HOST_EMITTERS)})")
+    if report.host_target == hosttargets.CLAUDE_CODE:
+        print("\nNext: open a Claude Code session here — the SessionStart hook will show status.")
+        print("Or run `clauderize status`.")
+    else:
+        print(f"\nNext: open {report.host_target} on this repo — it loads the emitted MCP "
+              f"config and the AGENTS.md floor tells the agent to call cz_status first.")
+        print("See the .clauderizer/*-setup.md guide(s) for any manual hook wiring, "
+              "or run `clauderize status`.")
     return 0
 
 
@@ -273,22 +284,31 @@ def cmd_mcp(args: argparse.Namespace) -> int:
 
 
 def cmd_uninstall(args: argparse.Namespace) -> int:
-    """Remove Clauderizer's per-host MCP registration(s) — only the 'clauderizer'
-    server key, leaving every other server and the host's config intact (P4).
-    ``--host`` limits to one host; default cleans all known hosts."""
-    from pathlib import Path
-
-    from . import hosttargets
+    """Reverse Clauderizer's wiring footprint, preserving the durable ``docs/``
+    memory and every unrelated entry (P8). ``--host <name>`` scopes to one host's
+    per-host footprint; with no host the FULL footprint is removed (the
+    Claude Code .mcp.json key + .claude hooks, every per-host MCP registration,
+    the CLAUDE.md/AGENTS.md marker stanzas, skills, and the .clauderizer/ dir)."""
     from .paths import find_repo_root
+    from .scaffold.uninstall import uninstall
 
-    if args.host and args.host not in hosttargets.HOST_EMITTERS:
-        print(f"unknown host: {args.host}")
-        return 2
+    if args.host is not None:
+        try:
+            hosttargets.parse_host_target(args.host)
+        except hosttargets.HostTargetError as exc:
+            print(f"✗ {exc}")
+            return 2
     repo = find_repo_root(Path.cwd())
-    targets = [args.host] if args.host else list(hosttargets.HOST_EMITTERS)
-    removed = [h for h in targets if hosttargets.remove_mcp(h, repo)]
-    print("removed clauderizer MCP registration from: "
-          + (", ".join(removed) if removed else "(none found)"))
+    report = uninstall(repo, host=args.host)
+    scope = f"host '{args.host}'" if args.host else "full footprint"
+    if report.removed:
+        print(f"Uninstalled Clauderizer ({scope}) from {repo}:")
+        for item in report.removed:
+            print(f"  - removed {item}")
+    else:
+        print(f"Nothing to remove ({scope}) — no Clauderizer footprint found in {repo}.")
+    for k in report.kept:
+        print(f"  · kept {k}")
     return 0
 
 
@@ -463,6 +483,11 @@ def build_parser() -> argparse.ArgumentParser:
                     help="which host spawns Claude Code sessions: 'native' (default; "
                          "auto-detected from existing wiring) or 'windows-wsl:<distro>' "
                          "for a WSL-installed engine driven from Windows")
+    pi.add_argument("--host", default=None, dest="host",
+                    help="which agent tool drives this repo (default: claude-code; "
+                         "auto-detected when omitted). Other hosts get their own MCP "
+                         "config + AGENTS.md floor + setup guide: "
+                         + ", ".join(hosttargets.HOST_EMITTERS))
     pi.add_argument("--no-spawn-test", action="store_true",
                     help="skip the pre-write launch probes (escape hatch for sandboxes "
                          "that cannot spawn; the probes are the mis-wiring guard)")
@@ -493,9 +518,10 @@ def build_parser() -> argparse.ArgumentParser:
     po.add_argument("file", help="JSON file of [{op, args}, ...], or '-' for stdin")
     po.set_defaults(func=cmd_ops)
 
-    pu = sub.add_parser("uninstall", help="remove Clauderizer's per-host MCP registration")
+    pu = sub.add_parser("uninstall",
+                        help="reverse Clauderizer's wiring footprint (preserves docs/)")
     pu.add_argument("--host", default=None,
-                    help="limit to one host id (default: all known hosts)")
+                    help="scope to one host's footprint (default: the full footprint)")
     pu.set_defaults(func=cmd_uninstall)
     return p
 

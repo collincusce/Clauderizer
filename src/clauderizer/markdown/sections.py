@@ -141,3 +141,23 @@ def get_marker_block(text: str, name: str) -> str | None:
     s = text.index(start) + len(start)
     e = text.index(end)
     return text[s:e].strip("\n")
+
+
+def remove_marker_block(text: str, name: str) -> str:
+    """Delete a marker-delimited block, preserving everything outside it.
+
+    The inverse of :func:`upsert_marker_block` (the P4-noted extension, used by
+    ``clauderize uninstall``). Idempotent: with no such block the text is
+    returned unchanged. The hole left behind is collapsed (the blank line that
+    joined the block is absorbed) so removing an appended stanza restores the
+    prior text; a document that was ONLY the block becomes empty (``""``), which
+    the caller may then delete.
+    """
+    start, end = _markers(name)
+    if not has_marker_block(text, name):
+        return text
+    pattern = re.compile(re.escape(start) + r".*?" + re.escape(end), re.DOTALL)
+    stripped = pattern.sub("", text, count=1)
+    stripped = re.sub(r"\n{3,}", "\n\n", stripped)
+    body = stripped.strip("\n")
+    return body + "\n" if body else ""

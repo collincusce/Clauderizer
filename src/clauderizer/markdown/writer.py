@@ -83,6 +83,27 @@ def upsert_marker_block(path: Path, name: str, content: str) -> bool:
     return _write_if_changed(path, new_text)
 
 
+def remove_marker_block(path: Path, name: str) -> bool:
+    """Strip a marker block from a file, preserving the user's other content.
+
+    The blessed reversal for ``clauderize uninstall`` (P8). Returns ``False`` if
+    the file is absent or has no such block. When the block was the file's entire
+    content, the now-empty file is deleted rather than left as a stray empty
+    stub.
+    """
+    if not path.exists():
+        return False
+    text = _read(path)
+    new_text = sections.remove_marker_block(text, name)
+    if new_text == text:
+        return False
+    if not new_text.strip():
+        path.unlink()
+        return True
+    path.write_text(new_text, encoding="utf-8")
+    return True
+
+
 def set_labeled_value(path: Path, label: str, value: str) -> bool:
     """Update the value of the first ``**Label**: value`` line in a document.
 

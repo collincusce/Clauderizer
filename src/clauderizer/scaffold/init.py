@@ -14,7 +14,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .. import assets, hosts
+from .. import assets, hosts, hosttargets
 from ..config import Config, merge_missing
 from ..graph import index
 from ..markdown import writer
@@ -127,6 +127,8 @@ class InitReport:
     host_profile: str = ""
     size: str = ""
     session_host: str = ""
+    host_target: str = ""
+    host_target_auto: bool = False  # defaulted to claude-code with no choice made
     actions: list[str] = field(default_factory=list)
     changed: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
@@ -157,6 +159,7 @@ def init(
     run_cmd: list[str] | None = None,
     workflow: str = "code",
     session_host: str | None = None,
+    host_target: str | None = None,
     spawn_test: bool = True,
 ) -> InitReport:
     root = root.resolve()
@@ -173,6 +176,25 @@ def init(
     )
     hosts.parse(resolved_host)  # invalid values fail loudly before anything composes
     report.session_host = resolved_host
+
+    # 0a. host target (D-028, the THIRD host axis): explicit flag > what config
+    # already records > cheap auto-detection > claude-code. Validated up front so
+    # an unknown name fails friendly (listing valid hosts) before anything writes
+    # — never a KeyError deep in the emitter table (P8 exit criterion).
+    resolved_target = (
+        host_target
+        or (existing_config.host_target if existing_config else None)
+        or hosttargets.detect_host_target(root)
+    )
+    resolved_target = hosttargets.parse_host_target(resolved_target)
+    report.host_target = resolved_target
+    # Flag the default-with-no-choice case so the CLI can nudge that other hosts
+    # exist — a presentation hint, NOT a wiring warning (report.warnings stays
+    # reserved for the spawn-probe verdicts existing callers assert on).
+    report.host_target_auto = (
+        host_target is None and existing_config is None
+        and resolved_target == hosttargets.CLAUDE_CODE
+    )
 
     engine_mcp, engine_hook = _resolve_invocation(run_cmd)
     mcp_cmd = hosts.compose(engine_mcp, resolved_host)
@@ -215,6 +237,7 @@ def init(
     # record so every later init/doctor composes and verifies for it.
     config = merge_missing(existing_config, defaults) if existing_config else defaults
     config.session_host = resolved_host
+    config.host_target = resolved_target
     changed = writer.create_if_absent(paths.config_file, config.to_toml()) or _rewrite_if_diff(
         paths.config_file, config.to_toml()
     )
@@ -266,58 +289,72 @@ def init(
                 changed = _rewrite_if_diff(dest_dir / src.name, src.read_text(encoding="utf-8"))
                 report.note(f"skill:{skill_dir.name}", dest_dir / src.name, changed)
 
-    # 10. register MCP server (key-scoped merge)
-    changed = _register_mcp(paths.mcp_json, mcp_cmd)
-    report.note(".mcp.json", paths.mcp_json, changed)
+    # 10–11b. Host-target wiring (P8, A-001). claude-code keeps the original
+    # .mcp.json + SessionStart-hook + kimi-setup wiring byte-for-byte
+    # (INVARIANT-07); every other host routes to its per-host emitters (P4/P5),
+    # finally reachable through init. The AGENTS.md floor, skills, and docs above
+    # are host-agnostic and already written, so a non-claude host gets BOTH the
+    # floor and its tools (no floor-but-no-tools).
+    if resolved_target == hosttargets.CLAUDE_CODE:
+        # 10. register MCP server (key-scoped merge)
+        changed = _register_mcp(paths.mcp_json, mcp_cmd)
+        report.note(".mcp.json", paths.mcp_json, changed)
 
-    # 11. SessionStart hook: write the breadcrumb wrapper, prove the registered
-    # command spawns, then register it (D4). The engine hook itself was already
-    # probed in step 0b, so a failure here is wrapper-specific. The wrapper
-    # always bakes the UNSHIMMED engine argv — it executes on the engine host.
-    wrapper_name = hosts.wrapper_filename(resolved_host)
-    wrapper_path = root / ".clauderizer" / wrapper_name
-    changed = _rewrite_if_diff(
-        wrapper_path,
-        hosts.render_hook_wrapper(engine_hook, root=root,
-                                  windows=wrapper_name.endswith(".cmd")),
-        exact_newlines=True,
-    )
-    if changed and not wrapper_name.endswith(".cmd"):
-        try:  # courtesy for direct execution; /bin/sh invocation needs no x-bit
-            wrapper_path.chmod(wrapper_path.stat().st_mode | 0o755)
-        except OSError:
-            pass
-    report.note("hook wrapper", wrapper_path, changed)
-    registered_hook = hosts.hook_wrapper_invocation(root, resolved_host)
-    if spawn_test:
-        # No-arg digest probe from a NON-repo cwd (D-010/H-09): --version
-        # answers before repo discovery, so only the digest path proves the
-        # wrapper's anchor — an un-anchored wrapper is silent (exit 0) exactly
-        # like the real executor chain made it, and must not register.
-        probe = hosts.hook_digest_probe(registered_hook, cwd=hosts.non_repo_cwd())
-        if probe.status == "fail":
-            raise WiringRefused(
-                f"the SessionStart wrapper failed its spawn test — hook registration "
-                f"left unchanged.\n"
-                f"  command: {' '.join(registered_hook)}  (from a non-repo cwd)\n"
-                f"  probe:   {probe.detail}\n"
-                f"  The wrapper was written to {wrapper_path} for inspection; the "
-                f"engine command\n"
-                f"  itself probed OK in the pre-write gate, so suspect the wrapper "
-                f"shell (/bin/sh, cmd, wsl.exe) or the repo anchor."
-            )
-        if probe.status == "unverifiable":
-            report.warnings.append(f"SessionStart wrapper unverifiable: {probe.detail}")
-    changed = _register_hook(root / ".claude" / "settings.json", registered_hook)
-    report.note("hook", root / ".claude" / "settings.json", changed)
+        # 11. SessionStart hook: write the breadcrumb wrapper, prove the registered
+        # command spawns, then register it (D4). The engine hook itself was already
+        # probed in step 0b, so a failure here is wrapper-specific. The wrapper
+        # always bakes the UNSHIMMED engine argv — it executes on the engine host.
+        wrapper_name = hosts.wrapper_filename(resolved_host)
+        wrapper_path = root / ".clauderizer" / wrapper_name
+        changed = _rewrite_if_diff(
+            wrapper_path,
+            hosts.render_hook_wrapper(engine_hook, root=root,
+                                      windows=wrapper_name.endswith(".cmd")),
+            exact_newlines=True,
+        )
+        if changed and not wrapper_name.endswith(".cmd"):
+            try:  # courtesy for direct execution; /bin/sh invocation needs no x-bit
+                wrapper_path.chmod(wrapper_path.stat().st_mode | 0o755)
+            except OSError:
+                pass
+        report.note("hook wrapper", wrapper_path, changed)
+        registered_hook = hosts.hook_wrapper_invocation(root, resolved_host)
+        if spawn_test:
+            # No-arg digest probe from a NON-repo cwd (D-010/H-09): --version
+            # answers before repo discovery, so only the digest path proves the
+            # wrapper's anchor — an un-anchored wrapper is silent (exit 0) exactly
+            # like the real executor chain made it, and must not register.
+            probe = hosts.hook_digest_probe(registered_hook, cwd=hosts.non_repo_cwd())
+            if probe.status == "fail":
+                raise WiringRefused(
+                    f"the SessionStart wrapper failed its spawn test — hook registration "
+                    f"left unchanged.\n"
+                    f"  command: {' '.join(registered_hook)}  (from a non-repo cwd)\n"
+                    f"  probe:   {probe.detail}\n"
+                    f"  The wrapper was written to {wrapper_path} for inspection; the "
+                    f"engine command\n"
+                    f"  itself probed OK in the pre-write gate, so suspect the wrapper "
+                    f"shell (/bin/sh, cmd, wsl.exe) or the repo anchor."
+                )
+            if probe.status == "unverifiable":
+                report.warnings.append(f"SessionStart wrapper unverifiable: {probe.detail}")
+        changed = _register_hook(root / ".claude" / "settings.json", registered_hook)
+        report.note("hook", root / ".claude" / "settings.json", changed)
 
-    # 11b. kimi-code setup snippet (D2): the [[hooks]] entries + MCP guidance the
-    # user merges into their kimi config. Non-destructive — a project file under
-    # .clauderizer/, never the global ~/.kimi/config.toml. kimi injects EVERY
-    # hook's stdout, so all four events are wired here (vs Claude Code's two — D1).
-    changed = _rewrite_if_diff(paths.kimi_setup,
-                               _render_kimi_setup(registered_hook, mcp_cmd))
-    report.note("kimi-setup", paths.kimi_setup, changed)
+        # 11b. kimi-code setup snippet (D2): the [[hooks]] entries + MCP guidance the
+        # user merges into their kimi config. Non-destructive — a project file under
+        # .clauderizer/, never the global ~/.kimi/config.toml. kimi injects EVERY
+        # hook's stdout, so all four events are wired here (vs Claude Code's two — D1).
+        changed = _rewrite_if_diff(paths.kimi_setup,
+                                   _render_kimi_setup(registered_hook, mcp_cmd))
+        report.note("kimi-setup", paths.kimi_setup, changed)
+    else:
+        # A non-claude host: emit its MCP registration (or setup guide for a
+        # guide-only host), the native floor where it does not read AGENTS.md, and
+        # its hook setup guide. The Claude-Code-only .mcp.json key and
+        # .claude/settings.json hooks are NOT written — that wiring is dead here.
+        for res in hosttargets.emit_host_wiring(resolved_target, root):
+            report.note(f"{res.label}:{resolved_target}", res.path, res.changed)
 
     # 12. gitignore the disposable cache; reindex
     changed = _ensure_gitignore(root / ".gitignore", ".clauderizer/index.json")

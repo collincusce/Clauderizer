@@ -60,6 +60,67 @@ HOST_EMITTERS: dict[str, HostEmitter] = {
 }
 
 
+# The default native host: claude-code keeps the original .mcp.json + .claude
+# hook wiring (INVARIANT-07). Every other id routes through the per-host
+# emitters below — reachable through `clauderize init --host` since P8 (A-001).
+CLAUDE_CODE = "claude-code"
+
+
+class HostTargetError(ValueError):
+    """An unknown ``--host`` value, carrying the valid list. Raised by
+    :func:`parse_host_target` so init fails friendly (no bare KeyError, P8)."""
+
+
+def valid_host_targets() -> list[str]:
+    """Every host id ``init --host`` accepts: claude-code (native wiring) plus
+    each per-host emitter (auto-write and guide-only)."""
+    return [CLAUDE_CODE, *HOST_EMITTERS]
+
+
+def parse_host_target(value: str | None) -> str:
+    """Validate a ``--host`` value → the canonical host id.
+
+    Unset (or ``claude-code``) is the default native path; everything else must
+    be a known emitter. Raises :class:`HostTargetError` listing the valid hosts
+    on an unknown name — the friendly error P8 requires instead of a KeyError
+    deep inside ``HOST_EMITTERS[...]``.
+    """
+    v = (value or CLAUDE_CODE).strip()
+    valid = valid_host_targets()
+    if v in valid:
+        return v
+    raise HostTargetError(
+        f"unknown host '{v}' — valid hosts: {', '.join(valid)}"
+    )
+
+
+def detect_host_target(repo_root: Path) -> str:
+    """Cheap, side-effect-free auto-detection when ``--host`` is omitted and the
+    config records nothing yet.
+
+    Adopt the single non-claude host whose project config ALREADY carries a
+    ``clauderizer`` registration (a prior per-host init); default to
+    ``claude-code`` otherwise. Deliberately conservative: it keys on an existing
+    clauderizer entry, never on an unrelated ``.vscode/`` dir, and refuses to
+    guess when two hosts are wired (returns the default so init nudges).
+    """
+    found: list[str] = []
+    for host_id, em in HOST_EMITTERS.items():
+        if not em.auto_write:
+            continue
+        path = repo_root / em.config_path
+        if not path.exists():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        servers = data.get(em.servers_key)
+        if isinstance(servers, dict) and "clauderizer" in servers:
+            found.append(host_id)
+    return found[0] if len(found) == 1 else CLAUDE_CODE
+
+
 def is_path_safe(argv: list[str]) -> bool:
     """A command is safe to COMMIT only when it carries no machine-specific absolute
     path: no POSIX '/...', no 'X:\\' drive path, no wsl.exe shim (D-031). The
@@ -266,3 +327,99 @@ def path_safety_audit(repo_root: Path) -> list[str]:
                 if not is_path_safe(argv):
                     offenders.append(f"{rel}: {argv}")
     return offenders
+
+
+# --- P8: route a non-claude host's full wiring through init ----------------------
+
+def mcp_setup_guide(host_id: str) -> str:
+    """The MCP-registration guide for a guide-only host (TOML or global config —
+    no stdlib auto-writer, O-04/D-031). Names the host's config location and the
+    PORTABLE command to register by hand, so the host still reaches the cz_*
+    tools. Non-destructive: written under the repo's .clauderizer/, never the
+    host's own global config."""
+    em = HOST_EMITTERS[host_id]
+    cmd = " ".join(PORTABLE_COMMAND)
+    why = em.note or "guide-only — not auto-written"
+    return (
+        f"# Clauderizer MCP setup for {host_id}\n\n"
+        f"{host_id}'s MCP config lives at `{em.config_path}` ({why}). Clauderizer "
+        f"does not edit it automatically; register the server yourself with the "
+        f"portable command:\n\n"
+        f"```\n{cmd}\n```\n\n"
+        f"Add a `clauderizer` MCP server entry pointing at that command. Once "
+        f"registered you have the cz_* tools; the AGENTS.md floor already tells "
+        f"the agent to call `cz_status` first.\n"
+    )
+
+
+@dataclass(frozen=True)
+class EmitResult:
+    """One file init's host-target branch wrote (or left unchanged). ``changed``
+    lets init report honestly and preserves the 'second run = zero diffs'
+    invariant for every host, even though the low-level emitters rewrite."""
+    label: str   # mcp | mcp-guide | instructions | hook-guide
+    path: Path
+    changed: bool
+
+
+def _write_text_if_changed(path: Path, content: str) -> bool:
+    prior = path.read_text(encoding="utf-8") if path.exists() else None
+    if prior == content:
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    return True
+
+
+def _emit_idempotent(path: Path, emit: "callable") -> bool:
+    """Run a low-level emitter (which rewrites unconditionally) and report
+    whether the target file's bytes actually changed."""
+    before = path.read_text(encoding="utf-8") if path.exists() else None
+    emit()
+    after = path.read_text(encoding="utf-8")
+    return before != after
+
+
+def emit_host_wiring(host_id: str, repo_root: Path) -> list[EmitResult]:
+    """Emit everything a non-claude host needs, reached through ``init`` (P8).
+
+    Three pieces, each idempotent and reported:
+
+    1. **MCP registration** — auto-write hosts get a real per-host config
+       (``emit_mcp``); guide-only hosts (TOML/global) get a setup guide so they
+       still reach the tools by hand.
+    2. **Native floor** — hosts that do NOT read AGENTS.md (Continue, Gemini) get
+       the floor in their own rules file (``emit_instructions``); the rest already
+       have it via the AGENTS.md stanza init writes host-agnostically.
+    3. **Hook setup guide** — hosts with a lifecycle hook system get the Tier-1
+       guided-wiring guide (``hook_setup_guide``).
+
+    The AGENTS.md floor, skills, and docs are host-agnostic and written by init
+    itself — this is strictly the per-host last mile.
+    """
+    em = HOST_EMITTERS[host_id]
+    results: list[EmitResult] = []
+
+    if em.auto_write:
+        path = repo_root / em.config_path
+        results.append(EmitResult(
+            "mcp", path, _emit_idempotent(path, lambda: emit_mcp(host_id, repo_root))))
+    else:
+        path = repo_root / ".clauderizer" / f"{host_id}-mcp-setup.md"
+        results.append(EmitResult(
+            "mcp-guide", path, _write_text_if_changed(path, mcp_setup_guide(host_id))))
+
+    rel = NATIVE_INSTRUCTIONS.get(host_id)
+    if rel is not None:
+        path = repo_root / rel
+        results.append(EmitResult(
+            "instructions", path,
+            _emit_idempotent(path, lambda: emit_instructions(host_id, repo_root))))
+
+    guide = hook_setup_guide(host_id)
+    if guide is not None:
+        path = repo_root / ".clauderizer" / f"{host_id}-hook-setup.md"
+        results.append(EmitResult(
+            "hook-guide", path, _write_text_if_changed(path, guide)))
+
+    return results
