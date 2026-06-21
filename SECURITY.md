@@ -19,9 +19,10 @@ key-merge that preserves any other servers. The full statement of what is
 written per host, what executes when, under which contracts, and what
 happens when you clone a repo that already carries the wiring lives in
 **[docs/TRUST.md](docs/TRUST.md)** — behavioral claims there that disagree
-with the code are treated as bugs. To remove the registration cleanly from
-every host, run `clauderize uninstall` (it strips only the `clauderizer`
-key).
+with the code are treated as bugs. To remove the wiring cleanly, run
+`clauderize uninstall`: it reverses the full footprint (MCP keys, hooks,
+marker stanzas, skills, `.clauderizer/`) with key/marker-scoped removals that
+preserve other servers, foreign hooks, and your `docs/` memory.
 
 ## Supported versions
 
