@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Eval harness and baseline capture | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Context-rot trims (evidence-gated removal) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | DAG integrity validation | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | DAG integrity validation | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Edge-suggester (missing-edge surfacing) | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Decision supersession back-refs and lifecycle | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bitemporal valid-time (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
@@ -32,6 +32,12 @@ harness: tests/benchmarks/ — 10 deterministic tests (metrics, ranker baseline,
 
 ```
 phase1_trim_result: handoff 3137->1420 tok (-55%); project-lesson payload 2737->994 tok (-64%); agent-eval focused 5/6 == full 5/6 (tie, accuracy held); ranker recall@5 = 6/6 = 100%. Change (D4): the handoff focuses project lessons to top-k ranked-to-phase + a pointer to canonical docs/LESSONS.md when count > k; <= k rides full. Suite 415 green.
+```
+
+### Phase 2 Outputs
+
+```
+phase2_result: src/clauderizer/graph/validate.py: deterministic dangling-edge + cycle (iterative Tarjan SCC) detection over the project DAG, surfaced advisorily via the existing status drift channel (never blocks; INVARIANT-05/06). Gap filled: pin_violations skipped unknown targets, so dangling edges were undetected. 12 tests: 100% detection on seeded dangling+cycle fixtures, 0 false positives on valid DAGs. Suite 415->427 green.
 ```
 
 ## Corrections Log

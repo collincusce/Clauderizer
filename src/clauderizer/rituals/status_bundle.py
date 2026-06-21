@@ -240,28 +240,56 @@ def _baseline_tests(index_text: str) -> str | None:
     return m.group(1) if m else None
 
 
-def _drift_warnings(paths: RepoPaths, rows: list) -> list[str]:
-    """Surface the most common silent drift: phases marked complete while graph
-    entities are still 'planned' (the status-transition step was skipped).
-
-    Conservative on purpose — it only fires when there *is* completed work AND
-    untouched entities, so it informs without crying wolf. Best-effort; never raises.
-    """
-    completed = [r for r in rows if r.status == "complete"]
-    if not completed:
-        return []
+def _dag_integrity_warnings(graph) -> list[str]:
+    """Advisory warnings for structural DAG breaks: dangling depends_on edges
+    and depends_on cycles (graph/validate). Deterministic; never raises —
+    INVARIANT-05 (engine surfaces, agent decides; no enable/disable flag)."""
     try:
-        from ..graph import index
-        planned = [e.id for e in index.build(paths.docs).all()
-                   if getattr(e, "status", None) == "planned"]
+        from ..graph import validate
+        issues = validate.validate(graph)
     except Exception:
         return []
-    if not planned:
-        return []
-    sample = ", ".join(planned[:3]) + ("…" if len(planned) > 3 else "")
-    noun = "entity" if len(planned) == 1 else "entities"
-    return [f"{len(planned)} {noun} still 'planned' while {len(completed)} phase(s) "
-            f"complete ({sample}) — cz_transition_status to reconcile."]
+    out = []
+    for src, target in issues.dangling:
+        out.append(f"dangling depends_on {src} -> {target}")
+    for cycle in issues.cycles:
+        # a -> b -> a reads the cycle back to its first member.
+        out.append("depends_on cycle " + " -> ".join(cycle + cycle[:1]))
+    return out
+
+
+def _drift_warnings(paths: RepoPaths, rows: list) -> list[str]:
+    """Surface silent drift. Two families, both best-effort and never raising:
+
+    1. Phases marked complete while graph entities are still 'planned' (the
+       status-transition step was skipped). Conservative on purpose — only fires
+       when there *is* completed work AND untouched entities.
+    2. Structural DAG breaks — dangling depends_on edges and cycles. Always
+       checked (a broken graph is drift regardless of phase state); advisory and
+       judgment-based per INVARIANT-05.
+    """
+    warnings: list[str] = []
+    graph = None
+    try:
+        from ..graph import index
+        graph = index.build(paths.docs)
+    except Exception:
+        graph = None
+
+    completed = [r for r in rows if r.status == "complete"]
+    if completed and graph is not None:
+        planned = [e.id for e in graph.all()
+                   if getattr(e, "status", None) == "planned"]
+        if planned:
+            sample = ", ".join(planned[:3]) + ("…" if len(planned) > 3 else "")
+            noun = "entity" if len(planned) == 1 else "entities"
+            warnings.append(
+                f"{len(planned)} {noun} still 'planned' while {len(completed)} "
+                f"phase(s) complete ({sample}) — cz_transition_status to reconcile.")
+
+    if graph is not None:
+        warnings.extend(_dag_integrity_warnings(graph))
+    return warnings
 
 
 def compute(paths: RepoPaths, config: Config) -> dict:

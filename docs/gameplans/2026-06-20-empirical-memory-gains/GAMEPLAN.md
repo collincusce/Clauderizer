@@ -100,10 +100,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Dangling-edge detection: 100% on a seeded fixture of broken depends_on edges
-- [ ] Cycle detection: 100% on a seeded cyclic fixture, 0 false positives on valid DAGs
-- [ ] Findings surfaced advisorily via status/cascade (never blocks a write)
-- [ ] New tests cover the detector; full suite green
+- [x] Dangling-edge detection: 100% on a seeded fixture of broken depends_on edges
+- [x] Cycle detection: 100% on a seeded cyclic fixture, 0 false positives on valid DAGs
+- [x] Findings surfaced advisorily via status/cascade (never blocks a write)
+- [x] New tests cover the detector; full suite green
 
 ### Phase 3: Edge-suggester (missing-edge surfacing)
 

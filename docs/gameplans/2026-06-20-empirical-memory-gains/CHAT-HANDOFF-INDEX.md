@@ -1,7 +1,7 @@
 # Chat Handoff Index — Empirical memory gains
 
 > Last updated: 2026-06-20
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Eval harness and baseline capture | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Context-rot trims (evidence-gated removal) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | DAG integrity validation | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | DAG integrity validation | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Edge-suggester (missing-edge surfacing) | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Decision supersession back-refs and lifecycle | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bitemporal valid-time (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
@@ -50,6 +50,10 @@ Built tests/benchmarks/ - a deterministic, stdlib-only memory-eval harness (Long
 
 Trimmed the biggest context cost: the cumulative handoff carried all 21 project lessons in full (2737 tok = 87% of a 3137-tok handoff). 3-stage ablation proved the fix safe: retrieval recall@5=100% (the answer lesson is always rank-1 in the focused set), and a focused-vs-full agent-eval tied at 5/6 each. Shipped focused_project_lessons in handoff.py: when project lessons exceed k, the handoff carries the top-k ranked-to-phase (most-relevant first) + a pointer to canonical LESSONS.md; <= k rides full. Result: handoff 3137->1420 tok (-55%) at equal accuracy. Reconciles D-022 (relevance-focus + pointer-to-canonical, not truncation). 4 new tests; suite 415 green. Honest scope: a tie not a win - the gain is token-cost; active length-harm is a larger-scale effect.
 
+### Phase 2 — completed 2026-06-20
+
+Added src/clauderizer/graph/validate.py: deterministic dangling-edge + cycle (iterative Tarjan SCC) detection over the project DAG, surfaced advisorily through the existing status drift channel (never blocks; INVARIANT-05/06). Filled a real gap - query.pin_violations skips edges with unknown targets, so dangling depends_on edges were silently undetected. 12 new tests (100% detection on seeded dangling+cycle fixtures, zero false positives on valid DAGs); suite 415->427 green. Independently re-verified by the orchestrator (tests + code review).
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -64,3 +68,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Design
 
 **2.** Focusing injected memory to the top-k relevant entries + a pointer to canonical (NOT truncation) cut the handoff 55% (3137->1420 tok) at EQUAL agent-eval accuracy. But the focused-vs-full eval was a TIE, not focused>full: at small scale (21 lessons / ~5k tok) the length-harm the literature predicts has not yet bitten. Measure the actual scale before claiming 'less context is more' - the honest win at this scale is token-cost at held accuracy, and it grows with lesson count. Ranker recall@k=100% is the precondition that makes focusing safe (the answer is always in the focused set). *(evidence: D4; src/clauderizer/rituals/handoff.py focused_project_lessons; _experiments/eval_focus.py + phase1-focus-eval workflow (focused 5/6 == full 5/6))*
+
+**3.** Semver-pin validation and structural-integrity validation are SEPARATE concerns: query.pin_violations deliberately skips a depends_on edge whose target is unknown (it cannot verify a semver it cannot find), so dangling edges fell through it silently for the life of the project. A graph needs a companion structural check (dangling targets + cycles) distinct from version-pin checks. Detect cycles with iterative Tarjan SCC, never recursive DFS, so a deep/long dependency chain cannot blow the stack. *(evidence: src/clauderizer/graph/query.py pin_violations (skips target is None); src/clauderizer/graph/validate.py; tests/test_dag_validity.py)*
