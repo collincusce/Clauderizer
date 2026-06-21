@@ -69,7 +69,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 ## Open Items
 
-**O-01.** Run a dedicated invariant-ADHERENCE agent-eval for the focused-invariant pointer (Phase 6): with-vs-without surfacing on tasks that could violate a governing invariant, measure whether surfacing improves adherence. Phase 6 shipped the capability + token-bounded surfacing; the direct adherence gain is inherited from Phase 1's mechanism, not freshly measured.
+**O-01.** Run a dedicated invariant-ADHERENCE agent-eval for the focused-invariant pointer (Phase 6): with-vs-without surfacing on tasks that could violate a governing invariant, measure whether surfacing improves adherence. Phase 6 shipped the capability + token-bounded surfacing; the direct adherence gain is inherited from Phase 1's mechanism, not freshly measured. _(resolved 2026-06-21: Eval ran (8 agents, 4 invariant-violation probes x surfaced/control): NO measured adherence difference (4/4 both arms). INCONCLUSIVE, not a clean disproof - control was not isolated (agents had repo/CLAUDE.md and cited the real invariants), the prompt primed the rule-check, and 4/4 is a ceiling. Real signal: agents honor these invariants from CLAUDE.md/the repo WITHOUT the handoff pointer - the same redundancy that dropped the steering doc in Phase 6. Pointer's adherence benefit unproven/plausibly-redundant; retained as a cheap focused capability (shipped honestly as capability-not-proven-gain, so nothing mis-shipped). Definitive answer needs an unprimed, isolated eval. Provenance: _experiments/o01_invariant_adherence_result.md.)_
 
 ## Phase Breakdown
 

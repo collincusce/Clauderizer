@@ -89,9 +89,13 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 **12.** Re-distill curated, append-only memory behind a COVERAGE GATE, never by taste: auto-derive a query from each lesson's OWN distinctive tokens (no hand-picked probes) and require that after consolidation the lesson's synthesis still surfaces in the ranker top-k; merge only the tightest clusters, mark sources obsolete with a 'consolidated into L-NN' pointer (never delete - INVARIANT-03), and prove coverage both before apply (simulated) and after apply (on the live file, with the marker stripped so it cannot cheat). Result here: 21 -> 16 active at 9/9 coverage, rollup -20%. *(evidence: _experiments/redistill_lessons.py (pre 21/21) + verify_redistill.py (post 9/9); docs/LESSONS.md L-22..L-25)*
 
+**13.** A 'strict/blocking' flag on a discipline gate is a double INVARIANT-05 violation (block + toggle). When asked to make a gate enforce, strengthen surfacing/relevance instead — the pending cascade report + cascade_hygiene preflight already supplies the non-blocking pressure.
+
 ### Category: Testing
 
 **1.** A retrieval-quality gate must score on a POSITION-SENSITIVE metric (MRR/nDCG), not recall@k with k >= corpus size: recall@k is trivially 1.0 when k spans the whole corpus, so a relevance-blind ranker passes it. The harness self-test caught exactly this - a degraded ranker scored recall@5=1.0 (identical to the real ranker) yet MRR 0.46 vs 1.0. Prove a measurement instrument can detect the failure it guards before trusting its verdicts. *(evidence: tests/benchmarks/test_benchmarks.py::test_harness_detects_ranker_regression; 2026-06-20-empirical-memory-gains Phase 0)*
+
+**14.** A behavior/adherence eval must ISOLATE the variable and NOT PRIME the behavior it measures, or its null result is uninterpretable. The O-01 invariant-pointer eval read 4/4 both arms because (a) the 'control' agents still had repo + CLAUDE.md access (so it compared in-handoff vs available-in-repo, not present vs absent) and (b) the prompt asked 'would you refuse if this conflicts with a rule?', triggering the very rule-check the feature exists to prompt - with a 4/4 ceiling on top. Use self-contained arms (no repo access), neutral framing ('here is a task, proceed'), and subtler violations. Corollary: if the control can reach the signal by another path, you are not measuring your feature - you are measuring the path. *(evidence: _experiments/o01_invariant_adherence_result.md; workflow phase6-invariant-adherence-eval (surfaced 4/4 == control 4/4))*
 
 ### Category: Design
 

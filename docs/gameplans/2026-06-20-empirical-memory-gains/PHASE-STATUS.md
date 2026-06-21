@@ -69,8 +69,15 @@ phase6_result: Steering doc DROPPED (redundant with auto-loaded CLAUDE.md + INVA
 ```
 phase7_result: Close-out complete. 4 features landed with measured gains (focus-trim -55% handoff; DAG validation 100%/0-FP; edge-suggester p=0.75; supersession contradiction 1.0->0), 1 parked (bitemporal), 1 split (steering doc DROPPED / focused-invariant surfacing KEPT). Suite 400->446 green. POST-MORTEM.md written (gains table + honest caveats + procedure improvements + follow-ups). Lessons: active gameplan 7 (<12 ok); project 21 (>20, PRE-EXISTING) flagged for a dedicated re-distillation pass, not auto-merged (curated memory needs maintainer judgment; promoting would duplicate L-17). No tracked graph entities (subsys/feat) changed - code-only - so the gameplan-wide cascade is trivially clean (cascade_hygiene pass).
 redistill_result: GATED re-distillation of docs/LESSONS.md applied (2026-06-21). 4 conservative clusters -> 4 syntheses L-22..L-25; 9 sources obsoleted (append-only, 'consolidated into L-NN', never deleted). Active project lessons 21 -> 16 (gauge >20 warning cleared); rollup tokens -20%. Net gain PROVEN: pre-apply coverage gate 21/21 (each lesson's own-token query still surfaces its synthesis top-3) and post-apply live-file proof 9/9 obsoleted concepts covered. Harnesses: _experiments/redistill_lessons.py + verify_redistill.py. Suite 446 green.
+o01_result: O-01 RESOLVED (inconclusive). Invariant-pointer adherence eval: 4/4 both arms (no measured gain), confounded - control had repo access + primed framing + 4/4 ceiling. Benefit unproven and plausibly redundant with CLAUDE.md (echoes the Phase 6 steering-doc drop). Feature retained as an honest cheap capability; no revert (inconclusive eval, harmless feature, honestly shipped). Provenance: _experiments/o01_invariant_adherence_result.md.
 ```
 
 ## Corrections Log
 
-_(Every divergence from the gameplan, captured in real time, as C-NN entries.)_
+### C-01 — Phase request-triage
+
+**Phase**: request-triage
+**What gameplan said**: Add a --strict mode flag to cz_cascade that BLOCKS a phase transition whenever it finds dependents the agent has not reviewed.
+**What was actually correct**: Refused as specified. The advisory contract is preserved: cz_cascade reports needs-review dependents (D-006), and the existing cascade_hygiene preflight check already keeps the report pending until the agent records verdicts via cz_resolve_cascade. In-doctrine alternative is to strengthen surfacing of that pending state, not add a blocking flag.
+**Why**: Conflicts with INVARIANT-05 on two counts (MUST NOT hard-block a phase transition; MUST NOT introduce an enable/disable config flag) and with D-015 (discipline gates are always-on/advisory/judgment-based, no enable/disable config; the user's scoping directive was 'avoid new config flags, be intelligent instead'). Also against D-006 (cascade finds dependents and marks needs-review; the agent decides). The engine surfaces candidates; the agent is the control surface.
+**Lesson**: A 'strict/blocking' flag on a discipline gate is a double INVARIANT-05 violation (block + toggle). When asked to make a gate enforce, strengthen surfacing/relevance instead — the pending cascade report + cascade_hygiene preflight already supplies the non-blocking pressure.
