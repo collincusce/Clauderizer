@@ -163,3 +163,17 @@ _(Add entries with `cz_add_decision`.)_
 **Decision**: Generalize the single hook entry point to read stdin JSON and dispatch on hook_event_name, defaulting to the SessionStart digest when stdin is absent/unparseable (backward compatible, preserves the --version/--help probe path). Every event handler is READ-ONLY (no mutations inside a hook) and ALWAYS exits 0. New events reuse the existing wrapper and hosts.py wiring machinery unchanged; the SessionStart leg is not refactored.
 **Consequences**: One code path for all hook events; adding an event is a handler + a registration, not new wrapper/probe plumbing. Read-only + exit-0 keeps hooks safe to fire anywhere. Handlers stay quiet-when-empty to avoid context noise. Whether a handler's stdout actually reaches context is the host's contract, not ours (Claude Code drops PreCompact/PostCompact stdout; kimi injects all) — so wiring is per-host.
 **Evidence**: Claude Code hooks ref (24 events; SessionStart source=compact; PreCompact/PostCompact stdout NOT to context; UserPromptSubmit/SessionStart stdout->additionalContext). kimi-cli hooks doc (13 events; exit-0 stdout added to context for all). src/clauderizer/hook/sessionstart.py; src/clauderizer/hosts.py render_hook_wrapper.
+
+### D-026 — Empirical gain-gate: features must prove measurable benefit or they do not land
+
+**Context**: This initiative adds and removes memory features and must guarantee each change is a net gain (user directive). Research shows memory features can be net-negative, so benefit cannot be assumed.
+**Decision**: Every feature or removal must pass a Hybrid gate: a deterministic benchmark (repeatable, in CI) AND, for behavioral effects, a seeded agent-eval (focused-vs-full ablation). A change that fails its pre-registered hypothesis/metric is parked or reverted and recorded as a finding - never merged on faith.
+**Consequences**: Phase 0 builds the eval harness before any feature ships; each feature phase pre-registers a hypothesis + metric; parked features are valid, recorded outcomes.
+**Evidence**: LongMemEval ICLR 2025 (arxiv 2410.10813); user directive to guarantee benefit gains from each feature.
+
+### D-027 — Trim-first: injected-context length and noise degrade the agent; prefer focused injection over more memory
+
+**Context**: The naive assumption that more remembered context is better is contradicted by replicated peer-reviewed evidence on long-context degradation.
+**Decision**: Treat injected-context size as a cost to minimize. Inject focused, front-loaded, ranked memory; gate and shrink the always-on digest, the cumulative handoff, and the lesson roll-up. The goal is injecting the right focused tokens, not remembering the most.
+**Consequences**: The context-rot trim phase is a first-class high-priority removal phase; any always-injected addition (e.g. a steering doc) must justify its token cost against this.
+**Evidence**: EMNLP 2025 context-length-alone-hurts (arxiv 2510.05381); TACL 2024 lost-in-the-middle (arxiv 2307.03172); Chroma Context Rot; LongMemEval focused>full (arxiv 2410.10813).
