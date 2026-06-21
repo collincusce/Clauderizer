@@ -192,7 +192,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 7.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Active and project lessons re-distilled under the memory-gauge thresholds
+- [x] Active and project lessons re-distilled under the memory-gauge thresholds
 - [x] Measured per-feature gains table written (which landed, which parked, with deltas)
 - [x] POST-MORTEM.md written with procedure improvements
 - [x] Gameplan-wide cascade clean; every phase completed or explicitly parked

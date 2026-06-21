@@ -68,6 +68,7 @@ phase6_result: Steering doc DROPPED (redundant with auto-loaded CLAUDE.md + INVA
 
 ```
 phase7_result: Close-out complete. 4 features landed with measured gains (focus-trim -55% handoff; DAG validation 100%/0-FP; edge-suggester p=0.75; supersession contradiction 1.0->0), 1 parked (bitemporal), 1 split (steering doc DROPPED / focused-invariant surfacing KEPT). Suite 400->446 green. POST-MORTEM.md written (gains table + honest caveats + procedure improvements + follow-ups). Lessons: active gameplan 7 (<12 ok); project 21 (>20, PRE-EXISTING) flagged for a dedicated re-distillation pass, not auto-merged (curated memory needs maintainer judgment; promoting would duplicate L-17). No tracked graph entities (subsys/feat) changed - code-only - so the gameplan-wide cascade is trivially clean (cascade_hygiene pass).
+redistill_result: GATED re-distillation of docs/LESSONS.md applied (2026-06-21). 4 conservative clusters -> 4 syntheses L-22..L-25; 9 sources obsoleted (append-only, 'consolidated into L-NN', never deleted). Active project lessons 21 -> 16 (gauge >20 warning cleared); rollup tokens -20%. Net gain PROVEN: pre-apply coverage gate 21/21 (each lesson's own-token query still surfaces its synthesis top-3) and post-apply live-file proof 9/9 obsoleted concepts covered. Harnesses: _experiments/redistill_lessons.py + verify_redistill.py. Suite 446 green.
 ```
 
 ## Corrections Log

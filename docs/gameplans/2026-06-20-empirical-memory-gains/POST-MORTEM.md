@@ -73,8 +73,14 @@ only what brings gains, and trim what doesn't. Test suite **400 → 446**, green
 
 ## Open threads (follow-ups, non-blocking)
 
-- **Re-distill the 21 project lessons** (the `> 20` gauge warning predates this gameplan).
-  A focused consolidation pass over `docs/LESSONS.md` is its own judgment-heavy task.
+- **Re-distill the 21 project lessons** — ✅ DONE (2026-06-21, gated). Consolidated 9
+  lessons into 4 syntheses (`L-22`–`L-25`) across 4 conservative clusters, **21 → 16
+  active**, rollup **−20%**, append-only (sources marked `obsolete: consolidated into
+  L-NN`, never deleted). Gated on a coverage proof: every original lesson's own-token
+  query still surfaces its synthesis in the ranker top-3 — **before** apply (21/21) and
+  **after** apply on the live file (9/9 obsoleted concepts covered). Harnesses:
+  `_experiments/redistill_lessons.py` (pre-apply gate) + `_experiments/verify_redistill.py`
+  (post-apply proof). The `> 20` gauge warning is cleared.
 - **Dedicated invariant-adherence agent-eval** for the Phase 6 focused-invariant pointer
   (open item recorded).
 - **Monitor edge-suggester real-world precision**; tune `min_shared` if noise appears.
