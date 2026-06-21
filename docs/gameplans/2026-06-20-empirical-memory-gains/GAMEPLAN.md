@@ -1,7 +1,7 @@
 # Empirical memory gains Gameplan
 
 > Created: 2026-06-20
-> Status: Executing
+> Status: Complete
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -193,6 +193,6 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 **Exit criteria**:
 - [ ] Active and project lessons re-distilled under the memory-gauge thresholds
-- [ ] Measured per-feature gains table written (which landed, which parked, with deltas)
-- [ ] POST-MORTEM.md written with procedure improvements
-- [ ] Gameplan-wide cascade clean; every phase completed or explicitly parked
+- [x] Measured per-feature gains table written (which landed, which parked, with deltas)
+- [x] POST-MORTEM.md written with procedure improvements
+- [x] Gameplan-wide cascade clean; every phase completed or explicitly parked

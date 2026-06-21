@@ -14,7 +14,7 @@
 | 4 | Decision supersession back-refs and lifecycle | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bitemporal valid-time (must-earn) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Persistent steering doc (must-earn) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-6-HANDOFF.md |
-| 7 | Close-out: consolidate, measure, post-mortem | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 7 | Close-out: consolidate, measure, post-mortem | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-7-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -62,6 +62,12 @@ phase5_result: PARKED (no code shipped). Bitemporal valid-time cannot beat Phase
 
 ```
 phase6_result: Steering doc DROPPED (redundant with auto-loaded CLAUDE.md + INVARIANTS + analyze; anti D-027; Kiro gated-steering refuted). KEPT a trim-consistent adaptation: handoff.relevant_invariant_pointer surfaces the top-k phase-relevant INVARIANTS (focused; injects nothing when none relevant) - filling a real gap (invariants were never surfaced during phase work). Gain is measured-capability + Phase-1-inherited mechanism; a dedicated adherence eval is a recorded follow-up (open item). +2 tests; suite green (446).
+```
+
+### Phase 7 Outputs
+
+```
+phase7_result: Close-out complete. 4 features landed with measured gains (focus-trim -55% handoff; DAG validation 100%/0-FP; edge-suggester p=0.75; supersession contradiction 1.0->0), 1 parked (bitemporal), 1 split (steering doc DROPPED / focused-invariant surfacing KEPT). Suite 400->446 green. POST-MORTEM.md written (gains table + honest caveats + procedure improvements + follow-ups). Lessons: active gameplan 7 (<12 ok); project 21 (>20, PRE-EXISTING) flagged for a dedicated re-distillation pass, not auto-merged (curated memory needs maintainer judgment; promoting would duplicate L-17). No tracked graph entities (subsys/feat) changed - code-only - so the gameplan-wide cascade is trivially clean (cascade_hygiene pass).
 ```
 
 ## Corrections Log

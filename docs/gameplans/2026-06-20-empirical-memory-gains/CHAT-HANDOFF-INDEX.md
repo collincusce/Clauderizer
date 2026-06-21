@@ -1,7 +1,7 @@
 # Chat Handoff Index — Empirical memory gains
 
 > Last updated: 2026-06-20
-> Status: Phase 7 ready
+> Status: All 8 phases complete
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 438
+**Current baseline test count**: 446
 
 ## Ending Protocol
 
@@ -36,7 +36,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 4 | Decision supersession back-refs and lifecycle | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bitemporal valid-time (must-earn) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Persistent steering doc (must-earn) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-6-HANDOFF.md |
-| 7 | Close-out: consolidate, measure, post-mortem | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 7 | Close-out: consolidate, measure, post-mortem | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-7-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -69,6 +69,10 @@ PARKED (evidence-based, no code). Bitemporal valid-time was a must-earn candidat
 ### Phase 6 — completed 2026-06-20
 
 DROP the always-injected steering/constitution doc (redundant with auto-loaded CLAUDE.md + INVARIANTS.md + the analyze gate; anti-trim D-027; the research evidence was weakest - Kiro's gated steering was refuted, only the always-loaded anti-pattern survived). KEPT the trim-consistent adaptation that fills the real gap underneath: handoff.relevant_invariant_pointer surfaces the top-k phase-relevant INVARIANTS (focused, never an always-all dump, injects nothing when none are relevant). Invariants were never surfaced during phase work before this. Honest scope: the kept feature passes a deterministic CAPABILITY gate (surfaces relevant / skips irrelevant - tested) and its reading-stage benefit is inherited from Phase 1's focused-surfacing result; a dedicated invariant-adherence agent-eval was not run and is recorded as an open item. Two keep-path criteria (build the doc / run the adherence ablation) left intentionally unchecked - resolved via the drop-the-doc branch.
+
+### Phase 7 — completed 2026-06-20
+
+Close-out. Wrote POST-MORTEM.md with the measured per-feature gains table (4 KEEP, 1 PARK, 1 split), what worked (the gain-gate caught the edge-suggester's 0.103 over-retrieval noise; the harness self-test caught recall@k>=N; dogfooding surfaced D-020/021/022 + L-17 that pre-shaped Phase 1), honest caveats (Phase 1 was a Pareto/token win not an accuracy win; Phase 6 adherence inherited not freshly measured; edge precision fixture-measured), and procedure improvements (tests/benchmarks/ is a reusable asset; evaluate must-earn candidates by analysis when their metric is saturated). Suite 400->446 green throughout. Lessons-under-threshold criterion intentionally left unchecked: active 7<12 ok, but the pre-existing 21 project lessons (>20) are curated memory deferred to a dedicated pass rather than auto-merged. No tracked graph entities changed (code-only), so the gameplan-wide cascade is trivially clean.
 
 ## Accumulated Lessons
 
