@@ -1,7 +1,7 @@
 # Chat Handoff Index — Empirical memory gains
 
 > Last updated: 2026-06-20
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 415
+**Current baseline test count**: 438
 
 ## Ending Protocol
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Eval harness and baseline capture | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Context-rot trims (evidence-gated removal) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | DAG integrity validation | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Edge-suggester (missing-edge surfacing) | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Edge-suggester (missing-edge surfacing) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Decision supersession back-refs and lifecycle | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bitemporal valid-time (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Persistent steering doc (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
@@ -54,6 +54,10 @@ Trimmed the biggest context cost: the cumulative handoff carried all 21 project 
 
 Added src/clauderizer/graph/validate.py: deterministic dangling-edge + cycle (iterative Tarjan SCC) detection over the project DAG, surfaced advisorily through the existing status drift channel (never blocks; INVARIANT-05/06). Filled a real gap - query.pin_violations skips edges with unknown targets, so dangling depends_on edges were silently undetected. 12 new tests (100% detection on seeded dangling+cycle fixtures, zero false positives on valid DAGs); suite 415->427 green. Independently re-verified by the orchestrator (tests + code review).
 
+### Phase 3 — completed 2026-06-20
+
+Edge-suggester KEPT (precision 0.75 >= 0.70 bar, recall 1.0). analyze.suggest_edges proposes MISSING depends_on edges from distinctive-token overlap - the complement of D-018's existing-edge walk - surfaced advisorily via cz_analyze.suggested_edges (no new tool, parity green), never auto-writing. Rejected pairs persist as not_related_to frontmatter (symmetric, round-trips). The precision gate did its job: a naive id+type signal scored 0.103 (every entity shares subsys/subsystem), so the impl strips structural boilerplate; the fixture was then hardened with a generic-collision false positive to land an honest 0.75. +11 tests; suite 438 green. Orchestrator hardened the fixture and re-verified the number.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -70,3 +74,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **2.** Focusing injected memory to the top-k relevant entries + a pointer to canonical (NOT truncation) cut the handoff 55% (3137->1420 tok) at EQUAL agent-eval accuracy. But the focused-vs-full eval was a TIE, not focused>full: at small scale (21 lessons / ~5k tok) the length-harm the literature predicts has not yet bitten. Measure the actual scale before claiming 'less context is more' - the honest win at this scale is token-cost at held accuracy, and it grows with lesson count. Ranker recall@k=100% is the precondition that makes focusing safe (the answer is always in the focused set). *(evidence: D4; src/clauderizer/rituals/handoff.py focused_project_lessons; _experiments/eval_focus.py + phase1-focus-eval workflow (focused 5/6 == full 5/6))*
 
 **3.** Semver-pin validation and structural-integrity validation are SEPARATE concerns: query.pin_violations deliberately skips a depends_on edge whose target is unknown (it cannot verify a semver it cannot find), so dangling edges fell through it silently for the life of the project. A graph needs a companion structural check (dangling targets + cycles) distinct from version-pin checks. Detect cycles with iterative Tarjan SCC, never recursive DFS, so a deep/long dependency chain cannot blow the stack. *(evidence: src/clauderizer/graph/query.py pin_violations (skips target is None); src/clauderizer/graph/validate.py; tests/test_dag_validity.py)*
+
+**4.** When measuring lexical similarity BETWEEN tracked entities (not query-to-entity), strip structural boilerplate FIRST: the id prefix (subsys./feat.), the type word (subsystem/feature), and scaffold placeholders are shared by every entity by construction, so naive overlap proposes every pair - measured: edge-suggester precision 0.103 with boilerplate vs 0.75-1.0 after stripping. Tokenize the id on ./- so the specific segment (invoice-ledger -> invoice, ledger) contributes but the prefix does not. This is the cross-entity analog of analyze._STOP dropping ADR template boilerplate, and a concrete instance of the over-retrieval finding (low-precision surfacing is net-negative noise). *(evidence: src/clauderizer/analyze.py suggest_edges / _ENTITY_STOP; tests/test_edge_suggester.py precision arc (0.103 naive -> 0.75 hardened fixture))*

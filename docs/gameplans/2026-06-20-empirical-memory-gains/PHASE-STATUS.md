@@ -10,7 +10,7 @@
 | 0 | Eval harness and baseline capture | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Context-rot trims (evidence-gated removal) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | DAG integrity validation | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Edge-suggester (missing-edge surfacing) | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Edge-suggester (missing-edge surfacing) | ✅ COMPLETE | 2026-06-20 | 2026-06-20 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Decision supersession back-refs and lifecycle | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Bitemporal valid-time (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Persistent steering doc (must-earn) | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
@@ -38,6 +38,12 @@ phase1_trim_result: handoff 3137->1420 tok (-55%); project-lesson payload 2737->
 
 ```
 phase2_result: src/clauderizer/graph/validate.py: deterministic dangling-edge + cycle (iterative Tarjan SCC) detection over the project DAG, surfaced advisorily via the existing status drift channel (never blocks; INVARIANT-05/06). Gap filled: pin_violations skipped unknown targets, so dangling edges were undetected. 12 tests: 100% detection on seeded dangling+cycle fixtures, 0 false positives on valid DAGs. Suite 415->427 green.
+```
+
+### Phase 3 Outputs
+
+```
+phase3_result: KEPT. analyze.suggest_edges surfaces MISSING depends_on edges from distinctive-token overlap (>=2, boilerplate stripped) - the structural complement of D-018 (which walks EXISTING edges). Gate: precision=0.75, recall=1.0 on a labeled fixture that INCLUDES a generic-collision false positive (bar >=0.70). Advisory: extends cz_analyze result with suggested_edges (no new tool; test_ops parity green); never auto-writes an edge. Rejected-pair memory = not_related_to frontmatter (symmetric, round-trips via cz_upsert_entity). +11 tests; suite 438. Honest caveat: 0.75 is fixture-measured; real-world precision varies; advisory + agent-confirm + reject-memory absorbs false positives.
 ```
 
 ## Corrections Log

@@ -115,10 +115,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Edge-suggester surfaces missing edges from lexical/entity-id overlap via an agent-confirm flow
-- [ ] Suggestion precision meets the pre-registered threshold on a labeled fixture (else the feature is parked) - value recorded
-- [ ] Rejected-pair memory: a dismissed suggestion is not re-surfaced
-- [ ] Advisory-only (no auto-write of edges); full suite green
+- [x] Edge-suggester surfaces missing edges from lexical/entity-id overlap via an agent-confirm flow
+- [x] Suggestion precision meets the pre-registered threshold on a labeled fixture (else the feature is parked) - value recorded
+- [x] Rejected-pair memory: a dismissed suggestion is not re-surfaced
+- [x] Advisory-only (no auto-write of edges); full suite green
 
 ### Phase 4: Decision supersession back-refs and lifecycle
 

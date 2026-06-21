@@ -93,17 +93,23 @@ def cz_graph_query(entity_id: str = "", kind: str = "lookup", transitive: bool =
 
 
 def cz_analyze(text: str, k: int = 5) -> dict:
-    """Surface the existing decisions/invariants most relevant to `text`, plus the
-    one-hop graph neighbors `text` touches but has not connected — for you to judge
-    contradiction/supersession AND gaps (the analyze gate, D-016/D-018).
+    """Surface the existing decisions/invariants most relevant to `text`, the
+    one-hop graph neighbors `text` touches but has not connected, AND the
+    plausibly-missing depends_on edges between tracked entities — for you to judge
+    contradiction/supersession, gaps, and missing structure (the analyze gate,
+    D-016/D-018).
 
     Judgment-based like cz_cascade and read-only: the engine ASSEMBLES candidates
     (relevant entries by keyword + entity-id overlap; the `adjacent` graph entities
-    by one-hop structural adjacency) and prompts; it never decides. Use before
-    recording a decision, or to vet a phase/plan against recorded memory. If a
-    surfaced entry is contradicted, record a correction or revise; if superseded,
+    by one-hop structural adjacency; `suggested_edges` = entity pairs with high
+    lexical/id overlap and NO edge either way, the structural complement of D-018)
+    and prompts; it never decides and NEVER auto-writes an edge (INVARIANT-05). Use
+    before recording a decision, or to vet a phase/plan against recorded memory. If
+    a surfaced entry is contradicted, record a correction or revise; if superseded,
     set `supersedes` on cz_add_decision; if an `adjacent` entity should have been
-    accounted for, that is a gap to close before proceeding.
+    accounted for, that is a gap to close; for a `suggested_edges` pair, add the
+    real edge with cz_upsert_entity(depends_on=[...]) or dismiss it permanently via
+    cz_upsert_entity(fields={'not_related_to': [...]}).
     """
     paths, _ = repo_ctx()
     from . import analyze as _analyze
@@ -111,18 +117,23 @@ def cz_analyze(text: str, k: int = 5) -> dict:
     res = _analyze.analyze(paths, text, k=k)
     n = len(res["decisions"]) + len(res["invariants"])
     adj = res.get("adjacent") or []
+    edges = res.get("suggested_edges") or []
     res["ok"] = True
     res["prompt"] = (
         "Review against the text. (1) CONTRADICTION/SUPERSESSION: does it contradict "
         "any surfaced decision/invariant (record a correction or revise) or supersede "
         "one (set supersedes on cz_add_decision)? (2) GAPS: the `adjacent` entries are "
         "graph-neighbors of what you're touching that nothing here has connected to "
-        "this text — decide whether your change should account for them. The engine "
-        "surfaces candidates only; you decide."
+        "this text — decide whether your change should account for them. (3) MISSING "
+        "EDGES: `suggested_edges` are entity pairs with high lexical/id overlap and no "
+        "depends_on edge either way — for each, either add the real edge with "
+        "cz_upsert_entity(depends_on=[...]) or, if genuinely unrelated, dismiss it for "
+        "good by recording cz_upsert_entity(id=<a>, fields={'not_related_to': ['<b>']}). "
+        "The engine surfaces candidates only; you decide and it never auto-writes an edge."
     )
     res["summary"] = (
         f"surfaced {n} relevant entr{'y' if n == 1 else 'ies'} "
-        f"+ {len(adj)} adjacent for review"
+        f"+ {len(adj)} adjacent + {len(edges)} suggested edge(s) for review"
     )
     return res
 

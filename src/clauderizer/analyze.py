@@ -148,10 +148,126 @@ def adjacent_entities(paths: RepoPaths, text: str, decision_ids,
     return out[:k]
 
 
+# --- edge-suggester: MISSING one-hop edges (the structural complement of D-018) ---
+#
+# ``adjacent_entities`` (D-018) walks the graph's EXISTING edges to surface
+# related-but-unmentioned context. This is its complement: it finds edges that
+# plausibly SHOULD exist but DON'T. For every unordered pair of tracked entities
+# whose lexical / entity-id overlap clears a threshold AND that has no
+# ``depends_on`` edge in either direction, it emits a candidate for the AGENT to
+# confirm — never auto-writing one (INVARIANT-05: the engine surfaces, the agent
+# decides; there is no enable/disable flag). The similarity signal reuses the same
+# ``_tokens`` set-overlap as ``rank_relevant`` (O-01: dependency-light, no
+# embeddings — L-14), counting shared distinctive terms across the two entities'
+# id-tails + bodies — so there is no new metric to trust.
+#
+# A dismissed pair must never resurface. The rejected set is markdown-canonical
+# (the repo's source-of-truth rule): a ``not_related_to: [id, ...]`` frontmatter
+# list on either entity. It is read here to filter, round-trips through the
+# frontmatter parser/serializer (a flat list of scalars — exactly the supported
+# subset), and is written through the existing ``cz_upsert_entity(fields=...)`` —
+# no new tool, so the tool-surface parity stays green.
+
+# Default overlap threshold. Pairs need at least this many shared distinctive
+# tokens to be proposed. Tuned for precision over recall (advisory noise erodes
+# trust; over-retrieval is net-negative — INVARIANT-05's "surface the right few").
+_EDGE_MIN_SHARED = 2
+
+# Structural boilerplate shared by entity docs BY CONSTRUCTION, which therefore
+# carries zero relatedness signal and would otherwise inflate every pair's
+# overlap. The id prefix segment (``subsys``/``feat``) and the type word are
+# shared by every entity of a kind; the scaffold placeholder (``_(describe.)_``)
+# rides on every body nobody has filled in. Dropping them is the same move
+# ``_STOP`` makes for ADR template boilerplate — overlap should reflect the
+# distinctive domain terms, not the template. (Measured: leaving these in drove
+# fixture precision to 0.10 — see tests/test_edge_suggester.py.)
+_ENTITY_STOP = {
+    "subsys", "feat", "subsystem", "feature", "component", "module",
+    "describe", "tbd", "todo",
+}
+
+
+def _entity_tokens(e) -> set[str]:
+    """Distinctive tokens for an entity: its id (its most specific term), type,
+    and body prose — minus the structural boilerplate every entity shares.
+
+    Reuses ``_tokens`` (the same keyword machinery ``rank_relevant`` uses), then
+    drops ``_ENTITY_STOP`` so the signal is domain vocabulary, not the id prefix /
+    type / scaffold placeholder that every entity carries by construction.
+    """
+    # id segments split on '.' and '-' so ``subsys.invoice-ledger`` contributes
+    # ``invoice`` and ``ledger`` (distinctive) but its prefix is dropped below.
+    id_words = e.id.replace(".", " ").replace("-", " ")
+    return _tokens(f"{id_words} {e.type} {e.body}") - _ENTITY_STOP
+
+
+def _rejected_pairs(graph) -> set[frozenset[str]]:
+    """Unordered pairs marked unrelated via a ``not_related_to`` frontmatter list.
+
+    Symmetric and forgiving: a pair counts as rejected if EITHER entity names the
+    other (and stale ids that name no live entity are simply ignored), so a single
+    one-sided dismissal suffices and round-trips through the frontmatter parser.
+    """
+    rejected: set[frozenset[str]] = set()
+    for e in graph.all():
+        raw = e.raw.get("not_related_to") or []
+        items = raw if isinstance(raw, list) else [raw]
+        for other in items:
+            oid = str(other).strip()
+            if oid and oid != e.id:
+                rejected.add(frozenset((e.id, oid)))
+    return rejected
+
+
+def suggest_edges(paths: RepoPaths, min_shared: int = _EDGE_MIN_SHARED,
+                  k: int = 10) -> list[dict]:
+    """Suggest MISSING ``depends_on`` edges — the structural complement of D-018.
+
+    For each unordered pair of tracked entities whose shared distinctive-token
+    count (``_entity_tokens`` overlap, reusing ``_tokens``) is ``>= min_shared``
+    AND that has NO ``depends_on`` edge in either direction AND is not in the
+    ``not_related_to`` rejected set, emit ``{a, b, shared_terms, score}`` (``a <
+    b`` for stable ordering, ``score`` = number of shared terms). Sorted by
+    descending score then ``(a, b)`` — fully deterministic. Capped at ``k``.
+
+    Advisory only: this NEVER writes an edge (INVARIANT-05). An empty result is an
+    honest negative (no plausible missing edge), never a failure.
+    """
+    graph = graph_index.build(paths.docs)
+    ents = graph.all()
+    if len(ents) < 2:
+        return []
+    # Pre-compute each entity's distinctive-token set once (O(n) not O(n^2)).
+    toks = {e.id: _entity_tokens(e) for e in ents}
+    # Existing edges (either direction) collapse to unordered pairs to skip.
+    connected: set[frozenset[str]] = set()
+    for e in ents:
+        for pin in e.depends_on:
+            connected.add(frozenset((e.id, pin.target)))
+    rejected = _rejected_pairs(graph)
+    out: list[dict] = []
+    for i in range(len(ents)):
+        for j in range(i + 1, len(ents)):
+            a, b = ents[i], ents[j]
+            pair = frozenset((a.id, b.id))
+            if pair in connected or pair in rejected:
+                continue
+            shared = toks[a.id] & toks[b.id]
+            if len(shared) < min_shared:
+                continue
+            lo, hi = sorted((a.id, b.id))
+            out.append({"a": lo, "b": hi, "shared_terms": sorted(shared),
+                        "score": len(shared)})
+    out.sort(key=lambda s: (-s["score"], s["a"], s["b"]))
+    return out[:k]
+
+
 def analyze(paths: RepoPaths, text: str, k: int = 5,
             exclude_ids: tuple[str, ...] = ()) -> dict:
     """Surface the most relevant decisions + invariants for ``text``, plus the
-    one-hop graph neighbors it has not yet connected (the gap-finder, D-018)."""
+    one-hop graph neighbors it has not yet connected (the gap-finder, D-018), and
+    the plausibly-MISSING edges between tracked entities (the structural
+    complement of D-018) — all advisory, for the agent to judge."""
     decisions = rank_relevant(
         text, parse_entries(writer.full_text(paths.doc("DECISIONS")), "Decisions"),
         k=k, exclude_ids=exclude_ids)
@@ -159,4 +275,6 @@ def analyze(paths: RepoPaths, text: str, k: int = 5,
         text, parse_entries(writer.full_text(paths.doc("INVARIANTS")), "Invariants"),
         k=k, exclude_ids=exclude_ids)
     adjacent = adjacent_entities(paths, text, {d["id"] for d in decisions})
-    return {"decisions": decisions, "invariants": invariants, "adjacent": adjacent}
+    suggested_edges = suggest_edges(paths)
+    return {"decisions": decisions, "invariants": invariants, "adjacent": adjacent,
+            "suggested_edges": suggested_edges}
