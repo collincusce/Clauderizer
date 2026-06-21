@@ -1,7 +1,7 @@
 # Chat Handoff Index — Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate)
 
 > Last updated: 2026-06-21
-> Status: All 8 phases complete
+> Status: Phase 8 ready
 
 ## How This Works
 
@@ -37,6 +37,12 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Cross-host verification execution & release gate | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Server-side session bootstrap (fast-follow; non-gating) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-7-HANDOFF.md |
+| 8 | Wire host_target end-to-end (make cross-host functional via init) | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
+| 9 | Real-host & cross-model verification (close O-06, O-07; kill engine_stale) | ⬜ NOT STARTED | — | — | handoffs/PHASE-9-HANDOFF.md |
+| 10 | Adversarial sweep: integration seams & state (codebase-wide) | ⬜ NOT STARTED | — | — | handoffs/PHASE-10-HANDOFF.md |
+| 11 | Adversarial sweep: concurrency, I/O robustness & failure modes | ⬜ NOT STARTED | — | — | handoffs/PHASE-11-HANDOFF.md |
+| 12 | Security & trust hardening | ⬜ NOT STARTED | — | — | handoffs/PHASE-12-HANDOFF.md |
+| 13 | UX completeness, doc truth-up & release gate; close the gameplan | ⬜ NOT STARTED | — | — | handoffs/PHASE-13-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -92,3 +98,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Testing
 
 **4.** A neutrality / token-exclusion check false-positives when the product name CONTAINS the forbidden token as a substring: asserting 'Claude' not in text trips on 'Clauderizer'. Strip the product name(s) before the standalone-token check (text.replace('Clauderizer','')). The code was correct (the note says [Clauderizer]); only the test was wrong - a reminder that a guard assertion is itself code that needs the obvious edge case. *(evidence: tests/test_session_signal.py test_session_note_is_host_neutral, P1)*
+
+**6.** Per-phase TDD covers each phase NEW code but misses cross-cutting integration with EXISTING shared paths. An independent post-implementation review caught merge_missing() silently dropping the new host_target field on every init re-run (no phase tested the new config field against the re-run merge), a stale status_note wording after P7 changed WHEN it fires, and a pre-mark ordering bug. When a feature adds a field or branch that an existing shared function must also handle, add an explicit integration test for that SEAM (or an independent review pass) - the phase that introduces the field is not the phase that owns the function it must thread through.

@@ -1,7 +1,7 @@
 # Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate) Gameplan
 
 > Created: 2026-06-21
-> Status: Complete
+> Status: Executing
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview
@@ -19,7 +19,14 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 ## Amendments
 
-_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+### A-001 — Add battle-hardening series P8-P13; revisit P4 (init never wired to host_target)
+
+- **Date**: 2026-06-21
+- **Affected sections in GAMEPLAN.md**: Phase Breakdown; P4 emitters (unreachable via init)
+- **Affected phases**: 4,8,9,10,11,12,13
+- **Triggered by**: independent red-team/blue-team review, 2026-06-21
+- **What changed**: Adds P8 (wire the per-host emitters through init - revisits P4), P9 (real-host + cross-model verification, closes O-06/O-07/engine_stale), P10 (integration-seam sweep codebase-wide), P11 (concurrency/IO/failure sweep), P12 (security/trust hardening), P13 (UX + doc truth-up + release gate + gameplan close-out).
+- **Why**: Review found init never references host_target/hosttargets/emit_mcp: the P4 emitters are tested but unreachable through the user-facing command, so a non-Claude host gets the AGENTS.md floor but no MCP registration (the tool is absent) - not functional end-to-end. The user also asked to apply the same red-team/blue-team, gate-verified method across the entire codebase.
 
 ## Decisions
 
@@ -166,3 +173,96 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 - [x] Dedup via the P1 session signal: bootstrap never double-injects alongside a hook (hook hosts mark-and-stand-down on the first call); at most once per session (INVARIANT-08)
 - [x] INVARIANT-06 honored: the signal is in-memory/read-only, the note never blocks the session, and stays minimal (D-027)
 - [x] Confirmed non-gating: the Floor Release (P0-P2) shipped/committed before this phase
+
+### Phase 8: Wire host_target end-to-end (make cross-host functional via init)
+
+**Goal**: Revisit P4: the emitters are unreachable through init. Add `clauderize init --host <name>` that sets host_target, with cheap auto-detection when omitted and a friendly error listing valid hosts on an unknown name (no KeyError). Branch init's MCP/instructions step on host_target: claude-code keeps byte-identical current behavior (INVARIANT-07); an auto-write host calls hosttargets.emit_mcp + emit_instructions (where the host does not read AGENTS.md) and writes/prints the per-host hook setup guide; a guide-only host writes its setup guide. Make `clauderize uninstall` complete - MCP config + hooks + marker stanzas + .clauderizer - to match its name, preserving docs/ and unrelated entries. Prove it end-to-end with an integration test.
+**Depends on**: 7.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 8.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [ ] clauderize init --host <name> sets host_target and emits that host's wiring (MCP config + native floor where the host does not read AGENTS.md + hook setup guide); omitting --host auto-detects, defaulting to claude-code with a nudge
+- [ ] Unknown host -> a friendly error listing valid hosts (no KeyError); guarded by a test
+- [ ] init on a Claude Code repo is byte-identical to pre-P8 output (parity regression test, INVARIANT-07)
+- [ ] Integration test: init --host cursor produces a .cursor/mcp.json that passes wiring_contract_sweep, and the host gets BOTH the floor and the MCP tools (no floor-but-no-tools)
+- [ ] clauderize uninstall [--host] removes the full footprint (MCP config + hooks + marker stanzas + .clauderizer), preserving docs/ and unrelated entries; tested
+
+### Phase 9: Real-host & cross-model verification (close O-06, O-07; kill engine_stale)
+
+**Goal**: Move from paper-verified to product-verified. Fix O-06 (the repo's own committed .mcp.json carries a machine-specific path). Restart/validate the live MCP server so the new prompts and the server-side bootstrap are exercised against a real MCP client, not just unit tests. Install into at least two real hosts (Cursor plus one of Copilot/Continue/Zed) and confirm each loads the emitted config and the agent reaches cz_status (closes O-07, the consumption proof). Drive the cz_* gameplan protocol with at least one non-Claude model to sanity-check the cross-model claim. Fold any per-host key/path corrections discovered live back into HOST_EMITTERS with a note.
+**Depends on**: 8.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 9.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [ ] O-06 resolved: no machine-specific path in any committed config (the dogfood .mcp.json is gitignored or portable)
+- [ ] The live MCP server serves the new prompts and the server-side bootstrap, verified against a real MCP client (engine_stale cleared)
+- [ ] At least 2 real hosts confirmed to load the emitted config and reach cz_status; per-host results recorded (O-07 resolved or residue tracked per host)
+- [ ] At least 1 non-Claude model drives the gameplan protocol end-to-end; adherence gaps recorded as findings
+- [ ] Any per-host key/path corrections from live testing folded back into HOST_EMITTERS with a note
+
+### Phase 10: Adversarial sweep: integration seams & state (codebase-wide)
+
+**Goal**: Generalize the merge_missing lesson across the whole engine. For every shared function many call sites depend on - config merge/load/save, the markdown writer, the graph index/rebuild, status_bundle, the ops registry, the hook dispatcher - run independent reviewers to hunt the places a newer field/branch/host/event must thread through but does not. Adversarially verify each finding (2 of 3 to confirm) and fix each confirmed seam with a regression test at the seam. Loop until a review round comes back dry.
+**Depends on**: 8.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 10.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [ ] Documented seam audit across config merge/load/save, the markdown writer, graph index/rebuild, status_bundle, the ops registry, and the hook dispatcher
+- [ ] Each confirmed (2/3 adversarial) seam bug fixed with a regression test AT the seam
+- [ ] A final independent review round returns dry (no new confirmed seams)
+- [ ] Full suite green via cz_preflight
+
+### Phase 11: Adversarial sweep: concurrency, I/O robustness & failure modes
+
+**Goal**: Harden the engine against concurrent agents and hostile inputs codebase-wide. Stress the write lock (locking.py, H-05/H-10) under concurrent cz_* writes; verify partial-write/crash recovery and append-only integrity under interleaving; prove the hook handlers stay read-only and always exit 0 under every failure (INVARIANT-04/06); run the adversarial-input battery (L-24: non-UTF-8, BOM/CRLF, unhashable keys, empty, malformed frontmatter) across every file the engine parses; exercise the MCP wrapper under tool errors (generalize the pre-mark fix). Adversarially verify and fix confirmed failures.
+**Depends on**: 8.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 11.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [ ] A concurrency stress test exercises the write lock under interleaved cz_* writes (H-05/H-10) without corruption or lost writes
+- [ ] An adversarial-input battery (non-UTF-8, BOM/CRLF, unhashable, empty, malformed frontmatter) covers every file the engine parses; each degrades gracefully
+- [ ] Every hook event handler proven read-only and exit-0 under induced failure (INVARIANT-04/06)
+- [ ] Confirmed failures fixed; full suite green
+
+### Phase 12: Security & trust hardening
+
+**Goal**: Enforce path-safety and non-destructiveness on ALL config emitters - including init's original .mcp.json/.claude writers, which today carry the O-06 machine-path leak - not just the new cross-host ones. Guarantee no machine-specific path or secret ever lands in a committable file; that uninstall fully reverses the footprint; and that the agent surface cannot be coerced into writing outside the repo or running arbitrary commands via config. Verify SECURITY.md and TRUST.md line-by-line against the code. Run an independent security-review pass and fix its findings.
+**Depends on**: 8.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 12.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [ ] Path-safety enforced on ALL config emitters, including init's original .mcp.json/.claude writers (the O-06 class) - tested
+- [ ] No machine path or secret can land in a committable file; uninstall fully reverses the footprint (tested)
+- [ ] An independent security-review pass completed; its confirmed findings fixed
+- [ ] SECURITY.md and TRUST.md verified line-by-line against the code; full suite green
+
+### Phase 13: UX completeness, doc truth-up & release gate; close the gameplan
+
+**Goal**: Make the end user totally accounted for and the docs true. Walk every user scenario - new project, existing project, switch tools, dual-tool on one repo, clone, uninstall, broken-wiring recovery - and make each clean, discoverable (a --list-hosts; a doctor that verifies the CONFIGURED host, not just Claude Code), and documented. Truth-up every doc against the NOW-VERIFIED reality (no '11 hosts' claim beyond what P9 actually proved; redo the L-21 sweep). Assemble the release gate: the four version registries (L-08), every CI host leg (L-20), the CHANGELOG, and the wiring-contract + real-host evidence. Then close out the gameplan (post-mortem + promote enduring lessons to docs/LESSONS.md).
+**Depends on**: 9, 11, 12.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 13.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [ ] Every user scenario (new/existing/switch/dual/clone/uninstall/recovery) walked, made clean + discoverable (--list-hosts, doctor per configured host), and documented
+- [ ] Doctor verifies the CONFIGURED host's wiring, not just Claude Code
+- [ ] Every doc claim matches verified reality (no '11 hosts' beyond what P9 proved); the L-21 sweep redone
+- [ ] Release checklist complete: four version registries (L-08), every CI host leg (L-20), CHANGELOG, wiring-contract + real-host evidence
+- [ ] Gameplan closed out: post-mortem written, enduring lessons promoted to docs/LESSONS.md

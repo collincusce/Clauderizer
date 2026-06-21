@@ -15,6 +15,12 @@
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Cross-host verification execution & release gate | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Server-side session bootstrap (fast-follow; non-gating) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-7-HANDOFF.md |
+| 8 | Wire host_target end-to-end (make cross-host functional via init) | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
+| 9 | Real-host & cross-model verification (close O-06, O-07; kill engine_stale) | ⬜ NOT STARTED | — | — | handoffs/PHASE-9-HANDOFF.md |
+| 10 | Adversarial sweep: integration seams & state (codebase-wide) | ⬜ NOT STARTED | — | — | handoffs/PHASE-10-HANDOFF.md |
+| 11 | Adversarial sweep: concurrency, I/O robustness & failure modes | ⬜ NOT STARTED | — | — | handoffs/PHASE-11-HANDOFF.md |
+| 12 | Security & trust hardening | ⬜ NOT STARTED | — | — | handoffs/PHASE-12-HANDOFF.md |
+| 13 | UX completeness, doc truth-up & release gate; close the gameplan | ⬜ NOT STARTED | — | — | handoffs/PHASE-13-HANDOFF.md |
 
 ## Outputs Registry
 
