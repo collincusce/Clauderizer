@@ -50,6 +50,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 **O-08.** _(phase 10)_ Silent contract drift in the cz_* ops surface. cz_add_amendment was called with a wrong arg name (rationale, vs the real triggered_by/what/why) in P0 AND in this amendment's first attempt — so the THREE P0 amendments (retire Tier-2, scope 13->11, promote P7) were never written as A-NNN records (their substance survives only in the P0 phase summary + D-034). cz_add_finding had the same kind of mismatch. For P10: (a) re-record the 3 missing P0 amendments; (b) add a test/guard that every cz_* op's advertised signature matches its implementation and that an ops-batch arg error is surfaced loudly, not swallowed as a single ok:false among successes (a wrong-arg op in a batch should be hard to miss).
 
+**O-09.** _(phase 8)_ clauderize doctor (cli.py cmd_doctor) hard-checks the claude-code wiring only (.mcp.json registers clauderizer, SessionStart hook registered, hook wrapper). After `init --host cursor` (or any non-claude host) those files do not exist, so doctor reports false drift (exit 2) for a correctly-wired non-claude repo. P8 wires init but not doctor; making doctor verify the CONFIGURED host_target's wiring is Phase 13's exit criterion ("Doctor verifies the CONFIGURED host's wiring, not just Claude Code"). Branch cmd_doctor on config.host_target there. _(resolved 2026-06-21: Core complaint (doctor false-fails a healthy non-claude repo with exit 2) fixed in P8 review-commit 82328aa: cmd_doctor now branches on config.host_target — non-claude hosts verify their own per-host MCP config + floor instead of the Claude Code files. Remaining depth (full per-host launchability probing, not just presence) is Phase 13's exit criterion "Doctor verifies the CONFIGURED host's wiring, not just Claude Code" — tracked there, not as a duplicate open item.)_
+
+**O-10.** _(phase 9)_ Confirm amp's real on-disk MCP config shape against a live Amp install. HOST_EMITTERS["amp"] uses a FLAT dotted settings.json key "amp.mcpServers" (VS Code-family convention); emit/detect/remove are internally consistent on it (locked by test_amp_emit_remove_roundtrip_is_consistent) and it matches the P4 doc-verified design, but a P8 independent review questioned whether Amp nests as {"amp":{"mcpServers":...}} instead. Unverifiable in CI (no real Amp host) — this is exactly P9's "fold per-host key/path corrections discovered live back into HOST_EMITTERS." If live Amp wants nesting, change servers_key handling (it is currently a flat key everywhere).
+
 ## Phase Breakdown
 
 ### Phase 0: Host model, capability audit & parity contract
@@ -186,11 +190,11 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 8.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] clauderize init --host <name> sets host_target and emits that host's wiring (MCP config + native floor where the host does not read AGENTS.md + hook setup guide); omitting --host auto-detects, defaulting to claude-code with a nudge
-- [ ] Unknown host -> a friendly error listing valid hosts (no KeyError); guarded by a test
-- [ ] init on a Claude Code repo is byte-identical to pre-P8 output (parity regression test, INVARIANT-07)
-- [ ] Integration test: init --host cursor produces a .cursor/mcp.json that passes wiring_contract_sweep, and the host gets BOTH the floor and the MCP tools (no floor-but-no-tools)
-- [ ] clauderize uninstall [--host] removes the full footprint (MCP config + hooks + marker stanzas + .clauderizer), preserving docs/ and unrelated entries; tested
+- [x] clauderize init --host <name> sets host_target and emits that host's wiring (MCP config + native floor where the host does not read AGENTS.md + hook setup guide); omitting --host auto-detects, defaulting to claude-code with a nudge
+- [x] Unknown host -> a friendly error listing valid hosts (no KeyError); guarded by a test
+- [x] init on a Claude Code repo is byte-identical to pre-P8 output (parity regression test, INVARIANT-07)
+- [x] Integration test: init --host cursor produces a .cursor/mcp.json that passes wiring_contract_sweep, and the host gets BOTH the floor and the MCP tools (no floor-but-no-tools)
+- [x] clauderize uninstall [--host] removes the full footprint (MCP config + hooks + marker stanzas + .clauderizer), preserving docs/ and unrelated entries; tested
 
 ### Phase 9: Real-host & cross-model verification (close O-06, O-07; kill engine_stale)
 

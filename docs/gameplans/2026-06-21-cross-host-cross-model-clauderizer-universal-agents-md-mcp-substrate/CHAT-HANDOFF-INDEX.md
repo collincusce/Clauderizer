@@ -1,7 +1,7 @@
 # Chat Handoff Index — Cross-host & cross-model Clauderizer (universal AGENTS.md + MCP substrate)
 
 > Last updated: 2026-06-21
-> Status: Phase 8 ready
+> Status: Phase 9 ready
 
 ## How This Works
 
@@ -37,7 +37,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 5 | Bespoke-host wiring emitters (native rule formats & deeper integration) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Cross-host verification execution & release gate | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Server-side session bootstrap (fast-follow; non-gating) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-7-HANDOFF.md |
-| 8 | Wire host_target end-to-end (make cross-host functional via init) | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
+| 8 | Wire host_target end-to-end (make cross-host functional via init) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-8-HANDOFF.md |
 | 9 | Real-host & cross-model verification (close O-06, O-07; kill engine_stale) | ⬜ NOT STARTED | — | — | handoffs/PHASE-9-HANDOFF.md |
 | 10 | Adversarial sweep: integration seams & state (codebase-wide) | ⬜ NOT STARTED | — | — | handoffs/PHASE-10-HANDOFF.md |
 | 11 | Adversarial sweep: concurrency, I/O robustness & failure modes | ⬜ NOT STARTED | — | — | handoffs/PHASE-11-HANDOFF.md |
@@ -80,6 +80,12 @@ Phase 6 stood up the verification gate. wiring_contract_sweep() is the in-proces
 
 Phase 7 added the server-side bootstrap - the only AUTOMATIC status delivery for hook-less hosts (D-034 promoted it to primary fallback). P1 already injected status onto the first WRITE; P7 generalizes the _deliver_aware wrapper so the first non-status tool call of ANY kind (read or write) on a hook-less host attaches the compact status note as a SEPARATE clauderizer_status field - the tool's own result is never corrupted, so a write is not contaminated (D-027). The two status-delivering reads deliver status directly and just mark the signal. should_inject_on_write was renamed should_inject (it now gates reads + writes). Dedup via the P1 in-memory signal (INVARIANT-08, at most once); on a hook host the wrapper marks-and-stands-down on the first call, so Claude Code pays one host-target lookup and never an injection (INVARIANT-07). INVARIANT-06 honored: in-memory/read-only signal, the note never blocks, minimal (D-027). Non-gating confirmed: the Floor Release (P0-P2) shipped before this phase. 2 tests; suite green via cz_preflight.
 
+### Phase 8 — completed 2026-06-21
+
+Made the cross-host emitters reachable through the user-facing command (A-001's core fix). `clauderize init --host <name>` now resolves host_target (flag > config > cheap auto-detect > claude-code), validates it via hosttargets.parse_host_target (HostTargetError lists valid hosts — no KeyError), persists it to config.host_target, and BRANCHES init's wiring step: claude-code keeps its .mcp.json + SessionStart-hook + kimi-setup wiring byte-for-byte (INVARIANT-07, pinned by the unchanged existing init tests), while every other host routes through new hosttargets.emit_host_wiring — per-host MCP config (or a guide-only setup guide for TOML/global hosts), the native floor where the host doesn't read AGENTS.md (Continue/Gemini), and a hook setup guide. A non-claude host therefore gets BOTH the AGENTS.md floor and its MCP tools (the no-floor-but-no-tools failure mode is closed; proven by an init --host cursor integration test that passes wiring_contract_sweep). Completed `clauderize uninstall`: new scaffold/uninstall.py reverses the full footprint (.mcp.json key, .claude hooks + wrapper, every per-host MCP registration, CLAUDE.md/AGENTS.md + native marker stanzas, clauderizer-* skills, .clauderizer/, the gitignore line) while preserving docs/ and unrelated entries; --host scopes to one host. Added markdown.remove_marker_block (the P4-noted extension).
+
+An independent post-implementation review (lesson #6 discipline) caught two real seams the per-phase tests missed: cmd_doctor hard-checked the Claude Code wiring regardless of host_target (false drift on a healthy non-claude repo — fixed by branching doctor on host_target; full per-host launchability deferred to P13/O-09), and host-scoped `uninstall --host claude-code` left the D4 hook wrapper behind (fixed). The review's amp-key finding was a false positive (the flat dotted "amp.mcpServers" key is consistent and P4-verified) but its real on-disk shape is unverifiable in CI, now tracked as O-10 for P9. A manual CLI smoke whose mktemp/cd isolation silently no-op'd ran uninstall against the dogfood repo; fully recovered via git (uninstall is non-destructive-by-design — all tracked, docs/ preserved), captured as lesson #7. Suite 484 -> 510 (+26: tests/test_host_target_init.py). Three commits: c8b5d80 (handoff recovery), 91561ed (feature), 82328aa (review fixes).
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -94,6 +100,8 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **3.** A new gameplan must be committed before its first do-phase. Fixed: added step 8 (Commit the plan before executing) to clauderizer-new-gameplan source + rendered (L-16), including the rule to separate pre-existing unrelated changes into their own commit.
 
 **5.** Close every phase with cz_preflight (the engine gate that runs AND parses the suite), never an ad-hoc 'pytest > file; EXIT=$?' through wsl.exe - that capture is flaky. And make guard assertions whitespace-robust: normalize with ' '.join(text.split()) before matching a multi-word phrase, because markdown wraps lines.
+
+**7.** Never run a DESTRUCTIVE CLI path (clauderize uninstall — rmtree's .clauderizer/ and git-deletes tracked wiring) as a manual smoke without HARD-proving the cwd is a throwaway dir first. A `TMP=$(mktemp -d); cd "$TMP"` one-liner inside `wsl.exe bash -lc '...'` silently failed to isolate (cd did not take effect), so `init --host cursor` + `uninstall` ran against the real dogfood repo and deleted CLAUDE.md/AGENTS.md/.claude/skills/.clauderizer/.mcp.json. Recovered fully via `git checkout HEAD -- <paths>` ONLY because uninstall is non-destructive-by-design (touches only tracked wiring, preserves docs/); the gitignored index.json was the one casualty (regenerated via `clauderize reindex`). Guard rule: for any destructive smoke, `cd "$X" || exit 1; [ "$PWD" = "$X" ] || exit 1; case "$PWD" in *Clauderizer) exit 1;; esac` BEFORE the destructive call — and prefer the isolated pytest tmp_path tests (guaranteed isolation) which ALREADY covered init/uninstall; the manual smoke added real risk for near-zero extra coverage. *(evidence: P8 review-fix smoke, 2026-06-21: cd-into-mktemp isolation no-op'd; full git-tracked recovery)*
 
 ### Category: Testing
 
