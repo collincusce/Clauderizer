@@ -172,6 +172,32 @@ def test_lock_released_on_exception(tmp_path):
         pass
 
 
+def test_release_retries_unlink_past_transient_oserror(tmp_path, monkeypatch):
+    """H-10: a finished writer must not orphan its lock when unlink loses a race.
+
+    On Windows ``os.unlink`` raises a sharing violation (a ``PermissionError``)
+    while a concurrent reader has the lock file open; release must retry past it
+    rather than swallow it and leave the lock for slow stale takeover.
+    """
+    lock = tmp_path / ".clauderizer" / "write.lock"
+    real_unlink = os.unlink
+    calls = {"n": 0}
+
+    def flaky_unlink(target, *a, **k):
+        if str(target) == str(lock):
+            calls["n"] += 1
+            if calls["n"] <= 2:  # first two release attempts hit the violation
+                raise PermissionError("simulated Windows sharing violation")
+        return real_unlink(target, *a, **k)
+
+    monkeypatch.setattr(os, "unlink", flaky_unlink)
+    with locking.write_lock(lock, acquire_timeout=5.0):
+        assert lock.exists()
+    # Release retried past both simulated failures and removed the lock — no orphan.
+    assert calls["n"] >= 3
+    assert not lock.exists()
+
+
 def test_reentrant_within_a_thread(tmp_path):
     lock = tmp_path / ".clauderizer" / "write.lock"
     with locking.write_lock(lock):

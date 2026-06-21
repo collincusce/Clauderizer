@@ -42,6 +42,9 @@ from pathlib import Path
 DEFAULT_ACQUIRE_TIMEOUT = 10.0
 DEFAULT_STALE_TIMEOUT = 30.0
 _POLL_INTERVAL = 0.05
+# Release-time unlink can lose a race with a concurrent reader on Windows (see
+# _release_file); retry it for about this long before falling back to takeover.
+_RELEASE_UNLINK_ATTEMPTS = 40  # ~2s at _POLL_INTERVAL
 
 
 class LockHeld(Exception):
@@ -181,13 +184,26 @@ def _acquire_file(lock_path: Path, *, deadline: float, stale_timeout: float,
 
 
 def _release_file(lock_path: Path, nonce: str | None) -> None:
-    holder = read_holder(lock_path)
-    if holder is not None and holder.get("nonce") != nonce:
-        return  # taken over as stale while we held it — now somebody else's
-    try:
-        os.unlink(lock_path)
-    except OSError:
-        pass
+    # On Windows os.unlink raises a sharing violation (PermissionError, an
+    # OSError) if another process has the file open — and waiters poll
+    # read_holder, holding it open for an instant on each poll. Swallowing that
+    # error would orphan our lock and force every waiter onto the slow
+    # ~stale_timeout takeover path (H-10). Retry briefly so the unlink lands in
+    # a gap between reads. POSIX unlinks open files fine, so it returns on the
+    # first attempt there. The nonce guard is re-checked each pass: if a stale
+    # takeover claimed the slot mid-retry, the lock is no longer ours to remove.
+    for _ in range(_RELEASE_UNLINK_ATTEMPTS):
+        holder = read_holder(lock_path)
+        if holder is not None and holder.get("nonce") != nonce:
+            return  # taken over as stale while we held it — now somebody else's
+        try:
+            os.unlink(lock_path)
+            return
+        except FileNotFoundError:
+            return  # already gone — a takeover removed it, or a prior pass won
+        except OSError:
+            time.sleep(_POLL_INTERVAL)
+    # Exhausted (pathological): leave it for stale takeover — the existing net.
 
 
 @contextmanager
