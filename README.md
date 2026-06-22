@@ -1,28 +1,33 @@
-# Clauderizer
+<p align="center">
+  <img src="docs/assets/hero.svg" alt="Clauderizer — durable working memory for coding agents" width="840">
+</p>
 
-[![PyPI](https://img.shields.io/pypi/v/clauderizer.svg)](https://pypi.org/project/clauderizer/)
-[![Python](https://img.shields.io/pypi/pyversions/clauderizer.svg)](https://pypi.org/project/clauderizer/)
-[![Tests](https://github.com/collincusce/Clauderizer/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/collincusce/Clauderizer/actions/workflows/test.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<p align="center">
+  <a href="https://pypi.org/project/clauderizer/"><img src="https://img.shields.io/pypi/v/clauderizer.svg" alt="PyPI"></a>
+  <a href="https://pypi.org/project/clauderizer/"><img src="https://img.shields.io/pypi/pyversions/clauderizer.svg" alt="Python"></a>
+  <a href="https://github.com/collincusce/Clauderizer/actions/workflows/test.yml"><img src="https://github.com/collincusce/Clauderizer/actions/workflows/test.yml/badge.svg?branch=main" alt="Tests"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+</p>
 
-### Git-native working memory for coding agents — drop it into any repo in one command.
+<p align="center">
+  <b>Your coding agent is brilliant — and amnesiac.</b> Every new session it forgets your
+  architecture, your decisions, what's already done.<br>
+  <b>Clauderizer gives it a memory that survives</b> — plans, decisions, and a dependency graph
+  as plain, git-diffable markdown it reads and updates through real tool calls.
+</p>
 
 ```bash
 uvx --from clauderizer clauderize init
 ```
 
-Clauderizer gives a stateless coding agent something it normally lacks: a **memory that
-survives the end of the session and the end of the context window.** Plans, decisions,
-invariants, a dependency graph, and findings live as plain, git-diffable markdown — and
-an MCP server turns reading and updating that memory into real tool calls the agent can
-just *use*.
-
 It's the active, MCP-native successor to a battle-tested markdown "gameplan" convention —
-and it was built by dogfooding itself: Clauderizer planned and tracked its own construction.
+and it was built by dogfooding itself: Clauderizer planned, tracked, and shipped its own
+construction. (The release that added skill-awareness? Its agent ran the whole 5-phase
+gameplan through these very tools.)
 
 ---
 
-## The problem it kills
+## Why you'd want it
 
 Long-running AI work hits two walls:
 
@@ -34,6 +39,10 @@ after edits." But conventions rely on the agent **remembering to follow them**, 
 the cascade script never gets built, lessons stop propagating, the plan quietly drifts from
 reality. (If you've watched an agent confidently contradict a decision it made an hour ago,
 you know the failure mode.)
+
+<p align="center">
+  <img src="docs/assets/amnesia-vs-memory.svg" alt="Same agent, same repo — one of them remembers" width="840">
+</p>
 
 Clauderizer keeps the proven *model* of that convention and makes it a **system** instead of a
 hope:
@@ -59,17 +68,14 @@ the code — as tool calls the agent can't forget to make, not advice it has to 
 
 ## What a session actually feels like
 
-You open a fresh agent session in a clauderized repo. Before you type anything, the
-SessionStart hook has already injected:
+You open a fresh agent session in a clauderized repo. Before you type a word, the SessionStart
+hook has already told the agent exactly where things stand — and it gets to work:
 
-```
-[Clauderizer] Gameplan 2026-06-05-launch: Phase 3/8 IN PROGRESS — "Wallet review".
-Baseline: 142 tests passing. Pending cascades: 0.
-Next: cz_next_phase_context, then cz_preflight.
-Tools: cz_status, cz_next_phase_context, cz_cascade, cz_preflight, cz_write_handoff, …
-```
+<p align="center">
+  <img src="docs/assets/demo.svg" alt="Animated demo: the digest greets the agent cold, it orients, and ticks through phases" width="760">
+</p>
 
-The agent now *knows where things stand* and what to do next — no reading order, no re-briefing.
+No reading order, no re-briefing.
 A typical loop:
 
 ```
@@ -83,6 +89,14 @@ cz_write_handoff        → assemble the next cumulative handoff (all still-rele
 
 Every write goes through one idempotent path, so IDs auto-number and frontmatter stays valid —
 the agent never hand-mangles your docs.
+
+---
+
+## How it works
+
+<p align="center">
+  <img src="docs/assets/how-it-works.svg" alt="How it works: markdown source of truth → engine → MCP + hooks → your agent" width="840">
+</p>
 
 ---
 

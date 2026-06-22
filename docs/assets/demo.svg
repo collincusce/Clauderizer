@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 500" font-family="ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace" role="img" aria-label="Animated demo: a fresh agent session is greeted by the Clauderizer digest, orients instantly, and ticks through phases.">
+  <style>
+    .cream { fill: #E9E4DB; }
+    .mut   { fill: #8B949E; }
+    .dim   { fill: #5B636E; }
+    .clay  { fill: #E08A5E; }
+    .green { fill: #57C24A; }
+    .t13   { font-size: 13px; }
+    .t14   { font-size: 14px; }
+    .b     { font-weight: 600; }
+    .sans  { font-family: -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif; }
+    .step  { opacity: 1; }
+    .fill  { opacity: 1; transform-box: fill-box; transform-origin: center; }
+    @media (prefers-reduced-motion: no-preference) {
+      .gDigest { animation: kDigest 11s infinite both; }
+      .gAgent  { animation: kAgent 11s infinite both; }
+      .gTrack  { animation: kTrack 11s infinite both; }
+      .gPunch  { animation: kPunch 11s infinite both; }
+      .f0 { animation: kFill0 11s infinite both; }
+      .f1 { animation: kFill1 11s infinite both; }
+      .f2 { animation: kFill2 11s infinite both; }
+      .f3 { animation: kFill3 11s infinite both; }
+      .f4 { animation: kFill4 11s infinite both; }
+    }
+    @keyframes kDigest { 0%,9%{opacity:0;transform:translateY(7px)} 12%,93%{opacity:1;transform:translateY(0)} 98%,100%{opacity:0;transform:translateY(0)} }
+    @keyframes kAgent  { 0%,28%{opacity:0;transform:translateY(7px)} 31%,93%{opacity:1;transform:translateY(0)} 98%,100%{opacity:0;transform:translateY(0)} }
+    @keyframes kTrack  { 0%,34%{opacity:0} 37%,93%{opacity:1} 98%,100%{opacity:0} }
+    @keyframes kPunch  { 0%,77%{opacity:0;transform:translateY(7px)} 82%,95%{opacity:1;transform:translateY(0)} 99%,100%{opacity:0;transform:translateY(0)} }
+    @keyframes kFill0 { 0%,37%{opacity:0;transform:scale(.4)} 40%,93%{opacity:1;transform:scale(1)} 98%,100%{opacity:0} }
+    @keyframes kFill1 { 0%,45%{opacity:0;transform:scale(.4)} 48%,93%{opacity:1;transform:scale(1)} 98%,100%{opacity:0} }
+    @keyframes kFill2 { 0%,53%{opacity:0;transform:scale(.4)} 56%,93%{opacity:1;transform:scale(1)} 98%,100%{opacity:0} }
+    @keyframes kFill3 { 0%,61%{opacity:0;transform:scale(.4)} 64%,93%{opacity:1;transform:scale(1)} 98%,100%{opacity:0} }
+    @keyframes kFill4 { 0%,69%{opacity:0;transform:scale(.4)} 72%,93%{opacity:1;transform:scale(1)} 98%,100%{opacity:0} }
+  </style>
+
+  <!-- card -->
+  <rect x="0" y="0" width="860" height="500" rx="16" fill="#0E1117"/>
+  <rect x="20" y="20" width="820" height="460" rx="12" fill="#12161D" stroke="#2A3340"/>
+  <!-- window chrome -->
+  <circle cx="46" cy="46" r="6" fill="#E5685C"/>
+  <circle cx="66" cy="46" r="6" fill="#E0A93F"/>
+  <circle cx="86" cy="46" r="6" fill="#57C24A"/>
+  <text x="112" y="51" class="dim t13">coding agent · fresh session</text>
+  <line x1="20" y1="72" x2="840" y2="72" stroke="#2A3340"/>
+
+  <!-- context -->
+  <text x="44" y="106" class="dim t13" font-style="italic">you open a fresh session — nothing typed yet</text>
+
+  <!-- digest (injected at session start) -->
+  <g class="gDigest step">
+    <rect x="44" y="124" width="772" height="106" rx="8" fill="#1B1612" stroke="#3A2A20"/>
+    <rect x="44" y="124" width="3.5" height="106" rx="2" fill="#E08A5E"/>
+    <text x="62" y="150" class="t14"><tspan class="clay b">[Clauderizer]</tspan><tspan class="cream"> gameplan </tspan><tspan class="cream b">skill-awareness</tspan><tspan class="mut"> — phase </tspan><tspan class="cream b">3 / 5</tspan></text>
+    <text x="62" y="174" class="t13"><tspan class="mut">baseline </tspan><tspan class="cream">573 tests</tspan><tspan class="mut">  ·  </tspan><tspan class="clay">6 skills</tspan><tspan class="mut">  ·  0 pending cascades</tspan></text>
+    <text x="62" y="196" class="t13"><tspan class="mut">next: </tspan><tspan class="cream">cz_next_phase_context → cz_preflight</tspan></text>
+    <text x="62" y="218" class="dim t13" font-style="italic">↑ injected automatically — no reading order, no re-briefing</text>
+  </g>
+
+  <!-- agent orients -->
+  <g class="gAgent step">
+    <text x="44" y="262" class="t14"><tspan class="clay b">▸</tspan><tspan class="cream"> I see where we are — phase 3 of 5. Preflight's green. Building the</tspan></text>
+    <text x="60" y="284" class="cream t14">skill surfacing now.</text>
+  </g>
+
+  <!-- phase tracker -->
+  <g class="gTrack step">
+    <text x="44" y="332" class="mut t13">phases</text>
+    <line x1="150" y1="345" x2="560" y2="345" stroke="#2A3340" stroke-width="2"/>
+    <!-- base chips -->
+    <g>
+      <circle cx="150" cy="345" r="15" fill="#12161D" stroke="#5B636E"/>
+      <circle cx="252" cy="345" r="15" fill="#12161D" stroke="#5B636E"/>
+      <circle cx="354" cy="345" r="15" fill="#12161D" stroke="#5B636E"/>
+      <circle cx="456" cy="345" r="15" fill="#12161D" stroke="#5B636E"/>
+      <circle cx="558" cy="345" r="15" fill="#12161D" stroke="#5B636E"/>
+      <text x="150" y="350" text-anchor="middle" class="mut t13">0</text>
+      <text x="252" y="350" text-anchor="middle" class="mut t13">1</text>
+      <text x="354" y="350" text-anchor="middle" class="mut t13">2</text>
+      <text x="456" y="350" text-anchor="middle" class="mut t13">3</text>
+      <text x="558" y="350" text-anchor="middle" class="mut t13">4</text>
+    </g>
+    <!-- completed overlays -->
+    <g class="fill f0"><circle cx="150" cy="345" r="15" fill="#2EA043"/><path d="M143 345 l5 5 l9 -10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g class="fill f1"><circle cx="252" cy="345" r="15" fill="#2EA043"/><path d="M245 345 l5 5 l9 -10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g class="fill f2"><circle cx="354" cy="345" r="15" fill="#2EA043"/><path d="M347 345 l5 5 l9 -10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g class="fill f3"><circle cx="456" cy="345" r="15" fill="#2EA043"/><path d="M449 345 l5 5 l9 -10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g class="fill f4"><circle cx="558" cy="345" r="15" fill="#2EA043"/><path d="M551 345 l5 5 l9 -10" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <text x="600" y="350" class="dim t13">each session ticks one done</text>
+  </g>
+
+  <!-- punchline -->
+  <g class="gPunch step">
+    <text x="44" y="406" class="cream sans b" font-size="19">Every session picks up exactly where you left off.</text>
+    <text x="44" y="434" class="clay sans" font-size="15">That's how you fly. ✦</text>
+  </g>
+</svg>

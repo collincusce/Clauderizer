@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 320" font-family="-apple-system, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Clauderizer — durable working memory for coding agents.">
+  <defs>
+    <radialGradient id="glow" cx="80%" cy="14%" r="60%">
+      <stop offset="0%" stop-color="#E08A5E" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#E08A5E" stop-opacity="0"/>
+    </radialGradient>
+    <style>
+      .mono { font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1000" height="320" rx="16" fill="#0E1117"/>
+  <rect x="0" y="0" width="1000" height="320" rx="16" fill="url(#glow)"/>
+
+  <!-- wordmark -->
+  <text x="54" y="96" font-size="56" font-weight="800" fill="#ECE7DE" letter-spacing="-1">Clauderizer</text>
+  <rect x="56" y="110" width="66" height="5" rx="2.5" fill="#E08A5E"/>
+
+  <!-- tagline + why -->
+  <text x="57" y="152" font-size="22" font-weight="600" fill="#C7CDD4">Durable working memory for coding agents.</text>
+  <text x="57" y="182" font-size="15" fill="#8B949E">Your agent forgets the moment a session ends. Clauderizer makes it <tspan fill="#C7CDD4">remember</tspan> —</text>
+  <text x="57" y="203" font-size="15" fill="#8B949E">plans, decisions, and a dependency graph, as plain markdown that lives in your repo.</text>
+
+  <!-- install pill -->
+  <rect x="57" y="226" width="430" height="44" rx="10" fill="#12161D" stroke="#2A3340"/>
+  <text x="75" y="254" class="mono" font-size="15"><tspan fill="#E08A5E">$ </tspan><tspan fill="#E9E4DB">uvx --from clauderizer clauderize init</tspan></text>
+
+  <!-- what it supports -->
+  <g font-size="13" fill="#8B949E">
+    <circle cx="62" cy="297" r="3" fill="#E08A5E"/><text x="72" y="301">MCP-native</text>
+    <circle cx="178" cy="297" r="3" fill="#E08A5E"/><text x="188" y="301">11 agent hosts</text>
+    <circle cx="312" cy="297" r="3" fill="#E08A5E"/><text x="322" y="301">plain markdown</text>
+    <circle cx="446" cy="297" r="3" fill="#E08A5E"/><text x="456" y="301">zero runtime deps</text>
+  </g>
+
+  <!-- doc-stack motif: memory that lives in the repo -->
+  <g>
+    <ellipse cx="800" cy="170" rx="150" ry="120" fill="#E08A5E" opacity="0.06"/>
+    <rect x="734" y="66" width="180" height="150" rx="10" fill="#14181F" stroke="#283039"/>
+    <rect x="716" y="80" width="180" height="150" rx="10" fill="#161B22" stroke="#2A3340"/>
+    <rect x="698" y="94" width="196" height="152" rx="10" fill="#1A2029" stroke="#36424F"/>
+    <!-- front card: markdown memory -->
+    <text x="716" y="124" class="mono" font-size="13" font-weight="700" fill="#E08A5E"># Gameplan</text>
+    <text x="716" y="143" class="mono" font-size="11.5" fill="#6E7681">phase 3 / 5 · 573 tests</text>
+    <line x1="716" y1="153" x2="876" y2="153" stroke="#2A3340"/>
+    <text x="716" y="173" class="mono" font-size="12.5" fill="#C7CDD4">## Decisions</text>
+    <text x="716" y="191" class="mono" font-size="12" fill="#8B949E">D-007 mirror lessons <tspan fill="#57C24A">✓</tspan></text>
+    <text x="716" y="211" class="mono" font-size="12.5" fill="#C7CDD4">## Invariants</text>
+    <text x="716" y="229" class="mono" font-size="12" fill="#8B949E">INVARIANT-05 advisory</text>
+    <!-- persists chip -->
+    <rect x="806" y="104" width="74" height="22" rx="11" fill="#1B1612" stroke="#3A2A20"/>
+    <circle cx="820" cy="115" r="3.5" fill="#57C24A"/>
+    <text x="830" y="119" class="mono" font-size="11" fill="#E08A5E">persists</text>
+    <text x="796" y="270" text-anchor="middle" font-size="12" fill="#6E7681">memory that diffs &amp; ships with your code</text>
+  </g>
+</svg>
