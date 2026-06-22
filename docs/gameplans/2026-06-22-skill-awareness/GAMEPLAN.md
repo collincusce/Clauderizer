@@ -20,7 +20,14 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 ## Amendments
 
-_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+### A-001 — Skill curation v1 = register/obsolete/discover/surface; promote/consolidate dropped, supersede-tool deferred
+
+- **Date**: 2026-06-22
+- **Affected sections in GAMEPLAN.md**: Phase 3 exit criteria (curation parity); D1
+- **Affected phases**: 3
+- **Triggered by**: Phase 3 design review: promote/consolidate do not map onto skills
+- **What changed**: v1 ships register + obsolete + discover + relevance-surfacing as the complete skill-awareness surface. cz_promote_skill is DROPPED: promotion is the lessons' gameplan->project tier, and skills are already project-level, so there is no tier to promote across. cz_consolidate_skills is DEFERRED: low value, since cz_obsolete_skill + re-register already covers merging a near-duplicate. The 'superseded' state ships in markdown/skill_state (parsed, tested, forward-compatible) but the cz_supersede_skill tool is deferred to a future gameplan.
+- **Why**: An honest scope cut over a faked parity checkbox (L-38). Forcing promote/consolidate onto skills would add awkward, low-value surface to a 1.0 release candidate. register/obsolete/discover/surface is the coherent, complete v1; the grammar leaves a clean seam for cz_supersede_skill later.
 
 ## Decisions
 
@@ -114,10 +121,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_promote_skill/cz_consolidate_skills reach lesson parity (or a recorded amendment explains the scope cut)
-- [ ] README MCP-surface tool list, TRUST.md (what discovery reads), SECURITY.md scope line, and CHANGELOG updated; procedure mentions skills if needed
-- [ ] a cross-cutting integration test exists at the status_bundle/handoff seam (L-34)
-- [ ] clauderize doctor exits 0 on the dogfood repo after init-repair; suite green
+- [x] cz_promote_skill/cz_consolidate_skills reach lesson parity (or a recorded amendment explains the scope cut)
+- [x] README MCP-surface tool list, TRUST.md (what discovery reads), SECURITY.md scope line, and CHANGELOG updated; procedure mentions skills if needed
+- [x] a cross-cutting integration test exists at the status_bundle/handoff seam (L-34)
+- [x] clauderize doctor exits 0 on the dogfood repo after init-repair; suite green
 
 ### Phase 4: Release 1.0.0rc1
 

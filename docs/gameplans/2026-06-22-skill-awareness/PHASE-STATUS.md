@@ -10,7 +10,7 @@
 | 0 | Skill model + SKILLS.md | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Skill discovery (propose-confirm) | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Relevance surfacing | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Curation parity + docs + integration sweep | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Curation parity + docs + integration sweep | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Release 1.0.0rc1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
 ## Outputs Registry
@@ -39,6 +39,16 @@ suite: 593 passed, 4 skipped, exit 0 (was 586; +7 discovery tests). The full sui
 handoff_surfacing: handoff.relevant_skill_pointer(paths, query) ranks active SKILLS.md entries via analyze.rank_relevant (no ML, D-018); assemble() renders a '## Skills for This Phase' block - top-k relevant only, or nothing when none overlap (rank_relevant drops zero-overlap). Focused-only menu, NOT all-carried like lessons
 status_gauge: status_bundle._memory_gauge adds active_skills count + staleness nudge past ACTIVE_SKILLS_WARN=25 (higher than lessons; skills surface focused so it is pruning-stale not handoff-weight); render_digest shows 'N skills' when >0
 suite: 600 passed, 4 skipped, exit 0 (was 593; +7 surfacing tests incl. the assemble() L-34 integration test). Strictly additive, INVARIANT-07 honored
+```
+
+### Phase 3 Outputs
+
+```
+curation_scope: Amendment A-001: register/obsolete/discover/surface is the v1 skill curation surface; promote DROPPED (no gameplan->project tier for skills), consolidate DEFERRED (obsolete+re-register covers merges), the superseded state ships in the grammar (forward-compat) but cz_supersede_skill is deferred. Honest scope cut (L-38), not a faked checkbox
+docs_sweep: README MCP surface 31->38 (also added the 4 missing 0.17.0 loop ops - the L-21 drift) + new Skills group; TRUST.md skill read/write scope; SECURITY.md no-execution note; CHANGELOG [Unreleased] entry
+dogfood_skills: Registered Clauderizer's own 6 skills into docs/SKILLS.md via the propose-confirm flow (cz_discover_skills proposed, agent confirmed): S-01..S-06 = clauderizer-amend/cascade/close-gameplan/do-phase/new-gameplan/record. Digest now reads '6 skills'
+wiring: clauderize init --session-host windows-wsl:ubuntu repaired drifted wiring (2 files written, 21 kept); doctor 16/16 exit 0 with in-band evidence (MCP + SessionStart hook launchable end-to-end via wsl.exe round-trip, identity clauderizer 0.17.0, digest in-band). The cold-start restart-validate (G6) is a named residual, needs a NEW session
+suite: 601 passed, 4 skipped, exit 0 (was 600; +1 end-to-end integration test). No engine code changed in Phase 3 (docs + test + SKILLS.md content + wiring only)
 ```
 
 ## Corrections Log

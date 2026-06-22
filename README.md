@@ -349,11 +349,12 @@ clauderize uninstall [--host <name>]   # reverse the full footprint (MCP config 
 · `cz_obsolete_lesson` · `cz_consolidate_lessons` · `cz_promote_lesson`
 · `cz_add_correction` · `cz_add_output` · `cz_add_phase_summary`
 · `cz_upsert_entity` · `cz_transition_status`
-**Discipline & analysis** (advisory, judgment-based; INVARIANT-05) · `cz_analyze` · `cz_critique` · `cz_mine_failures` · `cz_add_open_item` · `cz_resolve_open_item` · `cz_set_exit_criteria` · `cz_check_exit_criterion`
+**Discipline & analysis** (advisory, judgment-based; INVARIANT-05) · `cz_analyze` · `cz_critique` · `cz_mine_failures` · `cz_corpus_health` · `cz_lesson_health` · `cz_curate` · `cz_loop_step` · `cz_add_open_item` · `cz_resolve_open_item` · `cz_set_exit_criteria` · `cz_check_exit_criterion`
+**Skills** (project skill-awareness; propose-confirm, INVARIANT-05) · `cz_register_skill` · `cz_obsolete_skill` · `cz_discover_skills`
 **Resources** · `clauderizer://status` · `clauderizer://procedure` · `clauderizer://entity/{id}`
 **Prompts** · `cz-status` · `cz-next-phase` — surface as slash commands (e.g. `/cz-status`) on prompt-capable hosts
 
-In total: **31 tools + 3 resources + 2 prompts**.
+In total: **38 tools + 3 resources + 2 prompts**.
 
 The tools are deliberately separate and self-describing rather than one generic `mutate` — that's
 the whole point of going MCP-native: an agent dropped into the repo *discovers* the workflow from

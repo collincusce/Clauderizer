@@ -1,7 +1,7 @@
 # Chat Handoff Index — skill-awareness
 
 > Last updated: 2026-06-22
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Skill model + SKILLS.md | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Skill discovery (propose-confirm) | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Relevance surfacing | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Curation parity + docs + integration sweep | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Curation parity + docs + integration sweep | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Release 1.0.0rc1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -50,6 +50,10 @@ Built read-only skill discovery (D2 propose-confirm). New: src/clauderizer/skill
 ### Phase 2 — completed 2026-06-22
 
 Wired focused skill surfacing into the two shared pipelines (the L-34 cross-cutting seams). handoff.py: relevant_skill_pointer(paths, query) ranks active SKILLS.md entries by the existing lexical analyzer (analyze.rank_relevant, no ML - D-018), and assemble() renders a '## Skills for This Phase' block - top-k relevant only, or nothing when none overlap (L-35 availability-not-use; rank_relevant already drops zero-overlap entries, so the empty case is free). Deliberate divergence from lessons: skills are a MENU surfaced FOCUSED, not all-carried like lessons (D-009 propagation) - a project may register dozens and dumping them all is noise. status_bundle.py: _memory_gauge counts active_skills + a staleness nudge past ACTIVE_SKILLS_WARN=25 (higher than lessons, since skills surface focused so the concern is pruning stale skills not handoff weight); render_digest shows the skill count when >0. 7 new tests incl. the assemble() integration test (token derived from the real phase query so overlap is guaranteed) + empty/obsolete/no-overlap cases. Suite 600 passed / 4 skipped / exit 0, strictly additive (INVARIANT-07).
+
+### Phase 3 — completed 2026-06-22
+
+Curation scope, docs, dogfooding, and wiring. (1) Amendment A-001 records the honest curation scope cut (L-38): register/obsolete/discover/surface is the complete v1; promote dropped (skills have no gameplan->project tier), consolidate deferred (obsolete+re-register covers a merge), the superseded state ships in the grammar (forward-compatible) but cz_supersede_skill is deferred. (2) Docs swept: README MCP surface 31->38 (also reconciling the L-21 drift - the 4 read-only 0.17.0 loop ops were missing from the list) + a new Skills group; TRUST.md (discovery reads SKILL.md frontmatter only, never executes; register writes only docs/SKILLS.md); SECURITY.md (no execution surface, no network); CHANGELOG [Unreleased]. (3) End-to-end integration test (discover -> confirm -> surfaced in BOTH digest and handoff, then obsolete removes it) across the L-34 seams. (4) Dogfooded for real: confirmed cz_discover_skills' 6 proposals into docs/SKILLS.md (S-01..S-06, Clauderizer's own workflow skills) - the digest now reads '6 skills'. (5) Repaired the drifted wiring with init (explicit --session-host windows-wsl:ubuntu so it did not mis-detect native, the H-08 hazard); doctor 16/16 exit 0 with in-band end-to-end evidence. Suite 601 passed / 4 skipped / exit 0. Named residual for Phase 4: the cold-start restart-validate (G6) needs a real new session.
 
 ## Accumulated Lessons
 

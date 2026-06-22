@@ -24,6 +24,12 @@ with the code are treated as bugs. To remove the wiring cleanly, run
 marker stanzas, skills, `.clauderizer/`) with key/marker-scoped removals that
 preserve other servers, foreign hooks, and your `docs/` memory.
 
+Project skill-awareness adds **no execution surface**: `cz_discover_skills`
+only *reads* `SKILL.md` frontmatter (name + description) from your local skill
+directories — it never executes a skill — and proposes what to register;
+`cz_register_skill` / `cz_obsolete_skill` write only to `docs/SKILLS.md`. No
+network at runtime.
+
 ## Supported versions
 
 Pre-1.0: only the latest released version is supported. The findings

@@ -2,6 +2,29 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [Unreleased]
+
+**Project skill-awareness.** A project now tracks the Agent Skills available in its
+environment as first-class, surfaced memory, mirroring the lesson lifecycle. Read-only
+discovery proposes, the agent confirms, and the skills relevant to a phase ride into its
+handoff focused by relevance. Propose-confirm, never auto-mutation (INVARIANT-05); the
+auto-PR idea (open a PR when a public skill is found) was explicitly dropped (D3).
+
+### Added
+- **`docs/SKILLS.md`** — a compact, append-only project skill inventory (lazy-created from
+  template, like LESSONS.md). `markdown/skill_state.py` is the one grammar (states
+  active | obsolete | superseded).
+- **`cz_register_skill`** / **`cz_obsolete_skill`** — register a skill (`S-NN`, idempotent on
+  name) / mark one obsolete in place (append-only).
+- **`cz_discover_skills`** — read-only: scans the local skill directories, parses each
+  `SKILL.md`'s name + description, and proposes the unregistered ones (like `cz_curate`).
+- **Relevance surfacing** — the handoff carries a "Skills for This Phase" block ranked by
+  the existing lexical analyzer (top-k, or nothing when none overlap — focused, not a dump);
+  the status gauge reports an active-skill count.
+
+Tool surface 35 → 38. Also corrects the README MCP-surface list, which had drifted to 31
+(missing the 0.17.0 read-only loop ops).
+
 ## [0.17.0] — 2026-06-21
 
 **The empirical self-improvement loop.** Adds the telemetry substrate + curator that let

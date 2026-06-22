@@ -102,7 +102,10 @@ them there.)
 `.mcp.json`, speaks stdio, and operates on the repo it runs in. Its tools
 are the `cz_*` read/write surface — reads are side-effect-free by contract
 (L-03: a context fetch must never mutate), writes serialize on a repo-local
-lock file (`.clauderizer/write.lock`).
+lock file (`.clauderizer/write.lock`). The skill tools keep that contract:
+`cz_discover_skills` only **reads** `SKILL.md` frontmatter (name + description)
+from your local skill directories and proposes — it never executes a skill or
+writes; `cz_register_skill` / `cz_obsolete_skill` write only to `docs/SKILLS.md`.
 
 **Nothing else executes.** No daemon, no scheduler, no network calls at
 runtime (the engine's only network user is `clauderize release-check`,
