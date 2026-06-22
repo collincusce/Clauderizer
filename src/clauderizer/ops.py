@@ -713,6 +713,22 @@ def cz_loop_step() -> dict:
     return telemetry.loop_step(paths, config.active_gameplan)
 
 
+def cz_discover_skills() -> dict:
+    """PROPOSE Agent Skills present in this project's environment but not yet
+    registered in docs/SKILLS.md — read-only, like cz_curate / cz_mine_failures.
+
+    Scans the well-known local skill directories (the project's and the user's
+    skill folders, plus Clauderizer's own shipped skills), parses each SKILL.md's
+    name + description, and diffs against what's already registered. Confirm
+    genuine proposals via cz_register_skill; the engine proposes, you decide
+    (INVARIANT-05). No writes, no network (D3: external-skill ingestion is out).
+    """
+    paths, _ = repo_ctx()
+    from . import skill_discovery
+
+    return skill_discovery.discover(paths)
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -763,6 +779,7 @@ REGISTRY: dict[str, Op] = {
     "cz_lesson_health": Op(cz_lesson_health, writes=False),
     "cz_curate": Op(cz_curate, writes=False),
     "cz_loop_step": Op(cz_loop_step, writes=False),
+    "cz_discover_skills": Op(cz_discover_skills, writes=False),
 }
 
 

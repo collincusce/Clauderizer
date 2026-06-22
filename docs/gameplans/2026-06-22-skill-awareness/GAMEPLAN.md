@@ -54,7 +54,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 ## Open Items
 
-**O-01.** _(phase 1)_ Discovery host-coverage: exactly which skill locations are scanned (.claude/skills, ~/.claude/skills, Clauderizer's shipped src skills, plugin skill dirs) and which hosts are covered vs named-residual.
+**O-01.** _(phase 1)_ Discovery host-coverage: exactly which skill locations are scanned (.claude/skills, ~/.claude/skills, Clauderizer's shipped src skills, plugin skill dirs) and which hosts are covered vs named-residual. _(resolved 2026-06-22: Discovery scans 3 default roots (skill_discovery.default_roots): repo .claude/skills, ~/.claude/skills, and Clauderizer's shipped skills (assets.SKILLS), deduped by name (first root wins). Named residual: plugin skill dirs + non-Claude hosts (kimi/codex) not yet scanned, documented in default_roots docstring. Real smoke found 6 clauderizer-* skills from .claude/skills.)_
 
 **O-02.** _(phase 4)_ Is 0.17.0 fully published on PyPI (so 1.0.0rc1 is the clean next four-registry claim), or mid-flight? Resolve via a fresh four-registry sweep before the release phase.
 
@@ -85,10 +85,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_discover_skills is read-only (writes=False) and returns proposals with name+description+source for unregistered SKILL.md files
-- [ ] discovery parses real SKILL.md frontmatter from at least the .claude/skills and Clauderizer-shipped locations
-- [ ] it proposes only unregistered skills (diffs against docs/SKILLS.md) and never writes
-- [ ] tests cover discovery with fixtures incl. malformed/duplicate frontmatter; suite green
+- [x] cz_discover_skills is read-only (writes=False) and returns proposals with name+description+source for unregistered SKILL.md files
+- [x] discovery parses real SKILL.md frontmatter from at least the .claude/skills and Clauderizer-shipped locations
+- [x] it proposes only unregistered skills (diffs against docs/SKILLS.md) and never writes
+- [x] tests cover discovery with fixtures incl. malformed/duplicate frontmatter; suite green
 
 ### Phase 2: Relevance surfacing
 

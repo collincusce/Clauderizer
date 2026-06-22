@@ -1,7 +1,7 @@
 # Chat Handoff Index — skill-awareness
 
 > Last updated: 2026-06-22
-> Status: Phase 1 ready
+> Status: Phase 2 ready
 
 ## How This Works
 
@@ -30,7 +30,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Skill model + SKILLS.md | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Skill discovery (propose-confirm) | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Skill discovery (propose-confirm) | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Relevance surfacing | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Curation parity + docs + integration sweep | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Release 1.0.0rc1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
@@ -42,6 +42,10 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 ### Phase 0 — completed 2026-06-22
 
 Built the skill model as a clean mirror of the lesson architecture (D1). New: markdown/skill_state.py (the single grammar for skill state + the entry fields name/description/source; states active|obsolete|superseded - the supersede-vs-promote divergence from lessons, since skills are already project-level); templates/docs/SKILLS.md (lazy-created from template like LESSONS.md); and the blessed writes mutations.register_skill (S-NN auto-id under a category, idempotent on name so repeat discovery proposals never duplicate) + mutations.obsolete_skill (append-only marker, idempotent). Exposed as cz_register_skill / cz_obsolete_skill via ops.REGISTRY + tools_list.TOOL_NAMES, inserted next to the lesson ops so parity holds. 13 new tests (grammar round-trip incl. mid-text-mention inertness; register/obsolete lifecycle; L-22 idempotency). Full suite 586 passed / 4 skipped / exit 0 - strictly additive, INVARIANT-07 honored. No tracked graph entities touched, so no cascade.
+
+### Phase 1 — completed 2026-06-22
+
+Built read-only skill discovery (D2 propose-confirm). New: src/clauderizer/skill_discovery.py - discover(paths, roots=None) scans default_roots (.claude/skills, ~/.claude/skills, Clauderizer's shipped skills via assets.SKILLS), parses each SKILL.md with markdown.frontmatter, dedups across roots (first wins), diffs against active docs/SKILLS.md entries, and proposes the rest as {name, description, source}. Degrades gracefully on malformed/non-UTF-8 SKILL.md (errors=replace + dir-name fallback, per-file continue), never crashing the scan (L-24). Exposed as cz_discover_skills (writes=False, like cz_curate/cz_mine_failures), appended to REGISTRY + TOOL_NAMES. 7 new tests (good/malformed/duplicate frontmatter fixtures, only-unregistered diff, read-only assertion, real shipped-skill parse). Real CLI smoke via clauderize ops found the 6 clauderizer-* skills from .claude/skills - end-to-end parity (L-05). Suite 593 passed / 4 skipped / exit 0. The full suite caught one L-34 cross-cutting regression - the new docstring leaked .claude into the host-neutral tool surface (D-032 test) - fixed by describing locations neutrally. O-01 resolved.
 
 ## Accumulated Lessons
 

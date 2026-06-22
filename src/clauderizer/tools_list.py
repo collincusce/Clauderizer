@@ -42,4 +42,5 @@ TOOL_NAMES = [
     "cz_lesson_health",
     "cz_curate",
     "cz_loop_step",
+    "cz_discover_skills",
 ]
