@@ -94,10 +94,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_lesson_health surfaces per-lesson utility (recent-success fraction), failure-risk, and time-decay - deterministic, advisory only (performs no writes)
-- [ ] An agent-eval shows the score agrees with held-out judgment on a labeled sample at an agreed threshold (the 0.15.0 focused-vs-full eval is the template)
-- [ ] Parity / INVARIANT-05 test confirms cz_lesson_health is read-only (writes=False in REGISTRY)
-- [ ] Full suite green
+- [x] cz_lesson_health surfaces per-lesson utility (recent-success fraction), failure-risk, and time-decay - deterministic, advisory only (performs no writes)
+- [x] An agent-eval shows the score agrees with held-out judgment on a labeled sample at an agreed threshold (the 0.15.0 focused-vs-full eval is the template)
+- [x] Parity / INVARIANT-05 test confirms cz_lesson_health is read-only (writes=False in REGISTRY)
+- [x] Full suite green
 
 ### Phase 2: The Curator - propose-confirm maintenance pass
 

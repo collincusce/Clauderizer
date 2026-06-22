@@ -180,3 +180,84 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
             + (f", pass_rate {pass_rate}" if pass_rate is not None else "") + ")"
         ),
     }
+
+
+def _lesson_signal(*, surfaced_count: int, resolved: int, utility) -> str | None:
+    """An advisory, judgment-prompting hint (INVARIANT-05) — never a decision.
+
+    Returns the candidate framing for the agent / Phase 2 curator, or None when
+    there isn't enough signal to say anything.
+    """
+    if surfaced_count == 0:
+        return "never-surfaced: consider whether it still earns its place"
+    if resolved == 0:
+        return None  # surfaced, but no resolved phase yet — not enough signal
+    if utility is not None and utility <= 0.34:
+        return "low-utility: surfaced but rarely preceded a passing phase — review"
+    if utility is not None and utility >= 0.8 and resolved >= 2:
+        return "high-utility: recurringly preceded passing phases — promotion candidate"
+    return None
+
+
+def lesson_health(paths, *, window: int = 0) -> dict:
+    """Per-lesson empirical health joined from telemetry.
+
+    For each active project lesson: ``utility`` = the fraction of its RESOLVED
+    surfacings that PASSED (a surfacing is resolved when the (gameplan, phase) it
+    was surfaced for has a recorded outcome; passed = status 'complete'),
+    ``failure_risk`` = 1 - utility, ``surfaced_count`` / ``resolved_count``, and
+    an advisory ``signal``. Deterministic and read-only (INVARIANT-05; no ML,
+    D-018): it SURFACES candidates — the agent (and Phase 2's curator) decides.
+    ``window`` > 0 keeps only each lesson's most recent N surfacings (recency by
+    append order); 0 = all history.
+    """
+    lessons = _active_project_lessons(paths)
+    events = read_events(paths.telemetry_file)
+    surfaced = [e for e in events if e.get("kind") == "surfaced"]
+    # (gameplan, phase) -> status of its LAST recorded outcome.
+    outcome: dict = {}
+    for e in events:
+        if e.get("kind") == "outcome":
+            outcome[(e.get("gameplan"), e.get("phase"))] = e.get("status")
+
+    per: dict = {l["id"]: [] for l in lessons}
+    for e in surfaced:
+        key = (e.get("gameplan"), e.get("phase"))
+        date = e.get("date")
+        for lid in e.get("lessons") or []:
+            if lid in per:
+                per[lid].append((key, date))
+
+    scores = []
+    for l in lessons:
+        all_hits = per[l["id"]]
+        # Recency / time-decay input: the date this lesson was most recently
+        # surfaced (None = never). The curator weights stale, never-reinforced
+        # lessons toward obsoletion; window scopes utility to recent surfacings.
+        last_surfaced = all_hits[-1][1] if all_hits else None
+        hits = all_hits[-window:] if (window and len(all_hits) > window) else all_hits
+        resolved = [k for (k, _d) in hits if k in outcome]
+        passed = sum(1 for k in resolved if outcome[k] == "complete")
+        n = len(resolved)
+        utility = round(passed / n, 4) if n else None
+        failure_risk = round(1 - utility, 4) if utility is not None else None
+        scores.append({
+            "id": l["id"],
+            "surfaced_count": len(hits),
+            "resolved_count": n,
+            "utility": utility,
+            "failure_risk": failure_risk,
+            "last_surfaced": last_surfaced,
+            "signal": _lesson_signal(surfaced_count=len(hits), resolved=n, utility=utility),
+        })
+    scores.sort(key=lambda r: r["id"])
+    with_signal = sum(1 for r in scores if r["signal"])
+    return {
+        "ok": True,
+        "lessons_scored": len(scores),
+        "with_signal": with_signal,
+        "scores": scores,
+        "summary": (f"scored {len(scores)} active project lessons from "
+                    f"{len(surfaced)} surfacing + {len(outcome)} outcome event(s); "
+                    f"{with_signal} carry an advisory signal"),
+    }

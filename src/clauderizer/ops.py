@@ -644,6 +644,20 @@ def cz_corpus_health() -> dict:
     return telemetry.corpus_health(paths)
 
 
+def cz_lesson_health() -> dict:
+    """Surface per-lesson empirical health from telemetry: utility (fraction of a
+    lesson's resolved surfacings that preceded a passing phase), failure-risk,
+    surfaced/resolved counts, and an advisory per-lesson signal (never-surfaced /
+    low-utility / promotion-candidate). Read-only (INVARIANT-05), deterministic,
+    no ML (D-018). The input Phase 2's curator turns into proposed
+    consolidate/promote/obsolete actions; the agent decides.
+    """
+    from . import telemetry
+
+    paths, _ = repo_ctx()
+    return telemetry.lesson_health(paths)
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -689,6 +703,7 @@ REGISTRY: dict[str, Op] = {
     "cz_critique": Op(cz_critique, writes=False),
     "cz_mine_failures": Op(cz_mine_failures, writes=False),
     "cz_corpus_health": Op(cz_corpus_health, writes=False),
+    "cz_lesson_health": Op(cz_lesson_health, writes=False),
 }
 
 
