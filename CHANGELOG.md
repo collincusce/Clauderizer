@@ -2,6 +2,13 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.0.2] — 2026-06-22
+
+**License.** Relicensed from **MIT** to the **Apache License 2.0** — the same permissive terms,
+plus an explicit patent grant and a trademark clause. Replaces `LICENSE` with the full Apache 2.0
+text, adds a `NOTICE`, and updates the `pyproject` license field + OSI classifier and the README.
+No code changes; copyright remains "Clauderizer contributors".
+
 ## [1.0.1] — 2026-06-22
 
 **Docs.** Corrects the README's maturity section, which still read "beta, with receipts" after

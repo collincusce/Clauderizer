@@ -6,7 +6,7 @@
   <a href="https://pypi.org/project/clauderizer/"><img src="https://img.shields.io/pypi/v/clauderizer.svg" alt="PyPI"></a>
   <a href="https://pypi.org/project/clauderizer/"><img src="https://img.shields.io/pypi/pyversions/clauderizer.svg" alt="Python"></a>
   <a href="https://github.com/collincusce/Clauderizer/actions/workflows/test.yml"><img src="https://github.com/collincusce/Clauderizer/actions/workflows/test.yml/badge.svg?branch=main" alt="Tests"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License: Apache 2.0"></a>
 </p>
 
 <p align="center">
@@ -449,4 +449,5 @@ tag/source skew before building).
 
 ## License
 
-MIT.
+[Apache License 2.0](LICENSE) — permissive, with an explicit patent grant. Copyright 2026
+Clauderizer contributors; see [NOTICE](NOTICE).
