@@ -21,7 +21,7 @@ from pathlib import Path
 
 from .. import analyze
 from ..config import Config
-from ..markdown import lesson_state, sections
+from ..markdown import lesson_state, sections, skill_state
 from ..paths import RepoPaths
 
 _LESSON_LINE = re.compile(r"^\s*\*\*\d+\.\*\*")
@@ -228,6 +228,60 @@ def relevant_invariant_pointer(paths: RepoPaths, query: str,
     return md, len(ranked), len(entries)
 
 
+# --- focused skill surfacing (skill-awareness Phase 2) -------------------------
+# Skills are a MENU, not accumulated wisdom: unlike lessons (which all ride along,
+# D-009 propagation), a project may register dozens of skills and dumping them all
+# is the L-35 availability-not-use noise. So the handoff carries ONLY the skills
+# whose trigger overlaps this phase (top-k via the same lexical ranker, no ML —
+# D-018), or nothing when none are relevant. The full inventory stays canonical in
+# docs/SKILLS.md (a pointer, never an authority — D-013).
+
+
+def _active_skill_entries(skills_text: str) -> list[dict]:
+    """Active SKILLS.md entries parsed for ranking: {id, title=name, body=description}."""
+    sec = sections.get_section(skills_text, "Skills") or ""
+    entries: list[dict] = []
+    for line in sec.splitlines():
+        e = skill_state.parse_entry(line)
+        if e and e["state"] == skill_state.ACTIVE:
+            entries.append({"id": e["id"], "title": e["name"], "body": e["description"]})
+    return entries
+
+
+def relevant_skill_pointer(paths: RepoPaths, query: str,
+                           k: int = RELEVANCE_K) -> str | None:
+    """The Agent Skills whose trigger overlaps this phase, as a focused menu.
+
+    Renders ``- **name** — description`` for the top-``k`` active skills the
+    lexical ranker scores against the phase text, or ``None`` when there is no
+    query, no SKILLS.md, no registered skill, or none overlaps (an honest
+    negative — irrelevant skills are not injected). Focused-only: the full
+    inventory stays canonical in docs/SKILLS.md.
+    """
+    if not query or not query.strip():
+        return None
+    sdoc = paths.doc("SKILLS")
+    if not sdoc.exists():
+        return None
+    entries = _active_skill_entries(sdoc.read_text(encoding="utf-8"))
+    if not entries:
+        return None
+    ranked = analyze.rank_relevant(query, entries, k=k)
+    if not ranked:
+        return None
+    by_id = {e["id"]: e for e in entries}
+    out: list[str] = []
+    for r in ranked:
+        e = by_id.get(r["id"])
+        if not e:
+            continue
+        desc = e["body"].rstrip()
+        if len(desc) > 120:
+            desc = desc[:119].rstrip() + "…"
+        out.append(f"- **{e['title']}** — {desc}" if desc else f"- **{e['title']}**")
+    return "\n".join(out) if out else None
+
+
 def surfaced_ids(paths: RepoPaths, gid: str, phase_n: str) -> dict:
     """Which project lessons / gameplan lessons / invariants the handoff for this
     phase SURFACES as most relevant — the same deterministic keyword + entity-id
@@ -306,6 +360,9 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
     # Phase 6 (trim-consistent steering): surface the phase-relevant governing
     # invariants — the must-hold rules the handoff never carried before.
     invariants_focus = relevant_invariant_pointer(paths, _phase_query(gameplan_text, phase_n))
+    # Phase 2 (skill-awareness): the registered skills whose trigger overlaps this
+    # phase — a focused menu, or nothing when none are relevant (L-35).
+    skills_focus = relevant_skill_pointer(paths, _phase_query(gameplan_text, phase_n))
 
     # Distilled project lessons (docs/LESSONS.md) ride along in every handoff,
     # across gameplans — that's what promotion buys (D-009).
@@ -361,6 +418,18 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
             "unchanged.)_",
             "",
             pointer,
+            "",
+        ]
+    if skills_focus:
+        parts += [
+            "## Skills for This Phase",
+            "",
+            "_(Agent Skills registered for this project whose trigger overlaps "
+            "this phase — invoke the relevant ones. The full inventory is in "
+            "`docs/SKILLS.md`; discover more with cz_discover_skills, register "
+            "with cz_register_skill.)_",
+            "",
+            skills_focus,
             "",
         ]
     parts += [

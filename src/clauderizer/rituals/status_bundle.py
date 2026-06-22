@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 from ..config import Config
-from ..markdown import lesson_state, sections
+from ..markdown import lesson_state, sections, skill_state
 from ..paths import RepoPaths
 from . import _tables
 
@@ -46,6 +46,9 @@ def engine_source_newer_than(started: float) -> bool:
 # constants remain the fallback when no config is in hand.
 ACTIVE_LESSONS_WARN = 12
 PROJECT_LESSONS_WARN = 20
+# Skills surface FOCUSED by relevance (not all-carried like lessons), so the
+# threshold is higher and the nudge is about pruning STALE skills, not handoff weight.
+ACTIVE_SKILLS_WARN = 25
 
 _LESSON_LINE_RE = lesson_state.LESSON_LINE_RE  # shared grammar — see markdown/lesson_state
 
@@ -74,6 +77,15 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
         from .handoff import collect_project_lessons
 
         _, project = collect_project_lessons(lessons_doc.read_text(encoding="utf-8"))
+    # Registered skills (skill-awareness Phase 2): counted for visibility; they
+    # surface focused-by-relevance, so the count is not handoff weight.
+    skills_active = 0
+    skills_doc = paths.doc("SKILLS")
+    if skills_doc.exists():
+        sbody = sections.get_section(skills_doc.read_text(encoding="utf-8"), "Skills") or ""
+        skills_active = sum(
+            1 for ln in sbody.splitlines()
+            if skill_state.SKILL_LINE_RE.search(ln) and skill_state.is_active(ln))
     warn_active = (config.active_lessons_warn if config is not None
                    else ACTIVE_LESSONS_WARN)
     warn_project = (config.project_lessons_warn if config is not None
@@ -83,6 +95,7 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
         "obsolete_lessons": obsolete,
         "promoted_lessons": promoted,
         "project_lessons": project,
+        "active_skills": skills_active,
         "handoff_est_tokens": None,
         "warning": None,
     }
@@ -102,6 +115,13 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
             f"rides in every handoff across gameplans. Re-distill: "
             f"cz_obsolete_lesson the superseded L-entries and promote a "
             f"tighter synthesis."
+        )
+    if skills_active > ACTIVE_SKILLS_WARN:
+        warnings.append(
+            f"{skills_active} registered skills (> {ACTIVE_SKILLS_WARN}) — skills "
+            f"surface focused by relevance, so this is staleness not handoff weight: "
+            f"cz_obsolete_skill any no longer available (cz_discover_skills shows "
+            f"what's present)."
         )
     if warnings:
         gauge["warning"] = " | ".join(warnings)
@@ -401,10 +421,11 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
             suffix = f" (handoff {note})."
         else:
             suffix = "."
-        lines.append(
-            f"Memory: {mem['active_lessons']} active lessons, "
-            f"{mem['project_lessons']} project" + suffix
-        )
+        mem_line = (f"Memory: {mem['active_lessons']} active lessons, "
+                    f"{mem['project_lessons']} project")
+        if mem.get("active_skills"):
+            mem_line += f", {mem['active_skills']} skills"
+        lines.append(mem_line + suffix)
         if mem.get("warning"):
             lines.append(f"⚠ Memory: {mem['warning']}")
     pc = bundle.get("pending_cascades") or []

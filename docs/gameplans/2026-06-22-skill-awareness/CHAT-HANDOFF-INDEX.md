@@ -1,7 +1,7 @@
 # Chat Handoff Index — skill-awareness
 
 > Last updated: 2026-06-22
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Skill model + SKILLS.md | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Skill discovery (propose-confirm) | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Relevance surfacing | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Relevance surfacing | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Curation parity + docs + integration sweep | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Release 1.0.0rc1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
@@ -46,6 +46,10 @@ Built the skill model as a clean mirror of the lesson architecture (D1). New: ma
 ### Phase 1 — completed 2026-06-22
 
 Built read-only skill discovery (D2 propose-confirm). New: src/clauderizer/skill_discovery.py - discover(paths, roots=None) scans default_roots (.claude/skills, ~/.claude/skills, Clauderizer's shipped skills via assets.SKILLS), parses each SKILL.md with markdown.frontmatter, dedups across roots (first wins), diffs against active docs/SKILLS.md entries, and proposes the rest as {name, description, source}. Degrades gracefully on malformed/non-UTF-8 SKILL.md (errors=replace + dir-name fallback, per-file continue), never crashing the scan (L-24). Exposed as cz_discover_skills (writes=False, like cz_curate/cz_mine_failures), appended to REGISTRY + TOOL_NAMES. 7 new tests (good/malformed/duplicate frontmatter fixtures, only-unregistered diff, read-only assertion, real shipped-skill parse). Real CLI smoke via clauderize ops found the 6 clauderizer-* skills from .claude/skills - end-to-end parity (L-05). Suite 593 passed / 4 skipped / exit 0. The full suite caught one L-34 cross-cutting regression - the new docstring leaked .claude into the host-neutral tool surface (D-032 test) - fixed by describing locations neutrally. O-01 resolved.
+
+### Phase 2 — completed 2026-06-22
+
+Wired focused skill surfacing into the two shared pipelines (the L-34 cross-cutting seams). handoff.py: relevant_skill_pointer(paths, query) ranks active SKILLS.md entries by the existing lexical analyzer (analyze.rank_relevant, no ML - D-018), and assemble() renders a '## Skills for This Phase' block - top-k relevant only, or nothing when none overlap (L-35 availability-not-use; rank_relevant already drops zero-overlap entries, so the empty case is free). Deliberate divergence from lessons: skills are a MENU surfaced FOCUSED, not all-carried like lessons (D-009 propagation) - a project may register dozens and dumping them all is noise. status_bundle.py: _memory_gauge counts active_skills + a staleness nudge past ACTIVE_SKILLS_WARN=25 (higher than lessons, since skills surface focused so the concern is pruning stale skills not handoff weight); render_digest shows the skill count when >0. 7 new tests incl. the assemble() integration test (token derived from the real phase query so overlap is guaranteed) + empty/obsolete/no-overlap cases. Suite 600 passed / 4 skipped / exit 0, strictly additive (INVARIANT-07).
 
 ## Accumulated Lessons
 

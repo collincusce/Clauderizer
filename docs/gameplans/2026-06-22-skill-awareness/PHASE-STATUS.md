@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Skill model + SKILLS.md | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Skill discovery (propose-confirm) | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Relevance surfacing | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Relevance surfacing | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Curation parity + docs + integration sweep | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Release 1.0.0rc1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
@@ -31,6 +31,14 @@ discovery: src/clauderizer/skill_discovery.py: discover(paths, roots=None) read-
 new_tool: cz_discover_skills (writes=False), appended after cz_loop_step in REGISTRY + TOOL_NAMES; host-neutral docstring (passes test_tool_surface_is_host_neutral / D-032)
 cli_smoke: clauderize ops cz_discover_skills on the dogfood repo: scanned 3 roots, 2 present, 6 proposals (clauderizer-* from .claude/skills); read-only; end-to-end CLI parity (L-05)
 suite: 593 passed, 4 skipped, exit 0 (was 586; +7 discovery tests). The full suite caught + I fixed one L-34 regression: the cz_discover_skills docstring leaked .claude into the host-neutral surface
+```
+
+### Phase 2 Outputs
+
+```
+handoff_surfacing: handoff.relevant_skill_pointer(paths, query) ranks active SKILLS.md entries via analyze.rank_relevant (no ML, D-018); assemble() renders a '## Skills for This Phase' block - top-k relevant only, or nothing when none overlap (rank_relevant drops zero-overlap). Focused-only menu, NOT all-carried like lessons
+status_gauge: status_bundle._memory_gauge adds active_skills count + staleness nudge past ACTIVE_SKILLS_WARN=25 (higher than lessons; skills surface focused so it is pruning-stale not handoff-weight); render_digest shows 'N skills' when >0
+suite: 600 passed, 4 skipped, exit 0 (was 593; +7 surfacing tests incl. the assemble() L-34 integration test). Strictly additive, INVARIANT-07 honored
 ```
 
 ## Corrections Log

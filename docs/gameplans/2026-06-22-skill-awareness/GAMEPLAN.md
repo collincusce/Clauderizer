@@ -100,9 +100,9 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] registered skills roll up into the cumulative handoff, ranked by relevance to the phase via the existing analyzer
-- [ ] cz_status/status_bundle reports an active-skill count (and a bloat nudge past a threshold, mirroring lessons)
-- [ ] a phase with no relevant skills surfaces nothing (no noise); tests assert ranking + the empty case; suite green
+- [x] registered skills roll up into the cumulative handoff, ranked by relevance to the phase via the existing analyzer
+- [x] cz_status/status_bundle reports an active-skill count (and a bloat nudge past a threshold, mirroring lessons)
+- [x] a phase with no relevant skills surfaces nothing (no noise); tests assert ranking + the empty case; suite green
 
 ### Phase 3: Curation parity + docs + integration sweep
 
