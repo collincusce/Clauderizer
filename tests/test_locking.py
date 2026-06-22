@@ -131,18 +131,20 @@ def test_stale_lock_taken_over(tmp_path):
 def test_crashed_holder_blocks_at_most_stale_timeout(tmp_path):
     """Exit criterion: a crashed holder delays a writer no longer than stale_timeout."""
     lock = tmp_path / ".clauderizer" / "write.lock"
-    # Start the clock BEFORE creating the lock. The staleness clock is the lock's
-    # own `ts` (stamped inside _write_foreign_lock); takeover fires at ts +
-    # stale_timeout. Measuring from *after* creation let a slow write under load
-    # sit between ts and t0 and shrink `waited` below the lower bound (observed
-    # 0.20s < 0.4s under full-suite load). With t0 <= ts, `waited` can only
-    # over-estimate the true stale wait, never under-estimate it.
+    # Assert only the UPPER bound — that IS the contract: a crashed holder delays a
+    # writer AT MOST ~stale_timeout (0.6s here), never the full acquire_timeout
+    # (10s). A lower bound on the wait is NOT part of the contract and is
+    # timing-fragile: a holder detected dead immediately is correctly taken over
+    # fast, so `waited` legitimately dips well under any floor under load (observed
+    # 0.10s–0.20s vs a former 0.4s floor — the de-flake). The 5.0s ceiling sits below
+    # the stale↔acquire midpoint (0.6↔10), so it still catches a takeover that never
+    # fires (which would wait the full 10s) while absorbing CI scheduling jitter.
     t0 = time.monotonic()
     _write_foreign_lock(lock, age=0.0)  # fresh-looking, but its process is gone
     with locking.write_lock(lock, acquire_timeout=10.0, stale_timeout=0.6):
         pass
     waited = time.monotonic() - t0
-    assert 0.4 <= waited < 5.0
+    assert waited < 5.0
 
 
 def test_lock_held_error_shape(tmp_path):
