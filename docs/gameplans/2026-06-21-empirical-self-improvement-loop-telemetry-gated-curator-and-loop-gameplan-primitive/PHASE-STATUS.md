@@ -12,7 +12,7 @@
 | 2 | The Curator - propose-confirm maintenance pass | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Empirical-gated promotion & typed-edge risk surfacing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The loop-gameplan primitive | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Close-out, dogfood & ship | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Close-out, dogfood & ship | 🟡 IN PROGRESS | 2026-06-21 | — | handoffs/PHASE-5-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -54,6 +54,14 @@ loop_step_op: cz_loop_step (writes=False; tool surface 34->35): one loop iterati
 kind_loop: cz_create_gameplan(kind='driven'|'loop'); kind rendered as '> Kind: <kind>' in GAMEPLAN.md. A loop gameplan is the standing iterative maintenance type; a driven gameplan is the finite phase DAG.
 convergence_proof: K-iteration test (tests/test_loop_gameplan.py): seed redundant + never-surfaced + healthy lessons; drive loop_step -> apply obsolete proposals -> repeat; proposals converge to 0 and the corpus-health metric is monotone-improving (redundant_pairs/never_surfaced non-increasing), ending redundant_pairs=0. Escape-hatch + read-only also tested.
 procedure_doc: GAMEPLAN-PROCEDURE.md bumped 1.2.1 -> 1.3.0 (MINOR) in BOTH the bundled template and the repo copy (L-21 sweep): new 'Loop Gameplans (kind: loop)' section - trigger / iteration body / per-iteration exit (the /goal triad) / convergence metric / spawn-driven escape hatch; driven and loop gameplans interlock.
+```
+
+### Phase 5 Outputs
+
+```
+close_out: 3 enduring lessons promoted to LESSONS.md - L-36 (telemetry is the keystone; build it first), L-37 (autonomy in cadence, supervised in mutation), L-38 (honest amendment over a faked checkbox). POST-MORTEM.md written with procedure improvements + open threads.
+release_state: version 0.16.0 -> 0.17.0 (pyproject + __init__ + PROCEDURE_VERSION 1.2.1->1.3.0 + CHANGELOG); suite 573 passing green; doctor engine checks ALL green (the ✗ are machine-specific .mcp.json/hook wiring - gitignored, init-repairable, not a package issue); release-check: all 4 version registries clean (0.17.0 unclaimed) + publish gate green, RED only on clean-tree (resolved by committing Phase 5) and push-branch. Ship (merge->push->tag->PyPI) PAUSED for human authorization.
+dogfood: Standing loop gameplan '2026-06-21-standing-curator-loop-memory-maintenance' (kind=loop) created; one cz_loop_step ran on Clauderizer's OWN 23-lesson corpus: redundant_pairs=0 (already clean), never_surfaced=14, 14 actionable obsolete proposals, converged=false. The agent DECLINED all 14 - on fresh telemetry 'never-surfaced' means 'not yet surfaced under the new signal', not 'obsolete'. The propose-confirm boundary (INVARIANT-05) working as designed: autonomous in cadence, supervised in mutation.
 ```
 
 ## Corrections Log

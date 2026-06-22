@@ -1,7 +1,7 @@
 # Chat Handoff Index — Empirical self-improvement loop - telemetry-gated curator and loop-gameplan primitive
 
 > Last updated: 2026-06-21
-> Status: Phase 5 ready
+> Status: Phase 5 of 6 in progress
 
 ## How This Works
 
@@ -34,7 +34,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 2 | The Curator - propose-confirm maintenance pass | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Empirical-gated promotion & typed-edge risk surfacing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The loop-gameplan primitive | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Close-out, dogfood & ship | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Close-out, dogfood & ship | 🟡 IN PROGRESS | 2026-06-21 | — | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -60,6 +60,10 @@ Phase 3 added empirical-gated promotion + typed-edge risk surfacing. (1) Promoti
 
 Phase 4 delivered the loop-gameplan primitive - the capstone. (1) cz_loop_step (read-only, tool 34->35) runs one iteration: the corpus_health convergence metric + cz_curate proposals + a converged flag (true when no actionable consolidate/obsolete/promote remains) + a spawn_gameplan escape hatch (>=3 review-flags suggests escalating to a driven gameplan - never auto-creates). The agent applies actionable proposals via blessed writes and re-calls until converged. (2) cz_create_gameplan gained kind=driven|loop, rendered as '> Kind:' in GAMEPLAN.md. (3) A K-iteration test proves convergence: proposals -> 0 and the health metric monotone-improves (redundant_pairs/never_surfaced non-increasing) to redundant_pairs=0. (4) GAMEPLAN-PROCEDURE.md bumped 1.2.1->1.3.0 (MINOR) in both the bundled template and the repo copy, documenting the loop-gameplan type. Addresses O-03 (cadence = Routines/SessionStart-nudge/manual, a deployment choice). All read-only, no ML (D-018), advisory (INVARIANT-05). Suite 569->573 passing green.
 
+### Phase 5 — completed 2026-06-21
+
+Phase 5 local close-out done; ship paused for authorization. Promoted 3 enduring lessons (L-36/37/38) and wrote POST-MORTEM.md (EC1). Bumped 0.16.0->0.17.0 + procedure 1.3.0 + CHANGELOG; suite 573 green; doctor engine-checks green (wiring ✗ is gitignored machine-specific, init-repairable); release-check has all 4 registries clean + publish gate green, RED only on clean-tree (commit Phase 5) and push (gated). Created the standing loop gameplan (kind=loop) and ran cz_loop_step on Clauderizer's own 23-lesson corpus (redundant=0, 14 never-surfaced obsolete proposals) - the agent correctly DECLINED all 14 on fresh telemetry, demonstrating the propose-confirm boundary (EC3). EC2's literal 'release-check exit 0' + the actual ship (merge->push->tag->PyPI) are the one remaining gated step, paused for the CEO's go.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -67,4 +71,10 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-_(none yet)_
+**3.** When an exit criterion is over-specified relative to what is soundly buildable under a constraint (e.g. a no-ML lexical engine cannot decide a SEMANTIC 'alternative' edge, D-018), record an honest AMENDMENT with the reason rather than faking the checkbox - the gameplan's own discipline (D-026 empirical gain-gate, INVARIANT-05) is better served by a truthful scope adjustment than a green box. (promoted 2026-06-21: L-38)
+
+### Category: Design
+
+**1.** The empirical signal is the keystone of a self-improving memory system: persist which memory was SURFACED and whether the work then PASSED (an append-only telemetry log), and build it FIRST - per-lesson utility scoring, the curator, and empirical-gated promotion are all unverifiable without it. Derive the signal from blessed events already happening (handoff write, phase transition), never from a hook (INVARIANT-06). (promoted 2026-06-21: L-36)
+
+**2.** Reconcile autonomy with a propose-confirm constitution: a self-improvement loop is autonomous in CADENCE but supervised in MUTATION - it SURFACES proposals read-only (like cz_mine_failures) and the agent applies them via the existing blessed writes; it never auto-mutates memory (INVARIANT-05). This both honors the constitution and matches the practitioner best-practice ('start read-only; summarize before you let it change anything'). (promoted 2026-06-21: L-37)

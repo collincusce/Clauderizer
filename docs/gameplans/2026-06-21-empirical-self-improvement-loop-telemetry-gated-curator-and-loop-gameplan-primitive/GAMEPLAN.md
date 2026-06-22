@@ -161,6 +161,6 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 5.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Close-out consolidation done; enduring lessons promoted to LESSONS.md; post-mortem written with procedure improvements
+- [x] Close-out consolidation done; enduring lessons promoted to LESSONS.md; post-mortem written with procedure improvements
 - [ ] Suite green, doctor green, release-check exit 0; version bumped (target 0.17.0)
-- [ ] The standing loop gameplan is active and maintaining Clauderizer's own corpus (dogfood)
+- [x] The standing loop gameplan is active and maintaining Clauderizer's own corpus (dogfood)

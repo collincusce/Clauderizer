@@ -2,6 +2,32 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [0.17.0] — 2026-06-21
+
+**The empirical self-improvement loop.** Adds the telemetry substrate + curator that let
+Clauderizer's memory improve itself under its own constitution — autonomous in cadence,
+supervised in mutation (propose-confirm, never auto-mutation; INVARIANT-05). Deterministic,
+stdlib-only, no ML (D-018). Suite 548 → 573.
+
+### Added
+- **Memory telemetry** (`.clauderizer/telemetry.jsonl`, append-only): which lessons/invariants
+  a handoff surfaced (`cz_write_handoff`) and each phase's outcome + exit-criteria checked/total
+  (`cz_transition_phase`). Never written from a hook (INVARIANT-06).
+- **`cz_corpus_health`** — active-lesson count, lexical-redundancy estimate, never-surfaced
+  count, pass-rate (read-only).
+- **`cz_lesson_health`** — per-lesson utility (recent-success fraction), failure-risk, recency,
+  and an advisory signal (read-only).
+- **`cz_curate`** — proposes consolidate/obsolete/flag/promote with evidence + the blessed cz_*
+  op to apply each (propose-only, like `cz_mine_failures`).
+- **`cz_loop_step`** — one loop-gameplan iteration: convergence metric + proposals + a
+  `converged` flag + a spawn-driven-gameplan escape hatch.
+- **Loop gameplans** (`cz_create_gameplan(kind="loop")`) — a first-class standing, iterative
+  maintenance type; `GAMEPLAN-PROCEDURE.md` → v1.3.0.
+- **Empirical-gated promotion** (recurrence + correlation) + **typed edge suggestions**
+  (redundant/related) + a **preemptive-risk cascade** for shaky upstream entities.
+
+Tool surface 31 → 35. All new analysis ops are read-only and advisory (INVARIANT-05).
+
 ## [0.16.0] — 2026-06-21
 
 **Universal host support — the cross-host & cross-model substrate.** Generalizes Clauderizer
