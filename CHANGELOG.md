@@ -2,6 +2,15 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.0.0] — 2026-06-22
+
+**1.0 — stable.** Promotes `1.0.0rc1` to the first stable release; no engine changes from the
+rc. All 1.0 readiness gates (G1–G7, `docs/RELEASING.md`) hold — G6's cold-start was re-validated
+fresh on the reference host: in a new session both the SessionStart hook **and** the MCP
+transport fired cold, `cz_discover_skills` ran end-to-end, and the live `cz_status` matched the
+injected digest. Classifier flips `4 - Beta → 5 - Production/Stable`. Ships with a human-first
+README (hero, animated demo, before/after, how-it-works).
+
 ## [1.0.0rc1] — 2026-06-22
 
 **First 1.0 release candidate.** Exercises the G1–G7 readiness gates
