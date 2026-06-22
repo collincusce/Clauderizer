@@ -1,17 +1,32 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.2.1
-**Last updated**: 2026-06-09
+**Procedure version**: 1.3.0
+**Last updated**: 2026-06-21
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.3.0** (2026-06-21): Added the **Loop Gameplan** (`kind: loop`) as a first-class type — a standing, iterative maintenance initiative (trigger / iteration body / per-iteration exit / convergence metric / spawn-driven escape hatch), complementing the finite driven gameplan. Realized by `cz_loop_step` over the curator (`cz_curate`); autonomous in cadence, supervised in mutation (INVARIANT-05).
 - **v1.2.1** (2026-06-09): Amendment entries carry a `Cascade report` line only when the `amendments` ritual is enabled, and as a pending pointer (`run cz_cascade for the affected entities`) rather than a per-amendment filename — cascade reports are per-entity files, so `<date>-A-NNN.md` never exists (the A-001 dangling-pointer bug).
 - **v1.2.0** (2026-06-09): Named `clauderize ops <file.json|->` the canonical no-MCP fallback for every tracked write (L-05): op names and arg shapes are exactly the `cz_*` tool names and schemas, so recording never depends on a live MCP client. Ad-hoc stdio-probe/shim patterns are retired.
 - **v1.1.0** (2026-05-02): Added **Amendment (`A-NNN`)** concept as a first-class entity for tracking gameplan body changes after Phase 0 starts. Added "Procedure: Amend a Gameplan" with cascade-to-affected-phases rules. Added mini-gameplan-vs-amend-existing decision rule of thumb. Projects adopting may declare `INVARIANT-13: Gameplan amendments cascade before session ends` (poe2.design adopts; smaller projects may not).
 - **v1.0.0** (2026-05-02): Initial synthesis from existing project procedures + session-derived improvements.
 
 > This document is project-agnostic. Copy it as-is into any new project's `docs/gameplans/GAMEPLAN-PROCEDURE.md`. All project-specific content goes in `CLAUDE.md` (project root) and `docs/` named files.
+
+---
+
+## Loop Gameplans (kind: loop)
+
+Most gameplans are **driven**: a finite phase DAG with a terminal post-mortem, advanced phase by phase. A **loop gameplan** (`kind: loop`) is the complement — a *standing* initiative whose "phases" are recurring **iterations** of a maintenance/curation cycle, with no terminal state:
+
+- **Trigger** — what wakes an iteration: a schedule, a threshold (e.g. lessons past a bound), or a gameplan close.
+- **Iteration body** — gather signal → SURFACE proposals → the agent confirms via blessed writes (never auto-mutation, INVARIANT-05). In Clauderizer this is `cz_loop_step` (a corpus-health metric + `cz_curate` proposals + a `converged` flag).
+- **Per-iteration exit** — the Loop-Engineering `/goal` triad: an explicit end state, a runnable check, and a guardrail (max-iterations / scope pin). An iteration ends when no actionable proposal remains (`converged`).
+- **Convergence metric** — a corpus-health measure trended across iterations (monotone-improving, not a one-shot "done").
+- **Escape hatch** — when an iteration detects structural work too big for a maintenance pass, it SUGGESTS spawning a *driven* gameplan (`spawn_gameplan`); it never auto-creates one.
+
+Driven and loop gameplans interlock: driven gameplans **feed** the loop (their lessons/outcomes are its telemetry); the loop **spawns** driven gameplans for the structural work it surfaces. A loop gameplan is **autonomous in cadence, supervised in mutation**.
 
 ---
 

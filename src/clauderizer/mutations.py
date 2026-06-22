@@ -61,12 +61,15 @@ def create_gameplan(
     name: str,
     *,
     first_phase: str = "Bootstrap",
+    kind: str = "driven",
     today: str | None = None,
 ) -> dict:
     today = _today(today)
     gid = f"{today}-{kebab(name)}"
     gdir = paths.gameplan_dir(gid)
-    sub = {"name": name, "date": today, "first_phase": first_phase}
+    # kind: "driven" (finite phase DAG, terminal post-mortem) or "loop" (a standing
+    # iterative maintenance gameplan — see GAMEPLAN-PROCEDURE.md "Loop Gameplans").
+    sub = {"name": name, "date": today, "first_phase": first_phase, "kind": kind}
     files = []
     for fname in ("GAMEPLAN.md", "CHAT-HANDOFF-INDEX.md", "PHASE-STATUS.md"):
         text = assets.render(f"gameplan/{fname}", **sub)

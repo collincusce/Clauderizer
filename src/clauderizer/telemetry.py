@@ -397,3 +397,56 @@ def curate_proposals(paths, gid: str = "") -> dict:
                      + ", ".join(f"{k} x{v}" for k, v in sorted(by_action.items())))
                     if proposals else "0 curation proposals"),
     }
+
+
+# Many review-flags in one iteration signal a structural problem a single
+# maintenance pass cannot fix; at/above this count a loop iteration SUGGESTS
+# escalating to a driven gameplan (never auto-creates one — INVARIANT-05).
+_SPAWN_FLAG_THRESHOLD = 3
+
+
+def loop_step(paths, gid: str = "") -> dict:
+    """One iteration of a loop gameplan (read-only).
+
+    Returns the convergence metric (corpus_health), the curator's proposals,
+    whether the loop has CONVERGED (no actionable consolidate/obsolete/promote
+    proposal remains — review flags don't block), and an escape-hatch
+    ``spawn_gameplan`` suggestion when it detects structural work too big for a
+    maintenance pass. The agent applies the actionable proposals via their blessed
+    cz_* writes, then calls loop_step again; the loop ends when ``converged`` is
+    True. Deterministic, no ML (D-018), advisory (INVARIANT-05) — never writes,
+    never auto-creates.
+    """
+    health = corpus_health(paths)
+    proposals = curate_proposals(paths, gid)["proposals"]
+    actionable = [p for p in proposals if p["action"] in ("consolidate", "obsolete", "promote")]
+    flags = [p for p in proposals if p["action"] == "flag"]
+    spawn = None
+    if len(flags) >= _SPAWN_FLAG_THRESHOLD:
+        spawn = {
+            "suggested_op": "cz_create_gameplan",
+            "reason": (f"{len(flags)} lessons flagged for review (a failure-prone area) - "
+                       "bigger than a maintenance pass; consider a driven gameplan to fix the root cause"),
+            "lessons": sorted(f["lessons"][0] for f in flags),
+        }
+    return {
+        "ok": True,
+        "converged": not actionable,
+        "metric": {
+            "redundant_pairs": health["redundant_pairs"],
+            "never_surfaced": health["never_surfaced"],
+            "active_project_lessons": health["active_project_lessons"],
+        },
+        "actionable_proposals": len(actionable),
+        "proposals": proposals,
+        "spawn_gameplan": spawn,
+        "prompt": ("One loop iteration (read-only). Apply the actionable proposals via their "
+                   "blessed cz_* ops, then call cz_loop_step again; the loop ends when converged "
+                   "is true. spawn_gameplan, when set, suggests escalating to a driven gameplan "
+                   "(the agent decides - INVARIANT-05)."),
+        "summary": (("loop iteration: CONVERGED" if not actionable
+                     else f"loop iteration: {len(actionable)} actionable proposal(s)")
+                    + f"; metric redundant={health['redundant_pairs']} "
+                      f"never_surfaced={health['never_surfaced']}"
+                    + (f"; spawn-gameplan suggested ({len(flags)} flags)" if spawn else "")),
+    }

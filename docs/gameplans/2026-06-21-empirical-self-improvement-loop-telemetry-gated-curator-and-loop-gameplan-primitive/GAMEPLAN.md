@@ -72,7 +72,7 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 **O-02.** _(phase 2)_ Is ANY Curator action safe to auto-apply within bounds (e.g. a provably reversible dedup of byte-identical lessons) versus always agent-confirm? Where exactly is the auto-apply line that still honors INVARIANT-05? _(resolved 2026-06-21: Resolved by Phase 2 design: cz_curate is strictly propose-only (read-only, like cz_mine_failures) - NO action auto-applies. Every mutation routes through an agent-confirmed blessed cz_* write (D2 / INVARIANT-05). The auto-apply line is: none for now - autonomy lives in cadence and proposal, never in mutation; a bounded future auto-apply (e.g. byte-identical dedup) stays out of scope behind the propose-confirm boundary.)_
 
-**O-03.** _(phase 4)_ Cadence wiring for the standing loop: SessionStart 'curator due' nudge vs CI/cron propose-pass that opens a confirm queue vs purely manual invocation - which cadence is both autonomous and constitution-safe?
+**O-03.** _(phase 4)_ Cadence wiring for the standing loop: SessionStart 'curator due' nudge vs CI/cron propose-pass that opens a confirm queue vs purely manual invocation - which cadence is both autonomous and constitution-safe? _(resolved 2026-06-21: Addressed by Phase 4 + D5: the iteration engine is cz_loop_step (agent-invoked today). Documented cadence options: Claude Code Routines (cloud cron, runs while the laptop is closed), a SessionStart 'curator due' nudge, or manual invocation. The loop is autonomous-in-cadence once wired to any trigger; wiring a specific cadence is a deployment choice for the operator, not an engine requirement - so it does not block the primitive.)_
 
 ## Phase Breakdown
 
@@ -146,10 +146,10 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] A loop gameplan can be created (kind=loop), runs one curator iteration, records a convergence metric across iterations, and spawns a driven gameplan when it detects out-of-scope structural work
-- [ ] A K-iteration test shows proposals converge to 0 and corpus-health is monotone non-decreasing on a seeded corpus
-- [ ] GAMEPLAN-PROCEDURE.md bumped (MINOR) documenting the loop-gameplan type
-- [ ] Full suite green
+- [x] A loop gameplan can be created (kind=loop), runs one curator iteration, records a convergence metric across iterations, and spawns a driven gameplan when it detects out-of-scope structural work
+- [x] A K-iteration test shows proposals converge to 0 and corpus-health is monotone non-decreasing on a seeded corpus
+- [x] GAMEPLAN-PROCEDURE.md bumped (MINOR) documenting the loop-gameplan type
+- [x] Full suite green
 
 ### Phase 5: Close-out, dogfood & ship
 

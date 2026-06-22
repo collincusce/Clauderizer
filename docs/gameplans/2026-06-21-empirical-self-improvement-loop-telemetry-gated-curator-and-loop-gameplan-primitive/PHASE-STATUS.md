@@ -11,7 +11,7 @@
 | 1 | Utility & failure-risk scoring (advisory) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | The Curator - propose-confirm maintenance pass | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Empirical-gated promotion & typed-edge risk surfacing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | The loop-gameplan primitive | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | The loop-gameplan primitive | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Close-out, dogfood & ship | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 ## Outputs Registry
@@ -45,6 +45,15 @@ ab_validation: A/B (tests/test_curator.py): seed a 4-lesson corpus (1 redundant 
 typed_edges: analyze.suggest_edges labels each suggestion with kind: redundant (shared/min distinctive-tokens >= 0.8, near-duplicate purpose) or related (plausible depends_on). alternative stays agent-assignable (D-018; amendment A-001). Carried through cz_analyze.
 risk_cascade: cascade.render_report adds a 'Preemptive risk' section when the cascaded entity's status is shaky (superseded/deprecated/blocked): it flags each direct + transitive dependent to verify - the cascade-walk analogue of SkillOps risk propagation. Deterministic, advisory (INVARIANT-05).
 promotion_gate: Curator promote requires empirical recurrence (>=2 resolved surfacings) AND correlation with passing (utility>=0.8) - Darwin-Godel-style validation. Tested: a single surfacing, or utility 0.5, is gated out; two passing surfacings -> promote.
+```
+
+### Phase 4 Outputs
+
+```
+loop_step_op: cz_loop_step (writes=False; tool surface 34->35): one loop iteration = corpus_health convergence metric + cz_curate proposals + converged flag (no actionable consolidate/obsolete/promote left) + spawn_gameplan escape hatch (>=3 review-flags -> suggest a driven gameplan). Read-only; the agent applies actionable proposals via blessed writes and re-calls until converged.
+kind_loop: cz_create_gameplan(kind='driven'|'loop'); kind rendered as '> Kind: <kind>' in GAMEPLAN.md. A loop gameplan is the standing iterative maintenance type; a driven gameplan is the finite phase DAG.
+convergence_proof: K-iteration test (tests/test_loop_gameplan.py): seed redundant + never-surfaced + healthy lessons; drive loop_step -> apply obsolete proposals -> repeat; proposals converge to 0 and the corpus-health metric is monotone-improving (redundant_pairs/never_surfaced non-increasing), ending redundant_pairs=0. Escape-hatch + read-only also tested.
+procedure_doc: GAMEPLAN-PROCEDURE.md bumped 1.2.1 -> 1.3.0 (MINOR) in BOTH the bundled template and the repo copy (L-21 sweep): new 'Loop Gameplans (kind: loop)' section - trigger / iteration body / per-iteration exit (the /goal triad) / convergence metric / spawn-driven escape hatch; driven and loop gameplans interlock.
 ```
 
 ## Corrections Log

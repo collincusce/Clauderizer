@@ -245,14 +245,20 @@ def cz_write_handoff(phase_n: str, gameplan_id: str = "") -> dict:
 # --- mutation ops ----------------------------------------------------------------
 
 
-def cz_create_gameplan(name: str, first_phase: str = "Bootstrap") -> dict:
-    """Scaffold a new gameplan directory and make it active."""
+def cz_create_gameplan(name: str, first_phase: str = "Bootstrap",
+                       kind: str = "driven") -> dict:
+    """Scaffold a new gameplan directory and make it active.
+
+    `kind`: "driven" (a finite phase DAG with a terminal post-mortem) or "loop" (a
+    standing iterative maintenance gameplan — see GAMEPLAN-PROCEDURE.md "Loop
+    Gameplans"; driven gameplans feed the loop, the loop spawns driven ones).
+    """
     paths, config = repo_ctx()
     # The scaffold write locks inside mutations.*; the active-gameplan config
     # flip must sit in the same critical section (reentrant), or two creators
     # could interleave scaffold and flip.
     with write_lock(paths.write_lock_file):
-        result = mutations.create_gameplan(paths, name, first_phase=first_phase)
+        result = mutations.create_gameplan(paths, name, first_phase=first_phase, kind=kind)
         config.active_gameplan = result["gameplan_id"]
         paths.config_file.write_text(config.to_toml(), encoding="utf-8")
     return result
@@ -671,6 +677,19 @@ def cz_curate() -> dict:
     return telemetry.curate_proposals(paths, config.active_gameplan)
 
 
+def cz_loop_step() -> dict:
+    """Run one iteration of a loop gameplan (read-only): the convergence metric
+    (corpus_health), the curator's proposals, a `converged` flag, and an
+    escape-hatch `spawn_gameplan` suggestion for structural work. The agent applies
+    the actionable proposals via blessed cz_* writes and calls this again until
+    converged (INVARIANT-05). No writes, no ML (D-018).
+    """
+    from . import telemetry
+
+    paths, config = repo_ctx()
+    return telemetry.loop_step(paths, config.active_gameplan)
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -718,6 +737,7 @@ REGISTRY: dict[str, Op] = {
     "cz_corpus_health": Op(cz_corpus_health, writes=False),
     "cz_lesson_health": Op(cz_lesson_health, writes=False),
     "cz_curate": Op(cz_curate, writes=False),
+    "cz_loop_step": Op(cz_loop_step, writes=False),
 }
 
 

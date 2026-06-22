@@ -2,6 +2,7 @@
 
 > Created: $date
 > Status: Planning
+> Kind: $kind
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
 ## Project Overview

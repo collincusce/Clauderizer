@@ -1,7 +1,7 @@
 # Chat Handoff Index — Empirical self-improvement loop - telemetry-gated curator and loop-gameplan primitive
 
 > Last updated: 2026-06-21
-> Status: Phase 4 ready
+> Status: Phase 5 ready
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Utility & failure-risk scoring (advisory) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | The Curator - propose-confirm maintenance pass | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Empirical-gated promotion & typed-edge risk surfacing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | The loop-gameplan primitive | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | The loop-gameplan primitive | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Close-out, dogfood & ship | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -55,6 +55,10 @@ Phase 2 shipped the Curator: cz_curate (read-only, tool surface 33->34) PROPOSES
 ### Phase 3 — completed 2026-06-21
 
 Phase 3 added empirical-gated promotion + typed-edge risk surfacing. (1) Promotion is gated Darwin-Godel-style: the curator proposes promote only on recurrence (>=2 resolved surfacings) AND correlation with passing (utility>=0.8); a single surfacing or a mixed record is gated out (tested). (2) cz_analyze's edge-suggester labels each suggestion with a kind - redundant (lexical near-duplicate) or related; alternative stays agent-assignable since semantic detection would need ML (D-018, recorded as amendment A-001). (3) cz_cascade flags dependents of a shaky upstream (superseded/deprecated/blocked) in a new Preemptive risk section - the risk-propagation analogue of SkillOps, deterministic + advisory (INVARIANT-05). All no-write, no-ML. Suite 565->569 passing green.
+
+### Phase 4 — completed 2026-06-21
+
+Phase 4 delivered the loop-gameplan primitive - the capstone. (1) cz_loop_step (read-only, tool 34->35) runs one iteration: the corpus_health convergence metric + cz_curate proposals + a converged flag (true when no actionable consolidate/obsolete/promote remains) + a spawn_gameplan escape hatch (>=3 review-flags suggests escalating to a driven gameplan - never auto-creates). The agent applies actionable proposals via blessed writes and re-calls until converged. (2) cz_create_gameplan gained kind=driven|loop, rendered as '> Kind:' in GAMEPLAN.md. (3) A K-iteration test proves convergence: proposals -> 0 and the health metric monotone-improves (redundant_pairs/never_surfaced non-increasing) to redundant_pairs=0. (4) GAMEPLAN-PROCEDURE.md bumped 1.2.1->1.3.0 (MINOR) in both the bundled template and the repo copy, documenting the loop-gameplan type. Addresses O-03 (cadence = Routines/SessionStart-nudge/manual, a deployment choice). All read-only, no ML (D-018), advisory (INVARIANT-05). Suite 569->573 passing green.
 
 ## Accumulated Lessons
 
