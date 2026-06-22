@@ -1,7 +1,7 @@
 # Chat Handoff Index — skill-awareness
 
 > Last updated: 2026-06-22
-> Status: Phase 0 ready
+> Status: Phase 1 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 0
+**Current baseline test count**: 573
 
 ## Ending Protocol
 
@@ -29,7 +29,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Skill model + SKILLS.md | ⬜ READY | — | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Skill model + SKILLS.md | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Skill discovery (propose-confirm) | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Relevance surfacing | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Curation parity + docs + integration sweep | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
@@ -39,7 +39,9 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 ## Per-Phase Completion Summaries
 
-_(None yet.)_
+### Phase 0 — completed 2026-06-22
+
+Built the skill model as a clean mirror of the lesson architecture (D1). New: markdown/skill_state.py (the single grammar for skill state + the entry fields name/description/source; states active|obsolete|superseded - the supersede-vs-promote divergence from lessons, since skills are already project-level); templates/docs/SKILLS.md (lazy-created from template like LESSONS.md); and the blessed writes mutations.register_skill (S-NN auto-id under a category, idempotent on name so repeat discovery proposals never duplicate) + mutations.obsolete_skill (append-only marker, idempotent). Exposed as cz_register_skill / cz_obsolete_skill via ops.REGISTRY + tools_list.TOOL_NAMES, inserted next to the lesson ops so parity holds. 13 new tests (grammar round-trip incl. mid-text-mention inertness; register/obsolete lifecycle; L-22 idempotency). Full suite 586 passed / 4 skipped / exit 0 - strictly additive, INVARIANT-07 honored. No tracked graph entities touched, so no cascade.
 
 ## Accumulated Lessons
 

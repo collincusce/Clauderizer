@@ -19,6 +19,7 @@ from .graph import cascade, index
 from .locking import write_lock
 from .markdown import lesson_state
 from .markdown import sections
+from .markdown import skill_state
 from .markdown import tables
 from .markdown import writer
 from .model import next_numbered_id
@@ -531,6 +532,70 @@ def consolidate_lessons(
         "files_changed": files,
         "summary": f"consolidated lessons {', '.join('#' + n for n in uniq)} into #{new_n}",
     }
+
+
+# --- skills (skill-awareness D1; mirror the lesson lifecycle) ------------------
+
+
+@_locked
+def register_skill(
+    paths: RepoPaths, *, name: str, description: str,
+    source: str | None = None, category: str = "General",
+) -> dict:
+    """Register an Agent Skill into the project-level ``docs/SKILLS.md``.
+
+    Mirrors promoted lessons: a line-entry (``**S-NN.** name -- description``)
+    under a category in a compact, append-only doc that handoffs surface by
+    relevance (Phase 2). ``source`` cites where the SKILL.md lives. Idempotent
+    on ``name`` (an already-active skill of the same name is a no-op), so
+    confirming the same cz_discover_skills proposal twice never duplicates.
+    """
+    sdoc = paths.doc("SKILLS")
+    _ensure_doc(sdoc, "SKILLS")
+    body = sections.get_section(writer.full_text(sdoc), "Skills") or ""
+    want = name.strip().lower()
+    for ln in body.splitlines():
+        e = skill_state.parse_entry(ln)
+        if e and e["state"] == skill_state.ACTIVE and e["name"].lower() == want:
+            return {"ok": True, "id": e["id"], "already_registered": True,
+                    "files_changed": [],
+                    "summary": f"skill {name.strip()!r} already registered ({e['id']})"}
+    new_id = next_numbered_id(writer.full_text(sdoc), "S", sep="-", width=2)
+    entry = skill_state.format_entry(new_id, name, description, source)
+    writer.upsert_section(sdoc, "Skills", _insert_under_category(body, category, entry))
+    return {"ok": True, "id": new_id, "path": str(sdoc),
+            "files_changed": [str(sdoc)],
+            "summary": f"registered skill {new_id} ({name.strip()})"}
+
+
+@_locked
+def obsolete_skill(
+    paths: RepoPaths, *, skill_id: str, reason: str | None = None,
+    today: str | None = None,
+) -> dict:
+    """Mark skill ``skill_id`` (``S-NN``) obsolete in ``docs/SKILLS.md`` -- never delete.
+
+    The blessed write for pruning a skill that is no longer available/relevant;
+    the handoff roll-up stops carrying marked skills. Idempotent: re-marking is
+    a recognized no-op.
+    """
+    sid = str(skill_id).strip().upper()
+    sdoc = paths.doc("SKILLS")
+    body = sections.get_section(writer.full_text(sdoc), "Skills")
+    if body is None:
+        return {"ok": False, "summary": "no Skills section found in SKILLS.md"}
+    prefix = f"**{sid}.**"
+    lines = body.splitlines()
+    idx = next((i for i, ln in enumerate(lines) if ln.strip().startswith(prefix)), None)
+    if idx is None:
+        return {"ok": False, "summary": f"skill {sid} not found"}
+    if skill_state.parse_state(lines[idx])[0] != skill_state.ACTIVE:
+        return {"ok": True, "id": sid, "already_obsolete": True,
+                "files_changed": [], "summary": f"skill {sid} already obsolete"}
+    lines[idx] = skill_state.mark(lines[idx], "obsolete", _today(today), (reason or "").strip())
+    writer.upsert_section(sdoc, "Skills", "\n".join(lines))
+    return {"ok": True, "id": sid, "already_obsolete": False,
+            "files_changed": [str(sdoc)], "summary": f"skill {sid} marked obsolete"}
 
 
 @_locked

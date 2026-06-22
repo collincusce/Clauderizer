@@ -430,6 +430,29 @@ def cz_promote_lesson(number: str, text: str = "", category: str = "",
                                     text=text or None, category=category or None)
 
 
+def cz_register_skill(name: str, description: str, source: str = "",
+                      category: str = "General") -> dict:
+    """Register an Agent Skill into docs/SKILLS.md so the project is skill-aware.
+
+    Skills are line-entries mirroring promoted lessons; every future handoff
+    surfaces the relevant ones (Phase 2). `source` cites where the SKILL.md
+    lives. Idempotent on `name`. Confirm a cz_discover_skills proposal with this.
+    """
+    paths, _ = repo_ctx()
+    return mutations.register_skill(paths, name=name, description=description,
+                                    source=source or None, category=category)
+
+
+def cz_obsolete_skill(skill_id: str, reason: str = "") -> dict:
+    """Mark a registered skill (S-NN) obsolete in docs/SKILLS.md — never delete.
+
+    The blessed write for pruning a skill no longer available/relevant; the
+    handoff roll-up stops carrying it. Idempotent.
+    """
+    paths, _ = repo_ctx()
+    return mutations.obsolete_skill(paths, skill_id=skill_id, reason=reason or None)
+
+
 def cz_add_correction(phase: str, gameplan_said: str, actually: str, why: str,
                       lesson: str = "", gameplan_id: str = "") -> dict:
     """Record a divergence from the gameplan (C-NN); optionally promote a lesson."""
@@ -720,6 +743,8 @@ REGISTRY: dict[str, Op] = {
     "cz_obsolete_lesson": Op(cz_obsolete_lesson, writes=True),
     "cz_consolidate_lessons": Op(cz_consolidate_lessons, writes=True),
     "cz_promote_lesson": Op(cz_promote_lesson, writes=True),
+    "cz_register_skill": Op(cz_register_skill, writes=True),
+    "cz_obsolete_skill": Op(cz_obsolete_skill, writes=True),
     "cz_add_correction": Op(cz_add_correction, writes=True),
     "cz_add_output": Op(cz_add_output, writes=True),
     "cz_add_phase_summary": Op(cz_add_phase_summary, writes=True),

@@ -1,7 +1,7 @@
 # skill-awareness Gameplan
 
 > Created: 2026-06-22
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -70,10 +70,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] docs/SKILLS.md template exists under src/clauderizer/templates/docs/ and renders as valid markdown
-- [ ] markdown/skill_state.py parses active/obsolete/superseded and round-trips (apply-twice == apply-once)
-- [ ] cz_register_skill and cz_obsolete_skill are in REGISTRY and tools_list.TOOL_NAMES (parity test green)
-- [ ] new tests for the skill model pass and the full suite stays green
+- [x] docs/SKILLS.md template exists under src/clauderizer/templates/docs/ and renders as valid markdown
+- [x] markdown/skill_state.py parses active/obsolete/superseded and round-trips (apply-twice == apply-once)
+- [x] cz_register_skill and cz_obsolete_skill are in REGISTRY and tools_list.TOOL_NAMES (parity test green)
+- [x] new tests for the skill model pass and the full suite stays green
 
 ### Phase 1: Skill discovery (propose-confirm)
 
