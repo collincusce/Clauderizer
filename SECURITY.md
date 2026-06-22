@@ -32,6 +32,6 @@ network at runtime.
 
 ## Supported versions
 
-Pre-1.0: only the latest released version is supported. The findings
+Only the latest released version is supported. The findings
 tracker (`docs/HARDENING.md`) is public and append-only; resolved findings
 carry dated evidence.

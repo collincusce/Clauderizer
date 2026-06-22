@@ -217,17 +217,18 @@ You steer; Claude keeps the memory, the graph, and the rituals honest between se
 
 ---
 
-## Maturity: beta, with receipts
+## Maturity: 1.0 — stable, with receipts
 
-The classifier says **Beta** and earned it — every gate behind the flip is public
-evidence, not vibes. The
-[beta gates](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md)
-B1–B5 are satisfied with dated artifacts (releases gated by `clauderize release-check`;
-the suite green on ubuntu/macos/windows × py3.11–3.13 with the Windows wrapper
-*executed*, not simulated; cold-start proven on both host shapes; the full loop proven
-on a non-python repo; the quickstart and the stranger docs walked live) — and the flip
-release itself is gate B6, shipped via the ritual. The quickstart below runs against the
-**published package on a clean CI machine on every push** — and the findings tracker
+The classifier says **Production/Stable**, and it earned it — every 1.0 readiness gate is
+public evidence, not vibes. The
+[1.0 gates](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md)
+G1–G7 are satisfied with dated artifacts: releases are gated by `clauderize release-check`
+(a fresh four-registry sweep + push-ordering, exit 0 *before* any tag); the suite runs green
+on ubuntu/macos/windows × py3.11–3.13 with the Windows wrapper *executed*, not simulated; the
+cold start is proven in a real fresh session (the SessionStart hook **and** the MCP transport
+firing cold, the live digest matching the tools); and the full loop is proven on a non-python
+repo. The quickstart below runs against the **published package on a clean CI machine on every
+push** — and the findings tracker
 ([HARDENING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/HARDENING.md))
 is append-only and all-resolved, each finding with dated evidence.
 
@@ -242,7 +243,7 @@ is append-only and all-resolved, each finding with dated evidence.
 - **[UPGRADING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/UPGRADING.md)**
   — upgrades are two moves; uninstalling keeps `docs/` (your memory, not the tool's).
 - **[RELEASING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md)**
-  — the mechanical release ritual, the 1.0 gates, the beta evidence table.
+  — the mechanical release ritual and the 1.0 readiness gates (G1–G7) with their evidence table.
 
 ## Install
 

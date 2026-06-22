@@ -2,6 +2,13 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.0.1] — 2026-06-22
+
+**Docs.** Corrects the README's maturity section, which still read "beta, with receipts" after
+the 1.0 flip — now "1.0, stable" against the G1–G7 gates; drops a stale "Pre-1.0" line in
+SECURITY.md. PyPI renders the long-description per version, so the README fix ships as a patch.
+No engine changes.
+
 ## [1.0.0] — 2026-06-22
 
 **1.0 — stable.** Promotes `1.0.0rc1` to the first stable release; no engine changes from the
