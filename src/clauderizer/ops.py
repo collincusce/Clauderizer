@@ -658,6 +658,19 @@ def cz_lesson_health() -> dict:
     return telemetry.lesson_health(paths)
 
 
+def cz_curate() -> dict:
+    """PROPOSE a corpus-maintenance batch from telemetry-derived health, read-only
+    like cz_mine_failures: consolidate redundant lessons, obsolete never-surfaced
+    or low-utility ones, flag high-failure-risk ones for review, and promote
+    high-utility gameplan lessons. Each proposal carries evidence + the blessed
+    cz_* op to apply it; the agent confirms (INVARIANT-05). No writes, no ML (D-018).
+    """
+    from . import telemetry
+
+    paths, config = repo_ctx()
+    return telemetry.curate_proposals(paths, config.active_gameplan)
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -704,6 +717,7 @@ REGISTRY: dict[str, Op] = {
     "cz_mine_failures": Op(cz_mine_failures, writes=False),
     "cz_corpus_health": Op(cz_corpus_health, writes=False),
     "cz_lesson_health": Op(cz_lesson_health, writes=False),
+    "cz_curate": Op(cz_curate, writes=False),
 }
 
 

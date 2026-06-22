@@ -63,7 +63,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 **O-01.** _(phase 0)_ Minimum telemetry to compute utility reliably: which fields (lesson id, phase id, surfaced?, passed?), what recency window, and is the signal dense enough on a real project to be meaningful rather than noisy?
 
-**O-02.** _(phase 2)_ Is ANY Curator action safe to auto-apply within bounds (e.g. a provably reversible dedup of byte-identical lessons) versus always agent-confirm? Where exactly is the auto-apply line that still honors INVARIANT-05?
+**O-02.** _(phase 2)_ Is ANY Curator action safe to auto-apply within bounds (e.g. a provably reversible dedup of byte-identical lessons) versus always agent-confirm? Where exactly is the auto-apply line that still honors INVARIANT-05? _(resolved 2026-06-21: Resolved by Phase 2 design: cz_curate is strictly propose-only (read-only, like cz_mine_failures) - NO action auto-applies. Every mutation routes through an agent-confirmed blessed cz_* write (D2 / INVARIANT-05). The auto-apply line is: none for now - autonomy lives in cadence and proposal, never in mutation; a bounded future auto-apply (e.g. byte-identical dedup) stays out of scope behind the propose-confirm boundary.)_
 
 **O-03.** _(phase 4)_ Cadence wiring for the standing loop: SessionStart 'curator due' nudge vs CI/cron propose-pass that opens a confirm queue vs purely manual invocation - which cadence is both autonomous and constitution-safe?
 
@@ -109,10 +109,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_curate proposes consolidate/obsolete/promote/flag actions with evidence, read-only (PROPOSE-only, exactly like cz_mine_failures)
-- [ ] A/B vs judgment-only baseline shows corpus-health improves by an agreed delta with NO recall@k regression on the handoff relevance eval
-- [ ] Every applied change routes through the existing blessed cz_* writes (audit trail intact; no new write authority)
-- [ ] Full suite green
+- [x] cz_curate proposes consolidate/obsolete/promote/flag actions with evidence, read-only (PROPOSE-only, exactly like cz_mine_failures)
+- [x] A/B vs judgment-only baseline shows corpus-health improves by an agreed delta with NO recall@k regression on the handoff relevance eval
+- [x] Every applied change routes through the existing blessed cz_* writes (audit trail intact; no new write authority)
+- [x] Full suite green
 
 ### Phase 3: Empirical-gated promotion & typed-edge risk surfacing
 

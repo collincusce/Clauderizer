@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Telemetry substrate & baseline | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Utility & failure-risk scoring (advisory) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | The Curator - propose-confirm maintenance pass | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | The Curator - propose-confirm maintenance pass | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Empirical-gated promotion & typed-edge risk surfacing | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The loop-gameplan primitive | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Close-out, dogfood & ship | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
@@ -30,6 +30,13 @@ new_read_op: cz_corpus_health (writes=False); MCP/CLI tool surface 31 -> 32; tes
 ```
 scoring_op: cz_lesson_health (writes=False; tool surface 32->33): per-lesson utility = passed/resolved surfacings, failure_risk = 1-utility, surfaced/resolved counts, last_surfaced (recency/time-decay input), and an advisory signal (never-surfaced | low-utility-review | promotion-candidate). Join key = (gameplan, phase) across surfaced + outcome telemetry events.
 validation: deterministic labeled-sample held-out-judgment eval (tests/test_lesson_health.py, 5 tests): a good lesson (surfaced -> always passed) scores utility 1.0 + 'promotion candidate'; a bad one (-> always failed) 0.0 + 'review'; an unused one 'never-surfaced'; window-recency confirmed (full 0.5 vs window=2 1.0). This is more reproducible than an LLM agent-eval, which the Phase 2 A/B adds.
+```
+
+### Phase 2 Outputs
+
+```
+curator_op: cz_curate (writes=False; tool surface 33->34): read-only, propose-only (like cz_mine_failures). From lesson_health + lexical redundancy it proposes 4 action kinds, each with evidence + the blessed cz_* op to apply it: consolidate (redundant project-lesson pair -> cz_obsolete_lesson the dup into the higher-utility kept one), obsolete (never-surfaced, or utility<=0.2 over >=2 resolved -> cz_obsolete_lesson), flag (0.2<utility<=0.5 -> review, no auto-op), promote (high-utility gameplan lesson -> cz_promote_lesson).
+ab_validation: A/B (tests/test_curator.py): seed a 4-lesson corpus (1 redundant pair + 1 never-surfaced + 1 healthy); corpus_health redundant_pairs=1 before. Apply the curator's consolidate+obsolete proposals via the blessed cz_obsolete_lesson; after: redundant_pairs=0 and fewer active lessons (health improved), and the KEPT lesson still ranks top-k for its topic via the handoff ranker (recall@k preserved, no regression). 6 curator tests; suite 559->565 passing green.
 ```
 
 ## Corrections Log

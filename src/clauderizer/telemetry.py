@@ -261,3 +261,139 @@ def lesson_health(paths, *, window: int = 0) -> dict:
                     f"{len(surfaced)} surfacing + {len(outcome)} outcome event(s); "
                     f"{with_signal} carry an advisory signal"),
     }
+
+
+def _active_gameplan_lessons(paths, gid: str) -> list[dict]:
+    """``{id, text}`` for each ACTIVE numbered lesson in the gameplan's
+    CHAT-HANDOFF-INDEX 'Accumulated Lessons' (gameplan lessons, not L-NN)."""
+    from .markdown import lesson_state, sections
+
+    if not gid:
+        return []
+    idx = paths.gameplan_dir(gid) / "CHAT-HANDOFF-INDEX.md"
+    if not idx.exists():
+        return []
+    sec = sections.get_section(idx.read_text(encoding="utf-8"), "Accumulated Lessons") or ""
+    num_re = re.compile(r"^\*\*(\d+)\.\*\*\s*(.*)$")
+    out = []
+    for line in sec.splitlines():
+        s = line.strip()
+        m = num_re.match(s)
+        if m and lesson_state.is_active(s):
+            out.append({"id": m.group(1), "text": m.group(2)})
+    return out
+
+
+def _gameplan_lesson_utility(paths, gid: str) -> dict:
+    """Per-gameplan-lesson utility from the surfaced events' gameplan_lessons
+    field (the promote-proposal analogue of lesson_health)."""
+    events = read_events(paths.telemetry_file)
+    outcome = {(e.get("gameplan"), e.get("phase")): e.get("status")
+               for e in events if e.get("kind") == "outcome"}
+    per: dict = {}
+    for e in events:
+        if e.get("kind") != "surfaced":
+            continue
+        key = (e.get("gameplan"), e.get("phase"))
+        for lid in e.get("gameplan_lessons") or []:
+            per.setdefault(lid, []).append(key)
+    out = {}
+    for lid, keys in per.items():
+        resolved = [k for k in keys if k in outcome]
+        passed = sum(1 for k in resolved if outcome[k] == "complete")
+        out[lid] = {"resolved": len(resolved),
+                    "utility": (round(passed / len(resolved), 4) if resolved else None)}
+    return out
+
+
+def curate_proposals(paths, gid: str = "") -> dict:
+    """PROPOSE corpus-maintenance actions from telemetry-derived health.
+
+    Read-only and advisory like cz_mine_failures (INVARIANT-05): the agent
+    confirms genuine ones via the named blessed cz_* write; nothing is mutated
+    here. Deterministic, no ML (D-018). Four action kinds:
+      * consolidate — a lexically redundant project-lesson pair (re-distill: keep
+        the higher-utility one, obsolete the other into it);
+      * obsolete    — a never-surfaced or consistently low-utility project lesson;
+      * flag        — a mediocre-utility lesson to review (no auto-op);
+      * promote     — a high-utility GAMEPLAN lesson worth an L-NN in LESSONS.md.
+    """
+    health = lesson_health(paths)
+    scores = {r["id"]: r for r in health["scores"]}
+    lessons = _active_project_lessons(paths)
+    proposals: list[dict] = []
+
+    # consolidate: lexically redundant project-lesson pairs.
+    toks = [(l["id"], _tokens(l["text"])) for l in lessons]
+    for i in range(len(toks)):
+        for j in range(i + 1, len(toks)):
+            jac = _jaccard(toks[i][1], toks[j][1])
+            if jac >= _REDUNDANCY_THRESHOLD:
+                a, b = toks[i][0], toks[j][0]
+                ua = scores.get(a, {}).get("utility") or 0.0
+                ub = scores.get(b, {}).get("utility") or 0.0
+                keep, drop = (a, b) if ua >= ub else (b, a)
+                proposals.append({
+                    "action": "consolidate",
+                    "lessons": [a, b],
+                    "evidence": f"token-set Jaccard {round(jac, 2)} (lexical near-duplicate)",
+                    "suggested_op": "cz_obsolete_lesson",
+                    "suggested_args": {"number": drop, "reason": f"consolidated into {keep}"},
+                    "note": f"capture a synthesis first if wording differs; keep {keep} (>= utility)",
+                })
+
+    # obsolete / flag: from per-lesson utility.
+    for r in health["scores"]:
+        u, n, sc = r["utility"], r["resolved_count"], r["surfaced_count"]
+        if sc == 0:
+            proposals.append({
+                "action": "obsolete", "lessons": [r["id"]],
+                "evidence": "never surfaced in any handoff to date",
+                "suggested_op": "cz_obsolete_lesson",
+                "suggested_args": {"number": r["id"],
+                                   "reason": "never surfaced; likely superseded or out of scope"},
+            })
+        elif n >= 2 and u is not None and u <= 0.2:
+            proposals.append({
+                "action": "obsolete", "lessons": [r["id"]],
+                "evidence": f"utility {u} over {n} resolved surfacing(s)",
+                "suggested_op": "cz_obsolete_lesson",
+                "suggested_args": {"number": r["id"],
+                                   "reason": "consistently low utility: rarely preceded a passing phase"},
+            })
+        elif n >= 2 and u is not None and u <= 0.5:
+            proposals.append({
+                "action": "flag", "lessons": [r["id"]],
+                "evidence": f"utility {u} over {n} resolved surfacing(s)",
+                "suggested_op": None,
+                "note": "review: surfaced but the phase often failed — the wording may mislead, "
+                        "or it marks a genuinely hard area",
+            })
+
+    # promote: high-utility gameplan lessons -> LESSONS.md.
+    gl_util = _gameplan_lesson_utility(paths, gid)
+    for gl in _active_gameplan_lessons(paths, gid):
+        u = gl_util.get(gl["id"], {})
+        if u.get("utility") is not None and u["utility"] >= 0.8 and u.get("resolved", 0) >= 2:
+            proposals.append({
+                "action": "promote", "lessons": [gl["id"]],
+                "evidence": f"gameplan-lesson utility {u['utility']} over {u['resolved']} resolved surfacing(s)",
+                "suggested_op": "cz_promote_lesson",
+                "suggested_args": {"number": gl["id"]},
+            })
+
+    by_action: dict = {}
+    for p in proposals:
+        by_action[p["action"]] = by_action.get(p["action"], 0) + 1
+    return {
+        "ok": True,
+        "proposal_count": len(proposals),
+        "by_action": by_action,
+        "proposals": proposals,
+        "prompt": ("Each item is a PROPOSAL, not a write. Confirm genuine ones via the "
+                   "named blessed cz_* op (the engine proposes; you decide — INVARIANT-05). "
+                   "consolidate/obsolete/promote keep the append-only audit trail; flag is review-only."),
+        "summary": ((f"{len(proposals)} curation proposal(s): "
+                     + ", ".join(f"{k} x{v}" for k, v in sorted(by_action.items())))
+                    if proposals else "0 curation proposals"),
+    }
