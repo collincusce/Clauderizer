@@ -69,7 +69,7 @@ def test_no_op_dispatch_signature_drift():
     import ast
     import inspect
 
-    from clauderizer import mutations
+    from clauderizer import mutations, telemetry
     from clauderizer.graph import cascade as cascade_mod
     from clauderizer.graph import index, query
     from clauderizer.rituals import handoff, preflight, status_bundle
@@ -77,7 +77,7 @@ def test_no_op_dispatch_signature_drift():
     modules = {
         "mutations": mutations, "cascade_mod": cascade_mod, "index": index,
         "query": query, "handoff": handoff, "preflight": preflight,
-        "status_bundle": status_bundle,
+        "status_bundle": status_bundle, "telemetry": telemetry,
     }
     tree = ast.parse(inspect.getsource(ops))
     violations = []

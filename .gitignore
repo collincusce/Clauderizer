@@ -17,6 +17,12 @@ env/
 # Clauderizer disposable cache (rebuilt from markdown)
 .clauderizer/index.json
 
+# Memory telemetry: append-only, machine-local operational history (surfacing +
+# phase outcomes) feeding the empirical self-improvement loop. Unlike index.json
+# it is NOT rebuildable, but it is per-environment churn — kept local for now;
+# whether to commit aggregates is a Phase 1 decision (empirical-self-improvement-loop).
+.clauderizer/telemetry.jsonl
+
 # Dogfood wiring: machine-specific (this repo dogfoods its OWN editable engine,
 # so .mcp.json / the hook registration carry a local venv path + wsl.exe shim —
 # never committable, D-031/O-06). Each clone regenerates them with `clauderize

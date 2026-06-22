@@ -36,4 +36,5 @@ TOOL_NAMES = [
     "cz_analyze",
     "cz_critique",
     "cz_mine_failures",
+    "cz_corpus_health",
 ]

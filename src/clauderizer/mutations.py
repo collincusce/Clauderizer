@@ -963,6 +963,19 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
             })
         if advisories:
             result["advisories"] = advisories
+    if norm in ("complete", "failed"):
+        # Telemetry (Phase 0): log the phase outcome + its exit-criteria
+        # checked/total so 'which surfaced lessons preceded a pass/fail' becomes
+        # computable. We already hold the H-05 write lock (@_locked); the append
+        # is append-only (INVARIANT-03) and never auto-acted-on (INVARIANT-05).
+        from . import telemetry
+        from .rituals.status_bundle import exit_criteria
+        crits = exit_criteria(paths.gameplan_dir(gameplan_id), str(phase_n))
+        telemetry.record_outcome(
+            paths.telemetry_file, gameplan=gameplan_id, phase=str(phase_n),
+            status=norm, criteria_total=len(crits),
+            criteria_checked=sum(1 for c in crits if c["checked"]), today=today)
+        result["telemetry"] = "outcome"
     return result
 
 

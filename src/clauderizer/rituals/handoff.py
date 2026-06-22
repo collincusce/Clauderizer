@@ -228,6 +228,36 @@ def relevant_invariant_pointer(paths: RepoPaths, query: str,
     return md, len(ranked), len(entries)
 
 
+def surfaced_ids(paths: RepoPaths, gid: str, phase_n: str) -> dict:
+    """Which project lessons / gameplan lessons / invariants the handoff for this
+    phase SURFACES as most relevant — the same deterministic keyword + entity-id
+    ranker the handoff renders (no ML, D-018), returned as bare ids so
+    cz_write_handoff can log them to telemetry. Read-only; a pointer into
+    canonical memory, never an authority over it (D-013).
+    """
+    index_text = _gameplan_text(paths, gid, "CHAT-HANDOFF-INDEX.md")
+    gameplan_text = _gameplan_text(paths, gid, "GAMEPLAN.md")
+    query = _phase_query(gameplan_text, phase_n)
+    if not query or not query.strip():
+        return {"lessons": [], "gameplan_lessons": [], "invariants": []}
+    gameplan_lessons = [r["id"] for r in analyze.rank_relevant(
+        query, _active_lesson_entries(index_text), k=RELEVANCE_K)]
+    project_lessons: list[str] = []
+    lessons_doc = paths.doc("LESSONS")
+    if lessons_doc.exists():
+        project_lessons = [r["id"] for r in analyze.rank_relevant(
+            query, _project_lesson_entries(lessons_doc.read_text(encoding="utf-8")),
+            k=RELEVANCE_K)]
+    invariants: list[str] = []
+    inv_doc = paths.doc("INVARIANTS")
+    if inv_doc.exists():
+        invariants = [r["id"] for r in analyze.rank_relevant(
+            query, analyze.parse_entries(inv_doc.read_text(encoding="utf-8"), "Invariants"),
+            k=RELEVANCE_K)]
+    return {"lessons": project_lessons, "gameplan_lessons": gameplan_lessons,
+            "invariants": invariants}
+
+
 # The engine owns only this marker-delimited region of a handoff file (D-008).
 # Everything outside it — agent enrichment — is preserved byte-for-byte when
 # the handoff is regenerated.

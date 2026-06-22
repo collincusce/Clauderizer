@@ -49,6 +49,12 @@ class RepoPaths:
         return self.clauderizer_dir / "write.lock"
 
     @property
+    def telemetry_file(self) -> Path:
+        """Append-only memory telemetry (surfacing + phase outcomes); see
+        ``telemetry.py``. Written only by blessed write-locked ops, never a hook."""
+        return self.clauderizer_dir / "telemetry.jsonl"
+
+    @property
     def procedure_file(self) -> Path:
         return self.gameplans / "GAMEPLAN-PROCEDURE.md"
 

@@ -226,7 +226,20 @@ def cz_write_handoff(phase_n: str, gameplan_id: str = "") -> dict:
     # Handoff regeneration writes the handoff file + lesson roll-up marks;
     # not mutations.*-routed, so serialize here (H-05).
     with write_lock(paths.write_lock_file):
-        return handoff.assemble(paths, config, gid, phase_n)
+        result = handoff.assemble(paths, config, gid, phase_n)
+        # Telemetry (Phase 0): log which lessons/invariants this handoff surfaced
+        # so the signal can later join to the phase outcome. Blessed, write-locked
+        # op — never a hook (INVARIANT-06); append-only (INVARIANT-03); read by
+        # cz_corpus_health, never auto-acted (INVARIANT-05).
+        if result.get("ok"):
+            from . import telemetry
+            s = handoff.surfaced_ids(paths, gid, phase_n)
+            telemetry.record_surfaced(
+                paths.telemetry_file, gameplan=gid, phase=phase_n,
+                lessons=s["lessons"], invariants=s["invariants"],
+                gameplan_lessons=s["gameplan_lessons"])
+            result["telemetry"] = "surfaced"
+        return result
 
 
 # --- mutation ops ----------------------------------------------------------------
@@ -615,6 +628,22 @@ def cz_mine_failures(transcripts_dir: str = "", max_proposals: int = 40) -> dict
     }
 
 
+def cz_corpus_health() -> dict:
+    """Surface a deterministic health snapshot of the lesson corpus + telemetry.
+
+    Read-only and advisory (INVARIANT-05): active project-lesson count, a lexical
+    near-duplicate redundancy estimate (no ML, D-018), how many active lessons
+    have never been surfaced in a handoff, and the surfacing/outcome counts from
+    the append-only telemetry log (.clauderizer/telemetry.jsonl). The empirical
+    baseline Phase 1's utility scoring and Phase 2's curator read; the agent
+    decides what to consolidate/promote/obsolete.
+    """
+    from . import telemetry
+
+    paths, _ = repo_ctx()
+    return telemetry.corpus_health(paths)
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -659,6 +688,7 @@ REGISTRY: dict[str, Op] = {
     "cz_analyze": Op(cz_analyze, writes=False),
     "cz_critique": Op(cz_critique, writes=False),
     "cz_mine_failures": Op(cz_mine_failures, writes=False),
+    "cz_corpus_health": Op(cz_corpus_health, writes=False),
 }
 
 
