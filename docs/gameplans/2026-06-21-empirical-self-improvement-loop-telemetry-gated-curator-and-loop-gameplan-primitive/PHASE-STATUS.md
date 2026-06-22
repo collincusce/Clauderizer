@@ -10,7 +10,7 @@
 | 0 | Telemetry substrate & baseline | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Utility & failure-risk scoring (advisory) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | The Curator - propose-confirm maintenance pass | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Empirical-gated promotion & typed-edge risk surfacing | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Empirical-gated promotion & typed-edge risk surfacing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The loop-gameplan primitive | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Close-out, dogfood & ship | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
@@ -37,6 +37,14 @@ validation: deterministic labeled-sample held-out-judgment eval (tests/test_less
 ```
 curator_op: cz_curate (writes=False; tool surface 33->34): read-only, propose-only (like cz_mine_failures). From lesson_health + lexical redundancy it proposes 4 action kinds, each with evidence + the blessed cz_* op to apply it: consolidate (redundant project-lesson pair -> cz_obsolete_lesson the dup into the higher-utility kept one), obsolete (never-surfaced, or utility<=0.2 over >=2 resolved -> cz_obsolete_lesson), flag (0.2<utility<=0.5 -> review, no auto-op), promote (high-utility gameplan lesson -> cz_promote_lesson).
 ab_validation: A/B (tests/test_curator.py): seed a 4-lesson corpus (1 redundant pair + 1 never-surfaced + 1 healthy); corpus_health redundant_pairs=1 before. Apply the curator's consolidate+obsolete proposals via the blessed cz_obsolete_lesson; after: redundant_pairs=0 and fewer active lessons (health improved), and the KEPT lesson still ranks top-k for its topic via the handoff ranker (recall@k preserved, no regression). 6 curator tests; suite 559->565 passing green.
+```
+
+### Phase 3 Outputs
+
+```
+typed_edges: analyze.suggest_edges labels each suggestion with kind: redundant (shared/min distinctive-tokens >= 0.8, near-duplicate purpose) or related (plausible depends_on). alternative stays agent-assignable (D-018; amendment A-001). Carried through cz_analyze.
+risk_cascade: cascade.render_report adds a 'Preemptive risk' section when the cascaded entity's status is shaky (superseded/deprecated/blocked): it flags each direct + transitive dependent to verify - the cascade-walk analogue of SkillOps risk propagation. Deterministic, advisory (INVARIANT-05).
+promotion_gate: Curator promote requires empirical recurrence (>=2 resolved surfacings) AND correlation with passing (utility>=0.8) - Darwin-Godel-style validation. Tested: a single surfacing, or utility 0.5, is gated out; two passing surfacings -> promote.
 ```
 
 ## Corrections Log

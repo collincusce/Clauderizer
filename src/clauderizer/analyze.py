@@ -301,8 +301,15 @@ def suggest_edges(paths: RepoPaths, min_shared: int = _EDGE_MIN_SHARED,
             if len(shared) < min_shared:
                 continue
             lo, hi = sorted((a.id, b.id))
+            # kind (Phase 3 typed edges): "redundant" when the shared vocabulary
+            # dominates the smaller entity's distinctive tokens (near-duplicate
+            # purpose -> consolidation candidate); else "related" (a plausible
+            # depends_on). "alternative" (same goal, different mechanism) is
+            # semantic and stays agent-assigned — not lexically auto-detected (D-018).
+            smaller = min(len(toks[a.id]), len(toks[b.id])) or 1
+            kind = "redundant" if len(shared) / smaller >= 0.8 else "related"
             out.append({"a": lo, "b": hi, "shared_terms": sorted(shared),
-                        "score": len(shared)})
+                        "score": len(shared), "kind": kind})
     out.sort(key=lambda s: (-s["score"], s["a"], s["b"]))
     return out[:k]
 

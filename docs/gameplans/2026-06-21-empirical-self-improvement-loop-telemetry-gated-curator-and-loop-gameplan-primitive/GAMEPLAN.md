@@ -19,7 +19,14 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 ## Amendments
 
-_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+### A-001 — EC2 typed-edge scope: redundant auto-detected, alternative agent-assignable (D-018)
+
+- **Date**: 2026-06-21
+- **Affected sections in GAMEPLAN.md**: Phase 3 exit criteria
+- **Affected phases**: 3
+- **Triggered by**: D-018 (deterministic, no-ML/no-embeddings constraint)
+- **What changed**: cz_analyze now labels each suggested edge with a kind: redundant (lexical near-duplicate, shared/min-tokens >= 0.8, auto-detected) or related (a plausible depends_on). 'alternative' (same goal, different mechanism) is NOT auto-detected - it remains an agent-assignable kind in the typed-edge vocabulary.
+- **Why**: D-018 forbids ML/embeddings; 'alternative' is a semantic relation that is not lexically decidable, so auto-emitting it would be a false signal. Honest scope: the engine auto-detects the two lexically-decidable kinds and leaves the semantic one to the agent's judgment (INVARIANT-05).
 
 ## Decisions
 
@@ -124,10 +131,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Promotion suggestions require empirical recurrence evidence (surfaced across >= N phases and correlated with passing) - the agent still decides
-- [ ] cz_analyze emits typed redundant/alternative edge suggestions (extending the existing edge_suggester); cz_cascade preemptively flags dependents of a shaky upstream entity
-- [ ] Deterministic (no ML, D-018) and advisory (no auto-write, INVARIANT-05) - verified by test
-- [ ] Full suite green
+- [x] Promotion suggestions require empirical recurrence evidence (surfaced across >= N phases and correlated with passing) - the agent still decides
+- [x] cz_analyze emits typed redundant/alternative edge suggestions (extending the existing edge_suggester); cz_cascade preemptively flags dependents of a shaky upstream entity
+- [x] Deterministic (no ML, D-018) and advisory (no auto-write, INVARIANT-05) - verified by test
+- [x] Full suite green
 
 ### Phase 4: The loop-gameplan primitive
 

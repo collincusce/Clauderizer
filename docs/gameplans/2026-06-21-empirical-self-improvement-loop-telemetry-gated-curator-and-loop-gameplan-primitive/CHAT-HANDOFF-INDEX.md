@@ -1,7 +1,7 @@
 # Chat Handoff Index — Empirical self-improvement loop - telemetry-gated curator and loop-gameplan primitive
 
 > Last updated: 2026-06-21
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Telemetry substrate & baseline | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Utility & failure-risk scoring (advisory) | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | The Curator - propose-confirm maintenance pass | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Empirical-gated promotion & typed-edge risk surfacing | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Empirical-gated promotion & typed-edge risk surfacing | ✅ COMPLETE | 2026-06-21 | 2026-06-21 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The loop-gameplan primitive | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Close-out, dogfood & ship | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
@@ -51,6 +51,10 @@ Phase 1 turned raw telemetry into per-lesson empirical health via the read-only 
 ### Phase 2 — completed 2026-06-21
 
 Phase 2 shipped the Curator: cz_curate (read-only, tool surface 33->34) PROPOSES a corpus-maintenance batch from telemetry-derived health, exactly like cz_mine_failures - it never writes. Four action kinds, each with evidence and the blessed cz_* op to apply it: consolidate (lexically redundant project-lesson pair -> obsolete the dup into the higher-utility kept lesson), obsolete (never-surfaced, or utility<=0.2 over >=2 resolved surfacings), flag (0.2<utility<=0.5, review-only), promote (high-utility gameplan lesson -> L-NN). This is SkillOps-style library-time maintenance realized the Clauderizer way: propose-confirm, the agent decides (INVARIANT-05). Validated by an A/B - applying the proposals via cz_obsolete_lesson drops redundant_pairs 1->0 and shrinks the active set while the kept lesson still surfaces for its topic (recall@k preserved). Resolves O-02 (nothing auto-applies). Deterministic, no ML (D-018). Suite 559->565 passing green.
+
+### Phase 3 — completed 2026-06-21
+
+Phase 3 added empirical-gated promotion + typed-edge risk surfacing. (1) Promotion is gated Darwin-Godel-style: the curator proposes promote only on recurrence (>=2 resolved surfacings) AND correlation with passing (utility>=0.8); a single surfacing or a mixed record is gated out (tested). (2) cz_analyze's edge-suggester labels each suggestion with a kind - redundant (lexical near-duplicate) or related; alternative stays agent-assignable since semantic detection would need ML (D-018, recorded as amendment A-001). (3) cz_cascade flags dependents of a shaky upstream (superseded/deprecated/blocked) in a new Preemptive risk section - the risk-propagation analogue of SkillOps, deterministic + advisory (INVARIANT-05). All no-write, no-ML. Suite 565->569 passing green.
 
 ## Accumulated Lessons
 

@@ -16,6 +16,11 @@ from pathlib import Path
 from . import query
 from .index import Graph
 
+# Statuses that make an entity a SHAKY foundation: its dependents may rest on
+# something that no longer holds, so cascade flags them preemptively (Phase 3 —
+# the cascade-walk analogue of SkillOps' risk propagation). Advisory (INVARIANT-05).
+_SHAKY_STATUSES = {"superseded", "deprecated", "blocked"}
+
 
 def render_report(
     graph: Graph,
@@ -67,6 +72,19 @@ def render_report(
         lines += ["", "### Semver pin violations", ""]
         for v in violations:
             lines.append(f"- **{v.dependent}** pins `{v.constraint}` — {v.reason}")
+
+    ent = graph.get(entity_id)
+    if ent is not None and ent.status in _SHAKY_STATUSES:
+        lines += ["", "### Preemptive risk", "",
+                  f"`{entity_id}` is **{ent.status}** — dependents may rest on a "
+                  "foundation that no longer holds; verify each before relying on it:"]
+        flagged = [(d, "direct") for d in direct] + [(d, "transitive") for d in transitive]
+        if flagged:
+            for d, rel in flagged:
+                lines.append(f"- **{d}** ({rel}) — verify it still holds now that "
+                             f"`{entity_id}` is {ent.status}")
+        else:
+            lines.append("- _(no dependents)_")
 
     lines += [
         "",
