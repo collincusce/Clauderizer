@@ -45,7 +45,9 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-_(none yet)_
+### Category: Design
+
+**1.** A tested-but-unproduced grammar branch is acceptable forward-compat, not dead code, when (a) a test exercises the parse path and (b) the producing tool is a NAMED future seam recorded in an amendment - skill_state ships the 'superseded' state with no cz_supersede_skill yet (A-001). The judgment is between premature surface and a clean future hook; documenting the seam resolves it.
 
 ## Project Lessons (most relevant to this phase)
 

@@ -1,7 +1,7 @@
 # skill-awareness Gameplan
 
 > Created: 2026-06-22
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -63,7 +63,7 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 **O-01.** _(phase 1)_ Discovery host-coverage: exactly which skill locations are scanned (.claude/skills, ~/.claude/skills, Clauderizer's shipped src skills, plugin skill dirs) and which hosts are covered vs named-residual. _(resolved 2026-06-22: Discovery scans 3 default roots (skill_discovery.default_roots): repo .claude/skills, ~/.claude/skills, and Clauderizer's shipped skills (assets.SKILLS), deduped by name (first root wins). Named residual: plugin skill dirs + non-Claude hosts (kimi/codex) not yet scanned, documented in default_roots docstring. Real smoke found 6 clauderizer-* skills from .claude/skills.)_
 
-**O-02.** _(phase 4)_ Is 0.17.0 fully published on PyPI (so 1.0.0rc1 is the clean next four-registry claim), or mid-flight? Resolve via a fresh four-registry sweep before the release phase.
+**O-02.** _(phase 4)_ Is 0.17.0 fully published on PyPI (so 1.0.0rc1 is the clean next four-registry claim), or mid-flight? Resolve via a fresh four-registry sweep before the release phase. _(resolved 2026-06-22: 0.17.0 was fully published; 1.0.0rc1 was the clean next four-registry claim (release-check: source/remote-tag/Release/PyPI all unclaimed). 1.0.0rc1 now live on PyPI.)_
 
 ## Phase Breakdown
 
@@ -136,8 +136,8 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] 1.0 gates G1-G7 each verified-holding or amended with a named residual
-- [ ] full suite green on every host leg the CI matrix covers (L-31/L-20) before any tag
-- [ ] fresh four-registry sweep confirms 1.0.0rc1 is unclaimed; clauderize release-check exits 0 BEFORE tagging
-- [ ] 1.0.0rc1 tagged on the pushed commit, GitHub Release cut, Publish-to-PyPI green, uvx --refresh resolves 1.0.0rc1
-- [ ] restart-validate: a real cold start shows the [Clauderizer] digest; POST-MORTEM written and gameplan closed
+- [x] 1.0 gates G1-G7 each verified-holding or amended with a named residual
+- [x] full suite green on every host leg the CI matrix covers (L-31/L-20) before any tag
+- [x] fresh four-registry sweep confirms 1.0.0rc1 is unclaimed; clauderize release-check exits 0 BEFORE tagging
+- [x] 1.0.0rc1 tagged on the pushed commit, GitHub Release cut, Publish-to-PyPI green, uvx --refresh resolves 1.0.0rc1
+- [x] restart-validate: a real cold start shows the [Clauderizer] digest; POST-MORTEM written and gameplan closed

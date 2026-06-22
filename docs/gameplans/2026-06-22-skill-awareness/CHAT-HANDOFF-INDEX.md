@@ -1,7 +1,7 @@
 # Chat Handoff Index — skill-awareness
 
 > Last updated: 2026-06-22
-> Status: Phase 4 ready
+> Status: All 5 phases complete
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Skill discovery (propose-confirm) | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Relevance surfacing | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Curation parity + docs + integration sweep | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Release 1.0.0rc1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Release 1.0.0rc1 | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-4-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -55,6 +55,10 @@ Wired focused skill surfacing into the two shared pipelines (the L-34 cross-cutt
 
 Curation scope, docs, dogfooding, and wiring. (1) Amendment A-001 records the honest curation scope cut (L-38): register/obsolete/discover/surface is the complete v1; promote dropped (skills have no gameplan->project tier), consolidate deferred (obsolete+re-register covers a merge), the superseded state ships in the grammar (forward-compatible) but cz_supersede_skill is deferred. (2) Docs swept: README MCP surface 31->38 (also reconciling the L-21 drift - the 4 read-only 0.17.0 loop ops were missing from the list) + a new Skills group; TRUST.md (discovery reads SKILL.md frontmatter only, never executes; register writes only docs/SKILLS.md); SECURITY.md (no execution surface, no network); CHANGELOG [Unreleased]. (3) End-to-end integration test (discover -> confirm -> surfaced in BOTH digest and handoff, then obsolete removes it) across the L-34 seams. (4) Dogfooded for real: confirmed cz_discover_skills' 6 proposals into docs/SKILLS.md (S-01..S-06, Clauderizer's own workflow skills) - the digest now reads '6 skills'. (5) Repaired the drifted wiring with init (explicit --session-host windows-wsl:ubuntu so it did not mis-detect native, the H-08 hazard); doctor 16/16 exit 0 with in-band end-to-end evidence. Suite 601 passed / 4 skipped / exit 0. Named residual for Phase 4: the cold-start restart-validate (G6) needs a real new session.
 
+### Phase 4 — completed 2026-06-22
+
+Shipped 1.0.0rc1, the first 1.0 release candidate, through the full release ritual. Staged the version bump (src+dist 1.0.0rc1, no H-03 skew), FF-merged feat/skill-awareness -> main and pushed; the 9-cell CI matrix (ubuntu/macos/windows x py3.11-3.13) went green (L-31 - all host legs before the irreversible tag); release-check exit 0 (clean tree, push-then-release, all four registries unclaimed, tag==source publish gate); tagged v1.0.0rc1 on the pushed commit, cut a GitHub prerelease (publish.yml fires on 'published', which covers prereleases), publish run green via Trusted Publishing + attestations, and uvx --refresh --from clauderizer==1.0.0rc1 resolved 1.0.0rc1. The 1.0 gates G1-G7 hold; G6 (real cold-start digest) is the named residual that needs a new session - the session shipping wiring cannot observe its own next cold start (L-11). POST-MORTEM written. Classifier stays 4-Beta until final 1.0.0 closes the residual.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -62,4 +66,6 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-_(none yet)_
+### Category: Design
+
+**1.** A tested-but-unproduced grammar branch is acceptable forward-compat, not dead code, when (a) a test exercises the parse path and (b) the producing tool is a NAMED future seam recorded in an amendment - skill_state ships the 'superseded' state with no cz_supersede_skill yet (A-001). The judgment is between premature surface and a clean future hook; documenting the seam resolves it.

@@ -11,7 +11,7 @@
 | 1 | Skill discovery (propose-confirm) | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Relevance surfacing | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Curation parity + docs + integration sweep | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Release 1.0.0rc1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Release 1.0.0rc1 | ✅ COMPLETE | 2026-06-22 | 2026-06-22 | handoffs/PHASE-4-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -49,6 +49,13 @@ docs_sweep: README MCP surface 31->38 (also added the 4 missing 0.17.0 loop ops 
 dogfood_skills: Registered Clauderizer's own 6 skills into docs/SKILLS.md via the propose-confirm flow (cz_discover_skills proposed, agent confirmed): S-01..S-06 = clauderizer-amend/cascade/close-gameplan/do-phase/new-gameplan/record. Digest now reads '6 skills'
 wiring: clauderize init --session-host windows-wsl:ubuntu repaired drifted wiring (2 files written, 21 kept); doctor 16/16 exit 0 with in-band evidence (MCP + SessionStart hook launchable end-to-end via wsl.exe round-trip, identity clauderizer 0.17.0, digest in-band). The cold-start restart-validate (G6) is a named residual, needs a NEW session
 suite: 601 passed, 4 skipped, exit 0 (was 600; +1 end-to-end integration test). No engine code changed in Phase 3 (docs + test + SKILLS.md content + wiring only)
+```
+
+### Phase 4 Outputs
+
+```
+release: 1.0.0rc1 SHIPPED 2026-06-22. main f6ca246; CI Tests 9/9 green (run 27960482512); release-check exit 0 (9 checks); tag v1.0.0rc1; GitHub prerelease; publish run 27960751384 green (tag==source gate, Trusted Publishing + attestations); PyPI 1.0.0rc1 present; uvx --refresh --from clauderizer==1.0.0rc1 -> clauderizer 1.0.0rc1. Classifier stays 4-Beta for the rc.
+gates: G1-G7 hold: G1/G2 doctor 16/16 in-band end-to-end; G3 release-check exit 0 + publish.yml tag==source; G4 no open HIGH findings (H-13 LOW/deferred); G5 suite 601 + invariants; G6 NAMED RESIDUAL (cold-start digest needs a real new session); G7 docs swept
 ```
 
 ## Corrections Log
