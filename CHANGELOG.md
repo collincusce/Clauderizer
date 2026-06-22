@@ -2,7 +2,12 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [Unreleased]
+## [1.0.0rc1] — 2026-06-22
+
+**First 1.0 release candidate.** Exercises the G1–G7 readiness gates
+(`docs/RELEASING.md`) in the wild before the final 1.0.0; the classifier stays
+`Development Status :: 4 - Beta` until 1.0.0 closes the G6 cold-start residual.
+Suite 573 → 601.
 
 **Project skill-awareness.** A project now tracks the Agent Skills available in its
 environment as first-class, surfaced memory, mirroring the lesson lifecycle. Read-only
