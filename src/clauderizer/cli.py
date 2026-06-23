@@ -413,6 +413,29 @@ def cmd_ops(args: argparse.Namespace) -> int:
     """
     from . import ops
 
+    if getattr(args, "list_ops", False):
+        for entry in ops.list_ops():
+            tag = "write" if entry["writes"] else "read "
+            needs = ("  needs: " + ", ".join(entry["required"])) if entry["required"] else ""
+            print(f"[{tag}] {entry['op']}{needs}")
+            if entry["summary"]:
+                print(f"        {entry['summary']}")
+        print('\nRun `clauderize ops --schema <op>` for one op\'s full args, then pass '
+              '`[{"op": "<op>", "args": {...}}]` to `clauderize ops <file|->`.')
+        return 0
+    if getattr(args, "schema", None):
+        sch = ops.op_schema(args.schema)
+        if sch is None:
+            print(json.dumps({"ok": False,
+                              "error": f"unknown op {args.schema!r} — run 'clauderize ops --list'"}))
+            return 1
+        print(json.dumps(sch, indent=2))
+        return 0
+    if not args.file:
+        print(json.dumps({"ok": False,
+                          "error": "nothing to do — pass a JSON file or '-', or use --list / --schema <op>"}))
+        return 2
+
     if args.file == "-":
         # PS 5.1 pipes can prepend a BOM to otherwise-valid JSON; tolerate it.
         raw = sys.stdin.read().lstrip(chr(0xFEFF))
@@ -620,7 +643,11 @@ def build_parser() -> argparse.ArgumentParser:
     pm.set_defaults(func=cmd_mcp)
 
     po = sub.add_parser("ops", help="execute a JSON batch of cz_* operations (no-MCP fallback)")
-    po.add_argument("file", help="JSON file of [{op, args}, ...], or '-' for stdin")
+    po.add_argument("file", nargs="?", help="JSON file of [{op, args}, ...], or '-' for stdin")
+    po.add_argument("--list", action="store_true", dest="list_ops",
+                    help="list every op (name, read/write, summary, required args), then exit")
+    po.add_argument("--schema", metavar="OP", default=None,
+                    help="print one op's required + optional args as JSON, then exit")
     po.set_defaults(func=cmd_ops)
 
     pu = sub.add_parser("uninstall",

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clauderizer"
-version = "1.0.3"
+version = "1.0.4"
 description = "Drop-in, MCP-native working memory for AI agents: gameplans, phases, a dependency graph, and post-hoc cascade — over plain markdown."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -33,6 +33,9 @@ dev = ["pytest>=7"]
 
 [project.scripts]
 clauderize = "clauderizer.cli:main"
+# Alias so the intuitive `uvx clauderizer <cmd>` also works; `clauderize` stays
+# the canonical command (F1 — the package and the command then share a name).
+clauderizer = "clauderizer.cli:main"
 clauderizer-mcp = "clauderizer.mcp_server:main"
 clauderizer-hook = "clauderizer.hook.dispatch:main"
 

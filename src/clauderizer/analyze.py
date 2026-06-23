@@ -85,10 +85,10 @@ def parse_entries(doc_text: str, section: str) -> list[dict]:
     return entries
 
 
-# Statuses that demote a decision below an active peer of equal lexical overlap
-# (Phase 4 supersession lifecycle): a superseded/deprecated decision is stale, so
-# it must not be handed to the agent as current when its replacement ties it.
-_STALE_STATUSES = {"superseded", "deprecated"}
+# Statuses that demote an entry below an active peer of equal lexical overlap:
+# a superseded/deprecated decision, or a retired/obsolete entity (F10), is stale —
+# so it must not be handed to the agent as current when an active peer ties it.
+_STALE_STATUSES = {"superseded", "deprecated", "retired", "obsolete"}
 
 
 def rank_relevant(query: str, entries: list[dict], k: int = 5,

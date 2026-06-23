@@ -104,6 +104,14 @@ def build_server():
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("clauderizer")
+    # Report clauderizer's own version in the MCP serverInfo. FastMCP exposes no
+    # public version parameter, so set it on the lowlevel server it wraps; guarded
+    # so a future SDK change can never break startup (worst case it reports the
+    # SDK's own version, as it did before — F7).
+    try:
+        mcp._mcp_server.version = __version__
+    except Exception:
+        pass
 
     # --- resources (read-only) ------------------------------------------------
 

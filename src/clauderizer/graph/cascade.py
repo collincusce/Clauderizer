@@ -19,7 +19,7 @@ from .index import Graph
 # Statuses that make an entity a SHAKY foundation: its dependents may rest on
 # something that no longer holds, so cascade flags them preemptively (Phase 3 —
 # the cascade-walk analogue of SkillOps' risk propagation). Advisory (INVARIANT-05).
-_SHAKY_STATUSES = {"superseded", "deprecated", "blocked"}
+_SHAKY_STATUSES = {"superseded", "deprecated", "blocked", "retired", "obsolete"}
 
 
 def render_report(

@@ -16,6 +16,7 @@ callers inherit it identically. Read ops never lock (L-03).
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -174,8 +175,37 @@ def cz_preflight() -> dict:
     return preflight.run(paths, config, profile).to_dict()
 
 
+def _pending_report_for(reports_dir, entity_id: str):
+    """The pending cascade report already covering this entity, or None.
+
+    Matches on the entity (the report header's `# Cascade Report: <entity> …`),
+    NOT the transition label — a status transition cascades with a "status a ->
+    b" label while a hand-typed cz_cascade uses "a -> b", yet both walk the same
+    dependents. The trailing space anchors the entity boundary so a prefix like
+    `subsys.web` does not match `subsys.web-ui`. This is the F6 duplicate guard.
+    """
+    from .rituals.status_bundle import pending_cascades
+
+    prefix = f"# Cascade Report: {entity_id} "
+    for name in pending_cascades(reports_dir):
+        try:
+            first = (reports_dir / name).read_text(encoding="utf-8").split("\n", 1)[0]
+        except OSError:
+            continue
+        if first.startswith(prefix):
+            return reports_dir / name
+    return None
+
+
 def cz_cascade(entity_id: str, transition: str, dry_run: bool = False) -> dict:
-    """Walk the DAG forward from a changed entity and write a cascade report."""
+    """Walk the DAG forward from a changed entity and write a cascade report.
+
+    A status change already cascades automatically (cz_transition_status), so
+    call this only for a SEPARATE manual edit. If a pending report already
+    covers this entity, it is reused — not duplicated (F6); resolve that report
+    with cz_resolve_cascade rather than running another cascade for the same
+    change.
+    """
     paths, config = repo_ctx()
     if not config.active_gameplan:
         return {"ok": False, "error": "no active gameplan for the report dir"}
@@ -183,11 +213,23 @@ def cz_cascade(entity_id: str, transition: str, dry_run: bool = False) -> dict:
     reports_dir = paths.gameplan_dir(config.active_gameplan) / "_cascade-reports"
     if dry_run:
         res = cascade_mod.run(g, entity_id, transition, reports_dir, dry_run=True)
-    else:
-        # Report writes serialize with every other tracked write (H-05);
-        # this path doesn't route through mutations.*, so lock here.
-        with write_lock(paths.write_lock_file):
-            res = cascade_mod.run(g, entity_id, transition, reports_dir, dry_run=False)
+        res.pop("report_md", None)
+        return res
+    # F6: don't write a second "needs review" report when one for this entity is
+    # already open — the transition that prompted this almost certainly cascaded.
+    existing = _pending_report_for(reports_dir, entity_id)
+    if existing is not None:
+        return {
+            "ok": True, "entity_id": entity_id, "transition": transition,
+            "report_path": str(existing), "reused": True,
+            "summary": (f"reused the pending cascade report already covering {entity_id} "
+                        f"({existing.name}) — a status transition already cascades, so resolve "
+                        f"that report with cz_resolve_cascade instead of duplicating it"),
+        }
+    # Report writes serialize with every other tracked write (H-05); this path
+    # doesn't route through mutations.*, so lock here.
+    with write_lock(paths.write_lock_file):
+        res = cascade_mod.run(g, entity_id, transition, reports_dir, dry_run=False)
     # The full report is written to disk; don't dump the whole markdown blob
     # back through the tool result (keeps the return shallow + JSON-clean).
     res.pop("report_md", None)
@@ -199,13 +241,16 @@ def cz_resolve_cascade(verdicts: dict[str, str] | None = None,
                        report: str = "", gameplan_id: str = "") -> dict:
     """Record the verdicts for a cascade report's "needs review" dependents.
 
-    After cz_cascade flags dependents, decide each one and record it here —
-    verdicts maps entity id -> what was done ("no change needed", "updated
-    pin to ^2.0.0", …); updates_applied summarizes the concrete edits.
-    report defaults to the most recent pending report. The report stays
-    "pending" (blocking the cascade_hygiene preflight check) until every
-    placeholder is resolved. This is the blessed write — never hand-edit
-    cascade reports.
+    After cz_cascade flags dependents, decide each one and record it here. To
+    CLOSE a report you must do BOTH: (1) give a verdict for every flagged
+    dependent — `verdicts` maps entity id -> what was done ("no change needed",
+    "updated pin to ^2.0.0", …); AND (2) fill the edit summary — pass
+    `updates_applied` (a one-line summary of the concrete edits, or "none" if
+    nothing changed) or `updates_deferred`. Recording verdicts alone leaves the
+    report pending (which blocks the cascade_hygiene preflight check); the
+    result's `summary` then says exactly what is still missing. `report`
+    defaults to the most recent pending report. This is the blessed write —
+    never hand-edit cascade reports.
     """
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
@@ -507,7 +552,13 @@ def cz_upsert_entity(id: str, type: str, version: str = "", status: str = "",
 
 
 def cz_transition_status(id: str, to_status: str, run_cascade: bool = True) -> dict:
-    """Transition an entity's status; fires cascade automatically when enabled."""
+    """Transition an entity's status; fires cascade automatically when enabled.
+
+    This is also how you RETIRE an entity: transition it to `retired` (or
+    `obsolete`) instead of deleting its file. The entity stays in the graph for
+    history but is demoted in relevance surfacing — the sanctioned, append-only
+    alternative to hand-removing a tracked doc (INVARIANT-03).
+    """
     paths, config = repo_ctx()
     result = mutations.transition_status(paths, config, id=id, to_status=to_status,
                                          run_cascade=run_cascade)
@@ -783,6 +834,58 @@ REGISTRY: dict[str, Op] = {
 }
 
 
+# --- introspection: the no-MCP discoverability surface (F4) ----------------------
+# The op functions' signatures + docstrings ARE the contract (the same REGISTRY the
+# MCP server registers), so `clauderize ops --list/--schema` reads them directly —
+# there is no second schema to drift.
+
+
+def _op_summary(fn: Callable[..., dict]) -> str:
+    """The first sentence of an op's docstring — its one-line summary."""
+    doc = inspect.getdoc(fn) or ""
+    para = doc.split("\n\n", 1)[0].replace("\n", " ").strip()
+    head = para.split(". ", 1)[0].rstrip(".")
+    return head[:140]
+
+
+def op_schema(name: str) -> dict | None:
+    """One op's arg schema, introspected from its signature — or None if unknown.
+
+    ``required`` = positional-or-keyword params with no default; ``optional`` = the
+    rest, each with its default; ``*args``/``**kwargs`` are skipped. Defaults are
+    coerced to JSON-serializable values so the schema round-trips through ``ops``.
+    """
+    spec = REGISTRY.get(name)
+    if spec is None:
+        return None
+    required: list[str] = []
+    optional: list[dict] = []
+    for pname, p in inspect.signature(spec.fn).parameters.items():
+        if p.kind in (p.VAR_POSITIONAL, p.VAR_KEYWORD):
+            continue
+        if p.default is inspect.Parameter.empty:
+            required.append(pname)
+        else:
+            d = p.default
+            if not isinstance(d, (str, int, float, bool, type(None))):
+                d = repr(d)  # keep the schema JSON-serializable
+            optional.append({"name": pname, "default": d})
+    return {"op": name, "writes": spec.writes, "summary": _op_summary(spec.fn),
+            "required": required, "optional": optional}
+
+
+def list_ops() -> list[dict]:
+    """Every op as ``{op, writes, summary, required}`` — the source for
+    ``clauderize ops --list`` and any other op-discovery (F4)."""
+    out: list[dict] = []
+    for name in REGISTRY:
+        sch = op_schema(name)
+        assert sch is not None  # name comes straight from REGISTRY
+        out.append({"op": name, "writes": sch["writes"],
+                    "summary": sch["summary"], "required": sch["required"]})
+    return out
+
+
 # --- the batch executor ------------------------------------------------------------
 
 
@@ -805,8 +908,9 @@ def run_batch(batch: list[Any]) -> tuple[list[dict], bool]:
         if not isinstance(item, dict) or not name:
             entry.update(ok=False, error='each item must be {"op": "<cz_*>", "args": {...}}')
         elif spec is None:
-            entry.update(ok=False, error=f"unknown op {name!r} — op names are exactly "
-                                         f"the cz_* tool names (see tools_list)")
+            entry.update(ok=False, error=f"unknown op {name!r} — run "
+                                         f"'clauderize ops --list' for all op names, or "
+                                         f"'clauderize ops --schema <op>' for one op's args")
         elif not isinstance(args, dict):
             entry.update(ok=False, error="args must be a JSON object")
         else:

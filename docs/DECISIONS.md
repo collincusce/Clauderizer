@@ -243,3 +243,39 @@ _(Add entries with `cz_add_decision`.)_
 **Consequences**: Two rendered copies exist but cannot drift (regenerated together from one source). No Windows symlink fragility, no import-resolution dependency. The host-neutral Tier-4 floor lives in the one template and reaches every host.
 **Evidence**: docs/CROSS-HOST.md; INVARIANT-07; L-16; Windows/WSL dogfood host
 **Status**: active (2026-06-21)
+
+### D-036 — Documentation is a dual-audience (agent + human), drift-free, in-phase deliverable
+
+**Context**: The stranger dogfood evidenced concrete doc gaps — F4 (ops surface undocumented), F9/F11 (undocumented args), F13 (thin empty-project digest) — and L-21 records that reference docs drift together. The project had trended agent-first (the CLAUDE.md stanza, the cz_* tool descriptions). User feedback (2026-06-23, from their own testing): docs are not diligent enough and must be human-usable too.
+**Decision**: Docs serve BOTH the agent and a human reader (someone evaluating/adopting Clauderizer). Diligence = (1) every user-visible change ships its doc update IN the same phase that makes it; (2) reference docs are swept as a SET on any tool/ops/taxonomy change (L-21); (3) a human-usable layer is maintained — quickstart, a command + `ops` reference, troubleshooting — and verified by a fresh-human-reader pass with no source access. This binds every phase of the dogfood-followups gameplan and amends (does not contradict) the agent-primary working stance.
+**Consequences**: More doc work per change, but a human can adopt without reading source and the drift class of findings shrinks. Strictly additive to INVARIANT-07 (the Claude Code / agent experience never regresses).
+**Evidence**: docs/gameplans/2026-06-23-stranger-readiness-dogfood/_harness/friction-log.md (F4/F9/F11/F13); L-21
+**Superseded by**: D-037 (2026-06-23)
+**Status**: superseded (2026-06-23)
+
+### D-037 — Docs are written for humans in plain prose; there are no agent-only or agent-styled docs
+
+**Context**: User correction (2026-06-23): D-036's "dual-audience (agent + human)" framing misread the feedback. The user was not asking for a separate agent doc tier — they observed that the documentation the agent produces reads like an agent wrote it (shorthand, F-/H-/D- codes, internal jargon) instead of clear human prose.
+**Decision**: All documentation is written for a HUMAN reader in plain, readable prose — quickstart, command/ops reference, troubleshooting. There are no agent-only or agent-styled docs. Agents take their machine contract from the MCP tool schemas and cz_* descriptions (the MCP-native design), so the prose docs are simply human docs. Diligence stands: no drift (reference docs swept as a set, L-21) and every user-visible change documented in the phase that ships it.
+**Consequences**: P7 is a human-readability sweep, not a "second audience" pass. The author must watch their own style — no F-/H-/D- shorthand or internal jargon in user-facing docs. Strictly additive to the MCP-native agent surface (no regression, INVARIANT-07).
+**Supersedes**: D-036
+**Evidence**: supersedes D-036; user correction 2026-06-23
+**Superseded by**: D-038 (2026-06-23)
+**Status**: superseded (2026-06-23)
+
+### D-038 — Docs: human-first prose with slick machine affordances; the agent's source of truth, refreshed at every close-out and handoff
+
+**Context**: Refines D-037 after further user guidance (2026-06-23). Two clarifications: (1) machine-parseable affordances are welcome, not banned — the objection was agent JARGON in the human-visible prose, not structure that helps the agent parse; (2) docs drive the agent as the canonical source of truth (INVARIANT-01), so keeping them current is load-bearing, with gameplan close-outs and handoffs as the key refresh moments.
+**Decision**: Documentation is written human-first: plain readable prose for a person, no agent jargon or codes in the visible text. Machine-parseable affordances — HTML comments, frontmatter, stable headings/anchors (the patterns the engine already uses, e.g. the handoff marker block) — are welcome but kept SLICK and unobtrusive, never cluttering the human reading experience. Because docs are the agent's canonical source of truth (INVARIANT-01), they must be kept current and refreshed at every gameplan close-out and handoff; drift is a defect.
+**Consequences**: Humans read clean prose while the agent still gets reliable structure to parse. Close-out and handoff gain an explicit doc-freshness step. Consolidates the docs philosophy into one active decision (supersedes D-037, which superseded the dual-audience D-036).
+**Supersedes**: D-037
+**Evidence**: supersedes D-037; user guidance 2026-06-23
+**Status**: active (2026-06-23)
+
+### D-039 — Two documentation layers — agent working-memory vs human product docs; never conflate them
+
+**Context**: User confirmed (2026-06-23) the distinction behind the docs guidance and worries past gameplans conflated "dogfooding" (using Clauderizer to manage work) with "updating the engine" (changing Clauderizer's code + its human-facing product docs). Complements D-038 (which governs HOW the human docs are written).
+**Decision**: Two layers, two consumers. (1) WORKING-MEMORY layer — gameplans, phase handoffs, the cz_* memory (decisions/invariants/lessons/hardening/friction). The AGENT is the consumer; structured density + machine affordances (D-NNN / F-NN codes, marker blocks, frontmatter) are CORRECT here. (2) PRODUCT layer — Clauderizer's code plus the docs a HUMAN reads to evaluate/adopt/use it: README, GAMEPLAN-PROCEDURE.md, `clauderize --help`, the tool descriptions, TRUST/UPGRADING/SECURITY/TROUBLESHOOTING. D-038's human-readability applies HERE. Rules: never write product docs in working-memory shorthand; don't fret over the human-readability of working-memory artifacts; a "dogfooding" request's deliverable is human-readable findings; an "update-the-engine" request's deliverable includes fresh, human-readable product docs.
+**Consequences**: P7 is scoped to the product layer. The dense gameplan/handoff artifacts are correct-for-their-layer, not a docs defect. A future initiative will audit past gameplans for where the two were conflated, clarify, and rectify (recorded as a backlog note + a next-session prompt).
+**Evidence**: complements D-038; user confirmation 2026-06-23
+**Status**: active (2026-06-23)

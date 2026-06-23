@@ -2,6 +2,39 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.0.4] — 2026-06-23
+
+Follow-up polish from the stranger-readiness dogfood — the rough edges left after 1.0.3's
+critical fixes. Nothing breaking; everything additive.
+
+**Discover the CLI's operations.** `clauderize ops --list` now prints every operation — what
+it does, whether it writes, and its required arguments — and `clauderize ops --schema <op>`
+shows one operation's full arguments. Previously you had to know the operation names by heart,
+and the error for an unknown one pointed at a dead reference. The list is read from the same
+registry the MCP tools use, so the command line and the agent tools can't drift apart.
+
+**`uvx clauderizer …` works now.** The package is named `clauderizer` but the command was only
+`clauderize`, so the obvious first thing a newcomer typed failed. There is now a `clauderizer`
+command alias too; `clauderize` remains the canonical name.
+
+**Clearer cascade resolution.** When you resolve a cascade, the result now says exactly what is
+left to close it — a verdict for each dependent, plus a one-line summary of the edits — instead
+of silently staying "pending". And a manual cascade for a change that a status transition
+already cascaded no longer writes a duplicate review report; it reuses the open one.
+
+**Preflight tells you when its test gate is asleep.** If a project was set up before it had any
+code, its language profile is "generic" and the test/build checks quietly skip. Preflight now
+notices when the project looks like a real language (say a `pyproject.toml` has since appeared)
+and points you at re-detecting it, instead of staying a silent no-op.
+
+**Retire an entity without deleting it.** Transition a subsystem or feature to `retired` (or
+`obsolete`) with `cz_transition_status`: it stays in the graph for history but drops out of
+active relevance surfacing — the supported alternative to hand-deleting a tracked file.
+
+**Smaller fixes.** The MCP server reports Clauderizer's own version in its handshake (not the
+underlying SDK's); amendment fields passed as lists render as a readable list instead of a raw
+`['…']`; and a stale "cascade pending" note no longer lingers on amendments.
+
 ## [1.0.3] — 2026-06-23
 
 **Fix — zero-install MCP server (H-14).** `clauderize init` wired the MCP server as

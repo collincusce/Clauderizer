@@ -766,8 +766,22 @@ def resolve_cascade(
         files_changed.append(str(path))
 
     text = writer.full_text(path)
-    still_pending = _NEEDS_REVIEW in text or _APPLIED_PLACEHOLDER in text
-    state = "still pending" if still_pending else "resolved"
+    needs_verdict = _NEEDS_REVIEW in text
+    needs_updates = _APPLIED_PLACEHOLDER in text
+    still_pending = needs_verdict or needs_updates
+    # Say exactly what is still missing — recording verdicts alone leaves the
+    # "Updates applied" placeholder, and that requirement was non-obvious (F9).
+    if not still_pending:
+        state = "resolved"
+    elif needs_verdict and needs_updates:
+        state = ('still pending: some flagged dependents have no verdict yet, and the '
+                 '"Updates applied" summary is empty — pass the remaining verdicts plus '
+                 'updates_applied (a one-line summary of edits, or "none") or updates_deferred')
+    elif needs_verdict:
+        state = "still pending: some flagged dependents have no verdict yet — pass them in verdicts"
+    else:
+        state = ('still pending: every dependent has a verdict; now pass updates_applied '
+                 '(a one-line summary of the edits, or "none") or updates_deferred to close it')
     return {
         "ok": True,
         "report": path.name,
@@ -776,7 +790,7 @@ def resolve_cascade(
         "unknown_ids": unknown,
         "pending": still_pending,
         "files_changed": files_changed,
-        "summary": f"cascade report {path.name}: {len(resolved)} verdict(s) recorded, {state}",
+        "summary": f"cascade report {path.name}: {len(resolved)} verdict(s) recorded — {state}",
     }
 
 
@@ -1062,6 +1076,12 @@ def add_amendment(
     today: str | None = None,
 ) -> dict:
     today = _today(today)
+    # Callers sometimes pass these as lists; render a readable inline list rather
+    # than a Python literal like ['Phase Breakdown', 'Subsystems Touched'] (F12).
+    if isinstance(affected_sections, (list, tuple)):
+        affected_sections = ", ".join(str(s) for s in affected_sections)
+    if isinstance(affected_phases, (list, tuple)):
+        affected_phases = ", ".join(str(s) for s in affected_phases)
     gp = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
     doc = writer.full_text(gp)
     new_id = next_numbered_id(doc, "A", sep="-", width=3)
@@ -1080,8 +1100,8 @@ def add_amendment(
         # reports are per-entity files, so no `<date>-A-NNN.md` ever exists.
         # A-001 in engine-structural-robustness dangled on exactly that name.
         entry += (
-            f"\n- **Cascade report**: _pending — run `cz_cascade` for the "
-            f"affected entities; reports land in `_cascade-reports/`_"
+            f"\n- **Cascade**: if this amendment changed a tracked entity, run "
+            f"`cz_cascade` for it (reports land in `_cascade-reports/`)"
         )
     writer.append_to_section(gp, "Amendments", entry)
     return {"ok": True, "id": new_id, "files_changed": [str(gp)],

@@ -99,3 +99,34 @@ def test_dry_run_writes_no_report(temp_repo, tmp_path):
     r = C.run(g, _an_entity(g), "status a -> b", rd, dry_run=True, now=NOW)
     assert not r["written"]
     assert not rd.exists() or not list(rd.iterdir())
+
+
+def test_cz_cascade_dedup_finds_pending_report_by_entity(temp_repo, tmp_path):
+    # F6: a manual cz_cascade must reuse an existing pending report for the same
+    # entity rather than duplicate it — matched by entity, not the transition
+    # label (a transition cascades as "status a -> b"; a hand call as "a -> b").
+    from clauderizer import ops
+    paths, _ = _ctx(temp_repo)
+    g = _graph(paths)
+    eid = _an_entity(g)
+    rd = tmp_path / "reports"
+    C.run(g, eid, "status a -> b", rd, now=NOW)  # a real pending report for eid
+    found = ops._pending_report_for(rd, eid)
+    assert found is not None and found.exists()
+    assert ops._pending_report_for(rd, eid + "-not-a-real-suffix") is None  # no prefix collision
+
+
+def test_resolve_message_names_the_missing_updates_summary(temp_repo):
+    # F9: recording verdicts is not enough to close a report — the "Updates
+    # applied" summary is also required, and that was non-obvious. The result
+    # message must say so explicitly (regardless of whether the entity has deps).
+    paths, _ = _ctx(temp_repo)
+    gid = M.create_gameplan(paths, "F9 Plan", today="2026-06-08")["gameplan_id"]
+    g = _graph(paths)
+    rd = paths.gameplan_dir(gid) / "_cascade-reports"
+    C.run(g, _an_entity(g), "status a -> b", rd, now=NOW)
+    r = M.resolve_cascade(paths, gameplan_id=gid)  # no updates_applied
+    assert r["pending"] is True
+    assert "updates_applied" in r["summary"]  # the message names exactly what's missing
+    r2 = M.resolve_cascade(paths, gameplan_id=gid, updates_applied="none")
+    assert "updates_applied" not in r2["summary"]  # the updates gate is now cleared

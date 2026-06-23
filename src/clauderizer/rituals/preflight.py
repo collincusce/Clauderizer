@@ -31,6 +31,25 @@ from . import _tables, status_bundle
 _BASELINE_LABEL = "Current baseline test count"
 
 
+def _generic_profile_hint(root, kind: str):
+    """F5: when the locked profile is 'generic' (so the test/build command is
+    empty) but the repo now looks like a real language, return an advisory that
+    points at re-detection — instead of a silent skip. Read-only and advisory
+    (INVARIANT-05); it never edits a user's profile.lock."""
+    from ..profiles import detect
+
+    try:
+        detected, _ = detect.detect(root)
+    except Exception:
+        return None
+    if detected.name != "generic" and detected.command(kind):
+        return (f"no {kind} command for profile 'generic', but this looks like a "
+                f"'{detected.name}' project — set the {kind} command in "
+                f".clauderizer/profile.lock, or delete it and re-run `clauderize init` "
+                f"to auto-detect, to enable this gate")
+    return None
+
+
 def _write_back_baseline(paths: RepoPaths, config: Config, count: str) -> str | None:
     """Refresh the tracked baseline with the count preflight just measured.
 
@@ -221,7 +240,8 @@ def run(
     if "tests" in enabled:
         cmd = profile.command("test")
         if not cmd:
-            add("tests", "skip", f"no test command for profile '{profile.name}'")
+            hint = _generic_profile_hint(root, "test") if profile.name == "generic" else None
+            add("tests", "skip", hint or f"no test command for profile '{profile.name}'")
         else:
             code, out = runner(cmd, root)
             count = None
@@ -243,7 +263,8 @@ def run(
     if "build" in enabled:
         cmd = profile.command("build")
         if not cmd:
-            add("build", "skip", f"no build command for profile '{profile.name}'")
+            hint = _generic_profile_hint(root, "build") if profile.name == "generic" else None
+            add("build", "skip", hint or f"no build command for profile '{profile.name}'")
         else:
             code, out = runner(cmd, root)
             add("build", "pass" if code == 0 else "fail", f"`{cmd}` exit {code}")

@@ -110,7 +110,12 @@ Brand-new project with nothing in it — not even Clauderizer installed? Three s
 mkdir my-project && cd my-project
 git init                                # recommended — pre-flight uses git
 uvx --from clauderizer clauderize init --size standard   # scaffolds docs/, CLAUDE.md, skills, MCP server, hook
+uvx --from clauderizer clauderize doctor                 # confirm the MCP server + hook are actually runnable
 ```
+
+> `standard` suits most repos. `pet` is lighter (fewer docs, no cascade); `saas` adds the full
+> doc set — but as initially-empty stubs you fill in over time, so start at `standard` unless
+> you know you want more.
 
 > No language to detect yet, so the host profile starts as `generic`. Once your first phase
 > adds a `package.json` / `pyproject.toml` / `go.mod` / `Gemfile`, just re-run
@@ -158,7 +163,10 @@ uvx --from clauderizer clauderize doctor                 # confirm it's wired AN
 Because your project already has a language, pre-flight runs your **real** test/build/lint
 commands from the start (tweak them in `.clauderizer/profile.lock.toml` if your repo is
 non-standard). Commit this diff on its own branch/commit so adopting Clauderizer is a clean,
-reviewable change in your history.
+reviewable change in your history. (One thing stays out of that commit: the host's MCP config —
+`.mcp.json` for Claude Code — is gitignored whenever it holds machine-specific paths, so it never
+breaks a teammate. Each clone just re-runs `clauderize init` to regenerate its own wiring, and
+`doctor` flags it if it's missing.)
 
 **2. Open a Claude Code session.** The hook injects status (no gameplan yet).
 
@@ -222,7 +230,7 @@ You steer; Claude keeps the memory, the graph, and the rituals honest between se
 The classifier says **Production/Stable**, and it earned it — every 1.0 readiness gate is
 public evidence, not vibes. The
 [1.0 gates](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md)
-G1–G7 are satisfied with dated artifacts: releases are gated by `clauderize release-check`
+the 1.0 readiness gates are satisfied with dated artifacts: releases are gated by `clauderize release-check`
 (a fresh four-registry sweep + push-ordering, exit 0 *before* any tag); the suite runs green
 on ubuntu/macos/windows × py3.11–3.13 with the Windows wrapper *executed*, not simulated; the
 cold start is proven in a real fresh session (the SessionStart hook **and** the MCP transport
@@ -243,7 +251,7 @@ is append-only and all-resolved, each finding with dated evidence.
 - **[UPGRADING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/UPGRADING.md)**
   — upgrades are two moves; uninstalling keeps `docs/` (your memory, not the tool's).
 - **[RELEASING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md)**
-  — the mechanical release ritual and the 1.0 readiness gates (G1–G7) with their evidence table.
+  — the mechanical release ritual and the 1.0 readiness gates with their evidence table.
 
 ## Install
 
@@ -266,13 +274,13 @@ docs is `uvx --from clauderizer clauderize <cmd>` until you install properly.
 ```
 your-repo/
 ├── CLAUDE.md                    # a Clauderizer stanza (between markers — your text is preserved)
-├── AGENTS.md                    # the same stanza for AGENTS.md-aware hosts (most of them)
+├── AGENTS.md                    # a byte-identical copy of the CLAUDE.md stanza (hosts read whichever they support)
 ├── <host MCP config>            # registers the clauderizer MCP server — path is host-specific:
 │                                #   .mcp.json (Claude Code), .cursor/mcp.json, .vscode/mcp.json,
 │                                #   .zed/settings.json, … (auto-written for hosts with a JSON config;
 │                                #   TOML/global hosts get a setup guide instead — see docs/CROSS-HOST.md)
 ├── .claude/
-│   ├── settings.json            # SessionStart + UserPromptSubmit hooks — only on hook-capable hosts
+│   ├── settings.json            # SessionStart + UserPromptSubmit hooks (fire every prompt; the digest injects once/session)
 │   └── skills/clauderizer-*/    # six workflow skills (/do-phase, /cascade, /record, …)
 ├── .clauderizer/
 │   ├── config.toml              # size dial + host profile + session host + host target + active gameplan
@@ -352,6 +360,8 @@ clauderize reindex           # rebuild the graph cache from markdown
 clauderize release-check     # maintainers: push ordering + the four version registries · exit 0 ok · 2 red · 3 unverifiable
 clauderize mcp               # launch the MCP server (stdio)
 clauderize ops <file.json|-> # execute a JSON batch of cz_* ops (the no-MCP write fallback)
+clauderize ops --list        # discover every op: name, read/write, summary, required args
+clauderize ops --schema <op> # show one op's required + optional args (JSON)
 clauderize uninstall [--host <name>]   # reverse the full footprint (MCP config + hooks + stanzas + skills + .clauderizer/); --host scopes to one; docs/ always kept
 ```
 
@@ -364,8 +374,8 @@ clauderize uninstall [--host <name>]   # reverse the full footprint (MCP config 
 · `cz_obsolete_lesson` · `cz_consolidate_lessons` · `cz_promote_lesson`
 · `cz_add_correction` · `cz_add_output` · `cz_add_phase_summary`
 · `cz_upsert_entity` · `cz_transition_status`
-**Discipline & analysis** (advisory, judgment-based; INVARIANT-05) · `cz_analyze` · `cz_critique` · `cz_mine_failures` · `cz_corpus_health` · `cz_lesson_health` · `cz_curate` · `cz_loop_step` · `cz_add_open_item` · `cz_resolve_open_item` · `cz_set_exit_criteria` · `cz_check_exit_criterion`
-**Skills** (project skill-awareness; propose-confirm, INVARIANT-05) · `cz_register_skill` · `cz_obsolete_skill` · `cz_discover_skills`
+**Discipline & analysis** (advisory — they surface findings for you to act on, never changing anything on their own) · `cz_analyze` · `cz_critique` · `cz_mine_failures` · `cz_corpus_health` · `cz_lesson_health` · `cz_curate` · `cz_loop_step` · `cz_add_open_item` · `cz_resolve_open_item` · `cz_set_exit_criteria` · `cz_check_exit_criterion`
+**Skills** (Clauderizer finds the skills your project already has and proposes them — you confirm; never auto-added) · `cz_register_skill` · `cz_obsolete_skill` · `cz_discover_skills`
 **Resources** · `clauderizer://status` · `clauderizer://procedure` · `clauderizer://entity/{id}`
 **Prompts** · `cz-status` · `cz-next-phase` — surface as slash commands (e.g. `/cz-status`) on prompt-capable hosts
 
@@ -381,9 +391,14 @@ The `cz_*` tools are the front door, not a dependency. `clauderize ops` executes
 operations — same names, same arg shapes, same shared registry — from the command line:
 
 ```bash
+clauderize ops --list                    # discover every op: name, read/write, summary, required args
+clauderize ops --schema cz_add_lesson    # one op's required + optional args (from the shared registry)
 echo '[{"op": "cz_add_lesson", "args": {"text": "…", "category": "Process"}}]' > batch.json
 clauderize ops batch.json        # or `clauderize ops -` to read the batch from stdin
 ```
+
+You don't have to know the op names by heart — `--list` and `--schema` read the *same*
+registry the MCP tools use, so the CLI and the agent surface can never drift.
 
 Per-op JSON results land on stdout (exit 0 all-ok, 1 any-op-failed, 2 unreadable batch), and
 writes hold the same advisory write lock as the MCP server — so a session whose wiring is

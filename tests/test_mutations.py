@@ -305,7 +305,7 @@ def test_add_amendment_cascade_line_only_under_ritual(temp_repo):
     )
     assert r["id"] == "A-001"
     gp = (paths.gameplan_dir(GID) / "GAMEPLAN.md").read_text(encoding="utf-8")
-    assert "- **Cascade report**: _pending" in gp
+    assert "- **Cascade**: if this amendment changed a tracked entity" in gp
     assert "cz_cascade" in gp
     # Never a per-amendment filename promise — cascade reports are per-entity.
     assert "_cascade-reports/2026-06-02-A-001.md" not in gp
