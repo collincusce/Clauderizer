@@ -1,7 +1,7 @@
 # Chat Handoff Index — product-doc-deconflation
 
 > Last updated: 2026-06-23
-> Status: Phase 6 of 7 in progress
+> Status: All 7 phases complete
 
 ## How This Works
 
@@ -35,7 +35,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 3 | Rectify markdown product docs | ✅ COMPLETE | 2026-06-23 | 2026-06-23 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Rectify in-code human-facing strings | ✅ COMPLETE | 2026-06-23 | 2026-06-23 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Fresh-human-reader verification | ✅ COMPLETE | 2026-06-23 | 2026-06-23 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | PII scrub and final commit | 🟡 IN PROGRESS | 2026-06-23 | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | PII scrub and final commit | ✅ COMPLETE | 2026-06-23 | 2026-06-23 | handoffs/PHASE-6-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -66,6 +66,10 @@ Scrubbed internal-ID cross-references from the cz_* tool-description docstrings 
 ### Phase 5 — completed 2026-06-23
 
 Verified the rectification two independent ways. (1) A cold fresh-human-reader subagent (no source/tracking access) read all six layer-2 docs as a stranger and found ZERO unexplained internal IDs — the gameplan's objective. It recognized GAMEPLAN-PROCEDURE's remaining IDs as defined-locally in the Numbering Conventions section, validating the keep-decision. (2) An independent automated regex sweep confirmed: README/SECURITY/UPGRADING zero hits, TRUST/TROUBLESHOOTING zero, GAMEPLAN-PROCEDURE only the 3 scheme-definitions, ops.py tool descriptions clean, clauderize --help clean. The cold reader also surfaced concept-definition/onboarding gaps (MCP/hooks/agent-harness/key-merge assumed known; minor prose) — a separate quality axis, pre-existing and not caused by the scrub — tracked as O-04 for a future polish pass. Two out-of-scope leaks found during verification (O-03 CLI runtime-output IDs; O-04 onboarding gaps) are deliberately deferred and tracked, not dropped.
+
+### Phase 6 — completed 2026-06-23
+
+Shipped the rectification safely. PII scrub-verify on both the deliverable diff and the entire gameplan dir came back clean — no home paths, usernames, or sibling-project names were introduced, so nothing needed scrubbing. Committed at the very end, after verification, in two reviewable commits: e375f09 (the deliverable — the 4 rectified files, 40/41 lines) and 0319fdc (the gameplan execution record + the six phase handoffs), plus the earlier scaffold 719f278. The work commit is genuinely the last step; the tree is clean. Layer-1 working-memory artifacts were touched only by this gameplan's own normal cz_* tracking writes — no other gameplan or tracked log changed.
 
 ## Accumulated Lessons
 

@@ -1,7 +1,7 @@
 # product-doc-deconflation Gameplan
 
 > Created: 2026-06-23
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -150,6 +150,6 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 6.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] PII sweep on the staged diff (home paths, usernames, unrelated sibling-project names) returns clean — any occurrences scrubbed to ~ / placeholder.
-- [ ] Working tree staged with exactly the rectified product docs plus this gameplan's own tracked artifacts; no stray files.
-- [ ] Single work commit created as the final step; layer-1 working-memory artifacts unchanged in substance (only this gameplan's normal tracking writes).
+- [x] PII sweep on the staged diff (home paths, usernames, unrelated sibling-project names) returns clean — any occurrences scrubbed to ~ / placeholder.
+- [x] Working tree staged with exactly the rectified product docs plus this gameplan's own tracked artifacts; no stray files.
+- [x] Single work commit created as the final step; layer-1 working-memory artifacts unchanged in substance (only this gameplan's normal tracking writes).

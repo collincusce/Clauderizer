@@ -13,7 +13,7 @@
 | 3 | Rectify markdown product docs | ✅ COMPLETE | 2026-06-23 | 2026-06-23 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Rectify in-code human-facing strings | ✅ COMPLETE | 2026-06-23 | 2026-06-23 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Fresh-human-reader verification | ✅ COMPLETE | 2026-06-23 | 2026-06-23 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | PII scrub and final commit | 🟡 IN PROGRESS | 2026-06-23 | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | PII scrub and final commit | ✅ COMPLETE | 2026-06-23 | 2026-06-23 | handoffs/PHASE-6-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -60,6 +60,12 @@ phase4_edits: Removed internal-ID cross-refs from cz_* tool DESCRIPTION docstrin
 
 ```
 cold_read_verdict: Fresh-human-reader cold pass (subagent, no source access): ZERO unexplained internal IDs across all 6 layer-2 docs — the gameplan's goal VERIFIED. GAMEPLAN-PROCEDURE's IDs recognized as defined-locally (Numbering Conventions section), validating the keep-decision. Independent automated sweep agrees: README/SECURITY/UPGRADING=0 hits; TRUST/TROUBLESHOOTING=0; GAMEPLAN-PROCEDURE=3 scheme-definitions only; ops.py tool descriptions clean; clauderize --help clean. Comprehension findings (MCP/hooks/agent-harness/key-merge assumed-known; "[Clauderizer]" breadcrumb introduced late; README "1.0 gates" vague) are a separate concept-definition/onboarding axis, pre-existing and not caused by the ID scrub -> tracked O-04, not resolved here.
+```
+
+### Phase 6 Outputs
+
+```
+final_commits: Commits this run (all at the end, after verify + PII scrub): 719f278 (scaffold), e375f09 (DELIVERABLE: docs scrub, 4 files = TRUST/TROUBLESHOOTING/GAMEPLAN-PROCEDURE/ops.py, 40 ins / 41 del), 0319fdc (gameplan execution record + 6 handoffs). Deliverable split from dogfooding record for reviewability. PII scrub-verify clean on both the deliverable diff and the whole gameplan dir (nothing needed scrubbing). Branch main; tree clean.
 ```
 
 ## Corrections Log
