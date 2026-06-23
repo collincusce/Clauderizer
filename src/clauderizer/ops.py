@@ -97,14 +97,13 @@ def cz_analyze(text: str, k: int = 5) -> dict:
     """Surface the existing decisions/invariants most relevant to `text`, the
     one-hop graph neighbors `text` touches but has not connected, AND the
     plausibly-missing depends_on edges between tracked entities — for you to judge
-    contradiction/supersession, gaps, and missing structure (the analyze gate,
-    D-016/D-018).
+    contradiction/supersession, gaps, and missing structure (the analyze gate).
 
     Judgment-based like cz_cascade and read-only: the engine ASSEMBLES candidates
     (relevant entries by keyword + entity-id overlap; the `adjacent` graph entities
     by one-hop structural adjacency; `suggested_edges` = entity pairs with high
-    lexical/id overlap and NO edge either way, the structural complement of D-018)
-    and prompts; it never decides and NEVER auto-writes an edge (INVARIANT-05). Use
+    lexical/id overlap and NO edge either way)
+    and prompts; it never decides and NEVER auto-writes an edge. Use
     before recording a decision, or to vet a phase/plan against recorded memory. If
     a surfaced entry is contradicted, record a correction or revise; if superseded,
     set `supersedes` on cz_add_decision; if an `adjacent` entity should have been
@@ -140,14 +139,14 @@ def cz_analyze(text: str, k: int = 5) -> dict:
 
 
 def cz_critique(target: str = "") -> dict:
-    """Self-critique gate (D-019): surface a reference-free Coverage/Coherence/
+    """Self-critique gate: surface a reference-free Coverage/Coherence/
     Grounding rubric for `target` — a phase number, "gameplan" (default), or
     "handoff" (the current in-progress phase) — for YOU to grade.
 
     Read-only and advisory like cz_analyze: the engine ASSEMBLES the gaps it can
     detect deterministically (unresolved open items, unchecked exit criteria,
     graph drift, pending cascades, lessons lacking provenance) grouped by
-    dimension, and prompts; it never scores or blocks (INVARIANT-05). Reference-
+    dimension, and prompts; it never scores or blocks. Reference-
     free and stdlib-only. Run it before completing a phase, before trusting a
     handoff, or at gameplan close.
     """
@@ -424,7 +423,7 @@ def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "",
 
 def cz_consolidate_lessons(numbers: list[int], text: str, category: str = "Process",
                            gameplan_id: str = "") -> dict:
-    """Synthesize several overlapping lessons into one (anti-bloat, D-009).
+    """Synthesize several overlapping lessons into one (anti-bloat).
 
     Adds <text> as a new lesson and marks each source lesson
     "(obsolete: consolidated into #N)" — every future handoff carries one
@@ -557,7 +556,7 @@ def cz_transition_status(id: str, to_status: str, run_cascade: bool = True) -> d
     This is also how you RETIRE an entity: transition it to `retired` (or
     `obsolete`) instead of deleting its file. The entity stays in the graph for
     history but is demoted in relevance surfacing — the sanctioned, append-only
-    alternative to hand-removing a tracked doc (INVARIANT-03).
+    alternative to hand-removing a tracked doc.
     """
     paths, config = repo_ctx()
     result = mutations.transition_status(paths, config, id=id, to_status=to_status,
@@ -574,7 +573,7 @@ def cz_transition_status(id: str, to_status: str, run_cascade: bool = True) -> d
 def cz_add_open_item(text: str, phase: str = "", gameplan_id: str = "") -> dict:
     """Record a blocker or cross-phase question as an auto-numbered open item (O-NN).
 
-    The clarify gate's blessed write (D-015): open items get a stable id instead
+    The clarify gate's blessed write: open items get a stable id instead
     of untracked prose, so cz_status reports the unresolved ones and
     cz_transition_phase surfaces them when completing a phase. Optional `phase`
     tags the item for relevance. Resolve with cz_resolve_open_item — items are
@@ -604,7 +603,7 @@ def cz_resolve_open_item(id: str, resolution: str, gameplan_id: str = "") -> dic
 def cz_set_exit_criteria(phase: str, criteria: list[str], gameplan_id: str = "") -> dict:
     """Author or replace a phase's exit criteria as machine-checkable - [ ] items.
 
-    The exit-criteria gate's authoring write (D-015): replaces the phase's "Exit
+    The exit-criteria gate's authoring write: replaces the phase's "Exit
     criteria" list (placeholder or prior items) with `criteria`, preserving the
     checked state of any item whose text is unchanged. Check items off with
     cz_check_exit_criterion; cz_transition_phase surfaces the unchecked ones when
@@ -624,7 +623,7 @@ def cz_check_exit_criterion(phase: str, criterion: str, checked: bool = True,
 
     Idempotent: toggling to the current state is a no-op. The blessed write for
     marking a criterion done; cz_transition_phase to complete surfaces any still
-    unchecked (advisory, never blocking — INVARIANT-05).
+    unchecked (advisory, never blocking).
     """
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
@@ -676,7 +675,7 @@ def cz_mine_failures(transcripts_dir: str = "", max_proposals: int = 40) -> dict
     (or cz_add_lesson); discard the rest. `transcripts_dir` defaults to this
     project's Claude Code transcript directory (set $CLAUDERIZER_TRANSCRIPTS_DIR,
     or pass it explicitly when auto-resolution fails). Deterministic, stdlib-only,
-    no enable/disable flag (D-015/INVARIANT-05).
+    no enable/disable flag.
     """
     from . import learn
 
@@ -711,11 +710,11 @@ def cz_mine_failures(transcripts_dir: str = "", max_proposals: int = 40) -> dict
 def cz_corpus_health() -> dict:
     """Surface a deterministic health snapshot of the lesson corpus + telemetry.
 
-    Read-only and advisory (INVARIANT-05): active project-lesson count, a lexical
-    near-duplicate redundancy estimate (no ML, D-018), how many active lessons
+    Read-only and advisory: active project-lesson count, a lexical
+    near-duplicate redundancy estimate (no ML), how many active lessons
     have never been surfaced in a handoff, and the surfacing/outcome counts from
     the append-only telemetry log (.clauderizer/telemetry.jsonl). The empirical
-    baseline Phase 1's utility scoring and Phase 2's curator read; the agent
+    baseline that lesson-utility scoring and the curator read; the agent
     decides what to consolidate/promote/obsolete.
     """
     from . import telemetry
@@ -728,8 +727,8 @@ def cz_lesson_health() -> dict:
     """Surface per-lesson empirical health from telemetry: utility (fraction of a
     lesson's resolved surfacings that preceded a passing phase), failure-risk,
     surfaced/resolved counts, and an advisory per-lesson signal (never-surfaced /
-    low-utility / promotion-candidate). Read-only (INVARIANT-05), deterministic,
-    no ML (D-018). The input Phase 2's curator turns into proposed
+    low-utility / promotion-candidate). Read-only, deterministic,
+    no ML. The input the curator turns into proposed
     consolidate/promote/obsolete actions; the agent decides.
     """
     from . import telemetry
@@ -743,7 +742,7 @@ def cz_curate() -> dict:
     like cz_mine_failures: consolidate redundant lessons, obsolete never-surfaced
     or low-utility ones, flag high-failure-risk ones for review, and promote
     high-utility gameplan lessons. Each proposal carries evidence + the blessed
-    cz_* op to apply it; the agent confirms (INVARIANT-05). No writes, no ML (D-018).
+    cz_* op to apply it; the agent confirms. No writes, no ML.
     """
     from . import telemetry
 
@@ -756,7 +755,7 @@ def cz_loop_step() -> dict:
     (corpus_health), the curator's proposals, a `converged` flag, and an
     escape-hatch `spawn_gameplan` suggestion for structural work. The agent applies
     the actionable proposals via blessed cz_* writes and calls this again until
-    converged (INVARIANT-05). No writes, no ML (D-018).
+    converged. No writes, no ML.
     """
     from . import telemetry
 
@@ -771,8 +770,8 @@ def cz_discover_skills() -> dict:
     Scans the well-known local skill directories (the project's and the user's
     skill folders, plus Clauderizer's own shipped skills), parses each SKILL.md's
     name + description, and diffs against what's already registered. Confirm
-    genuine proposals via cz_register_skill; the engine proposes, you decide
-    (INVARIANT-05). No writes, no network (D3: external-skill ingestion is out).
+    genuine proposals via cz_register_skill; the engine proposes, you decide.
+    No writes, no network (external-skill ingestion is out).
     """
     paths, _ = repo_ctx()
     from . import skill_discovery

@@ -6,10 +6,10 @@
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
-- **v1.3.0** (2026-06-21): Added the **Loop Gameplan** (`kind: loop`) as a first-class type — a standing, iterative maintenance initiative (trigger / iteration body / per-iteration exit / convergence metric / spawn-driven escape hatch), complementing the finite driven gameplan. Realized by `cz_loop_step` over the curator (`cz_curate`); autonomous in cadence, supervised in mutation (INVARIANT-05).
-- **v1.2.1** (2026-06-09): Amendment entries carry a `Cascade report` line only when the `amendments` ritual is enabled, and as a pending pointer (`run cz_cascade for the affected entities`) rather than a per-amendment filename — cascade reports are per-entity files, so `<date>-A-NNN.md` never exists (the A-001 dangling-pointer bug).
-- **v1.2.0** (2026-06-09): Named `clauderize ops <file.json|->` the canonical no-MCP fallback for every tracked write (L-05): op names and arg shapes are exactly the `cz_*` tool names and schemas, so recording never depends on a live MCP client. Ad-hoc stdio-probe/shim patterns are retired.
-- **v1.1.0** (2026-05-02): Added **Amendment (`A-NNN`)** concept as a first-class entity for tracking gameplan body changes after Phase 0 starts. Added "Procedure: Amend a Gameplan" with cascade-to-affected-phases rules. Added mini-gameplan-vs-amend-existing decision rule of thumb. Projects adopting may declare `INVARIANT-13: Gameplan amendments cascade before session ends` (poe2.design adopts; smaller projects may not).
+- **v1.3.0** (2026-06-21): Added the **Loop Gameplan** (`kind: loop`) as a first-class type — a standing, iterative maintenance initiative (trigger / iteration body / per-iteration exit / convergence metric / spawn-driven escape hatch), complementing the finite driven gameplan. Realized by `cz_loop_step` over the curator (`cz_curate`); autonomous in cadence, supervised in mutation.
+- **v1.2.1** (2026-06-09): Amendment entries carry a `Cascade report` line only when the `amendments` ritual is enabled, and as a pending pointer (`run cz_cascade for the affected entities`) rather than a per-amendment filename — cascade reports are per-entity files, so `<date>-A-NNN.md` never exists (the dangling-pointer bug).
+- **v1.2.0** (2026-06-09): Named `clauderize ops <file.json|->` the canonical no-MCP fallback for every tracked write: op names and arg shapes are exactly the `cz_*` tool names and schemas, so recording never depends on a live MCP client. Ad-hoc stdio-probe/shim patterns are retired.
+- **v1.1.0** (2026-05-02): Added **Amendment (`A-NNN`)** concept as a first-class entity for tracking gameplan body changes after Phase 0 starts. Added "Procedure: Amend a Gameplan" with cascade-to-affected-phases rules. Added mini-gameplan-vs-amend-existing decision rule of thumb. Projects adopting may declare an invariant that gameplan amendments cascade before a session ends (poe2.design adopts; smaller projects may not).
 - **v1.0.0** (2026-05-02): Initial synthesis from existing project procedures + session-derived improvements.
 
 > This document is project-agnostic. Copy it as-is into any new project's `docs/gameplans/GAMEPLAN-PROCEDURE.md`. All project-specific content goes in `CLAUDE.md` (project root) and `docs/` named files.
@@ -21,7 +21,7 @@
 Most gameplans are **driven**: a finite phase DAG with a terminal post-mortem, advanced phase by phase. A **loop gameplan** (`kind: loop`) is the complement — a *standing* initiative whose "phases" are recurring **iterations** of a maintenance/curation cycle, with no terminal state:
 
 - **Trigger** — what wakes an iteration: a schedule, a threshold (e.g. lessons past a bound), or a gameplan close.
-- **Iteration body** — gather signal → SURFACE proposals → the agent confirms via blessed writes (never auto-mutation, INVARIANT-05). In Clauderizer this is `cz_loop_step` (a corpus-health metric + `cz_curate` proposals + a `converged` flag).
+- **Iteration body** — gather signal → SURFACE proposals → the agent confirms via blessed writes (never auto-mutation). In Clauderizer this is `cz_loop_step` (a corpus-health metric + `cz_curate` proposals + a `converged` flag).
 - **Per-iteration exit** — the Loop-Engineering `/goal` triad: an explicit end state, a runnable check, and a guardrail (max-iterations / scope pin). An iteration ends when no actionable proposal remains (`converged`).
 - **Convergence metric** — a corpus-health measure trended across iterations (monotone-improving, not a one-shot "done").
 - **Escape hatch** — when an iteration detects structural work too big for a maintenance pass, it SUGGESTS spawning a *driven* gameplan (`spawn_gameplan`); it never auto-creates one.
@@ -165,7 +165,7 @@ Captured as a numbered entry in a `## Amendments` section near the top of `GAMEP
 - **Cascade report**: _pending — run `cz_cascade` for the affected entities; reports land in `_cascade-reports/`_
 ```
 
-The `Cascade report` line appears only when the project's `amendments` ritual is enabled (INVARIANT-13 adopters), and always as the pending pointer above — cascade reports are per-entity files named by the engine, so an amendment entry never promises a `<date>-A-NNN.md` filename.
+The `Cascade report` line appears only when the project's `amendments` ritual is enabled (in projects that adopt amendment cascade as an invariant), and always as the pending pointer above — cascade reports are per-entity files named by the engine, so an amendment entry never promises a `<date>-A-NNN.md` filename.
 
 Amendments are append-only (just like decisions) — superseded amendments stay in the record with `Status: superseded` and a `Superseded-by: A-MMM` link.
 
@@ -175,7 +175,7 @@ Amendments are append-only (just like decisions) — superseded amendments stay 
 - **New mini-gameplan** (separate `docs/gameplans/<new-id>/` directory): the change is *outside* the existing scope. Examples: a post-launch leaderboard feature has a different goal and is separable work; a major refactor unrelated to the original gameplan's mission.
 - **Rule of thumb**: if you'd write the same `## Project Overview` paragraph for the new work as for the original gameplan, amend; if a fresh project overview makes more sense, mini-gameplan.
 
-Cascade discipline applies to amendments per INVARIANT-13 (if adopted; the project's own `INVARIANTS.md` declares whether it adopts amendment cascade as an invariant — `attago` and `poe2.design` do; smaller projects may not).
+Cascade discipline applies to amendments when the project adopts amendment cascade as an invariant (the project's own `INVARIANTS.md` declares whether it does — `attago` and `poe2.design` do; smaller projects may not).
 
 ### Status Values
 
@@ -1099,7 +1099,7 @@ When something changes (status, version, decision), do this:
 - Invariant (project): `INVARIANT-NN`
 - Phase: `Phase N` (bare integers `0`–`N`) or `Phase 0A`, `Phase 0B` (sub-phases). Found in gameplan `GAMEPLAN.md` phase breakdown.
 - Task within a phase: `N.M` (e.g., `0.1`, `1.4`). Found in the phase's task table inside `GAMEPLAN.md`.
-- Legacy `STEP-NN` IDs: only in pre-D-028 historical documents (e.g., the original 2026-04-30 design brainstorm in `docs/plans/`); no longer the active convention.
+- Legacy `STEP-NN` IDs: only in historical documents predating the current convention (e.g., the original 2026-04-30 design brainstorm in `docs/plans/`); no longer the active convention.
 
 ### Symlinks vs Copies
 
@@ -1160,7 +1160,7 @@ update PHASE-STATUS.md, run cascade for status transitions.
 ### Recording Without MCP — `clauderize ops`
 
 The `cz_*` tools are the primary write surface, but recording must never be
-hostage to a live MCP connection (L-05). When the tools are absent or the
+hostage to a live MCP connection. When the tools are absent or the
 server can't attach, every operation — reads and writes — is reachable from a
 shell:
 
