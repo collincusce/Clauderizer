@@ -360,7 +360,7 @@ def cmd_release_check(args: argparse.Namespace) -> int:
               "the GitHub Release (publishing fires on the Release, not the tag).")
     elif code == 2:
         print("\nRED — do not tag and do not cut a Release until every ✗ is "
-              "resolved (L-08).")
+              "resolved.")
     else:
         print("\nOK with unverifiable check(s) — verify each ? manually before "
               "staging; an unswept registry is how versions get double-claimed.")

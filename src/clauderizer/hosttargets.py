@@ -19,6 +19,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from .markdown.writer import refuse_if_symlink
+
 # The portable launch command for a COMMITTABLE config — no absolute path, no shim.
 # Matches the project's drop-in identity ("uvx --from clauderizer … needs nothing
 # else"). The local .mcp.json may use an absolute path; an emitted one may not.
@@ -163,6 +165,7 @@ def emit_mcp(host_id: str, repo_root: Path, argv: list[str] | None = None) -> Pa
             data = {}
     servers = data.setdefault(em.servers_key, {})
     servers["clauderizer"] = _entry(argv)
+    refuse_if_symlink(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return path
@@ -185,6 +188,7 @@ def remove_mcp(host_id: str, repo_root: Path) -> bool:
     if not isinstance(servers, dict) or "clauderizer" not in servers:
         return False
     del servers["clauderizer"]
+    refuse_if_symlink(path)
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return True
 
@@ -221,6 +225,7 @@ def emit_instructions(host_id: str, repo_root: Path) -> Path | None:
     if rel is None:
         return None
     path = repo_root / rel
+    refuse_if_symlink(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     block = f"<!-- clauderizer:start -->\n{FLOOR_INSTRUCTION}<!-- clauderizer:end -->\n"
     existing = path.read_text(encoding="utf-8") if path.exists() else ""

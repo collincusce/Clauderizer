@@ -111,6 +111,7 @@ def _remove_gitignore_line(gitignore: Path, line: str) -> bool:
     if not any(ln.strip() for ln in kept):
         gitignore.unlink()
         return True
+    writer.refuse_if_symlink(gitignore)
     gitignore.write_text("\n".join(kept) + "\n", encoding="utf-8")
     return True
 

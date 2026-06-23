@@ -4,7 +4,7 @@ Markdown is the source of truth. Everything else (the graph index, the MCP
 server, the rituals) is derived from it and can be rebuilt at any time.
 """
 
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 
 # The version of the gameplan procedure this engine was built against. The
 # engine ships GAMEPLAN-PROCEDURE.md verbatim; `clauderize doctor` warns if a

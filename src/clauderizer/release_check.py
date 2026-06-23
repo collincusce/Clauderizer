@@ -170,7 +170,7 @@ def run(start: Path) -> tuple[int, list[Check]]:
         else:
             add(f"GitHub Release {tag} unclaimed", "ok" if not ex else "fail",
                 "" if not ex
-                else "a Release already exists (possibly never published to PyPI — H-07)")
+                else "a Release already exists (possibly never published to PyPI)")
 
         if name:
             claimed = _pypi_claimed(name, version)
@@ -190,7 +190,7 @@ def run(start: Path) -> tuple[int, list[Check]]:
         add("publish gate (tag==source)", "ok")
     else:
         add("publish gate (tag==source)", "fail",
-            f"publish.yml lacks the '{GATE_MARKER}' guard (H-07) — a skewed "
+            f"publish.yml lacks the '{GATE_MARKER}' guard — a skewed "
             f"Release would build the wrong artifacts")
 
     readme = root / "README.md"
@@ -201,7 +201,7 @@ def run(start: Path) -> tuple[int, list[Check]]:
     else:
         add("README names the ritual", "fail",
             f"README.md never mentions `{RITUAL_MARKER}` — its release section "
-            f"has drifted from the ritual it claims to follow (G7); fix the doc "
+            f"has drifted from the ritual it claims to follow; fix the doc "
             f"before staging")
 
     if any(c.status == "fail" for c in checks):

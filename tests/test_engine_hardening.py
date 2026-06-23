@@ -175,3 +175,63 @@ def test_mcp_and_hook_command_extraction(tmp_path):
         {"hooks": {"SessionStart": [{"hooks": [{"type": "command", "command": "uvx --from clauderizer clauderizer-hook"}]}]}}
     ), encoding="utf-8")
     assert cli._hook_command(settings) == ["uvx", "--from", "clauderizer", "clauderizer-hook"]
+
+
+# --- H-13 engine writes must not follow a pre-planted symlink ----------------
+
+def test_writer_refuses_to_write_through_a_symlink(tmp_path):
+    # A hostile cloned working tree can pre-plant a symlink where the engine
+    # expects a real file; following it would write engine-owned content to an
+    # attacker-chosen path outside the repo. Every writer.py path refuses a
+    # symlinked target instead of following it.
+    import pytest
+    from clauderizer.markdown import writer
+
+    outside = tmp_path / "outside.md"
+    link = tmp_path / "planted.md"
+    try:
+        link.symlink_to(outside)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation not permitted on this platform")
+
+    with pytest.raises(OSError, match="symlink"):
+        writer.create_if_absent(link, "engine content")
+    assert not outside.exists()  # nothing written through the link
+
+
+def test_register_mcp_refuses_a_symlinked_target(tmp_path):
+    # The documented vector: a pre-planted `.mcp.json -> /outside/file` symlink
+    # would make `clauderize init` write its MCP config through the link.
+    import pytest
+    from clauderizer.scaffold.init import _register_mcp
+
+    outside = tmp_path / "outside.json"
+    link = tmp_path / ".mcp.json"
+    try:
+        link.symlink_to(outside)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation not permitted on this platform")
+
+    with pytest.raises(OSError, match="symlink"):
+        _register_mcp(link, ["uvx", "-q", "--from", "clauderizer[mcp]", "clauderizer-mcp"])
+    assert not outside.exists()
+
+
+def test_hosttargets_emit_mcp_refuses_a_symlinked_config(tmp_path):
+    # The per-host emitters write COMMITTABLE configs (.cursor/mcp.json, …); a
+    # symlinked target must be refused just like the Claude Code .mcp.json.
+    import pytest
+    from clauderizer import hosttargets
+
+    outside = tmp_path / "outside.json"
+    cfg = tmp_path / ".cursor" / "mcp.json"
+    cfg.parent.mkdir(parents=True)
+    try:
+        cfg.symlink_to(outside)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation not permitted on this platform")
+
+    with pytest.raises(OSError, match="symlink"):
+        hosttargets.emit_mcp("cursor", tmp_path,
+                             ["uvx", "-q", "--from", "clauderizer[mcp]", "clauderizer-mcp"])
+    assert not outside.exists()

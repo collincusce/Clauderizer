@@ -21,10 +21,26 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
+def refuse_if_symlink(path: Path) -> None:
+    """Refuse to write through a symlinked target.
+
+    Engine-owned writes must land inside the repo. If ``path`` is a symlink, a
+    pre-planted link in a hostile cloned working tree could redirect the write to
+    an attacker-chosen location outside the repo, so we refuse rather than follow
+    it — the link is never followed or deleted; the user reviews and removes it.
+    """
+    if path.is_symlink():
+        raise OSError(
+            f"refusing to write through a symlink: {path} — Clauderizer never "
+            "writes through links; review your working tree and remove the link."
+        )
+
+
 def _write_if_changed(path: Path, new_text: str) -> bool:
     old = _read(path)
     if old == new_text:
         return False
+    refuse_if_symlink(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(new_text, encoding="utf-8")
     return True
@@ -100,6 +116,7 @@ def remove_marker_block(path: Path, name: str) -> bool:
     if not new_text.strip():
         path.unlink()
         return True
+    refuse_if_symlink(path)
     path.write_text(new_text, encoding="utf-8")
     return True
 
@@ -160,6 +177,7 @@ def create_if_absent(path: Path, content: str) -> bool:
     """Write ``content`` only if the file does not already exist (scaffolding)."""
     if path.exists():
         return False
+    refuse_if_symlink(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
     return True

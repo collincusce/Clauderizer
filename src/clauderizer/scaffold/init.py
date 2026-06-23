@@ -399,6 +399,7 @@ def _rewrite_if_diff(path: Path, content: str, *, exact_newlines: bool = False) 
     which also broke init idempotency on win32 by making the read-back never
     equal the render).
     """
+    writer.refuse_if_symlink(path)
     if exact_newlines:
         data = content.encode("utf-8")
         if path.exists() and path.read_bytes() == data:
@@ -425,6 +426,7 @@ def _register_mcp(mcp_json: Path, mcp_cmd: list[str]) -> bool:
     if servers.get("clauderizer") == entry:
         return False
     servers["clauderizer"] = entry
+    writer.refuse_if_symlink(mcp_json)
     mcp_json.parent.mkdir(parents=True, exist_ok=True)
     mcp_json.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return True
@@ -472,6 +474,7 @@ def _register_hook(settings_json: Path, hook_argv: list[str],
     new_text = json.dumps(data, indent=2) + "\n"
     if settings_json.exists() and settings_json.read_text(encoding="utf-8") == new_text:
         return False
+    writer.refuse_if_symlink(settings_json)
     settings_json.parent.mkdir(parents=True, exist_ok=True)
     settings_json.write_text(new_text, encoding="utf-8")
     return True
@@ -542,5 +545,6 @@ def _ensure_gitignore(gitignore: Path, line: str) -> bool:
     if line in existing.splitlines():
         return False
     new = existing.rstrip("\n") + ("\n" if existing else "") + line + "\n"
+    writer.refuse_if_symlink(gitignore)
     gitignore.write_text(new, encoding="utf-8")
     return True

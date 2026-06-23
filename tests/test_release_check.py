@@ -87,7 +87,7 @@ def test_readme_drifted_from_ritual_is_red(staged_repo):
     assert code == 2
     c = _by_label(checks, "README names the ritual")
     assert c.status == "fail"
-    assert "G7" in c.detail
+    assert "drifted" in c.detail
 
 
 def test_unpushed_commit_is_red(staged_repo):
@@ -156,7 +156,7 @@ def test_publish_workflow_without_gate_is_red(staged_repo):
     code, checks = run(staged_repo)
     assert code == 2
     c = _by_label(checks, "publish gate")
-    assert c.status == "fail" and "H-07" in c.detail
+    assert c.status == "fail" and "skewed" in c.detail
 
 
 def test_publish_workflow_with_gate_is_ok(staged_repo):

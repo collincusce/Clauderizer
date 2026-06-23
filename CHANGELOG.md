@@ -2,6 +2,28 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.0.5] — 2026-06-23
+
+Documentation readability and a hardening completion. No change to tool behavior.
+
+**Cleaner docs and tool descriptions.** The human-facing docs (TRUST, TROUBLESHOOTING, the gameplan
+procedure) and the `cz_*` tool descriptions carried internal cross-reference codes — decision,
+finding, and lesson IDs — that meant nothing to a reader; leftover working-memory shorthand. They
+are rewritten in plain prose with no loss of meaning; code references, format examples, and the
+ID-scheme definitions stay. A stale "hardening findings H-01..H-09 resolved" line that would have
+become wrong if updated is now stated as the tracker's standing discipline rather than a drifting
+count.
+
+**Harden — no engine write follows a symlink (H-13).** A pre-planted symlink in a hostile cloned
+working tree could have redirected an engine-owned write (`.mcp.json`, a per-host config like
+`.cursor/mcp.json`, the `.claude/settings.json` hooks, the hook wrapper, `.gitignore`, or a tracked
+doc) to a path outside the repo. Every engine write now refuses a symlinked target instead of
+following it — the link is never followed or deleted; you review and remove it. (The deeper
+symlinked-parent-directory case is tracked as H-16 for a future containment pass.)
+
+**Cleaner `release-check` and CLI output.** The release-check verdicts and CLI messages no longer
+print internal finding codes in their explanations.
+
 ## [1.0.4] — 2026-06-23
 
 Follow-up polish from the stranger-readiness dogfood — the rough edges left after 1.0.3's

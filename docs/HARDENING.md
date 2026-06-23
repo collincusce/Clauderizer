@@ -168,17 +168,17 @@ resolved with a date instead. This is a permanent audit trail. Numbered `H-NN`.
 ### H-13 — Engine file writes follow symlinks (a pre-planted symlink redirects an init write outside the repo)
 
 - **Severity**: LOW
-- **Status**: open (2026-06-21)
+- **Status**: resolved (2026-06-23)
 - **Affected**: src/clauderizer/scaffold/init.py (_register_mcp/_register_hook write_text), src/clauderizer/markdown/writer.py (all write paths use write_text, which follows symlinks)
 - **Invariant violated**: init writes inside the repo only
 - **Preconditions**: attacker pre-plants a symlink in the cloned working tree AND the user runs `clauderize init` on it before reviewing
 - **Impact**: A pre-planted symlink (e.g. .mcp.json -> /outside/file) in a hostile cloned working tree causes init to write its config through the link to the outside path. The written content is the benign, NON-attacker-controlled clauderizer config (no arbitrary-content write), so impact is limited to writing a known config to an attacker-chosen path within the user's write permissions.
 - **Recommended fix**: OPEN (deferred, low severity): add an os.path.islink guard (or O_NOFOLLOW where available; islink+refuse on Windows) before engine-owned config writes in writer.py and init's _register_* — refuse or replace-not-follow a symlinked target. Not auto-fixed now because the fix spans writer.py cross-platform and the vector requires a malicious working tree the user chose to init; tracked for a future hardening pass.
-
+- **Resolution**: Fixed 2026-06-23 (1.1.0): markdown/writer.py adds refuse_if_symlink(), called by all three write paths (_write_if_changed, remove_marker_block, create_if_absent) and by init's _register_mcp/_register_hook config writes — a symlinked target raises OSError, never followed or deleted (the user reviews/removes the link). Cross-platform via Path.is_symlink() (inert on normal paths). Regression-tested: tests/test_engine_hardening.py::test_writer_refuses_to_write_through_a_symlink and ::test_register_mcp_refuses_a_symlinked_target (run on POSIX, skip if the platform forbids symlink creation). Suite green at 619. Residual: a symlinked PARENT directory is not caught (only the final target); the named .mcp.json/settings.json/markdown vectors are closed.
 ### H-14 — uvx-wired MCP server command omits the [mcp] extra → cz_* tool surface is dead on a zero-install
 
 - **Severity**: critical
-- **Status**: open (2026-06-23)
+- **Status**: resolved (2026-06-23)
 - **Affected**: src/clauderizer/scaffold/init.py:30 (DEFAULT_RUN) + _resolve_invocation (reuses the same uvx prefix for the MCP and hook commands); src/clauderizer/mcp_server.py:104,166-171 (lazy `from mcp.server.fastmcp import FastMCP`, graceful refusal); pyproject.toml:26,31 (core dependencies = []; mcp is [project.optional-dependencies]).
 - **Preconditions**: Install/run via uvx or pipx without explicitly adding the [mcp] extra — i.e. exactly the documented `uvx --from clauderizer …` zero-install flow.
 - **Impact**: On a fresh zero-install (uvx/pipx) — the documented primary install path — the entire cz_* MCP tool surface is unavailable. `clauderize init` wires the MCP server as `uvx -q --from clauderizer clauderizer-mcp`, but `mcp` is an optional extra, so `--from clauderizer` never installs it; the server prints the missing-mcp notice and exits without serving. A real Claude Code session gets the SessionStart hook digest but NO MCP tools — i.e. the core product value is silently absent. Maintainer/dev environments (editable venv with [mcp] installed) mask it entirely. Independently reproduced across all three dogfood runs (pet/standard/saas) on published 1.0.2.
@@ -186,14 +186,26 @@ resolved with a date instead. This is a permanent audit trail. Numbered `H-NN`.
 - **Reproduction**: `uvx -q --from clauderizer clauderizer-mcp` → prints "The MCP server needs the 'mcp' package…", serves nothing. Fix-verified: `uvx -q --from "clauderizer[mcp]" clauderizer-mcp` → answers JSON-RPC initialize.
 - **Recommended fix**: Wire the MCP-server uvx command with the extra — `uvx -q --from "clauderizer[mcp]" clauderizer-mcp` — for the MCP entry ONLY (hook and CLI stay `--from clauderizer`). Targeted change in _resolve_invocation's uvx fallback. (Alternative: promote mcp to a core dependency — rejected: it breaks the zero-dep CLI/hook promise in pyproject.toml:23-26.) Requires a 1.0.3 to reach users.
 - **Regression tests**: Add a test asserting the uvx-fallback MCP command contains `clauderizer[mcp]` while the hook command does NOT; ideally an integration check that the [mcp] form answers `initialize`.
-
+- **Resolution**: Verified resolved 2026-06-23 (status was stale-open). Fix shipped in 1.0.3 (commit 6bf8be6): scaffold/init.py:127 wires `clauderizer[mcp]` for the MCP server command only (hook/CLI stay `--from clauderizer`). Regression-tested: tests/test_engine_hardening.py:126-131 and tests/test_init.py:119-122 assert the MCP argv contains clauderizer[mcp]; suite green at 617.
 ### H-15 — clauderize doctor reports MCP server 'launchable' via a --version probe that never imports mcp → false-positive hides the dead wiring
 
 - **Severity**: high
-- **Status**: open (2026-06-23)
+- **Status**: resolved (2026-06-23)
 - **Affected**: src/clauderizer/cli.py:205-206 (verdict "MCP server launchable" → hosts.verify_wiring); src/clauderizer/hosts.py spawn_probe/verify_wiring (probe_arg defaults to "--version").
 - **Impact**: doctor's "MCP server launchable for session host" check passes because the launchability probe runs `clauderizer-mcp --version`, which short-circuits before the lazy `from mcp…` import that real serving requires. So doctor is green (e.g. 14/15 ✓) even when the wired MCP command cannot serve (the companion finding's condition). A first-time user who trusts `clauderize doctor` to confirm setup believes the core tool surface is healthy when it is entirely dead. Independently observed in all three dogfood runs.
 - **Root cause**: Launchability is certified with a --version identity probe, which the MCP entry can answer without importing the mcp SDK. The probe doesn't exercise the import path that serving depends on, so a missing [mcp] extra is invisible to doctor.
 - **Reproduction**: On a uvx-only install: `clauderize doctor` → "✓ MCP server launchable"; but `uvx -q --from clauderizer clauderizer-mcp` (serve) → missing-mcp refusal.
 - **Recommended fix**: Make doctor's MCP verdict exercise what serving needs: a real JSON-RPC initialize handshake, or a `clauderizer-mcp --selfcheck` that attempts the FastMCP import, or verify the wired `--from` resolves the mcp module. Pairs with the [mcp]-extra wiring fix.
 - **Regression tests**: Test that doctor's MCP verdict FAILS when the wired command lacks the [mcp] extra (and passes once it's present).
+- **Resolution**: Verified resolved 2026-06-23 (status was stale-open). Fix shipped in 1.0.3 (commit 6bf8be6): doctor now reports "MCP server wiring includes the [mcp] extra" and fails when missing, via cli.py `_mcp_wiring_missing_extra` (cli.py:226). Regression-tested: tests/test_engine_hardening.py:135-147 (test_doctor_flags_mcp_wiring_missing_the_mcp_extra); suite green at 617.
+
+### H-16 — Engine writes follow a symlinked PARENT directory (the leaf-only symlink guard misses a symlinked container)
+
+- **Severity**: low
+- **Status**: open (2026-06-23)
+- **Affected**: All engine write paths that mkdir a parent then write: src/clauderizer/markdown/writer.py, src/clauderizer/scaffold/init.py, src/clauderizer/scaffold/uninstall.py, src/clauderizer/hosttargets.py emitters.
+- **Invariant violated**: Engine writes land inside the repo only.
+- **Preconditions**: A hostile cloned working tree pre-plants a symlinked DIRECTORY (not just a leaf file) AND the user runs clauderize init before reviewing it.
+- **Impact**: refuse_if_symlink() (the H-13 fix) checks only the final path component. A pre-planted symlinked PARENT directory (e.g. .clauderizer -> /tmp/evil, or .cursor -> outside) is not caught: path.parent.mkdir(exist_ok=True) is a no-op on an existing symlinked dir, so the subsequent write lands inside the link target, outside the repo. Same limited impact class as H-13 — the engine writes only its own NON-attacker-controlled config/templates; no arbitrary-content write.
+- **Root cause**: refuse_if_symlink(path) checks path.is_symlink() (the leaf), not whether any ancestor up to the repo root is a symlink.
+- **Recommended fix**: DEFERRED (low impact + real compatibility cost). Blanket-refusing a symlinked parent (e.g. `if path.parent.is_symlink(): raise`) would BREAK legitimate setups where a user symlinks docs/ or a config dir to a shared/synced location. The safe fix is repo-root containment — resolve() the final path and assert it stays under the repo root — which needs the repo root threaded through the write calls. Tracked for a dedicated hardening pass. All LEAF-symlink vectors (the documented H-13 cases, across writer.py / init.py / uninstall.py / hosttargets.py) are closed and regression-tested.
