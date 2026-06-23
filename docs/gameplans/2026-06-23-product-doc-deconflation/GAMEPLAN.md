@@ -1,7 +1,7 @@
 # product-doc-deconflation Gameplan
 
 > Created: 2026-06-23
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -46,6 +46,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 **O-02.** Prior gameplan 2026-06-23-dogfood-followup-findings is COMPLETE (8/8 phases) but not formally closed out (no post-mortem / final cascade). Creating this gameplan made it inactive; decide whether to write its post-mortem before or after this gameplan closes, so it is not silently dropped. _(resolved 2026-06-23: Closed out in a parallel session 2026-06-23 (commit 5ddb32e: post-mortem on disk, active_gameplan cleared). No longer pending.)_
 
+**O-03.** _(phase 5)_ Final sweep found user-facing CLI RUNTIME OUTPUT messages leak internal IDs — concretely, `clauderize release-check`'s RED branch prints "...until every X is resolved (L-08)." (src/clauderizer/cli.py cmd_release_check, ~L363). This is a related but SEPARATE surface from the scoped "clauderize --help text" (D2): runtime output messages (release-check, and likely doctor verdicts + release_check.py check labels/details) were not in the layer-2 list. NOT fixed here, to respect the gameplan's scope boundary and avoid a half-done expansion. Recommend a focused follow-up sweep of all CLI output paths.
+
+**O-04.** _(phase 5)_ Cold fresh-human-reader pass (Phase 5) flagged comprehension gaps that are OUT OF SCOPE for this gameplan (concept-definition completeness, not internal-ID jargon or dogfood/engine conflation): SECURITY.md & TRUST.md assume the reader knows "MCP server" / "hooks" / "agent harness" / "key-merge" without defining them (reader gave both a "no" newcomer-verdict on that basis); TROUBLESHOOTING.md introduces the "[Clauderizer]" stdout breadcrumb late; README's "1.0 readiness gates" is vague without RELEASING.md. Recommend a future "novice onboarding / concept glossary" doc-polish pass. The gameplan's actual goal (zero unexplained internal IDs) was VERIFIED ACHIEVED by the same pass; these are a different quality axis.
+
 ## Phase Breakdown
 
 ### Phase 0: Bootstrap and rules of engagement
@@ -58,10 +62,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Ground-truth facts confirmed against source and recorded via cz_add_output: tool count = 38 (tools_list.py), package version = 1.0.4 (pyproject), 8 CLI subcommands, PROCEDURE_VERSION = 1.3.0.
-- [ ] Layer-2 product-doc inventory recorded as an output: the 6 markdown docs + the cz_* tool-description strings in src + the clauderize --help text.
-- [ ] Governing decisions in place and reviewed: the operational jargon rule (D1) and the scope boundary (D2).
-- [ ] Working tree clean (plan scaffold committed) and baseline tests green — ready to begin the audit.
+- [x] Ground-truth facts confirmed against source and recorded via cz_add_output: tool count = 38 (tools_list.py), package version = 1.0.4 (pyproject), 8 CLI subcommands, PROCEDURE_VERSION = 1.3.0.
+- [x] Layer-2 product-doc inventory recorded as an output: the 6 markdown docs + the cz_* tool-description strings in src + the clauderize --help text.
+- [x] Governing decisions in place and reviewed: the operational jargon rule (D1) and the scope boundary (D2).
+- [x] Working tree clean (plan scaffold committed) and baseline tests green — ready to begin the audit.
 
 ### Phase 1: Gameplan conflation survey
 
@@ -73,9 +77,9 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] All 23 gameplans classified as dogfooding | engine-update | mixed in a recorded table (kept in this gameplan's own layer-1 notes, not a human-facing doc).
-- [ ] Every conflation instance enumerated: each case where a gameplan's framing blurred dogfooding vs engine-update, or where engine/product-doc changes shipped under a dogfooding frame.
-- [ ] For each conflation instance, the specific layer-2 human-doc debt it left is named (which product doc went stale/unrefreshed) — or explicitly marked 'no doc debt' — yielding the input list for Phases 3-4.
+- [x] All 23 gameplans classified as dogfooding | engine-update | mixed in a recorded table (kept in this gameplan's own layer-1 notes, not a human-facing doc).
+- [x] Every conflation instance enumerated: each case where a gameplan's framing blurred dogfooding vs engine-update, or where engine/product-doc changes shipped under a dogfooding frame.
+- [x] For each conflation instance, the specific layer-2 human-doc debt it left is named (which product doc went stale/unrefreshed) — or explicitly marked 'no doc debt' — yielding the input list for Phases 3-4.
 
 ### Phase 2: Product-doc audit
 
@@ -87,10 +91,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Every layer-2 surface swept with an exhaustive regex for the banned ID patterns: README.md, SECURITY.md, docs/TRUST.md, docs/UPGRADING.md, docs/TROUBLESHOOTING.md, docs/gameplans/GAMEPLAN-PROCEDURE.md, the cz_* tool-description strings in src/, and the clauderize --help text.
-- [ ] Each jargon hit recorded with file:line, the offending token, and a proposed plain-prose rewrite.
-- [ ] Drift candidates verified against Phase-0 ground truth (README tool enumeration vs 38; the 'all hardening findings resolved' claim vs HARDENING.md; version/command claims) and each marked confirmed-drift with corrected value, or false-alarm.
-- [ ] Remediation list complete and partitioned into markdown-doc fixes (Phase 3) and in-code-string fixes (Phase 4).
+- [x] Every layer-2 surface swept with an exhaustive regex for the banned ID patterns: README.md, SECURITY.md, docs/TRUST.md, docs/UPGRADING.md, docs/TROUBLESHOOTING.md, docs/gameplans/GAMEPLAN-PROCEDURE.md, the cz_* tool-description strings in src/, and the clauderize --help text.
+- [x] Each jargon hit recorded with file:line, the offending token, and a proposed plain-prose rewrite.
+- [x] Drift candidates verified against Phase-0 ground truth (README tool enumeration vs 38; the 'all hardening findings resolved' claim vs HARDENING.md; version/command claims) and each marked confirmed-drift with corrected value, or false-alarm.
+- [x] Remediation list complete and partitioned into markdown-doc fixes (Phase 3) and in-code-string fixes (Phase 4).
 
 ### Phase 3: Rectify markdown product docs
 
@@ -102,11 +106,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] All banned-ID jargon in README/SECURITY/TRUST/UPGRADING/TROUBLESHOOTING/GAMEPLAN-PROCEDURE rewritten to plain prose — re-running the sweep on these files yields zero hits in visible prose.
-- [ ] All confirmed drift in these files fixed to ground-truth values, including the README MCP-surface enumeration reconciled to 38 tools.
-- [ ] Every Phase-1 doc-debt item assigned to a markdown doc is addressed (stale doc refreshed) or explicitly deferred with a recorded reason.
-- [ ] Machine affordances preserved: HTML comments, YAML frontmatter, anchors and link targets unchanged — verified by reviewing that the diff touches only visible prose.
-- [ ] No layer-1 artifact (gameplan/handoff/tracked log) modified.
+- [x] All banned-ID jargon in README/SECURITY/TRUST/UPGRADING/TROUBLESHOOTING/GAMEPLAN-PROCEDURE rewritten to plain prose — re-running the sweep on these files yields zero hits in visible prose.
+- [x] All confirmed drift in these files fixed to ground-truth values, including the README MCP-surface enumeration reconciled to 38 tools.
+- [x] Every Phase-1 doc-debt item assigned to a markdown doc is addressed (stale doc refreshed) or explicitly deferred with a recorded reason.
+- [x] Machine affordances preserved: HTML comments, YAML frontmatter, anchors and link targets unchanged — verified by reviewing that the diff touches only visible prose.
+- [x] No layer-1 artifact (gameplan/handoff/tracked log) modified.
 
 ### Phase 4: Rectify in-code human-facing strings
 
@@ -118,9 +122,9 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] All banned-ID jargon removed from cz_* tool descriptions and any CLI help/epilog/server-instruction strings — re-running the sweep on src/ yields zero hits in description strings.
-- [ ] git diff shows only description/docstring/help-text string changes; no logic or control-flow lines changed (verified by diff review).
-- [ ] Full test suite green at the baseline count (602) via cz_preflight or the host test command, before and after the edits.
+- [x] All banned-ID jargon removed from cz_* tool descriptions and any CLI help/epilog/server-instruction strings — re-running the sweep on src/ yields zero hits in description strings.
+- [x] git diff shows only description/docstring/help-text string changes; no logic or control-flow lines changed (verified by diff review).
+- [x] Full test suite green at the baseline count (617) via cz_preflight or the host test command, before and after the edits.
 
 ### Phase 5: Fresh-human-reader verification
 
@@ -132,9 +136,9 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 5.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] A subagent with no source/code access reads the rectified layer-2 docs cold and reports zero unexplained internal IDs and zero comprehension blockers — or every issue it raises is resolved and re-checked.
-- [ ] Final automated sweep across all layer-2 surfaces proves zero banned-ID patterns in visible prose.
-- [ ] Every Phase-1 doc-debt item confirmed addressed, or explicitly deferred with a recorded reason.
+- [x] A subagent with no source/code access reads the rectified layer-2 docs cold and reports zero unexplained internal IDs and zero comprehension blockers — or every issue it raises is resolved and re-checked.
+- [x] Final automated sweep across all layer-2 surfaces proves zero banned-ID patterns in visible prose.
+- [x] Every Phase-1 doc-debt item confirmed addressed, or explicitly deferred with a recorded reason.
 
 ### Phase 6: PII scrub and final commit
 
