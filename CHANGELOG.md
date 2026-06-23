@@ -2,6 +2,22 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.0.3] — 2026-06-23
+
+**Fix — zero-install MCP server (H-14).** `clauderize init` wired the MCP server as
+`uvx -q --from clauderizer clauderizer-mcp`, but `mcp` is an optional extra, so the
+zero-install (uvx/pipx) path never installed it: the server printed the missing-package
+notice and refused to serve, leaving a fresh Claude Code session with the SessionStart hook
+but **no `cz_*` MCP tools**. The uvx fallback now requests the extra for the server command
+only (`--from clauderizer[mcp]`); the hook and CLI stay extra-free. Surfaced by a
+pet/standard/saas stranger-readiness dogfood — invisible in dev setups that already have
+`mcp` installed.
+
+**Fix — `doctor` no longer false-greens a broken MCP wiring (H-15).** The "MCP server
+launchable" verdict probes `--version`, which answers without importing the `mcp` SDK, so it
+stayed green even when the wired command could never serve. `clauderize doctor` now also
+statically flags a `--from clauderizer` MCP wiring missing the `[mcp]` extra.
+
 ## [1.0.2] — 2026-06-22
 
 **License.** Relicensed from **MIT** to the **Apache License 2.0** — the same permissive terms,

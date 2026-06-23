@@ -123,8 +123,29 @@ def test_resolve_invocation_falls_back_to_path_then_uvx(monkeypatch, tmp_path):
     monkeypatch.setattr(scaffold_init.shutil, "which", lambda name: f"/venv/bin/{name}")
     assert _resolve_invocation(None)[0] == ["/venv/bin/clauderizer-mcp"]
     monkeypatch.setattr(scaffold_init.shutil, "which", lambda name: None)
-    assert _resolve_invocation(None)[0] == ["uvx", "-q", "--from", "clauderizer",
-                                            "clauderizer-mcp"]
+    # H-14: the uvx fallback MUST request the [mcp] extra for the SERVER command —
+    # `--from clauderizer` never installs the optional mcp SDK, so the wired server
+    # refused to serve on every zero-install (found across the pet/standard/saas
+    # stranger-readiness dogfood). The hook command stays extra-free.
+    mcp_argv, hook_argv = _resolve_invocation(None)
+    assert mcp_argv == ["uvx", "-q", "--from", "clauderizer[mcp]", "clauderizer-mcp"]
+    assert hook_argv == ["uvx", "-q", "--from", "clauderizer", "clauderizer-hook"]
+
+
+def test_doctor_flags_mcp_wiring_missing_the_mcp_extra():
+    # H-15: a uvx `--from clauderizer` MCP wiring (no [mcp] extra) launches but
+    # cannot import the SDK and refuses to serve; doctor must flag it statically
+    # (the launchability/--version probe never imports mcp, so it stayed green).
+    from clauderizer.cli import _mcp_wiring_missing_extra
+    assert _mcp_wiring_missing_extra(["uvx", "-q", "--from", "clauderizer", "clauderizer-mcp"])
+    assert _mcp_wiring_missing_extra(
+        ["wsl.exe", "-d", "ubuntu", "uvx", "-q", "--from", "clauderizer", "clauderizer-mcp"])
+    assert not _mcp_wiring_missing_extra(
+        ["uvx", "-q", "--from", "clauderizer[mcp]", "clauderizer-mcp"])
+    assert not _mcp_wiring_missing_extra(["/venv/bin/clauderizer-mcp"])  # console script: can't judge
+    assert not _mcp_wiring_missing_extra(None)
+    assert not _mcp_wiring_missing_extra(  # hook, not the server
+        ["uvx", "--from", "clauderizer", "clauderizer-hook"])
 
 
 # --- #1 doctor command executability -----------------------------------------

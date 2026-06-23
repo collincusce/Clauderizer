@@ -116,7 +116,10 @@ def _fake_uvx_env(tmp_path, monkeypatch, *, cache_env=True):
 def test_resolve_invocation_refuses_uv_cache_paths(tmp_path, monkeypatch):
     _fake_uvx_env(tmp_path, monkeypatch, cache_env=True)
     mcp, hook = scaffold_init._resolve_invocation(None)
-    assert mcp == ["/opt/tools/uvx", "-q", "--from", "clauderizer", "clauderizer-mcp"]
+    # H-14: the MCP command requests the [mcp] extra (the server needs the SDK);
+    # the hook command stays extra-free. The durable uvx form is wired, never the
+    # uv-cache path.
+    assert mcp == ["/opt/tools/uvx", "-q", "--from", "clauderizer[mcp]", "clauderizer-mcp"]
     assert hook == ["/opt/tools/uvx", "-q", "--from", "clauderizer", "clauderizer-hook"]
 
 

@@ -118,7 +118,14 @@ def _resolve_invocation(run_cmd: list[str] | None) -> tuple[list[str], list[str]
     # shells whose PATH may not include ~/.local/bin (observed live on WSL).
     uvx = shutil.which(DEFAULT_RUN[0]) or DEFAULT_RUN[0]
     run = [uvx, *DEFAULT_RUN[1:]]
-    return [*run, "clauderizer-mcp"], [*run, "clauderizer-hook"]
+    # The MCP server needs the optional `mcp` extra; the hook and CLI do not. The
+    # zero-install uvx path must request `clauderizer[mcp]` for the SERVER command
+    # only — `--from clauderizer` never installs the extra, so the wired server
+    # printed the missing-package notice and exited without serving (H-14, found
+    # live across the pet/standard/saas stranger-readiness dogfood). The hook
+    # command stays extra-free so its cold resolve downloads nothing it can't use.
+    mcp_run = [*run[:-1], f"{run[-1]}[mcp]"]
+    return [*mcp_run, "clauderizer-mcp"], [*run, "clauderizer-hook"]
 
 
 @dataclass

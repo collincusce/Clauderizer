@@ -174,3 +174,26 @@ resolved with a date instead. This is a permanent audit trail. Numbered `H-NN`.
 - **Preconditions**: attacker pre-plants a symlink in the cloned working tree AND the user runs `clauderize init` on it before reviewing
 - **Impact**: A pre-planted symlink (e.g. .mcp.json -> /outside/file) in a hostile cloned working tree causes init to write its config through the link to the outside path. The written content is the benign, NON-attacker-controlled clauderizer config (no arbitrary-content write), so impact is limited to writing a known config to an attacker-chosen path within the user's write permissions.
 - **Recommended fix**: OPEN (deferred, low severity): add an os.path.islink guard (or O_NOFOLLOW where available; islink+refuse on Windows) before engine-owned config writes in writer.py and init's _register_* — refuse or replace-not-follow a symlinked target. Not auto-fixed now because the fix spans writer.py cross-platform and the vector requires a malicious working tree the user chose to init; tracked for a future hardening pass.
+
+### H-14 — uvx-wired MCP server command omits the [mcp] extra → cz_* tool surface is dead on a zero-install
+
+- **Severity**: critical
+- **Status**: open (2026-06-23)
+- **Affected**: src/clauderizer/scaffold/init.py:30 (DEFAULT_RUN) + _resolve_invocation (reuses the same uvx prefix for the MCP and hook commands); src/clauderizer/mcp_server.py:104,166-171 (lazy `from mcp.server.fastmcp import FastMCP`, graceful refusal); pyproject.toml:26,31 (core dependencies = []; mcp is [project.optional-dependencies]).
+- **Preconditions**: Install/run via uvx or pipx without explicitly adding the [mcp] extra — i.e. exactly the documented `uvx --from clauderizer …` zero-install flow.
+- **Impact**: On a fresh zero-install (uvx/pipx) — the documented primary install path — the entire cz_* MCP tool surface is unavailable. `clauderize init` wires the MCP server as `uvx -q --from clauderizer clauderizer-mcp`, but `mcp` is an optional extra, so `--from clauderizer` never installs it; the server prints the missing-mcp notice and exits without serving. A real Claude Code session gets the SessionStart hook digest but NO MCP tools — i.e. the core product value is silently absent. Maintainer/dev environments (editable venv with [mcp] installed) mask it entirely. Independently reproduced across all three dogfood runs (pet/standard/saas) on published 1.0.2.
+- **Root cause**: DEFAULT_RUN = ['uvx','-q','--from','clauderizer'] is reused verbatim for BOTH entry points. The hook (clauderizer-hook) needs no extra, but the MCP server (clauderizer-mcp) requires the optional mcp dep, so the composed MCP command lacks [mcp].
+- **Reproduction**: `uvx -q --from clauderizer clauderizer-mcp` → prints "The MCP server needs the 'mcp' package…", serves nothing. Fix-verified: `uvx -q --from "clauderizer[mcp]" clauderizer-mcp` → answers JSON-RPC initialize.
+- **Recommended fix**: Wire the MCP-server uvx command with the extra — `uvx -q --from "clauderizer[mcp]" clauderizer-mcp` — for the MCP entry ONLY (hook and CLI stay `--from clauderizer`). Targeted change in _resolve_invocation's uvx fallback. (Alternative: promote mcp to a core dependency — rejected: it breaks the zero-dep CLI/hook promise in pyproject.toml:23-26.) Requires a 1.0.3 to reach users.
+- **Regression tests**: Add a test asserting the uvx-fallback MCP command contains `clauderizer[mcp]` while the hook command does NOT; ideally an integration check that the [mcp] form answers `initialize`.
+
+### H-15 — clauderize doctor reports MCP server 'launchable' via a --version probe that never imports mcp → false-positive hides the dead wiring
+
+- **Severity**: high
+- **Status**: open (2026-06-23)
+- **Affected**: src/clauderizer/cli.py:205-206 (verdict "MCP server launchable" → hosts.verify_wiring); src/clauderizer/hosts.py spawn_probe/verify_wiring (probe_arg defaults to "--version").
+- **Impact**: doctor's "MCP server launchable for session host" check passes because the launchability probe runs `clauderizer-mcp --version`, which short-circuits before the lazy `from mcp…` import that real serving requires. So doctor is green (e.g. 14/15 ✓) even when the wired MCP command cannot serve (the companion finding's condition). A first-time user who trusts `clauderize doctor` to confirm setup believes the core tool surface is healthy when it is entirely dead. Independently observed in all three dogfood runs.
+- **Root cause**: Launchability is certified with a --version identity probe, which the MCP entry can answer without importing the mcp SDK. The probe doesn't exercise the import path that serving depends on, so a missing [mcp] extra is invisible to doctor.
+- **Reproduction**: On a uvx-only install: `clauderize doctor` → "✓ MCP server launchable"; but `uvx -q --from clauderizer clauderizer-mcp` (serve) → missing-mcp refusal.
+- **Recommended fix**: Make doctor's MCP verdict exercise what serving needs: a real JSON-RPC initialize handshake, or a `clauderizer-mcp --selfcheck` that attempts the FastMCP import, or verify the wired `--from` resolves the mcp module. Pairs with the [mcp]-extra wiring fix.
+- **Regression tests**: Test that doctor's MCP verdict FAILS when the wired command lacks the [mcp] extra (and passes once it's present).

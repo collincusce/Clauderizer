@@ -118,6 +118,20 @@ def cmd_reindex(args: argparse.Namespace) -> int:
     return 0
 
 
+def _mcp_wiring_missing_extra(wiring: list[str] | None) -> bool:
+    """True if the MCP server is wired via uvx/pipx `--from clauderizer` WITHOUT the
+    [mcp] extra (H-15). Such a command launches but cannot import the mcp SDK, so it
+    refuses to serve — yet a --version/presence probe never notices (the silent
+    failure the stranger-readiness dogfood surfaced). Only the `--from` form is
+    judged; a direct console-script path can't be assessed statically."""
+    if not wiring or "--from" not in wiring:
+        return False
+    i = wiring.index("--from")
+    spec = wiring[i + 1] if i + 1 < len(wiring) else ""
+    runs_mcp = any(tok.endswith("clauderizer-mcp") for tok in wiring)
+    return runs_mcp and spec.startswith("clauderizer") and "[mcp]" not in spec
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     paths, config = _load()
     if config is None:
@@ -204,6 +218,15 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         # launchable BY THE SESSION HOST OF RECORD, or doctor must say it cannot tell.
         verdict("MCP server launchable for session host",
                 hosts.verify_wiring(wiring, session_host))
+        # H-15: the launchability verdict above probes presence/identity (--version),
+        # which the MCP entry answers WITHOUT importing the mcp SDK — so it stayed
+        # green even when the wired command lacked the [mcp] extra and could never
+        # serve. Statically catch that exact misconfiguration on the uvx path.
+        if _mcp_wiring_missing_extra(wiring):
+            check("MCP server wiring includes the [mcp] extra", False,
+                  "wired via `--from clauderizer` WITHOUT the [mcp] extra, so the server "
+                  "cannot import the mcp SDK and refuses to serve; re-run `clauderize init` "
+                  "(1.0.3+) to rewire it as `--from clauderizer[mcp]`")
         settings = paths.root / ".claude" / "settings.json"
         check("SessionStart hook registered", _hook_registered(settings))
         hook_argv = _hook_command(settings)
