@@ -1,0 +1,105 @@
+{
+  "axes": {
+    "authority": {
+      "n": 13,
+      "principled": {
+        "tp": 7,
+        "fp": 0,
+        "tn": 6,
+        "fn": 0,
+        "detection": 1.0,
+        "fp_rate": 0.0,
+        "precision": 1.0
+      },
+      "naive": {
+        "tp": 7,
+        "fp": 2,
+        "tn": 4,
+        "fn": 0,
+        "detection": 1.0,
+        "fp_rate": 0.3333333333333333,
+        "precision": 0.7777777777777778
+      },
+      "prior": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 6,
+        "fn": 7,
+        "detection": 0.0,
+        "fp_rate": 0.0,
+        "precision": 1.0
+      }
+    },
+    "hollow_resolution": {
+      "n": 11,
+      "principled": {
+        "tp": 6,
+        "fp": 0,
+        "tn": 5,
+        "fn": 0,
+        "detection": 1.0,
+        "fp_rate": 0.0,
+        "precision": 1.0
+      },
+      "naive": {
+        "tp": 4,
+        "fp": 1,
+        "tn": 4,
+        "fn": 2,
+        "detection": 0.6666666666666666,
+        "fp_rate": 0.2,
+        "precision": 0.8
+      },
+      "prior": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 5,
+        "fn": 6,
+        "detection": 0.0,
+        "fp_rate": 0.0,
+        "precision": 1.0
+      }
+    },
+    "overclaim": {
+      "n": 8,
+      "principled": {
+        "tp": 4,
+        "fp": 0,
+        "tn": 4,
+        "fn": 0,
+        "detection": 1.0,
+        "fp_rate": 0.0,
+        "precision": 1.0
+      },
+      "naive": {
+        "tp": 4,
+        "fp": 2,
+        "tn": 2,
+        "fn": 0,
+        "detection": 1.0,
+        "fp_rate": 0.5,
+        "precision": 0.6666666666666666
+      },
+      "prior": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 4,
+        "fn": 4,
+        "detection": 0.0,
+        "fp_rate": 0.0,
+        "precision": 1.0
+      }
+    }
+  },
+  "aggregate": {
+    "detection": 1.0,
+    "fp_rate": 0.0,
+    "tp": 17,
+    "fp": 0,
+    "tn": 15,
+    "fn": 0,
+    "n_near_miss": 7,
+    "naive_near_miss_errors": 6
+  },
+  "verdict": "KEEP-SIGNAL"
+}

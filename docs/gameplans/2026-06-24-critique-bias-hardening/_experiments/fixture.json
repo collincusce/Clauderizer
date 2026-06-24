@@ -1,0 +1,69 @@
+{
+  "fixture": "critique-bias-hardening",
+  "purpose": "Labeled measuring stick for the two CALM-derived advisory bias checks added to cz_critique (D1). Authored BEFORE the detectors (L-39: build the adversarial fixture targeting the mechanism first). Each case carries the raw signal a self-critique is built from (a lesson's evidence field, a resolved open-item note, or a phase-summary line) and a human ground-truth label. The hardened rubric must surface the degenerate ones the PRIOR rubric scored clean, WITHOUT flagging the sound ones — including the adversarial near-misses, which a naive detector gets wrong.",
+  "labels": {
+    "degenerate": "the planted bias — the hardened detector SHOULD flag (expected = True)",
+    "sound": "no bias — the hardened detector should stay quiet (expected = False)",
+    "overclaim": "self-congratulatory completion language (expected match = True)",
+    "neutral": "factual prose, no over-claim (expected match = False)"
+  },
+  "note_on_near_misses": "Cases marked near_miss=true are where a NAIVE detector errs: an external citation that is also in-repo-anchored (sound), a hollow note that is long (degenerate), a terse note that is anchored (sound), a factual 'all criteria' line with no intensifier (neutral). They are the precision test — the reason the gain is not a tautology.",
+
+  "axes": {
+    "authority": {
+      "classifier": "_evidence_is_authority(evidence) -> bool",
+      "maps_to": "D-017 evidence field on lessons; the prior Grounding check (_lessons_without_evidence) passes any evidence-BEARING lesson, so an unverifiable-authority citation slips through clean.",
+      "principle": "flag iff the evidence appeals to an external/unverifiable authority (arXiv/DOI/URL/'verified'/'the literature'/'standard practice') AND carries NO concrete in-repo anchor (commit SHA, src|docs|tests path, file.ext[:line], NNN tests/suite, a metric like nDCG/recall, a phase/date, an N/M run, a pinned CI leg).",
+      "cases": [
+        {"id": "A1", "label": "degenerate", "evidence": "arXiv:2410.02736", "rationale": "bare external paper id — nothing in-repo resolves it"},
+        {"id": "A2", "label": "degenerate", "evidence": "verified 3-0 by the review panel", "rationale": "appeal to a vote; no checkable artifact"},
+        {"id": "A3", "label": "degenerate", "evidence": "as is well established in the literature", "rationale": "appeal to literature; unfalsifiable here"},
+        {"id": "A4", "label": "degenerate", "evidence": "https://blog.example.com/llm-judge-bias", "rationale": "external URL only; not in-repo provenance"},
+        {"id": "A5", "label": "degenerate", "evidence": "according to the official documentation", "rationale": "vague authority, no path or version"},
+        {"id": "A6", "label": "degenerate", "evidence": "obviously correct; this is standard practice", "rationale": "bare appeal to obviousness/convention"},
+        {"id": "A7", "label": "degenerate", "near_miss": true, "evidence": "per the CALM benchmark, this is the established best practice", "rationale": "name-drops a benchmark but supplies no measured number/metric — still an unresolved appeal"},
+        {"id": "S1", "label": "sound", "evidence": "commit a1b2c3d; tests/test_critique.py:69", "rationale": "SHA + file:line — directly checkable"},
+        {"id": "S2", "label": "sound", "evidence": "suite 620 green after the change", "rationale": "concrete test count"},
+        {"id": "S3", "label": "sound", "near_miss": true, "evidence": "arXiv:2410.02736, validated in tests/test_critique.py against commit deadbeef", "rationale": "cites a paper BUT anchors it in-repo — a naive 'contains arXiv' detector false-positives"},
+        {"id": "S4", "label": "sound", "evidence": "2026-06-24-ranker-spike phase 0: nDCG delta +0.0000 over baseline", "rationale": "gameplan/phase + measured metric"},
+        {"id": "S5", "label": "sound", "evidence": "see docs/LESSONS.md L-39 and src/clauderizer/rituals/critique.py", "rationale": "in-repo paths"},
+        {"id": "S6", "label": "sound", "near_miss": true, "evidence": "confirmed green on windows-3.11 CI, run 9/9", "rationale": "uses the appeal word 'confirmed' but is anchored by a pinned CI leg and a concrete run ratio"}
+      ]
+    },
+
+    "hollow_resolution": {
+      "classifier": "_resolution_is_hollow(note) -> bool",
+      "maps_to": "self-enhancement: the prior Coverage check only flags UNRESOLVED open items, so an item closed with a hollow self-serving note reads as clean.",
+      "principle": "flag iff the resolution note matches a filler fingerprint ('done'/'looks good'/'handled'/'taken care of'/'working as expected'/...) AND carries NO in-repo anchor. Length is NOT the signal — a long filler note is still hollow; a terse anchored note is not.",
+      "cases": [
+        {"id": "H1", "label": "degenerate", "note": "done", "rationale": "pure filler"},
+        {"id": "H2", "label": "degenerate", "note": "looks good", "rationale": "pure filler"},
+        {"id": "H3", "label": "degenerate", "note": "resolved", "rationale": "restates the status, says nothing"},
+        {"id": "H4", "label": "degenerate", "note": "handled, no longer an issue", "rationale": "filler; no what/where"},
+        {"id": "H5", "label": "degenerate", "note": "addressed in this phase", "rationale": "vague; nothing concrete"},
+        {"id": "H6", "label": "degenerate", "near_miss": true, "note": "this has been fully taken care of and everything is now completely fine and working as expected", "rationale": "LONG but entirely hollow — a length-threshold detector would wave it through"},
+        {"id": "G1", "label": "sound", "note": "built _experiments/fixture.json with 32 labeled cases (commit a1b2c3d)", "rationale": "path + count + SHA"},
+        {"id": "G2", "label": "sound", "note": "added _authority_flags in critique.py:130; covered by test_authority_flags", "rationale": "file:line + test name"},
+        {"id": "G3", "label": "sound", "note": "superseded by D-040 - see docs/DECISIONS.md", "rationale": "decision id + path"},
+        {"id": "G4", "label": "sound", "note": "measured null: BM25 tied baseline at nDCG 1.0000, discarded", "rationale": "metric + measured value"},
+        {"id": "G5", "label": "sound", "near_miss": true, "note": "see commit a1b2c3d", "rationale": "terse but anchored — a length-threshold detector would false-positive"}
+      ]
+    },
+
+    "overclaim": {
+      "classifier": "_overclaims(prose) -> list[str]  (truthy match = flagged)",
+      "maps_to": "self-enhancement: in integration this fires only when a completion claim COEXISTS with a live objective gap; here we test the phrase detector in isolation.",
+      "principle": "match self-congratulatory intensifiers ('fully verified', 'no gaps remain', 'flawless', 'ready to ship', 'production-ready', '100%', 'everything works', 'complete and correct', 'comprehensive', 'nothing left to do'); a factual report of completion is NOT an over-claim.",
+      "cases": [
+        {"id": "O1", "label": "overclaim", "prose": "Everything passes, fully verified, ready to ship.", "rationale": "three stacked intensifiers"},
+        {"id": "O2", "label": "overclaim", "prose": "All exit criteria met; no gaps remain; production-ready.", "rationale": "'no gaps remain' + 'production-ready'"},
+        {"id": "O3", "label": "overclaim", "prose": "This phase is complete and correct - a flawless, comprehensive result.", "rationale": "'complete and correct' + 'flawless'"},
+        {"id": "O4", "label": "overclaim", "prose": "100% done, everything works, nothing left to do.", "rationale": "'100%' + 'everything works'"},
+        {"id": "P1", "label": "neutral", "prose": "Built the fixture; two checks prototyped; measurement pending.", "rationale": "states work + open status"},
+        {"id": "P2", "label": "neutral", "prose": "BM25 tied the baseline; recorded as a null result and discarded.", "rationale": "reports a negative result"},
+        {"id": "P3", "label": "neutral", "near_miss": true, "prose": "Phase 0 done: added two helpers, updated one test, 622 tests green.", "rationale": "'done'/'green' are factual status words, not intensifiers"},
+        {"id": "P4", "label": "neutral", "near_miss": true, "prose": "All 4 exit criteria were checked off after verification against the labeled fixture.", "rationale": "factual 'all criteria' with substantiation, no intensifier — a naive 'all.*criteria' detector false-positives"}
+      ]
+    }
+  }
+}

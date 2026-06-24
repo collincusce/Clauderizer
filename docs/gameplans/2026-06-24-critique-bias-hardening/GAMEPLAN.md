@@ -1,7 +1,7 @@
 # critique-bias-hardening Gameplan
 
 > Created: 2026-06-24
-> Status: Planning
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -34,7 +34,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 ## Open Items
 
-**O-01.** _(phase 0)_ Define the labeled critique-eval fixture: a small set of degenerate/self-enhanced critiques vs sound ones (the LongMemEval ranking harness does NOT cover critique quality), so the anti-bias additions can be gain-gated on whether they surface what the prior rubric missed.
+**O-01.** _(phase 0)_ Define the labeled critique-eval fixture: a small set of degenerate/self-enhanced critiques vs sound ones (the LongMemEval ranking harness does NOT cover critique quality), so the anti-bias additions can be gain-gated on whether they surface what the prior rubric missed. _(resolved 2026-06-24: Built _experiments/fixture.json (32 labeled cases across authority/hollow-resolution/overclaim) + measure.py harness; results.json shows the shipped classifiers at 100% detection / 0% FP while a naive strawman hits 20-50% FP on the near-misses, so the fixture has discriminating power)_
 
 ## Phase Breakdown
 
@@ -48,7 +48,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Self-enhancement + authority checklist items added to the cz_critique reference-free rubric (rituals/critique.py), surfaced advisorily in the tool result
-- [ ] Deterministic surfacing only — no new runtime dependency added; no enable/disable config flag (INVARIANT-05 / D-015 honored)
-- [ ] A small labeled critique-eval fixture demonstrates the new items surface a degenerate/self-enhanced critique that the prior rubric scored clean
-- [ ] Full suite green (baseline 624 tests; no regression) and benchmarks unaffected
+- [x] Self-enhancement + authority checklist items added to the cz_critique reference-free rubric (rituals/critique.py), surfaced advisorily in the tool result
+- [x] Deterministic surfacing only — no new runtime dependency added; no enable/disable config flag (INVARIANT-05 / D-015 honored)
+- [x] A small labeled critique-eval fixture demonstrates the new items surface a degenerate/self-enhanced critique that the prior rubric scored clean
+- [x] Full suite green (baseline 624 tests; no regression) and benchmarks unaffected
