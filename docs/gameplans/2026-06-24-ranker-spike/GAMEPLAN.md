@@ -1,7 +1,7 @@
 # ranker-spike Gameplan
 
 > Created: 2026-06-24
-> Status: Planning
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -34,7 +34,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 ## Open Items
 
-**O-01.** _(phase 0)_ On a KEEP verdict only: rank_relevant's shared consumers (the analyze gate, the handoff lesson-pointer, the edge-suggester) need a cz_cascade + review before shipping the new scoring. Record an AMENDED ship phase at that point — do NOT pre-plan it (no phases for an outcome that may not occur).
+**O-01.** _(phase 0)_ On a KEEP verdict only: rank_relevant's shared consumers (the analyze gate, the handoff lesson-pointer, the edge-suggester) need a cz_cascade + review before shipping the new scoring. Record an AMENDED ship phase at that point — do NOT pre-plan it (no phases for an outcome that may not occur). _(resolved 2026-06-24: Did not trigger — the verdict is DISCARD, not KEEP. No new scoring ships to rank_relevant, so its shared consumers (analyze gate, handoff lesson-pointer, edge-suggester) need no cz_cascade and no amended ship phase. The shared-consumer ripple stays correctly un-built (no phases for an outcome that did not occur).)_
 
 ## Phase Breakdown
 
@@ -48,8 +48,8 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Current baseline ranker metrics (recall@k / nDCG / MRR on extraction + multi_session) captured in the Outputs Registry
-- [ ] Length-normalized stdlib BM25/Okapi scoring implemented as a measurable alternative path (stdlib-only — verified no new import / runtime dependency added)
-- [ ] Harness comparison run; the pre-registered keep/discard metric evaluated against the captured baseline
-- [ ] KEEP/DISCARD verdict recorded with the measured number (a discard is a success — L-32); RRF / MMR / recency / graph-expansion remain parked unless KEEP
-- [ ] Full suite (baseline 624) + benchmarks green; the harness ranker-regression self-test (test_harness_detects_ranker_regression) still passes
+- [x] Current baseline ranker metrics (recall@k / nDCG / MRR on extraction + multi_session) captured in the Outputs Registry
+- [x] Length-normalized stdlib BM25/Okapi scoring implemented as a measurable alternative path (stdlib-only — verified no new import / runtime dependency added)
+- [x] Harness comparison run; the pre-registered keep/discard metric evaluated against the captured baseline
+- [x] KEEP/DISCARD verdict recorded with the measured number (a discard is a success — L-32); RRF / MMR / recency / graph-expansion remain parked unless KEEP
+- [x] Full suite (baseline 624) + benchmarks green; the harness ranker-regression self-test (test_harness_detects_ranker_regression) still passes

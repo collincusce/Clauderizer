@@ -1,0 +1,86 @@
+==============================================================================
+RANKER-SPIKE: stdlib BM25/Okapi  vs  raw token-overlap baseline
+params: k1=1.5 b=0.75   gate_k=3   meaningful_lift>=0.02
+==============================================================================
+
+--- k=1 -------------------------------------------------------------
+ extraction (recall / nDCG / MRR):
+  recall@k                     base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  ndcg@k                       base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  mrr                          base=1.0000  bm25=1.0000  Δ=+0.0000 →
+ multi_session (recall / nDCG / MRR / precision[GUARD]):
+  recall@k                     base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  ndcg@k                       base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  mrr                          base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  precision@k [GUARD]          base=1.0000  bm25=1.0000  Δ=+0.0000 →
+ combined extraction+multi_session [LIFT metrics]:
+  recall@k                     base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  ndcg@k                       base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  mrr                          base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  abstention_rate              base=1.0000  bm25=1.0000  Δ=+0.0000 →
+
+--- k=3 -------------------------------------------------------------
+ extraction (recall / nDCG / MRR):
+  recall@k                     base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  ndcg@k                       base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  mrr                          base=1.0000  bm25=1.0000  Δ=+0.0000 →
+ multi_session (recall / nDCG / MRR / precision[GUARD]):
+  recall@k                     base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  ndcg@k                       base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  mrr                          base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  precision@k [GUARD]          base=0.7500  bm25=0.7500  Δ=+0.0000 →
+ combined extraction+multi_session [LIFT metrics]:
+  recall@k                     base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  ndcg@k                       base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  mrr                          base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  abstention_rate              base=1.0000  bm25=1.0000  Δ=+0.0000 →
+
+--- k=5 -------------------------------------------------------------
+ extraction (recall / nDCG / MRR):
+  recall@k                     base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  ndcg@k                       base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  mrr                          base=1.0000  bm25=1.0000  Δ=+0.0000 →
+ multi_session (recall / nDCG / MRR / precision[GUARD]):
+  recall@k                     base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  ndcg@k                       base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  mrr                          base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  precision@k [GUARD]          base=0.7500  bm25=0.7500  Δ=+0.0000 →
+ combined extraction+multi_session [LIFT metrics]:
+  recall@k                     base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  ndcg@k                       base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  mrr                          base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  abstention_rate              base=1.0000  bm25=1.0000  Δ=+0.0000 →
+
+--- knowledge_updates (seeded repo, real engine path) ----------------
+  contradiction_rate [GUARD]   base=0.0000  bm25=0.0000  Δ=+0.0000 →
+  recall@k (current retrieved) base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  abstention_rate              base=1.0000  bm25=1.0000  Δ=+0.0000 →
+
+==============================================================================
+VERDICT (D1 pre-registered rule, gate k=3)
+==============================================================================
+ LIFT metrics (need a meaningful gain, none regressing):
+  combined recall@k            base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  combined ndcg@k              base=1.0000  bm25=1.0000  Δ=+0.0000 →
+  combined mrr                 base=1.0000  bm25=1.0000  Δ=+0.0000 →
+   best lift = +0.0000  (meaningful>=0.02? False; any lift regressed? False)
+ GUARD metrics (must NOT regress):
+  multi_session precision@k    base=0.7500  bm25=0.7500  Δ=+0.0000 →
+  contradiction_rate           base=0.0000  bm25=0.0000  Δ=+0.0000 →
+   guards hold? True
+
+------------------------------------------------------------------------------
+  ==> DISCARD
+      reason(s): no meaningful lift (best Δ=+0.0000 < 0.02)
+      -> change NOTHING in src/; RRF/MMR/recency/graph-expansion stay parked.
+      -> a discard is a SUCCESS (L-32): the null + the numbers are the memory.
+------------------------------------------------------------------------------
+
+[diagnostic, non-gating] BM25 b-sweep on combined recall/ndcg/mrr @k=3:
+   b=0.0   recall=1.0000  ndcg=1.0000  mrr=1.0000
+   b=0.25  recall=1.0000  ndcg=1.0000  mrr=1.0000
+   b=0.5   recall=1.0000  ndcg=1.0000  mrr=1.0000
+   b=0.75  recall=1.0000  ndcg=1.0000  mrr=1.0000
+   b=1.0   recall=1.0000  ndcg=1.0000  mrr=1.0000
+
+(Provenance: this script does not run in CI; the gate is D1's rule above.)
