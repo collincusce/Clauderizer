@@ -1,7 +1,7 @@
 # Chat Handoff Index — abstract-index-fast-retrieval
 
 > Last updated: 2026-06-25
-> Status: Phase 4 ready
+> Status: Phase 5 ready
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Abstract index builder (data structure, dual parser, invalidation) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Addressable fetch (cz_get) and abstract surfacing on cz_analyze | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Cost experiment and gain-gate verdict (KEEP/DISCARD) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Realize the win in injected surfaces (handoff/status) and re-measure | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Realize the win in injected surfaces (handoff/status) and re-measure | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
@@ -66,12 +66,20 @@ THE GATE (D2). Wired the live abstract index + analyze.get_entry into the frozen
 
 Recorded as decision D5 + output gate_verdict. Phases 4/6/7 PROCEED; next is Phase 4 (realize the win in injected handoff/status surfaces, then re-measure). Suite unchanged at 661 (the experiment is a provenance script, not a new CI test; the synthetic test_cost.py still guards the harness mechanism). Commit 82a8a49.
 
+### Phase 4 — completed 2026-06-25
+
+Phase 4 set out to "realize the win in injected surfaces" by threading abstract+anchor instead of full bodies through the handoff and status digest, then re-measuring. Investigation + empirical measurement (harness.measure_context_tokens on the live repo) found the win was already banked, so the honest deliverable was a measurement + a regression guard rather than a manufactured code change (amendment A-001, per L-32/L-38 and the Phase-3 session's own explicit Phase-4 handoff flag). The numbers: the SessionStart/UserPromptSubmit digest is 315 tokens of counts+pointers (no bodies, D-027 trim); the handoff is 3704 tokens, 58% of which (2132) is lessons-in-full, mandated full by D-009 and already validated at equal accuracy/-55% by the prior empirical-memory-gains focused-injection work. Zero decision/finding bodies are injected anywhere — they are retrieval-only via the Phase-2 cz_get, whose by-id addressing retroactively turned every injected pointer (id+title) into a fetch handle. Converting lessons to abstract+anchor would regress D-009, so there was no valid swap target.
+
+Concrete output: tests/test_injection_pointer_not_body.py (2 tests) locks the D-013 pointers-not-bodies property at the shared injection seam (the L-34 integration point) — proving the invariant injection surface emits id+title not body, and that neither the assembled handoff nor the hook digest injects a decision/finding body (seeded markers absent). This converts the gameplan's central thesis from an implicit property into an enforced one. The realized retrieval win remains the Phase-3 result (48.3% payload saving). Suite 661 -> 663 passed (4 skipped), zero regressions. Phases 5-7 proceed unaffected.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
 obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
+
+**5.** A downstream "realize/exploit the win" phase can be a no-op whose win an earlier phase or prior gameplan already banked — MEASURE before building, and if so, deliver a measurement + a regression guard that LOCKS the property + an honest amendment, never a manufactured change that regresses validated behavior. Phase 4 ("thread abstract+anchor into injected handoff/status surfaces") measured the surfaces and found: the digest is counts+pointers (D-027 trim), the handoff injects no decision/finding bodies at all, and its only full-text payload is lessons — which D-009 mandates stay full and the prior focused-injection eval already cut -55% at equal accuracy. The architectural reason the win was pre-banked is reusable: an addressable getter keyed by id (Phase-2 cz_get(id)) retroactively upgrades EVERY existing id-bearing pointer into a fetch handle, so "injected pointers" already ARE "abstract+anchor" with zero injection-side change. Extends L-32 (park-by-analysis when the metric is saturated by an earlier phase) to the realize-the-win case, and pairs with L-38 (amend honestly, don't fake the checkbox). *(evidence: Phase 4 of 2026-06-25-abstract-index-fast-retrieval: amendment A-001; harness.measure_context_tokens (digest 315 / handoff 3704 / lessons 2132 tok, 0 decision-finding body tokens injected); tests/test_injection_pointer_not_body.py locks D-013; realized retrieval win = Phase-3 48.3%)*
 
 ### Category: Integration
 

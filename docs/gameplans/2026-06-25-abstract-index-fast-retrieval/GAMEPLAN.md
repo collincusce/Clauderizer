@@ -20,7 +20,14 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 ## Amendments
 
-_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+### A-001 — Phase 4 injected-surface win was already banked; deliver measurement + regression guard, not a body→abstract swap
+
+- **Date**: 2026-06-25
+- **Affected sections in GAMEPLAN.md**: Phase 4 (Phase Breakdown); Phase 4 exit criteria
+- **Affected phases**: 4
+- **Triggered by**: Phase-4 investigation + empirical measurement (measure_context_tokens on the live repo) following the cross-session Phase-3 review
+- **What changed**: Phase 4 planned to thread abstract+anchor instead of full bodies through the injected handoff/status surfaces and re-measure a token reduction. Measurement found NO avoidable full-body injection remains: the SessionStart/UserPromptSubmit digest is counts+pointers only (315 tok; D-027 trim), and the handoff (3704 tok) carries invariant POINTERS (id+title), lesson pointers, and lessons-in-full (2132 tok = 58%), with ZERO decision/finding bodies injected anywhere. Decisions/findings are retrieval-only via the Phase-2 cz_get (by id), and cz_get-by-id already makes every injected pointer an addressable handle. Lessons must ride FULL per D-009 (self-contained handoff); the empirical-memory-gains focused-injection eval already validated top-k-full == full accuracy at -55%/-73% tokens, so converting them to abstract+anchor would REGRESS validated behavior. So Phase 4 delivers: (1) the empirical injection-composition measurement, (2) a regression-guard integration test at the shared injection seam (tests/test_injection_pointer_not_body.py) locking the D-013 pointers-not-bodies property, and records that the realized win is the Phase-3 retrieval path (48.3%) plus the already-banked focused-injection (-55%) — not a code swap.
+- **Why**: L-32/L-38: a "realize the win" phase whose win was already banked by an earlier gameplan (focused-injection) and an earlier phase (Phase-2 cz_get) is honestly closed by measuring + guarding the property, not by manufacturing a change that would regress D-009 full-lesson propagation. The Phase-3 session's own Phase-4 handoff explicitly flagged this ("if little remains to realize, say so — do NOT manufacture a change"). Phases 5-7 proceed unaffected.
 
 ## Decisions
 
@@ -148,11 +155,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Proceeded only on a KEEP verdict
-- [ ] Handoff and status surfaces carry abstract+anchor instead of full bodies where avoidable
-- [ ] An integration test exists at the shared injection seam (L-34)
-- [ ] Realized handoff/status token delta re-measured and recorded at equal agent-eval accuracy
-- [ ] Full suite green
+- [x] Proceeded only on a KEEP verdict
+- [x] Handoff and status surfaces carry abstract+anchor instead of full bodies where avoidable
+- [x] An integration test exists at the shared injection seam (L-34)
+- [x] Realized handoff/status token delta re-measured and recorded at equal agent-eval accuracy
+- [x] Full suite green
 
 ### Phase 5: Write-time lesson-synthesis advisory (own fixture, own mini gain-gate)
 
