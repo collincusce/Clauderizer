@@ -317,6 +317,24 @@ def test_user_prompt_submit_ignores_empty_prompt(monkeypatch, capsys, empty_pyth
     assert rc == 0 and out.strip() == ""
 
 
+def test_user_prompt_submit_real_analyze_surfaces_and_stays_read_only(monkeypatch, capsys, temp_repo):
+    """L-34 seam: the Phase-2 cz_analyze abstract enrichment lives in the shared
+    analyze.analyze that the UserPromptSubmit hook calls on every prompt. Exercise
+    the REAL gate (not a stub): it must still surface relevant ids AND stay
+    read-only — no abstract index cache written from the hot hook path (the
+    enrichment caps the title in hand, it never builds/writes the index), or it
+    would breach INVARIANT-06."""
+    from clauderizer import paths as P
+    paths = P.resolve(temp_repo)
+    monkeypatch.chdir(temp_repo)
+    rc, out = run(monkeypatch, capsys,
+                  stdin=_payload("UserPromptSubmit", prompt="is markdown canonical for the index?"))
+    assert rc == 0
+    assert "INVARIANT-01" in out          # the real analyze gate surfaced the relevant invariant
+    assert "cz_analyze" in out
+    assert not paths.abstract_index_file.exists()   # read-only: no cache materialized on the hook path
+
+
 # --- INVARIANT-06: every handler is read-only -------------------------------------
 
 

@@ -8,6 +8,7 @@ TOOL_NAMES = [
     "cz_status",
     "cz_next_phase_context",
     "cz_graph_query",
+    "cz_get",
     "cz_preflight",
     "cz_cascade",
     "cz_resolve_cascade",

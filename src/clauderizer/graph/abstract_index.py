@@ -57,6 +57,14 @@ _EMDASH_CORPUS = (
 )
 _LESSONS_DOC = "LESSONS"
 
+# kind -> (corpus doc, section heading) for resolving a single entry's body on
+# demand (the cz_get read path, analyze.get_entry). Derived from the corpus tables
+# above so this mapping can never drift from what build() actually indexes.
+_DOC_SECTION_BY_KIND: dict[str, tuple[str, str]] = {
+    kind: (name, section) for name, section, kind in _EMDASH_CORPUS
+}
+_DOC_SECTION_BY_KIND["lesson"] = (_LESSONS_DOC, "Lessons")
+
 # A LESSONS.md entry line: ``**L-39.** text…`` (sibling of handoff._PROJECT_LESSON_NUM_RE).
 _LESSON_LINE_RE = re.compile(r"^\*\*(L-\d+)\.\*\*\s*(.*)$")
 # Entry lifecycle status, tolerating the decisions form (``**Status**: active``) and
@@ -138,6 +146,25 @@ def _emdash_records(text: str, section: str, kind: str, rel_path: str) -> list[d
     return out
 
 
+def parse_lesson_line(line: str) -> tuple[str, str, str] | None:
+    """``(id, title, body)`` for a ``**L-NN.**`` lesson line, or ``None`` if the
+    line is not one.
+
+    ``title`` is the first sentence (so a surfaced abstract stays compact) and
+    ``body`` is the remainder. Single-sources the lesson-line grammar so the index
+    and the cz_get read path (:func:`analyze.get_entry`) can never disagree on what
+    a lesson line means — the same single-source-the-matcher discipline that keeps
+    the dual parser honest (O-03).
+    """
+    m = _LESSON_LINE_RE.match(line.strip())
+    if not m:
+        return None
+    eid, line_text = m.group(1), m.group(2).strip()
+    first, _, rest = line_text.partition(". ")
+    title = first + ("." if first and not first.endswith(".") else "")
+    return eid, title, rest.strip()
+
+
 def _lesson_records(text: str, rel_path: str) -> list[dict]:
     """Parse single-line ``**L-NN.**`` lessons under ``## Lessons`` (O-03).
 
@@ -154,14 +181,12 @@ def _lesson_records(text: str, rel_path: str) -> list[dict]:
             continue
         if not in_section:
             continue
-        m = _LESSON_LINE_RE.match(s)
-        if not m:
+        parsed = parse_lesson_line(s)
+        if parsed is None:
             continue
-        eid, line_text = m.group(1), m.group(2).strip()
-        first, _, rest = line_text.partition(". ")
-        title = first + ("." if first and not first.endswith(".") else "")
+        eid, title, body = parsed
         status, _detail = lesson_state.parse_state(s)
-        out.append(_record(eid, title, rest.strip(), i, status, "lesson", rel_path))
+        out.append(_record(eid, title, body, i, status, "lesson", rel_path))
     return out
 
 

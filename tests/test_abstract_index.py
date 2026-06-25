@@ -167,3 +167,40 @@ def test_delete_cache_then_rebuild_is_byte_identical(tmp_path):
     paths.abstract_index_file.unlink()
     idx2 = A.load_or_rebuild(paths)
     assert idx1["entries"] == idx2["entries"]   # markdown is canonical (INVARIANT-01)
+
+
+# --- Phase 2 seams: the single-sourced lesson grammar + the kind->corpus map -------
+
+
+def test_parse_lesson_line_splits_id_title_body():
+    assert A.parse_lesson_line("**L-09.** First sentence. The rest here.") == (
+        "L-09", "First sentence.", "The rest here.")
+    # a single-sentence lesson keeps its terminal period in the title, empty body
+    assert A.parse_lesson_line("**L-10.** Just one sentence.") == (
+        "L-10", "Just one sentence.", "")
+    # not a lesson line: the gameplan **N.** form and an em-dash block both miss
+    assert A.parse_lesson_line("**3.** gameplan-form, not a project lesson") is None
+    assert A.parse_lesson_line("### D-001 — not a lesson") is None
+
+
+def test_lesson_record_body_matches_parse_lesson_line(tmp_path):
+    """The refactor is behavior-preserving: a built lesson record's title is the
+    parse_lesson_line title, and title+body reconstructs the original line text."""
+    paths = _paths(tmp_path)
+    _seed(paths, LESSONS="# Lessons\n\n## Lessons\n\n**L-05.** Head sentence. Tail detail.\n")
+    rec = A.build(paths)["entries"]["L-05"]
+    eid, title, body = A.parse_lesson_line("**L-05.** Head sentence. Tail detail.")
+    assert rec["title"] == title == "Head sentence."
+    assert rec["abstract"] == A._cap(title)
+
+
+def test_doc_section_by_kind_covers_every_indexed_kind(tmp_path):
+    """Every kind build() can emit must resolve back to a (doc, section) so cz_get
+    knows which one file to re-parse for the body."""
+    paths = _paths(tmp_path)
+    _full(paths)
+    kinds = {rec["kind"] for rec in A.build(paths)["entries"].values()}
+    assert kinds == {"decision", "invariant", "finding", "lesson"}
+    assert kinds <= set(A._DOC_SECTION_BY_KIND)
+    assert A._DOC_SECTION_BY_KIND["lesson"] == ("LESSONS", "Lessons")
+    assert A._DOC_SECTION_BY_KIND["finding"] == ("HARDENING", "Risks")
