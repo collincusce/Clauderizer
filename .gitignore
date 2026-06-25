@@ -16,6 +16,7 @@ env/
 
 # Clauderizer disposable cache (rebuilt from markdown)
 .clauderizer/index.json
+.clauderizer/abstract_index.json
 
 # Memory telemetry: append-only, machine-local operational history (surfacing +
 # phase outcomes) feeding the empirical self-improvement loop. Unlike index.json
