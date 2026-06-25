@@ -48,6 +48,13 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Evidence**: cli.py:314 (presence check), scaffold/init.py:381-384, cli.py:110-118 (reindex), cli.py:580-591 (_procedure_drift pattern); INVARIANT-06, L-29
 **Status**: active (2026-06-25)
 
+### D4 — Branch hygiene: keep the feature branch a clean fast-forward over main across all phases
+
+**Context**: feat/abstract-index-fast-retrieval is an 8-phase branch off main. After Phase 0 it is a clean fast-forward over main (main is an ancestor; git log feat..main is empty). Over 8 phases the later phases touch shared core files (analyze.py, ops.py, tools_list.py, handoff.py, status_bundle.py, scaffold/init.py, cli.py) and the tool-count docs (README, docs/subsystems/mcp-server.md) — high-traffic surfaces where independent main-side work would conflict. The H-17 preflight fix was deliberately landed on main FIRST and merged back (main->feature, c95bcb0), proving the pattern. The dogfood profile.lock carries a Phase-0 workaround (test = .venv/bin/python -m pytest) that diverges from main's bare `pytest`.
+**Decision**: (1) Land any independently-shippable engine fix on main FIRST, then merge main->feature — never leave a shippable fix only on the feature branch. (2) At every phase close-out, merge main->feature so divergence never piles up into a big-bang reconcile and the branch stays a clean fast-forward. (3) Keep the Phase-0 profile.lock workaround ONLY during development (it keeps live cz_preflight green on the uvx-launched server that lacks H-17); revert it to bare `pytest` as the LAST step before the final feature->main merge, since H-17 makes bare pytest resolve. (4) Gate the final feature->main merge on the Phase-7 merge-back checklist (open item).
+**Consequences**: The eventual merge stays conflict-free by construction; the cost is a per-phase merge step. The profile.lock divergence is intentional and time-boxed, not drift. If main advances via origin (e.g. the parallel chip session pushing a duplicate H-17), reconcile by merging origin/main->feature before continuing.
+**Status**: active (2026-06-25)
+
 ## Open Items
 
 **O-01.** _(phase 1)_ Decide the exact deterministic ABSTRACT extraction rule: first sentence vs first N chars vs a dedicated summary line, plus a char budget. Pick against the Phase-1/3 cost data so the abstract is small enough to save tokens but informative enough to often avoid a cz_get round-trip.
@@ -55,6 +62,8 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **O-02.** _(phase 1)_ Latent graph-index bug discovered while planning: graph/index.py writes version:1 but load_or_rebuild gates on mtime ONLY, so a schema bump would silently serve a stale-schema cache. Decide whether this gameplan also retrofits the schema-version gate onto the EXISTING graph index or scopes the fix to the new abstract index only (avoid scope creep, but record the bug either way).
 
 **O-03.** _(phase 1)_ Confirm the LESSONS dual-parser coverage: verify markdown/lesson_state's regex captures every lesson shape (numbered **N.**, consolidated/obsolete "(consolidated into L-NN)" markers, category headers) so the abstract index neither misses nor garbles lesson entries. A missed shape silently drops lessons from the index.
+
+**O-04.** _(phase 7)_ MERGE-BACK CHECKLIST before the final feature->main merge: (a) revert .clauderizer/profile.lock.toml test command from `.venv/bin/python -m pytest` back to bare `pytest` (H-17 makes it resolve; the explicit-venv form was the Phase-0 pre-fix workaround, kept only so live cz_preflight stayed green on the uvx server); (b) re-sweep tool-count docs (README 'N tools' line, docs/subsystems/mcp-server.md reads count) for L-21 drift introduced by cz_get; (c) confirm `git merge-base --is-ancestor main feat/abstract-index-fast-retrieval` (clean FF) and that local main is pushed so origin does not diverge; (d) delete the now-merged fix/preflight-venv-detection branch.
 
 ## Phase Breakdown
 
