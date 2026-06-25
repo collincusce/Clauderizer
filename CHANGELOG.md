@@ -2,6 +2,16 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.1.1] — 2026-06-25
+
+Documentation only — no change to engine behavior.
+
+**A README section on updating.** The `uvx --refresh` update path — refresh the engine, then
+re-run `init` to refresh the wiring — was documented only in UPGRADING.md; the README now
+spells it out inline, so the most common question ("how do I get the latest version?") is
+answered where people first look. PyPI bakes the README into each release, so this patch is
+what carries the new section onto the project page.
+
 ## [1.1.0] — 2026-06-24
 
 A new capability for the self-critique gate — and the first behavior feature since 1.0.0.
