@@ -55,6 +55,14 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Consequences**: The eventual merge stays conflict-free by construction; the cost is a per-phase merge step. The profile.lock divergence is intentional and time-boxed, not drift. If main advances via origin (e.g. the parallel chip session pushing a duplicate H-17), reconcile by merging origin/main->feature before continuing.
 **Status**: active (2026-06-25)
 
+### D5 — Cost gain-gate verdict: KEEP — the abstract index + cz_get cuts retrieval payload 48.3% on the real corpus at equal accuracy
+
+**Context**: Phase 3 (D2, THE GATE) wired the live abstract index + analyze.get_entry (the cz_get read path) into the frozen Phase-0 cost harness (tests/benchmarks/cost.py) and measured against the PRE-REGISTERED thresholds — MIN_SAVING=0.30, accuracy non-regression, MAX_ROUND_TRIPS=2 — over 105 real corpus entries as 1-of-5 lookups (docs/.../\_experiments/run_live_experiment.py). Deterministic, no live LLM (token proxy len//4).
+**Decision**: KEEP. Measured: mean payload-token saving 48.3% (>= 30%); candidate accuracy 1.00 == baseline 1.00 (no regression); max round-trips 2 <= 2. The verdict is credible, not a saturated-fixture artifact: the controls still discriminate on the LIVE wiring (L-39/L-40) — noop_full shows 0.0% saving (no phantom win) and starve saves MORE (70.7%) but its accuracy collapses to 0.08, so both are DISCARDed. Proceed to Phase 4 (realize the win in injected handoff/status surfaces); phases 4/6/7 are unlocked.
+**Consequences**: The feature is empirically justified to ship (pending Phase 4-7). The 48.3% is CONSERVATIVE — it keeps the small title/abstract redundancy cz_analyze emits, short-bodied invariants dilute the mean, and the baseline is the lenient "load the K surfaced bodies" rather than the real "read the whole file" status quo, so the realized win is at least this. The pre-registered threshold was honored exactly (not moved to manufacture the KEEP).
+**Evidence**: docs/gameplans/2026-06-25-abstract-index-fast-retrieval/_experiments/run_live_experiment.py (verdict KEEP, exit 0) + RESULTS-live.txt; cost.py MIN_SAVING/MAX_ROUND_TRIPS; commit 82a8a49
+**Status**: active (2026-06-25)
+
 ## Open Items
 
 **O-01.** _(phase 1)_ Decide the exact deterministic ABSTRACT extraction rule: first sentence vs first N chars vs a dedicated summary line, plus a char budget. Pick against the Phase-1/3 cost data so the abstract is small enough to save tokens but informative enough to often avoid a cz_get round-trip. _(resolved 2026-06-25: Abstract rule decided: abstract = the entry title (for a lesson, its first sentence), collapsed to one line and capped at ABSTRACT_CAP=200 chars on a word boundary. Deterministic; the title is already the entry's summary for em-dash entries, so this is bounded and informative without the ADR-template body boilerplate. Phase 3 may tune the cap. Implemented as abstract_index._cap.)_
@@ -125,10 +133,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Experiment run on the LIVE feature: baseline (full-body) vs candidate (abstract+cz_get) measured on the cost fixture
-- [ ] Verdict computed against the pre-registered thresholds and recorded as a decision
-- [ ] Measured payload-reduction %, accuracy delta, and round-trip delta recorded in the outputs registry
-- [ ] On DISCARD: an amendment is raised and the gameplan closes early with the negative result captured (a valid success)
+- [x] Experiment run on the LIVE feature: baseline (full-body) vs candidate (abstract+cz_get) measured on the cost fixture
+- [x] Verdict computed against the pre-registered thresholds and recorded as a decision
+- [x] Measured payload-reduction %, accuracy delta, and round-trip delta recorded in the outputs registry
+- [x] On DISCARD: an amendment is raised and the gameplan closes early with the negative result captured (a valid success)
 
 ### Phase 4: Realize the win in injected surfaces (handoff/status) and re-measure
 

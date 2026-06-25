@@ -10,7 +10,7 @@
 | 0 | Branch, baseline &amp; cost-harness (fixture-first) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Abstract index builder (data structure, dual parser, invalidation) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Addressable fetch (cz_get) and abstract surfacing on cz_analyze | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Cost experiment and gain-gate verdict (KEEP/DISCARD) | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Cost experiment and gain-gate verdict (KEEP/DISCARD) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Realize the win in injected surfaces (handoff/status) and re-measure | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
@@ -45,6 +45,12 @@ cz_analyze_abstract: analyze.analyze now attaches `abstract` to each ranked deci
 abstract_index_helpers: Two additions to graph/abstract_index.py for the cz_get read path: (1) parse_lesson_line(line) -> (id, title, body) | None — extracted from _lesson_records (behavior-preserving refactor; _lesson_records now calls it) so the **L-NN.** lesson grammar is single-sourced between the index builder and get_entry (the L-2 single-source-the-matcher rule). (2) _DOC_SECTION_BY_KIND: kind -> (doc, section), derived from _EMDASH_CORPUS + ("lesson"->("LESSONS","Lessons")), so it can never drift from what build() indexes. Both covered by new tests in test_abstract_index.py.
 baseline_tests: 661 passed, 4 skipped (665 collected) via .venv/bin/python -m pytest — was 651 at Phase 1; +10 Phase-2 tests (test_analyze.py +6: abstract enrichment ×2, get_entry four-corpora/unknown/kind-hint ×3, cz_get op ×1; test_abstract_index.py +3: parse_lesson_line, record/parse equivalence, _DOC_SECTION_BY_KIND; test_hook_dispatch.py +1: L-34 read-only seam). 661 is the new green baseline for Phase 3. NOTE: this host's pytest reporter prints no summary line when piped — use --junitxml to read counts; exit code is authoritative.
 tool_surface_docs_deferred: DEFERRED to Phase 7 per L-21 / O-04 (don't sweep human-doc counts mid-feature): bump the README "N tools" line and docs/subsystems/mcp-server.md "reads" count 38 -> 39 (cz_get), and update the subsys.mcp-server entity. No tracked-entity status change was made this phase (additive new tool only; entity/doc updates are Phase 7's job), so no cascade was required.
+```
+
+### Phase 3 Outputs
+
+```
+gate_verdict: KEEP. Live experiment on 105 real corpus entries (1-of-5 lookups): mean payload-token saving 48.3% (>=30% threshold); accuracy delta 0.00 (candidate 1.00 == baseline 1.00); round-trip delta 0 (candidate 2.0 == baseline 2.0, max_rt 2 <= 2). Controls on live wiring: noop 0.0% saving (DISCARD), starve 70.7% saving but accuracy 0.08 (DISCARD) — harness retains discriminating power (L-39/L-40). Reproduce: .venv/bin/python docs/gameplans/2026-06-25-abstract-index-fast-retrieval/_experiments/run_live_experiment.py (exit 0=KEEP). Phases 4/6/7 PROCEED.
 ```
 
 ## Corrections Log

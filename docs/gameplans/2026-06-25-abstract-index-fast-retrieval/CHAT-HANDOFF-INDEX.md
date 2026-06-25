@@ -1,7 +1,7 @@
 # Chat Handoff Index — abstract-index-fast-retrieval
 
 > Last updated: 2026-06-25
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 651
+**Current baseline test count**: 661
 
 ## Ending Protocol
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Branch, baseline &amp; cost-harness (fixture-first) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Abstract index builder (data structure, dual parser, invalidation) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Addressable fetch (cz_get) and abstract surfacing on cz_analyze | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Cost experiment and gain-gate verdict (KEEP/DISCARD) | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Cost experiment and gain-gate verdict (KEEP/DISCARD) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Realize the win in injected surfaces (handoff/status) and re-measure | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
@@ -60,6 +60,12 @@ Phase 2 wired the first consumers of the Phase-1 abstract index, turning it from
 
 The key design constraint resolved was the L-34 shared seam: analyze.analyze is also called by the UserPromptSubmit hook on every prompt, and the existing read-only-handler snapshot test (INVARIANT-06) forbids a cache write there. So the abstract is computed via the index's canonical _cap rule on the title already in hand (zero I/O, no index build/write), with a test cross-checking it equals the built index's abstract, plus a new hook-seam integration test proving the hook still surfaces ids and writes no cache. The **L-NN.** lesson grammar was extracted into abstract_index.parse_lesson_line and reused by both the index builder and get_entry (single-sourced matcher). Human-facing tool-count docs were intentionally left for Phase 7 (O-04/L-21). Suite: 651 -> 661 passed (4 skipped), zero regressions.
 
+### Phase 3 — completed 2026-06-25
+
+THE GATE (D2). Wired the live abstract index + analyze.get_entry into the frozen Phase-0 cost harness and measured against the pre-registered thresholds over 105 real corpus entries (1-of-5 lookups; _experiments/run_live_experiment.py). VERDICT: KEEP — 48.3% mean payload-token saving (>= 30%), candidate accuracy 1.00 == baseline 1.00 (no regression), max round-trips 2 <= 2. The KEEP is credible because the controls still discriminate on the LIVE wiring: noop_full 0.0% saving and starve 70.7% saving but accuracy 0.08 — both DISCARD, so the harness kept its power across the synthetic->real swap (L-39/L-40). The 30% threshold was honored exactly, not moved. 48.3% is conservative (keeps the cz_analyze title/abstract redundancy; short-bodied invariants dilute the mean; the baseline is the lenient K-surfaced-bodies, not the real whole-file status quo).
+
+Recorded as decision D5 + output gate_verdict. Phases 4/6/7 PROCEED; next is Phase 4 (realize the win in injected handoff/status surfaces, then re-measure). Suite unchanged at 661 (the experiment is a provenance script, not a new CI test; the synthetic test_cost.py still guards the harness mechanism). Commit 82a8a49.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -74,3 +80,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **2.** A shared "is this an entry" matcher may not cover every entry FORMAT in a corpus — verify each format actually matches, or entries silently drop with no error. docs/LESSONS.md uses **L-NN.** but markdown/lesson_state.LESSON_LINE_RE is **N.** (the gameplan-handoff lesson form); reusing it for project lessons would have indexed ZERO of them silently. The corpus carries three grammars: em-dash blocks (### ID — title) for decisions/invariants/findings, project lessons (**L-NN.**), and gameplan lessons (**N.**). When a consumer spans the corpus, enumerate every format and assert each is matched (sibling of L-33 verify-at-point-of-edit; a silent drop is the L-24 degradation face). *(evidence: src/clauderizer/graph/abstract_index.py _LESSON_LINE_RE vs markdown/lesson_state.py:22; tests/test_abstract_index.py::test_lessons_use_the_L_NN_format_not_the_gameplan_N_form)*
 
 **3.** An enrichment added to a function a hook reaches must be COMPUTED in-memory, never materialized through a cache-writing helper. analyze.analyze is shared by the UserPromptSubmit hook; routing the new cz_analyze abstract through abstract_index.load_or_rebuild would have written the disposable cache from inside the hook and tripped test_every_event_handler_is_read_only (which snapshots every file except index.json/write.lock) — an INVARIANT-06 breach that a writes=False flag does NOT catch (the flag governs the write lock, not cache file creation). Use build() (in-memory) or a pure derivation (here abstract_index._cap on the title in hand) on any hook-reachable read path; reserve load_or_rebuild for non-hook ops like cz_get. Sibling of L-34: the phase that ADDS a field must check every existing caller of the shared function, and the hook caller is the dangerous one because its read-only contract is enforced by a snapshot test, not a type. *(evidence: src/clauderizer/analyze.py analyze() abstract enrichment uses abstract_index._cap not load_or_rebuild; guarded by tests/test_hook_dispatch.py::test_user_prompt_submit_real_analyze_surfaces_and_stays_read_only; the read-only snapshot tests/test_hook_dispatch.py::test_every_event_handler_is_read_only skips only index.json/write.lock)*
+
+### Category: Eval methodology
+
+**4.** When an experiment swaps a SYNTHETIC fixture for LIVE data, re-run the negative controls ON the live data — discriminating power is a property of the fixture AND the wiring together, not the design phase alone. A harness proven to discriminate on a synthetic fixture could saturate (or invert) on the real corpus, making a KEEP an artifact. Carry the controls across the swap. Phase 3 re-ran noop_full (0.0% saving) and starve (70.7% saving but accuracy 0.08) on the 105-entry real corpus and confirmed both still DISCARD, so the 48.3% KEEP is a real measured win, not a saturated-live-fixture artifact. Extends L-39/L-40 (build the adversarial fixture + the strawman it must defeat FIRST) to the synthetic->live transition. *(evidence: docs/gameplans/2026-06-25-abstract-index-fast-retrieval/_experiments/run_live_experiment.py (controls evaluated on the live lookups) + RESULTS-live.txt; verdict KEEP exit 0)*
