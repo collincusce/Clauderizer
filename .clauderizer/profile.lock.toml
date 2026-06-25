@@ -1,9 +1,12 @@
 profile = "python"
 
 [commands]
-# pyproject addopts already pass -q; doubling it (-qq) suppresses the
-# "N passed" summary line that baseline_test_regex needs to parse.
-test = "pytest"
+# Use the repo venv's interpreter explicitly: the MCP server's subprocess does
+# not inherit .venv/bin on PATH, so bare `pytest` is not found (exit 127). This
+# removes the PATH dependency so preflight is robust across launch contexts.
+# pyproject addopts already pass -q; don't add another -q (-qq would suppress the
+# "N passed" summary line that baseline_test_regex needs to parse).
+test = ".venv/bin/python -m pytest"
 build = ""
 lint = "ruff check ."
 typecheck = "mypy ."
