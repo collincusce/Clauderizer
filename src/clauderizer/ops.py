@@ -139,16 +139,21 @@ def cz_analyze(text: str, k: int = 5) -> dict:
 
 
 def cz_critique(target: str = "") -> dict:
-    """Self-critique gate: surface a reference-free Coverage/Coherence/
-    Grounding rubric for `target` — a phase number, "gameplan" (default), or
-    "handoff" (the current in-progress phase) — for YOU to grade.
+    """Self-critique gate: surface a reference-free Coverage / Coherence /
+    Grounding / Self-enhancement / Authority rubric for `target` — a phase
+    number, "gameplan" (default), or "handoff" (the current in-progress phase)
+    — for YOU to grade.
 
     Read-only and advisory like cz_analyze: the engine ASSEMBLES the gaps it can
     detect deterministically (unresolved open items, unchecked exit criteria,
     graph drift, pending cascades, lessons lacking provenance) grouped by
-    dimension, and prompts; it never scores or blocks. Reference-
-    free and stdlib-only. Run it before completing a phase, before trusting a
-    handoff, or at gameplan close.
+    dimension, and prompts; it never scores or blocks. Because the target is
+    always self-authored, two further axes flag a self-judge's failure modes:
+    Self-enhancement (an item closed by a hollow note, or a completion claim
+    that outruns a live gap) and Authority (a lesson whose evidence cites an
+    unverifiable source with no in-repo anchor). Reference-free and stdlib-only.
+    Run it before completing a phase, before trusting a handoff, or at gameplan
+    close.
     """
     paths, config = repo_ctx()
     from .rituals import critique as _critique

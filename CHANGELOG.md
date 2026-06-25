@@ -2,6 +2,29 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.1.0] — 2026-06-24
+
+A new capability for the self-critique gate — and the first behavior feature since 1.0.0.
+
+**`cz_critique` now checks for two self-judgment biases.** The self-critique gate already
+graded a target against Coverage, Coherence, and Grounding. Because the thing being
+critiqued is always your own work, it now also surfaces two failure modes a self-judge is
+prone to (drawn from the CALM judge-bias study):
+
+- **Self-enhancement** — an open item closed with a hollow note ("done", "looks good") that
+  cites nothing concrete, or a "ready to ship / no gaps remain" claim made while real gaps
+  are still open.
+- **Authority** — a lesson whose evidence leans on an unverifiable citation (a paper, a URL,
+  a bare "verified") instead of provenance that resolves in the repo (a commit, a path, a
+  test count).
+
+Both are advisory, like the rest of the gate: the engine surfaces the candidates and you
+decide. Each check is guarded so it stays quiet on sound work — a citation that also points
+at a commit, or a terse note that cites a file, is not flagged. No new dependency; the checks
+are plain deterministic text rules. Validated up front against a labeled fixture of 32
+critiques with adversarial near-misses: the new checks catch every planted bias the old
+rubric scored clean, with no false flags on the sound ones.
+
 ## [1.0.5] — 2026-06-23
 
 Documentation readability and a hardening completion. No change to tool behavior.
