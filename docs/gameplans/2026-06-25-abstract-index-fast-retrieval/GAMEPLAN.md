@@ -57,11 +57,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 ## Open Items
 
-**O-01.** _(phase 1)_ Decide the exact deterministic ABSTRACT extraction rule: first sentence vs first N chars vs a dedicated summary line, plus a char budget. Pick against the Phase-1/3 cost data so the abstract is small enough to save tokens but informative enough to often avoid a cz_get round-trip.
+**O-01.** _(phase 1)_ Decide the exact deterministic ABSTRACT extraction rule: first sentence vs first N chars vs a dedicated summary line, plus a char budget. Pick against the Phase-1/3 cost data so the abstract is small enough to save tokens but informative enough to often avoid a cz_get round-trip. _(resolved 2026-06-25: Abstract rule decided: abstract = the entry title (for a lesson, its first sentence), collapsed to one line and capped at ABSTRACT_CAP=200 chars on a word boundary. Deterministic; the title is already the entry's summary for em-dash entries, so this is bounded and informative without the ADR-template body boilerplate. Phase 3 may tune the cap. Implemented as abstract_index._cap.)_
 
-**O-02.** _(phase 1)_ Latent graph-index bug discovered while planning: graph/index.py writes version:1 but load_or_rebuild gates on mtime ONLY, so a schema bump would silently serve a stale-schema cache. Decide whether this gameplan also retrofits the schema-version gate onto the EXISTING graph index or scopes the fix to the new abstract index only (avoid scope creep, but record the bug either way).
+**O-02.** _(phase 1)_ Latent graph-index bug discovered while planning: graph/index.py writes version:1 but load_or_rebuild gates on mtime ONLY, so a schema bump would silently serve a stale-schema cache. Decide whether this gameplan also retrofits the schema-version gate onto the EXISTING graph index or scopes the fix to the new abstract index only (avoid scope creep, but record the bug either way). _(resolved 2026-06-25: Scoped to the NEW cache. abstract_index.load_or_rebuild gates on schema_version AND mtime (D1). Did NOT retrofit graph/index.py: its mtime-only gate is COSMETIC because load_or_rebuild there always re-parses and returns build() (the cache only skips the write), so a stale-schema cache file is never served as data. Filing a separate engine fix would be scope creep for a non-bug. Noted in abstract_index.py docstring.)_
 
-**O-03.** _(phase 1)_ Confirm the LESSONS dual-parser coverage: verify markdown/lesson_state's regex captures every lesson shape (numbered **N.**, consolidated/obsolete "(consolidated into L-NN)" markers, category headers) so the abstract index neither misses nor garbles lesson entries. A missed shape silently drops lessons from the index.
+**O-03.** _(phase 1)_ Confirm the LESSONS dual-parser coverage: verify markdown/lesson_state's regex captures every lesson shape (numbered **N.**, consolidated/obsolete "(consolidated into L-NN)" markers, category headers) so the abstract index neither misses nor garbles lesson entries. A missed shape silently drops lessons from the index. _(resolved 2026-06-25: Confirmed and handled. docs/LESSONS.md uses **L-NN.** lines; lesson_state.LESSON_LINE_RE is **N.** (the gameplan-handoff form) and would silently drop EVERY project lesson. So the abstract index uses its own _LESSON_LINE_RE = ^\*\*(L-\d+)\.\*\* (sibling of handoff._PROJECT_LESSON_NUM_RE) for matching, and lesson_state.parse_state ONLY for active/obsolete/promoted status. Tested: test_lessons_use_the_L_NN_format_not_the_gameplan_N_form + test_status_parsed_for_each_kind (obsolete marker).)_
 
 **O-04.** _(phase 7)_ MERGE-BACK CHECKLIST before the final feature->main merge: (a) revert .clauderizer/profile.lock.toml test command from `.venv/bin/python -m pytest` back to bare `pytest` (H-17 makes it resolve; the explicit-venv form was the Phase-0 pre-fix workaround, kept only so live cz_preflight stayed green on the uvx server); (b) re-sweep tool-count docs (README 'N tools' line, docs/subsystems/mcp-server.md reads count) for L-21 drift introduced by cz_get; (c) confirm `git merge-base --is-ancestor main feat/abstract-index-fast-retrieval` (clean FF) and that local main is pushed so origin does not diverge; (d) delete the now-merged fix/preflight-venv-detection branch.
 
@@ -93,11 +93,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] build() yields a record for every entry across all four corpora INCLUDING lessons, with the count matching an independent parse
-- [ ] load_or_rebuild gates on BOTH mtime AND schema_version; a unit test proves a schema bump forces rebuild while mtime is unchanged
-- [ ] Cache writes atomically via os.replace; a corrupt/absent/BOM/CRLF/unicode/empty cache rebuilds and never raises (adversarial test, L-24)
-- [ ] Delete-then-rebuild yields byte-identical cache content (INVARIANT-01 round-trip)
-- [ ] Suite green and no consumer references the index yet (grep shows zero call sites outside the module and its tests)
+- [x] build() yields a record for every entry across all four corpora INCLUDING lessons, with the count matching an independent parse
+- [x] load_or_rebuild gates on BOTH mtime AND schema_version; a unit test proves a schema bump forces rebuild while mtime is unchanged
+- [x] Cache writes atomically via os.replace; a corrupt/absent/BOM/CRLF/unicode/empty cache rebuilds and never raises (adversarial test, L-24)
+- [x] Delete-then-rebuild yields byte-identical cache content (INVARIANT-01 round-trip)
+- [x] Suite green and no consumer references the index yet (grep shows zero call sites outside the module and its tests)
 
 ### Phase 2: Addressable fetch (cz_get) and abstract surfacing on cz_analyze
 
