@@ -1,7 +1,7 @@
 # abstract-index-fast-retrieval Gameplan
 
 > Created: 2026-06-25
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -68,11 +68,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Work branch feat/abstract-index-fast-retrieval exists off main and main is untouched
-- [ ] Green baseline test count captured via cz_preflight and recorded as an output
-- [ ] Token-accounting harness measures baseline payload chars, token_estimate (len//4), and round-trips deterministically with no live LLM
-- [ ] Cost fixture exists where the correct answer needs only 1 of N entry bodies, and the gain-gate thresholds (>=30% payload reduction, accuracy non-regression, round-trips non-worse) are pre-registered in a committed file
-- [ ] Harness discriminates: a no-op negative-control candidate shows ~0% saving and a synthetic abstract-only candidate shows the predicted multi-x saving, all BEFORE the real feature exists
+- [x] Work branch feat/abstract-index-fast-retrieval exists off main and main is untouched
+- [x] Green baseline test count captured via cz_preflight and recorded as an output
+- [x] Token-accounting harness measures baseline payload chars, token_estimate (len//4), and round-trips deterministically with no live LLM
+- [x] Cost fixture exists where the correct answer needs only 1 of N entry bodies, and the gain-gate thresholds (>=30% payload reduction, accuracy non-regression, round-trips non-worse) are pre-registered in a committed file
+- [x] Harness discriminates: a no-op negative-control candidate shows ~0% saving and a synthetic abstract-only candidate shows the predicted multi-x saving, all BEFORE the real feature exists
 
 ### Phase 1: Abstract index builder (data structure, dual parser, invalidation)
 
