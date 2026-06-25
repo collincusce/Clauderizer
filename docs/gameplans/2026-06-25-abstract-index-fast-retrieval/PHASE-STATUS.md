@@ -29,4 +29,9 @@ discrimination_demo: real mechanism 51.3% saving -> KEEP; noop control 0.0% -> D
 
 ## Corrections Log
 
-_(Every divergence from the gameplan, captured in real time, as C-NN entries.)_
+### C-01 — Phase 0
+
+**Phase**: 0
+**What gameplan said**: D4 point (2) prescribes merging main->feature at EVERY phase close-out to keep the branch a clean fast-forward.
+**What was actually correct**: Sync main->feature only at final close-out (or if/when main actually advances) — NOT per phase. O-04's final merge-back checklist covers it.
+**Why**: User feedback: "that's a bit much, just do it on closeout not each phase... I'm only working on one feature right now." With no competing branches landing on main, the fast-forward invariant holds without per-phase merges, so they are pure overhead.
