@@ -1,0 +1,25 @@
+Phase-3 LIVE cost experiment — abstract-index-fast-retrieval
+Captured 2026-06-25 on the real dogfood corpus (105 entries). Deterministic,
+no live LLM (token proxy len//4). Gate frozen in PRE-REGISTRATION.md / cost.py:
+MIN_SAVING=0.30, accuracy non-regression, MAX_ROUND_TRIPS=2.
+
+======================================================================================
+PHASE-3 LIVE cost experiment — real corpus + real abstract index / get_entry
+corpus entries=105  K=5  gate: saving>=30%, accuracy non-regress, max_round_trips<=2
+======================================================================================
+  LIVE candidate       saving=  48.3%   acc(cand/base)=1.00/1.00   rt(cand/base)=2.0/2.0   max_rt=2   ==> KEEP
+  noop (control)       saving=   0.0%   acc(cand/base)=1.00/1.00   rt(cand/base)=1.0/2.0   max_rt=1   ==> DISCARD
+  starve (acc trap)    saving=  70.7%   acc(cand/base)=0.08/1.00   rt(cand/base)=1.0/2.0   max_rt=1   ==> DISCARD
+--------------------------------------------------------------------------------------
+  controls still discriminate on live wiring (L-39/L-40)? True
+  PRE-REGISTERED VERDICT: KEEP   (saving 48.3% vs 30%;  acc 1.00 >= 1.00;  max_rt 2 <= 2)
+======================================================================================
+
+VERDICT: KEEP. The abstract index + get_entry/cz_get cuts mean retrieval payload
+48.3% per lookup at equal answer-accuracy, round-trips not worse. The controls are
+still rejected on the live wiring (noop 0.0% saving; starve 70.7% saving but
+accuracy 0.08 << 1.00), so the harness retains discriminating power — the KEEP is a
+real measured win, not a saturated/rigged fixture (L-39/L-40). 48.3% is conservative
+(keeps the title/abstract redundancy cz_analyze emits; short-bodied invariants
+dilute the mean; baseline is the lenient K-surfaced-bodies, not whole-file).
+Proceed to Phase 4 (realize the win in injected handoff/status surfaces).
