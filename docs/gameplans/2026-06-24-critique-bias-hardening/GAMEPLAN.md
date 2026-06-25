@@ -1,7 +1,7 @@
 # critique-bias-hardening Gameplan
 
 > Created: 2026-06-24
-> Status: Complete
+> Status: Closed — KEEP (shipped in 1.1.0)
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
