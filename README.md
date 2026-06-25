@@ -269,6 +269,28 @@ ephemeral-cache path (those die on `uv cache clean`) — so it wires up correctl
 Linux, macOS, and Windows→WSL alike. Zero-install users: every `clauderize <cmd>` in these
 docs is `uvx --from clauderizer clauderize <cmd>` until you install properly.
 
+## Update to the latest version
+
+Updating is the same two moves for everyone — refresh the **engine** (the package), then
+refresh the **wiring** (`init`):
+
+```bash
+# zero-install (uvx), the common case: one --refresh re-primes uv's cache, so the
+# wired hook + MCP server resolve the new version on your next session.
+uvx --refresh --from clauderizer clauderize init
+uvx --from clauderizer clauderize doctor          # expect exit 0 — names the running version
+
+# installed the package instead? upgrade it first, then re-run init:
+pipx upgrade clauderizer        # pipx installs
+uv tool upgrade clauderizer     # uv tool installs
+```
+
+`init` is idempotent: it refreshes only engine-owned files and never touches your `docs/`
+memory, your `CLAUDE.md` text, or your `.clauderizer/profile.lock.toml` edits. Without
+`--refresh`, `uvx` keeps serving its cached version — that one flag is the whole update.
+Full detail, including what `doctor` reports after an update, is in
+[UPGRADING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/UPGRADING.md).
+
 ## What `init` drops in
 
 ```
