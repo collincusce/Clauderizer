@@ -1,0 +1,23 @@
+Phase-0 cost-harness discrimination demo — abstract-index-fast-retrieval
+Captured 2026-06-25. Provenance only; the gate is tests/benchmarks/test_cost.py
+and D2's rule in PRE-REGISTRATION.md. Baseline suite: 632 passed, 4 skipped.
+
+================================================================================
+COST HARNESS — Phase-0 discrimination demo (abstract-index-fast-retrieval)
+fixture: 3 lookups, 1-of-5 surfaced   |   gate: saving>=30%, accuracy non-regress, round-trips<=2
+================================================================================
+  real mechanism         saving=  51.3%   acc(cand/base)=1.00/1.00   round-trips(cand/base)=2.0/2.0   ==> KEEP
+  noop (control)         saving=   0.0%   acc(cand/base)=1.00/1.00   round-trips(cand/base)=1.0/2.0   ==> DISCARD
+  starve (acc trap)      saving=  69.5%   acc(cand/base)=0.00/1.00   round-trips(cand/base)=1.0/2.0   ==> DISCARD
+--------------------------------------------------------------------------------
+  discrimination gap (real - control) = 51.3 percentage points
+  harness discriminates as designed? True
+  (synthetic fixture — Phase 3 swaps in the REAL corpus + abstract index)
+--------------------------------------------------------------------------------
+
+Reading: the NEGATIVE CONTROL (noop) shows ~0% saving, so the harness reports no
+saving where none exists. The ACCURACY TRAP (starve) saves MORE tokens (69.5%)
+than the real mechanism but does it by dropping the answer body — accuracy falls
+to 0.00 and the guard correctly DISCARDs it. Only the real mechanism both saves
+(51.3%) and answers (1.00), so it KEEPs. A Phase-3 KEEP therefore means a real,
+measured token win, not a rubber stamp (L-40).
