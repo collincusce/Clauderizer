@@ -160,3 +160,36 @@ def test_profile_commands_resolve_in_engine_environment():
     env = _command_env()
     first = env["PATH"].split(os.pathsep)[0]
     assert Path(first) == Path(sys.executable).parent
+
+
+def test_command_env_prepends_project_venv_bin(tmp_path):
+    # A repo-local .venv must LEAD PATH even when the engine runs from a DIFFERENT
+    # environment (uvx/pipx/global) than the project's venv — the case the engine-
+    # bin prepend (A-001) alone misses. Cross-platform: the detector checks both
+    # 'bin' and 'Scripts'; we create 'bin', which it finds on any OS.
+    venv_bin = tmp_path / ".venv" / "bin"
+    venv_bin.mkdir(parents=True)
+    parts = _command_env(tmp_path)["PATH"].split(os.pathsep)
+    assert str(venv_bin) in parts
+    # the project venv outranks the engine bin, so the project's pytest wins
+    assert parts.index(str(venv_bin)) < parts.index(str(Path(sys.executable).parent))
+
+
+def test_command_env_without_project_venv_keeps_engine_bin_first(tmp_path):
+    # No repo venv -> unchanged behavior: the engine's own bin leads (backward compat).
+    assert (_command_env(tmp_path)["PATH"].split(os.pathsep)[0]
+            == str(Path(sys.executable).parent))
+
+
+def test_command_env_finds_project_venv_when_engine_is_elsewhere(tmp_path, monkeypatch):
+    # The exact bug: the engine runs from a DIFFERENT env than the project (uvx /
+    # pipx / global), so engine-bin alone gives 'pytest: not found' while the
+    # project's .venv has it. The project venv must lead PATH regardless.
+    venv_bin = tmp_path / ".venv" / "bin"
+    venv_bin.mkdir(parents=True)
+    elsewhere = tmp_path / "uvx-cache" / "bin"
+    elsewhere.mkdir(parents=True)
+    monkeypatch.setattr(sys, "executable", str(elsewhere / "python"))
+    parts = _command_env(tmp_path)["PATH"].split(os.pathsep)
+    assert parts[0] == str(venv_bin)                       # project venv leads
+    assert parts.index(str(venv_bin)) < parts.index(str(elsewhere))  # ...before the engine env

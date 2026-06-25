@@ -83,16 +83,40 @@ def _write_back_baseline(paths: RepoPaths, config: Config, count: str) -> str | 
 Runner = Callable[[str, Path], tuple[int, str]]
 
 
-def _command_env() -> dict[str, str]:
-    """Environment for profile commands: the running interpreter's bin
-    directory leads PATH, so a venv-installed engine resolves its own
-    toolchain (pytest, ruff, …) without shell activation. Observed live
-    (A-001): the engine launched by absolute venv path got 'pytest: not
-    found' from the inherited PATH while .venv/bin/pytest existed.
+def _venv_bin_dirs(root: Path) -> list[str]:
+    """Project-local virtualenv bin dirs to LEAD PATH for profile commands, so a
+    repo's test runner resolves even when the ENGINE was launched from a DIFFERENT
+    environment (uvx / pipx / global) than the project's venv — the case the
+    engine-bin prepend alone misses (A-001 covered only the venv-launched engine).
+    POSIX ``bin`` and Windows ``Scripts``; the standard ``.venv`` / ``venv`` dir
+    names; existing dirs only, in priority order.
+    """
+    out: list[str] = []
+    for name in (".venv", "venv"):
+        for sub in ("bin", "Scripts"):
+            d = root / name / sub
+            if d.is_dir():
+                out.append(str(d))
+    return out
+
+
+def _command_env(root: Path | None = None) -> dict[str, str]:
+    """Environment for profile commands. PATH is led by (1) the project's own
+    virtualenv bin dir when ``root`` has one, then (2) the running interpreter's
+    bin directory — so the host's test runner resolves whether the engine was
+    launched from the project venv (editable install) OR from a separate env
+    (uvx/pipx/global) while the project keeps its toolchain in a local ``.venv``.
+    Observed live (A-001): a venv-path-launched engine got 'pytest: not found'
+    from the inherited PATH; the uvx-launched + project-``.venv`` case (preflight
+    exit 127 while ``.venv/bin/pytest`` existed) needs the project venv too.
     """
     env = os.environ.copy()
-    bin_dir = str(Path(sys.executable).parent)
-    env["PATH"] = bin_dir + os.pathsep + env.get("PATH", "")
+    lead = _venv_bin_dirs(root) if root is not None else []
+    lead.append(str(Path(sys.executable).parent))
+    # De-dup preserving order (editable install: project venv == engine bin).
+    seen: set[str] = set()
+    ordered = [d for d in lead if not (d in seen or seen.add(d))]
+    env["PATH"] = os.pathsep.join(ordered) + os.pathsep + env.get("PATH", "")
     return env
 
 
@@ -101,7 +125,7 @@ def _default_runner(cmd: str, cwd: Path) -> tuple[int, str]:
     # tool output as cp1252 — and raise outright on undecodable bytes.
     proc = subprocess.run(
         cmd, shell=True, cwd=cwd, capture_output=True, timeout=600,
-        encoding="utf-8", errors="replace", env=_command_env(),
+        encoding="utf-8", errors="replace", env=_command_env(cwd),
     )
     return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
 
