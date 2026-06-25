@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Branch, baseline &amp; cost-harness (fixture-first) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Abstract index builder (data structure, dual parser, invalidation) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Addressable fetch (cz_get) and abstract surfacing on cz_analyze | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Addressable fetch (cz_get) and abstract surfacing on cz_analyze | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Cost experiment and gain-gate verdict (KEEP/DISCARD) | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Realize the win in injected surfaces (handoff/status) and re-measure | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
@@ -36,6 +36,17 @@ parsers: DUAL. Em-dash blocks (### ID — title) for DECISIONS(## Decisions)/INV
 baseline_tests: 651 passed, 4 skipped (was 635 at Phase 0; +16 tests in tests/test_abstract_index.py). New green baseline for Phase 2.
 ```
 
+### Phase 2 Outputs
+
+```
+cz_get_op: src/clauderizer/ops.py cz_get(id, kind="auto") -> {ok, id, title, body, status, anchor, kind}; ok=False + error when the id is unknown. Op(cz_get, writes=False), read-only (no write lock, L-03). Registered at index 3 in BOTH tools_list.TOOL_NAMES and ops.REGISTRY (right after cz_graph_query) — order parity asserted by test_registry_is_exactly_the_tool_surface + skill-discovery parity; MCP auto-registers it (server iterates REGISTRY). Tool surface 38 -> 39.
+get_entry_fn: analyze.get_entry(paths, entry_id, kind="auto") -> {id,title,body,status,anchor,kind} | None, plus helper analyze._entry_body. Resolution: abstract_index.load_or_rebuild(paths) gives the record's kind+anchor+title+status (the index's status parser handles every corpus form, e.g. the `- **Status**` hardening form); the body the index omits (D-013 pointer store) is re-read from the ONE corpus file named by abstract_index._DOC_SECTION_BY_KIND[kind] — parse_entries for em-dash kinds, abstract_index.parse_lesson_line for lessons. A non-auto kind that disagrees with the id is treated as a miss (->None). Read-only (may refresh the disposable cache, never markdown/the write lock).
+cz_analyze_abstract: analyze.analyze now attaches `abstract` to each ranked decision/invariant hit, computed as abstract_index._cap(hit["title"]) — NOT by building the index. Rationale (load-bearing for Phase 4): analyze.analyze is the shared path the UserPromptSubmit hook calls every prompt (hook/handlers.py:138, k=3); using load_or_rebuild there would write abstract_index.json and fail test_every_event_handler_is_read_only (snapshots all files except index.json/write.lock) — breaching INVARIANT-06. cz_analyze ranks only em-dash entries whose abstract IS the capped title, so _cap on the title-in-hand is exactly the index's abstract (test_analyze_hits_carry_abstract_equal_to_the_index cross-checks vs A.build) with zero I/O. cz_analyze docstring updated to note hits carry `abstract` + point to cz_get for the body.
+abstract_index_helpers: Two additions to graph/abstract_index.py for the cz_get read path: (1) parse_lesson_line(line) -> (id, title, body) | None — extracted from _lesson_records (behavior-preserving refactor; _lesson_records now calls it) so the **L-NN.** lesson grammar is single-sourced between the index builder and get_entry (the L-2 single-source-the-matcher rule). (2) _DOC_SECTION_BY_KIND: kind -> (doc, section), derived from _EMDASH_CORPUS + ("lesson"->("LESSONS","Lessons")), so it can never drift from what build() indexes. Both covered by new tests in test_abstract_index.py.
+baseline_tests: 661 passed, 4 skipped (665 collected) via .venv/bin/python -m pytest — was 651 at Phase 1; +10 Phase-2 tests (test_analyze.py +6: abstract enrichment ×2, get_entry four-corpora/unknown/kind-hint ×3, cz_get op ×1; test_abstract_index.py +3: parse_lesson_line, record/parse equivalence, _DOC_SECTION_BY_KIND; test_hook_dispatch.py +1: L-34 read-only seam). 661 is the new green baseline for Phase 3. NOTE: this host's pytest reporter prints no summary line when piped — use --junitxml to read counts; exit code is authoritative.
+tool_surface_docs_deferred: DEFERRED to Phase 7 per L-21 / O-04 (don't sweep human-doc counts mid-feature): bump the README "N tools" line and docs/subsystems/mcp-server.md "reads" count 38 -> 39 (cz_get), and update the subsys.mcp-server entity. No tracked-entity status change was made this phase (additive new tool only; entity/doc updates are Phase 7's job), so no cascade was required.
+```
+
 ## Corrections Log
 
 ### C-01 — Phase 0
@@ -44,3 +55,10 @@ baseline_tests: 651 passed, 4 skipped (was 635 at Phase 0; +16 tests in tests/te
 **What gameplan said**: D4 point (2) prescribes merging main->feature at EVERY phase close-out to keep the branch a clean fast-forward.
 **What was actually correct**: Sync main->feature only at final close-out (or if/when main actually advances) — NOT per phase. O-04's final merge-back checklist covers it.
 **Why**: User feedback: "that's a bit much, just do it on closeout not each phase... I'm only working on one feature right now." With no competing branches landing on main, the fast-forward invariant holds without per-phase merges, so they are pure overhead.
+
+### C-02 — Phase 2
+
+**Phase**: 2
+**What gameplan said**: Enrich cz_analyze hits with "the entry's abstract from the index" — Phase Notes specced enriching in analyze.analyze sourced from the abstract index (abstract_index.load_or_rebuild).
+**What was actually correct**: Enriched in analyze.analyze as specced, but compute the abstract as abstract_index._cap(hit["title"]) — the index's own cap rule applied to the title already in hand — without building or writing the index.
+**Why**: analyze.analyze is the shared path the UserPromptSubmit hook calls every prompt; load_or_rebuild would write abstract_index.json and fail test_every_event_handler_is_read_only (INVARIANT-06: read-only handlers). cz_analyze ranks only em-dash entries whose abstract == _cap(title), so the value is byte-identical (a test cross-checks it vs A.build) with zero I/O — honoring the plan's intent (hits carry the entry's abstract) under its own stated read-only+fast constraint. cz_get (not on a hook path) does use load_or_rebuild as specced.

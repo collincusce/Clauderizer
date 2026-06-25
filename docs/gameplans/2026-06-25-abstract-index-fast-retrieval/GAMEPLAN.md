@@ -109,11 +109,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_get(id) returns a single entry body for an id drawn from each of the four corpora
-- [ ] cz_analyze hits include an abstract field
-- [ ] Tool-surface parity green: test_registry_is_exactly_the_tool_surface, MCP registration, both ops-introspection tests, and skill-discovery parity
-- [ ] cz_get is read-only (Op writes=False asserted) with a docstring and JSON-serializable defaults
-- [ ] Full suite green
+- [x] cz_get(id) returns a single entry body for an id drawn from each of the four corpora
+- [x] cz_analyze hits include an abstract field
+- [x] Tool-surface parity green: test_registry_is_exactly_the_tool_surface, MCP registration, both ops-introspection tests, and skill-discovery parity
+- [x] cz_get is read-only (Op writes=False asserted) with a docstring and JSON-serializable defaults
+- [x] Full suite green
 
 ### Phase 3: Cost experiment and gain-gate verdict (KEEP/DISCARD)
 
