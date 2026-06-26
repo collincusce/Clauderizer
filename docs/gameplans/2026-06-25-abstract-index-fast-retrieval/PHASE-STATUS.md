@@ -12,7 +12,7 @@
 | 2 | Addressable fetch (cz_get) and abstract surfacing on cz_analyze | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Cost experiment and gain-gate verdict (KEEP/DISCARD) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Realize the win in injected surfaces (handoff/status) and re-measure | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 
@@ -59,6 +59,12 @@ gate_verdict: KEEP. Live experiment on 105 real corpus entries (1-of-5 lookups):
 injection_measurement: Measured via harness.measure_context_tokens on the live repo: digest_tokens=315 (counts+pointers only, no bodies — D-027 trim), handoff_tokens=3704, of which lessons=2132 (58%, full text mandated by D-009), lesson_lines=9. ZERO decision/finding body tokens injected in either surface (decisions/findings are retrieval-only via cz_get). The handoff's non-lesson ~42% is the phase definition + invariant POINTERS (id+title) + lesson pointers + skill menu + scaffolding — necessary context/pointers, not convertible bodies.
 realized_delta: Injection-side realized token delta = ~0 from a Phase-4 change, because the win was ALREADY banked: (a) the empirical-memory-gains focused-injection cut handoff lessons -55%/-73% at validated equal agent-eval accuracy, and (b) Phase-2 cz_get-by-id retroactively made every injected pointer (id+title) an addressable handle — the agent fetches any surfaced entry's body on demand. The body-fetch win is the Phase-3 retrieval measurement (48.3% payload saving). No injected surface was re-shaped, so agent-eval accuracy is unchanged by construction. See amendment A-001.
 regression_guard: tests/test_injection_pointer_not_body.py (2 tests, the L-34 shared-injection-seam guard): (1) relevant_invariant_pointer emits id+title (a cz_get-addressable pointer), never the body; (2) end-to-end — the assembled handoff AND the hook digest carry no decision/finding body (unique body markers seeded via add_decision/add_finding are absent). Locks the D-013 pointers-not-bodies property so a future "enrichment" can't silently start injecting full bodies. baseline_tests: 661 -> 663 passed (4 skipped); new green baseline for Phase 5.
+```
+
+### Phase 5 Outputs
+
+```
+dedup_advisory: analyze.near_duplicate_lessons(paths, text, threshold=0.40, k=3) -> [{id,title,jaccard}] active project lessons (abstract index kind=lesson) whose distinctive-token Jaccard with text >= 0.40. Wired into mutations.add_lesson: result gains related_lessons + advisory when dups found; best-effort try/except, never blocks (INVARIANT-03/05). cz_add_lesson docstring updated. NO tool-surface change (return-only enrichment). Uses abstract_index.build (in-memory, no cache write) so it is safe inside the @_locked add_lesson.
 ```
 
 ## Corrections Log

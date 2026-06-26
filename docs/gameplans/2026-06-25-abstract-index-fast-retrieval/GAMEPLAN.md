@@ -70,6 +70,14 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 **Evidence**: docs/gameplans/2026-06-25-abstract-index-fast-retrieval/_experiments/run_live_experiment.py (verdict KEEP, exit 0) + RESULTS-live.txt; cost.py MIN_SAVING/MAX_ROUND_TRIPS; commit 82a8a49
 **Status**: active (2026-06-25)
 
+### D6 — Phase 5 mini-gate KEEP — the write-time near-dup-lesson advisory (Jaccard) beats the naive count strawman on adversarial near-misses
+
+**Context**: Phase 5 added a write-time advisory on cz_add_lesson surfacing near-duplicate PROJECT lessons (the SimpleMem online-synthesis borrow, the symmetric write-time enrichment add_decision already had). It carried its OWN mini gain-gate per L-40: a labeled fixture (true dups + adversarial distinct-but-similar near-misses + novel) and a deliberately NAIVE raw-overlap-count strawman the principled detector must beat — built FIRST (_experiments/lesson_dedup_measure.py).
+**Decision**: KEEP. The principled detector — length-normalized token Jaccard >= 0.40 over analyze._tokens (analyze.near_duplicate_lessons) — hit precision 1.00 / recall 1.00 on the fixture AND beat the naive raw-count strawman on 2/2 adversarial near-misses (naive 2 false-positives, principled 0). Wired into mutations.add_lesson as advisory-only (result.related_lessons + result.advisory), NEVER blocking the append-only write (INVARIANT-03/05), no config flag. The naive count is the trap (a long distinct lesson trips it by size); Jaccard length-normalizes, which is the real mechanism (not a no-check tautology — L-40).
+**Consequences**: cz_add_lesson now nudges consolidation at write time, directly attacking the standing 25-project-lesson bloat. Reuses _tokens + the abstract index token_set (L-14, no new dep, no new tool — only the return is enriched). Scoped to cz_add_lesson per the Phase-5 handoff; extending the same analyze.near_duplicate_lessons to cz_promote_lesson (where project-lesson bloat actually grows) is a clean follow-up.
+**Evidence**: docs/gameplans/2026-06-25-abstract-index-fast-retrieval/_experiments/lesson_dedup_measure.py (KEEP, exit 0); src/clauderizer/analyze.py near_duplicate_lessons; tests/test_lesson_dedup.py (4 tests); commit e3de440
+**Status**: active (2026-06-25)
+
 ## Open Items
 
 **O-01.** _(phase 1)_ Decide the exact deterministic ABSTRACT extraction rule: first sentence vs first N chars vs a dedicated summary line, plus a char budget. Pick against the Phase-1/3 cost data so the abstract is small enough to save tokens but informative enough to often avoid a cz_get round-trip. _(resolved 2026-06-25: Abstract rule decided: abstract = the entry title (for a lesson, its first sentence), collapsed to one line and capped at ABSTRACT_CAP=200 chars on a word boundary. Deterministic; the title is already the entry's summary for em-dash entries, so this is bounded and informative without the ADR-template body boilerplate. Phase 3 may tune the cap. Implemented as abstract_index._cap.)_
@@ -171,11 +179,11 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 5.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_add_lesson surfaces a near-duplicate advisory that never blocks the write and adds no config flag (INVARIANT-05)
-- [ ] A near-duplicate-lessons fixture and a naive strawman detector both exist
-- [ ] The principled detector beats the strawman on adversarial near-misses, and a genuinely distinct-but-similar lesson is NOT flagged (L-40)
-- [ ] Its own precision/recall keep bar is pre-registered and met, or the feature is honestly dropped
-- [ ] Full suite green
+- [x] cz_add_lesson surfaces a near-duplicate advisory that never blocks the write and adds no config flag (INVARIANT-05)
+- [x] A near-duplicate-lessons fixture and a naive strawman detector both exist
+- [x] The principled detector beats the strawman on adversarial near-misses, and a genuinely distinct-but-similar lesson is NOT flagged (L-40)
+- [x] Its own precision/recall keep bar is pre-registered and met, or the feature is honestly dropped
+- [x] Full suite green
 
 ### Phase 6: Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy
 

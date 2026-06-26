@@ -1,7 +1,7 @@
 # Chat Handoff Index — abstract-index-fast-retrieval
 
 > Last updated: 2026-06-25
-> Status: Phase 5 ready
+> Status: Phase 6 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 661
+**Current baseline test count**: 663
 
 ## Ending Protocol
 
@@ -34,7 +34,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 2 | Addressable fetch (cz_get) and abstract surfacing on cz_analyze | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Cost experiment and gain-gate verdict (KEEP/DISCARD) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Realize the win in injected surfaces (handoff/status) and re-measure | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 
@@ -72,6 +72,12 @@ Phase 4 set out to "realize the win in injected surfaces" by threading abstract+
 
 Concrete output: tests/test_injection_pointer_not_body.py (2 tests) locks the D-013 pointers-not-bodies property at the shared injection seam (the L-34 integration point) — proving the invariant injection surface emits id+title not body, and that neither the assembled handoff nor the hook digest injects a decision/finding body (seeded markers absent). This converts the gameplan's central thesis from an implicit property into an enforced one. The realized retrieval win remains the Phase-3 result (48.3% payload saving). Suite 661 -> 663 passed (4 skipped), zero regressions. Phases 5-7 proceed unaffected.
 
+### Phase 5 — completed 2026-06-25
+
+Added the SimpleMem online-synthesis borrow: a write-time near-duplicate-lesson advisory on cz_add_lesson. analyze.near_duplicate_lessons surfaces active project lessons whose distinctive-token Jaccard with the new lesson >= 0.40; mutations.add_lesson attaches related_lessons + advisory (consolidate instead of append), best-effort and NEVER blocking the append-only write (INVARIANT-03/05), no config flag, no new tool (return-only enrichment — the symmetric write-time enrichment add_decision already had).
+
+The discipline WAS the phase (L-40): built the measuring stick FIRST (_experiments/lesson_dedup_measure.py) — a labeled fixture (true dups + 2 adversarial distinct-but-similar near-misses + novel) and a deliberately naive raw-count strawman. The principled Jaccard detector hit precision 1.00 / recall 1.00 AND beat the naive on 2/2 near-misses (naive 2 false-positives, principled 0) — a real length-normalization mechanism, not a no-check tautology. Recorded as D6 (KEEP) + output dedup_advisory; 4 CI tests (tests/test_lesson_dedup.py); suite 663 -> 667. Scoped to cz_add_lesson per the handoff; extending the same detector to cz_promote_lesson (where the standing 25-project-lesson bloat actually grows) is a clean follow-up. Commit e3de440. (Dogfood caveat: the live MCP server runs published 1.1.1, so the advisory is not live in-session until release — proven by tests, not by a live cz_add_lesson.)
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -92,3 +98,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Eval methodology
 
 **4.** When an experiment swaps a SYNTHETIC fixture for LIVE data, re-run the negative controls ON the live data — discriminating power is a property of the fixture AND the wiring together, not the design phase alone. A harness proven to discriminate on a synthetic fixture could saturate (or invert) on the real corpus, making a KEEP an artifact. Carry the controls across the swap. Phase 3 re-ran noop_full (0.0% saving) and starve (70.7% saving but accuracy 0.08) on the 105-entry real corpus and confirmed both still DISCARD, so the 48.3% KEEP is a real measured win, not a saturated-live-fixture artifact. Extends L-39/L-40 (build the adversarial fixture + the strawman it must defeat FIRST) to the synthetic->live transition. *(evidence: docs/gameplans/2026-06-25-abstract-index-fast-retrieval/_experiments/run_live_experiment.py (controls evaluated on the live lookups) + RESULTS-live.txt; verdict KEEP exit 0)*
+
+### Category: Design
+
+**6.** For near-DUPLICATE detection, length-normalize the overlap (Jaccard = |A intersect B| / |A union B|) — do NOT use the raw token-overlap COUNT (the relevance-ranking signal). A long distinct-but-similar entry shares many tokens by sheer size, so it trips a count threshold (false positive) while its Jaccard stays low. This is the concrete principled-vs-naive contrast for a dup detector and the exact L-40 discriminator: raw count is the strawman, length-normalization is the real mechanism. Same _tokens as the relevance ranker, different normalization for a different question (is it RELEVANT vs is it the SAME). Measured Phase 5: Jaccard@0.40 precision 1.0 / recall 1.0 with 0 false-positives on 2 adversarial near-misses the naive count false-positived. *(evidence: src/clauderizer/analyze.py near_duplicate_lessons; docs/gameplans/2026-06-25-abstract-index-fast-retrieval/_experiments/lesson_dedup_measure.py; tests/test_lesson_dedup.py)*
