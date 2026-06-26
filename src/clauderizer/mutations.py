@@ -357,8 +357,30 @@ def add_lesson(
         lesson_line += f" *(evidence: {evidence.strip()})*"
     new_section = _insert_under_category(body, category, lesson_line)
     writer.upsert_section(path, "Accumulated Lessons", new_section)
-    return {"ok": True, "number": n, "path": str(path),
-            "files_changed": [str(path)], "summary": f"added lesson #{n} ({category})"}
+    result = {"ok": True, "number": n, "path": str(path),
+              "files_changed": [str(path)], "summary": f"added lesson #{n} ({category})"}
+    # Write-time near-duplicate advisory (Phase 5, the SimpleMem online-synthesis
+    # borrow): surface existing PROJECT lessons this one strongly overlaps so the
+    # agent can consolidate instead of appending — the symmetric write-time
+    # enrichment add_decision already has. Best-effort, judgment-based, NEVER blocks
+    # (INVARIANT-05); the lesson is already appended (INVARIANT-03 append-only) — this
+    # only nudges. Length-normalized (Jaccard), validated to beat a naive count
+    # strawman on adversarial near-misses (Phase-5 measuring stick, L-40).
+    try:
+        from . import analyze as _analyze
+
+        dups = _analyze.near_duplicate_lessons(paths, text)
+        if dups:
+            result["related_lessons"] = dups
+            result["advisory"] = (
+                "This lesson strongly overlaps existing project lesson(s) — consider "
+                "consolidating instead of appending (cz_consolidate_lessons / "
+                "cz_obsolete_lesson): "
+                + ", ".join(f"{d['id']} (Jaccard {d['jaccard']})" for d in dups)
+            )
+    except Exception:
+        pass
+    return result
 
 
 def _insert_under_category(section_body: str, category: str, lesson_line: str) -> str:

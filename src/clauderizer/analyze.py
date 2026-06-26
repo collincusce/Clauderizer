@@ -127,6 +127,52 @@ def rank_relevant(query: str, entries: list[dict], k: int = 5,
     return scored[:k]
 
 
+# --- write-time near-duplicate-lesson advisory (Phase 5) -------------------------
+#
+# SimpleMem's "online synthesis" borrow: at cz_add_lesson time, surface the existing
+# PROJECT lessons the new one strongly overlaps, so the agent can consolidate instead
+# of appending (the corpus is append-only — INVARIANT-03 — so this is a nudge, not a
+# block; the agent decides — INVARIANT-05). The signal is LENGTH-NORMALIZED token
+# overlap (Jaccard), NOT raw count: a long distinct-but-similar lesson trips a count
+# threshold by sheer size but not Jaccard. The Phase-5 measuring stick proved the
+# principled (Jaccard) detector beats a naive count strawman on adversarial
+# near-misses (precision 1.0 / recall 1.0; naive 2 false-positives, principled 0 —
+# L-40). Reuses analyze._tokens + the abstract index's per-entry token_set (L-14).
+
+# Pre-registered + measured keep threshold (do not tune ad hoc — Phase-5 fixture).
+_LESSON_DUP_JACCARD = 0.40
+
+
+def near_duplicate_lessons(paths: RepoPaths, text: str, *,
+                           threshold: float = _LESSON_DUP_JACCARD, k: int = 3,
+                           exclude_ids: tuple[str, ...] = ()) -> list[dict]:
+    """Active project lessons whose distinctive-token Jaccard with ``text`` is
+    ``>= threshold`` — the consolidate-instead-of-append candidates. Returns the top
+    ``k`` ``{id, title, jaccard}`` (descending), or ``[]`` (an honest "nothing
+    overlaps"). Surface-only; never mutates. Uses the abstract index's in-memory
+    ``build`` (no cache write), so it is safe inside the locked ``add_lesson``."""
+    from .graph import abstract_index  # lazy: abstract_index imports analyze
+
+    nt = _tokens(text)
+    if not nt:
+        return []
+    out: list[dict] = []
+    for rec in abstract_index.build(paths)["entries"].values():
+        if rec.get("kind") != "lesson" or rec["id"] in exclude_ids:
+            continue
+        if str(rec.get("status") or "active").lower() != "active":
+            continue  # an obsolete lesson is not a live consolidation target
+        et = set(rec.get("token_set") or ())
+        union = len(nt | et)
+        if not union:
+            continue
+        j = len(nt & et) / union
+        if j >= threshold:
+            out.append({"id": rec["id"], "title": rec["title"], "jaccard": round(j, 3)})
+    out.sort(key=lambda d: (-d["jaccard"], d["id"]))
+    return out[:k]
+
+
 # --- gap-finder: one-hop graph adjacency (D-018) ---------------------------------
 #
 # The keyword ranker above answers "what might this CONTRADICT?"; the gap-finder

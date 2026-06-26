@@ -445,6 +445,10 @@ def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "",
     `evidence` optionally cites the concrete provenance that produced the lesson
     (commit, file:line, phase, output id); it renders inline and rides along in
     every handoff rollup.
+
+    If the new lesson strongly overlaps an existing PROJECT lesson, the result carries
+    a `related_lessons` list + an `advisory` nudging consolidation
+    (cz_consolidate_lessons) instead of appending — advisory only, never blocks.
     """
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
