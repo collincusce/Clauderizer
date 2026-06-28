@@ -252,3 +252,23 @@ def load_or_rebuild(paths: RepoPaths) -> dict:
             pass  # corrupt/unreadable -> fall through and rewrite
     write_cache(index, cache_file)
     return index
+
+
+def cache_status(paths: RepoPaths) -> str | None:
+    """Read-only freshness check for ``doctor`` (D3): returns a human reason when the
+    cache is MISSING or SCHEMA-stale, else None. Never builds or writes — doctor is
+    read-only and no detect path may mutate docs (INVARIANT-06); the runtime
+    ``load_or_rebuild`` self-heals on first use. Mtime-staleness is deliberately NOT
+    reported: it self-heals silently and is not drift the user must act on, whereas a
+    schema mismatch means the on-disk shape no longer matches this engine."""
+    cache_file = paths.abstract_index_file
+    if not cache_file.exists():
+        return "missing — run `clauderize reindex`"
+    try:
+        cached = json.loads(cache_file.read_text(encoding="utf-8"))
+        ver = int(cached.get("schema_version", -1))
+    except (json.JSONDecodeError, OSError, ValueError, TypeError):
+        return "unreadable — run `clauderize reindex`"
+    if ver != SCHEMA_VERSION:
+        return f"schema v{ver} != engine v{SCHEMA_VERSION} — run `clauderize reindex`"
+    return None

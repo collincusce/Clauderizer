@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .. import assets, hosts, hosttargets
 from ..config import Config, merge_missing
-from ..graph import index
+from ..graph import abstract_index, index
 from ..markdown import writer
 from ..paths import RepoPaths, resolve
 from ..profiles import detect
@@ -377,11 +377,14 @@ def init(
         for res in hosttargets.emit_host_wiring(resolved_target, root):
             report.note(f"{res.label}:{resolved_target}", res.path, res.changed)
 
-    # 12. gitignore the disposable cache; reindex
-    changed = _ensure_gitignore(root / ".gitignore", ".clauderizer/index.json")
-    report.note(".gitignore", root / ".gitignore", changed)
+    # 12. gitignore the disposable caches; build the graph + abstract indexes
+    gi = root / ".gitignore"
+    changed = _ensure_gitignore(gi, ".clauderizer/index.json")
+    changed = _ensure_gitignore(gi, ".clauderizer/abstract_index.json") or changed
+    report.note(".gitignore", gi, changed)
     graph = index.build(paths.docs)
     index.write_cache(graph, paths.index_file, paths.docs)
+    abstract_index.write_cache(abstract_index.build(paths), paths.abstract_index_file)
 
     return report
 

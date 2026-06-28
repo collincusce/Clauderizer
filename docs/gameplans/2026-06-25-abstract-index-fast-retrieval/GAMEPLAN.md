@@ -195,10 +195,10 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 6.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] init and reindex build the abstract index idempotently (a second-run-zero-diff test passes)
-- [ ] doctor flags BOTH a missing and a schema-stale index with the correct exit code and advice, and never mutates (read-only)
-- [ ] Cold upgrade on an isolated tempfile clone: doctor-flags-missing then reindex-builds then retrieval-uses-abstracts, with corpus+graph byte-unchanged except the new gitignored cache and a no-op re-run
-- [ ] The isolation guard is proven BEFORE any destructive step (L-29) and a friction log is recorded
+- [x] init and reindex build the abstract index idempotently (a second-run-zero-diff test passes)
+- [x] doctor flags BOTH a missing and a schema-stale index with the correct exit code and advice, and never mutates (read-only)
+- [x] Cold upgrade on an isolated tempfile clone: doctor-flags-missing then reindex-builds then retrieval-uses-abstracts, with corpus+graph byte-unchanged except the new gitignored cache and a no-op re-run
+- [x] The isolation guard is proven BEFORE any destructive step (L-29) and a friction log is recorded
 
 ### Phase 7: Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready
 

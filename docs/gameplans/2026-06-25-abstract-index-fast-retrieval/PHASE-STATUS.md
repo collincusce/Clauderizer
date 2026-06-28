@@ -1,7 +1,7 @@
 # abstract-index-fast-retrieval — Phase Status Tracker
 
 > Living document. Updated after each phase completes.
-> Last updated: 2026-06-25
+> Last updated: 2026-06-28
 
 ## Phase Status
 
@@ -13,8 +13,8 @@
 | 3 | Cost experiment and gain-gate verdict (KEEP/DISCARD) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Realize the win in injected surfaces (handoff/status) and re-measure | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
-| 7 | Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 6 | Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-6-HANDOFF.md |
+| 7 | Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready | 🟢 READY | — | — | handoffs/PHASE-7-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -65,6 +65,14 @@ regression_guard: tests/test_injection_pointer_not_body.py (2 tests, the L-34 sh
 
 ```
 dedup_advisory: analyze.near_duplicate_lessons(paths, text, threshold=0.40, k=3) -> [{id,title,jaccard}] active project lessons (abstract index kind=lesson) whose distinctive-token Jaccard with text >= 0.40. Wired into mutations.add_lesson: result gains related_lessons + advisory when dups found; best-effort try/except, never blocks (INVARIANT-03/05). cz_add_lesson docstring updated. NO tool-surface change (return-only enrichment). Uses abstract_index.build (in-memory, no cache write) so it is safe inside the @_locked add_lesson.
+```
+
+### Phase 6 Outputs
+
+```
+upgrade_path: init (scaffold/init.py) + reindex (cli.cmd_reindex) now BUILD the abstract index via abstract_index.build/write_cache, and ensure .clauderizer/abstract_index.json in .gitignore; doctor (cli.cmd_doctor) calls the new read-only abstract_index.cache_status(paths) -> flags missing/schema-stale with 'run clauderize reindex' advice, never builds it (INVARIANT-06). 4 tests in tests/test_abstract_index_upgrade.py. Suite 707->711.
+isolated_dogfood: Isolated-clone dogfood PASSED (git clone of this repo to a tempdir; isolation asserted BEFORE any step, L-29): a clone naturally lacks the gitignored cache = pre-upgrade state; doctor flagged '✗ abstract index fresh — missing — run clauderize reindex' (read-only, did not build); reindex built 107 entries; git status CLEAN afterward (corpus+graph byte-unchanged, caches gitignored) + HEAD unchanged; cz_get D-001 resolved 'Markdown is the source of truth' (retrieval-uses-abstracts); a second reindex was byte-identical (no-op); live repo untouched.
+friction_log: Phase-6 friction log (deliverable): (1) Overall smooth — wiring init/reindex/doctor mirrored the existing graph-index pattern exactly; the abstract_index builder/invalidation from Phase 1 already exposed build/write_cache/load_or_rebuild so the upgrade path was pure wiring. (2) Reconciliation: this branch was 8 behind main (1.2.0 shipped meanwhile); merging main in auto-merged cleanly except .clauderizer/config.toml (the focus pointer) — the two feature sets (cz_get vs cz_focus/cz_gameplans/cz_consumes) are orthogonal in code; union suite 707 green with no manual code fixes. (3) Minor design note: doctor exits 2 (drift) for a missing abstract index on every not-yet-reindexed upgraded repo — a loud signal for a self-healing cache, but intended as the one-time upgrade nudge and softened by explicit 'run clauderize reindex' advice; consistent with the existing index-cache check. No tooling blockers.
 ```
 
 ## Corrections Log

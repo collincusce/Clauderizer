@@ -1,7 +1,7 @@
 # Chat Handoff Index — abstract-index-fast-retrieval
 
-> Last updated: 2026-06-25
-> Status: Phase 6 ready
+> Last updated: 2026-06-28
+> Status: Phase 7 ready
 
 ## How This Works
 
@@ -35,8 +35,8 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 3 | Cost experiment and gain-gate verdict (KEEP/DISCARD) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Realize the win in injected surfaces (handoff/status) and re-measure | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
-| 7 | Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 6 | Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-6-HANDOFF.md |
+| 7 | Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready | 🟢 READY | — | — | handoffs/PHASE-7-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -77,6 +77,10 @@ Concrete output: tests/test_injection_pointer_not_body.py (2 tests) locks the D-
 Added the SimpleMem online-synthesis borrow: a write-time near-duplicate-lesson advisory on cz_add_lesson. analyze.near_duplicate_lessons surfaces active project lessons whose distinctive-token Jaccard with the new lesson >= 0.40; mutations.add_lesson attaches related_lessons + advisory (consolidate instead of append), best-effort and NEVER blocking the append-only write (INVARIANT-03/05), no config flag, no new tool (return-only enrichment — the symmetric write-time enrichment add_decision already had).
 
 The discipline WAS the phase (L-40): built the measuring stick FIRST (_experiments/lesson_dedup_measure.py) — a labeled fixture (true dups + 2 adversarial distinct-but-similar near-misses + novel) and a deliberately naive raw-count strawman. The principled Jaccard detector hit precision 1.00 / recall 1.00 AND beat the naive on 2/2 near-misses (naive 2 false-positives, principled 0) — a real length-normalization mechanism, not a no-check tautology. Recorded as D6 (KEEP) + output dedup_advisory; 4 CI tests (tests/test_lesson_dedup.py); suite 663 -> 667. Scoped to cz_add_lesson per the handoff; extending the same detector to cz_promote_lesson (where the standing 25-project-lesson bloat actually grows) is a clean follow-up. Commit e3de440. (Dogfood caveat: the live MCP server runs published 1.1.1, so the advisory is not live in-session until release — proven by tests, not by a live cz_add_lesson.)
+
+### Phase 6 — completed 2026-06-28
+
+Upgrade path shipped (D3). init + reindex build/refresh the abstract index idempotently and gitignore it; doctor detects a missing or schema-stale cache via the new read-only abstract_index.cache_status and advises reindex without ever building it (INVARIANT-06; runtime self-heals). Reconciled with main first (merged 1.2.0 in — clean auto-merge but for the config focus pointer; union suite green). Proven on an isolated tempfile clone (L-29, isolation asserted before any step): doctor-flags-missing -> reindex-builds (107 entries) -> cz_get resolves a real id -> git status clean (corpus+graph byte-unchanged, caches gitignored) -> no-op re-run; friction log recorded. Suite 707->711 (+4). Phase 7 (release readiness/merge-ready, NOT the release) remains.
 
 ## Accumulated Lessons
 
