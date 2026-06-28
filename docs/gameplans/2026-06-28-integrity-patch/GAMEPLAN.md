@@ -1,7 +1,7 @@
 # integrity-patch Gameplan
 
 > Created: 2026-06-28
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -20,7 +20,14 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 ## Amendments
 
-_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+### A-001 — Phase-1 "fork hid pairs" expectation falsified by Phase-0 data; threshold recalibration redirected to 0.40 alignment
+
+- **Date**: 2026-06-28
+- **Affected sections in GAMEPLAN.md**: Phase 1 goal + exit criteria; Open Item O-01
+- **Affected phases**: 1
+- **Triggered by**: Phase-0 measurement (output redundancy_measurement / divergence_finding)
+- **What changed**: The Phase-1 goal sentence "cz_corpus_health ... should surface real near-duplicate pairs in the 30-lesson bloat that the fork hid" does NOT hold: the canonical analyze._tokens yields 0 redundant pairs over the real 30-lesson corpus at EVERY threshold from 0.3 to 0.7 (max pairwise Jaccard 0.19). The tokenizer-unification still proceeds (D-041, the real fix), but its effect is coherence — one tokenizer basis shared with analyze.near_duplicate_lessons + the abstract index — NOT a jump in the reported pair count (which stays 0, correctly). O-01 recalibration resolves to: import analyze._LESSON_DUP_JACCARD (0.40) into telemetry so corpus_health/curate use ONE near-duplicate definition with the write-time advisory; 0 false positives on the real corpus at 0.40.
+- **Why**: Fixture-first discipline (L-39/L-40): the audit's predicted under-counting symptom was an assumption; measurement proved the defect is incoherence (two tokenizer+threshold definitions of near-duplicate), not under-reporting. Recording this so Phase 1's exit criterion "post-fix redundancy count surfaces real pairs" is read as "shares the canonical tokenizer+threshold basis (count stays an honest 0)", not as a target to manufacture.
 
 ## Decisions
 
@@ -62,10 +69,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Branch fix/integrity-patch exists off main and the working tree is clean after the plan commit
-- [ ] Baseline suite count is captured and recorded as a gameplan output (expected 711 passed / 4 skipped)
-- [ ] A reproducible measurement records cz_corpus_health's redundancy-pair count BEFORE the fix (fork tokenizer) AND the count the canonical analyze._tokens would yield over the same 30-lesson corpus — both numbers recorded as outputs (fixture-first, L-39/L-40)
-- [ ] The divergence is demonstrated, not assumed: the measurement shows whether the fork under-reports (the predicted symptom) and by how much
+- [x] Branch fix/integrity-patch exists off main and the working tree is clean after the plan commit
+- [x] Baseline suite count is captured and recorded as a gameplan output (expected 711 passed / 4 skipped)
+- [x] A reproducible measurement records cz_corpus_health's redundancy-pair count BEFORE the fix (fork tokenizer) AND the count the canonical analyze._tokens would yield over the same 30-lesson corpus — both numbers recorded as outputs (fixture-first, L-39/L-40)
+- [x] The divergence is demonstrated, not assumed: the measurement shows whether the fork under-reports (the predicted symptom) and by how much
 
 ### Phase 1: Unify the canonical tokenizer
 
