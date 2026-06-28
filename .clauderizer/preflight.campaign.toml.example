@@ -1,0 +1,16 @@
+# Example preflight gate wiring for CAMPAIGN gameplans.
+#
+# A campaign kind declares QA gates (virality, brand_lint, duration) but Clauderizer
+# ships only the gate-RUNNING mechanism, never the QA logic. Until you wire a gate
+# here it WARNS in preflight ("declared but did not run") so a campaign can't read a
+# clean green on QA that never executed.
+#
+# To enable the gates: copy this file to `.clauderizer/preflight.campaign.toml`
+# (drop the `.example` suffix) and set each gate to a real shell command for your
+# project. A gate PASSES when its command exits 0 and FAILS when it exits non-zero.
+# Anything not listed here keeps warning until you wire it.
+
+[gates]
+# virality   = "python tools/score_virality.py --asset out/cut.mp4 --min 0.7"
+# brand_lint = "python tools/brand_lint.py assets/"
+# duration   = "python tools/check_duration.py --asset out/cut.mp4 --max-seconds 60"

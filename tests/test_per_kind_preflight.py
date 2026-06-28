@@ -98,14 +98,36 @@ def test_wired_gate_passes_and_fails_by_exit_code(temp_repo):
     assert result.passed is False  # a failed gate fails preflight
 
 
-def test_unwired_gate_skips_with_hint(temp_repo):
+def test_unwired_gate_warns_not_silent_skip(temp_repo):
+    """#6a false-green fix: a kind-declared QA gate with no wired command must NOT
+    read as a clean green — it WARNS (it did not run), but does not hard-fail
+    (the engine ships the mechanism, never the QA logic)."""
     paths, config = _make_campaign(temp_repo)  # no preflight.campaign.toml written
     result = preflight.run(paths, config, Profile(name="python", commands={}),
                            runner=_fake_runner({"git status --porcelain": (0, "")}))
     vir = next(c for c in result.checks if c.name == "virality")
-    assert vir.status == "skip"
+    assert vir.status == "warn"                    # loud, not a silent skip
+    assert "did NOT run" in vir.detail
     assert "preflight.campaign.toml" in vir.detail  # actionable hint
-    assert result.passed is True  # a skip never fails preflight
+    assert result.passed is True                   # advisory: warn never hard-fails
+    # but the verdict must surface the warning so it can't be misread as all-clear
+    summary = result.to_dict()["summary"]
+    assert "WARNINGS" in summary and "warned" in summary
+
+
+def test_shipped_campaign_preflight_example_is_inert():
+    """#6a (b): an example wiring file ships for discoverability, but it must be
+    INERT (the `.example` suffix, gates commented out) so it can never itself
+    create a false-green by exit-0 placeholder commands."""
+    import tomllib
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parents[1]
+    example = repo_root / ".clauderizer" / "preflight.campaign.toml.example"
+    assert example.exists(), "the example campaign preflight wiring should ship"
+    data = tomllib.loads(example.read_text(encoding="utf-8"))
+    # no active gate commands -> the engine's _load_preflight_gates would yield {}
+    assert not data.get("gates"), "example gates must be commented out (inert)"
 
 
 def test_gate_failure_downgraded_by_advisory(temp_repo):

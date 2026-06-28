@@ -123,20 +123,24 @@ def _jaccard(a: set, b: set) -> float:
 
 
 def _active_project_lessons(paths) -> list[dict]:
-    """``{id, text}`` for each ACTIVE ``L-NN`` lesson in docs/LESSONS.md."""
+    """``{id, text}`` for each ACTIVE ``L-NN`` lesson in docs/LESSONS.md.
+
+    The ``L-NN`` line grammar is single-sourced through
+    ``abstract_index.parse_lesson_line`` (#5) — no local copy of the regex."""
+    from .graph.abstract_index import parse_lesson_line
     from .markdown import lesson_state, sections
 
     doc = paths.doc("LESSONS")
     if not doc.exists():
         return []
     sec = sections.get_section(doc.read_text(encoding="utf-8"), "Lessons") or ""
-    num_re = re.compile(r"^\*\*(L-\d+)\.\*\*\s*(.*)$")
     out: list[dict] = []
     for line in sec.splitlines():
         s = line.strip()
-        m = num_re.match(s)
-        if m and lesson_state.is_active(s):
-            out.append({"id": m.group(1), "text": m.group(2)})
+        parsed = parse_lesson_line(s)
+        if parsed and lesson_state.is_active(s):
+            eid, title, body = parsed
+            out.append({"id": eid, "text": f"{title} {body}".strip()})
     return out
 
 

@@ -70,7 +70,9 @@ def test_two_concurrent_axes_end_to_end(temp_repo):
                            runner=lambda cmd, cwd: (0, ""))
     names = {c.name: c.status for c in result.checks}
     assert "virality" in names and "tests" not in names   # campaign gates, not pytest
-    assert names["virality"] == "pass" and names["duration"] == "skip"  # unwired skips
+    # wired gate passes; the unwired 'duration' gate WARNS (declared but did not
+    # run) rather than silently skipping — a campaign can't read a false green (#6a)
+    assert names["virality"] == "pass" and names["duration"] == "warn"
 
     # The axes are independent: refocus the code axis; the campaign is untouched.
     with _chdir(temp_repo):

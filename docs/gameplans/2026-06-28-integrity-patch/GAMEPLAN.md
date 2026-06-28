@@ -55,11 +55,19 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 **Evidence**: telemetry.py:36 (_REDUNDANCY_THRESHOLD = _LESSON_DUP_JACCARD), telemetry.py import of analyze._tokens; analyze.py:143 (_LESSON_DUP_JACCARD=0.40); tests/test_canonical_tokenizer.py; Phase-0 outputs redundancy_measurement + O-01_recalibration_direction; A-001
 **Status**: active (2026-06-28)
 
+### D4 — Campaign false-green fix: loud-warn unwired kind-declared gates + ship an inert example (not hard-fail)
+
+**Context**: O-02 / finding #6a: kinds/campaign.toml declares QA gates (virality/brand_lint/duration) with no shipped wiring. They resolved to preflight status "skip", which doesn't set passed=False, so a campaign preflight reported a bare "PASS" though the QA never ran (false-green). Options were (a) loud-warn, (b) ship an example preflight.campaign.toml, or both.
+**Decision**: Both, proportionately. (a) A kind-DECLARED command gate with no wired command now emits status "warn" (not silent "skip") with an actionable hint, and the verdict becomes "PASS WITH WARNINGS" (n warned surfaced) so it cannot be misread as all-clear. It does NOT hard-fail: the engine ships the gate-running mechanism, never the QA logic, so the user isn't forced to implement virality tooling to pass preflight (INVARIANT-05 advisory spirit). tests/build unwired stay "skip" (a missing profile command is normal). (b) Ship .clauderizer/preflight.campaign.toml.example — INERT (`.example` suffix, all gates commented) so it can never itself create a false-green via exit-0 placeholders; the hint points to it.
+**Consequences**: A campaign with unwired gates reads "PASS WITH WARNINGS: ... N warned", never a clean green — satisfies the constraint "must not read green on gates that never ran". Driven preflight is byte-unchanged (no kind-declared QA gates). Two tests updated to the new behavior (they encoded the bug): test_per_kind_preflight.test_unwired_gate_warns_not_silent_skip, test_multi_axis_integration. New tests: warn+verdict assertion, inert-example assertion.
+**Evidence**: rituals/preflight.py (check_command_gate warn branch + _summary verdict); .clauderizer/preflight.campaign.toml.example; tests/test_per_kind_preflight.py; tests/test_multi_axis_integration.py:73
+**Status**: active (2026-06-28)
+
 ## Open Items
 
 **O-01.** Threshold recalibration (Phase 1): does corpus_health._REDUNDANCY_THRESHOLD (currently 0.6, tuned for the stopword-keeping fork) need a new value once routed through the canonical analyze._tokens? Decide from the Phase-0 before/after Jaccard distribution — keep 0.6 only if the data supports it; otherwise recalibrate and record why. Resolves into a Phase-1 decision/output. _(resolved 2026-06-28: Recalibrated by data, not taste: set _REDUNDANCY_THRESHOLD = analyze._LESSON_DUP_JACCARD (0.40), single-sourcing the threshold with the write-time advisory rather than keeping 0.6. Phase-0 showed 0.6-vs-0.40 was an incoherence and that 0.40 yields 0 false positives on the real corpus (D3, A-001).)_
 
-**O-02.** Campaign preflight false-green (Phase 2, finding #6a): pick the fix for kinds/campaign.toml declaring virality/brand_lint/duration gates with no shipped wiring — (a) loud-warn in preflight/doctor that declared gates are unwired, (b) ship an example .clauderizer/preflight.campaign.toml, or both. Constraint: a campaign gameplan must not read green on gates that never ran. Resolves into the Phase-2 implementation + test.
+**O-02.** Campaign preflight false-green (Phase 2, finding #6a): pick the fix for kinds/campaign.toml declaring virality/brand_lint/duration gates with no shipped wiring — (a) loud-warn in preflight/doctor that declared gates are unwired, (b) ship an example .clauderizer/preflight.campaign.toml, or both. Constraint: a campaign gameplan must not read green on gates that never ran. Resolves into the Phase-2 implementation + test. _(resolved 2026-06-28: Both (a)+(b): unwired kind-declared QA gates now WARN (status "warn", verdict "PASS WITH WARNINGS") instead of silently skipping, and an inert .clauderizer/preflight.campaign.toml.example ships. A campaign can no longer read green on gates that never ran; not a hard-fail (INVARIANT-05). Covered by tests (D4).)_
 
 **O-03.** Digest tool-advertisement testability (Phase 3, finding #3a): confirm where the SessionStart digest renders its advertised tool list (status_bundle.render_digest / the digest assembler) and that it reflects the passed-in tool names, so the new test can assert advertised-list == TOOL_NAMES rather than a hardcoded copy. If the digest derives the list indirectly, decide the right seam to assert. Resolves into the Phase-3 test.
 
@@ -108,11 +116,11 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] handoff.py parses L-NN lesson lines via the single shared abstract_index regex/parse_lesson_line (no duplicate _PROJECT_LESSON_NUM_RE); a test asserts the index path and handoff path agree on the same input
-- [ ] A campaign gameplan can no longer read green on unwired preflight gates: preflight/doctor loud-warns on declared-but-unwired gates and/or an example .clauderizer/preflight.campaign.toml ships — covered by a test
-- [ ] analyze.suggest_edges has a size guard (skip/cap before the O(n^2) pair loop) so the UserPromptSubmit hot path is bounded on a large entity graph — covered by a test
-- [ ] cz_get carries a one-line comment explaining the writes=False vs disposable-cache-write distinction, AND a test asserts cz_get mutates no tracked markdown (only the gitignored cache may change)
-- [ ] Full suite green; tool surface unchanged at 42
+- [x] handoff.py parses L-NN lesson lines via the single shared abstract_index regex/parse_lesson_line (no duplicate _PROJECT_LESSON_NUM_RE); a test asserts the index path and handoff path agree on the same input
+- [x] A campaign gameplan can no longer read green on unwired preflight gates: preflight/doctor loud-warns on declared-but-unwired gates and/or an example .clauderizer/preflight.campaign.toml ships — covered by a test
+- [x] analyze.suggest_edges has a size guard (skip/cap before the O(n^2) pair loop) so the UserPromptSubmit hot path is bounded on a large entity graph — covered by a test
+- [x] cz_get carries a one-line comment explaining the writes=False vs disposable-cache-write distinction, AND a test asserts cz_get mutates no tracked markdown (only the gitignored cache may change)
+- [x] Full suite green; tool surface unchanged at 42
 
 ### Phase 3: Test integrity
 

@@ -21,6 +21,7 @@ from pathlib import Path
 
 from .. import analyze
 from ..config import Config
+from ..graph.abstract_index import parse_lesson_line
 from ..markdown import lesson_state, sections, skill_state
 from ..paths import RepoPaths
 
@@ -152,22 +153,23 @@ def relevant_lesson_pointer(index_text: str, query: str,
 # handoff carries the top-k lessons most relevant to the phase + a pointer to the
 # canonical full set — focus, never a drop from canonical memory (reconciles
 # D-022: this is relevance-ranking + pointer-to-canonical, not tail truncation).
-_PROJECT_LESSON_NUM_RE = re.compile(r"^\*\*(L-\d+)\.\*\*\s*(.*)$")
-
-
 def _project_lesson_entries(lessons_text: str) -> list[dict]:
     """Active ``L-NN`` lessons parsed for ranking, keeping the original markdown
-    line so the focused set re-renders byte-faithfully."""
+    line so the focused set re-renders byte-faithfully.
+
+    The lesson-line grammar is single-sourced through
+    ``abstract_index.parse_lesson_line`` (#5) — the handoff ranker and the
+    abstract index can no longer disagree on what an ``L-NN`` line is."""
     sec = sections.get_section(lessons_text, "Lessons") or ""
     entries: list[dict] = []
     for line in sec.splitlines():
         s = line.strip()
-        if not _PROJECT_LESSON_LINE.match(s) or not lesson_state.is_active(s):
+        if not lesson_state.is_active(s):
             continue
-        m = _PROJECT_LESSON_NUM_RE.match(s)
-        if m:
-            entries.append({"id": m.group(1), "title": m.group(2).strip(),
-                            "body": "", "line": line})
+        parsed = parse_lesson_line(s)
+        if parsed:
+            eid, title, body = parsed
+            entries.append({"id": eid, "title": title, "body": body, "line": line})
     return entries
 
 
