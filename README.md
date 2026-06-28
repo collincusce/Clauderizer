@@ -416,7 +416,7 @@ clauderize uninstall [--host <name>]   # reverse the full footprint (MCP config 
 
 ## MCP surface
 
-**Read** · `cz_status` · `cz_next_phase_context` · `cz_gameplans` · `cz_graph_query`
+**Read** · `cz_status` · `cz_next_phase_context` · `cz_gameplans` · `cz_graph_query` · `cz_get`
 **Rituals** · `cz_preflight` · `cz_cascade` · `cz_resolve_cascade` · `cz_write_handoff`
 **Mutations** · `cz_create_gameplan` · `cz_focus` · `cz_add_phase` · `cz_transition_phase` · `cz_add_amendment`
 · `cz_add_decision` · `cz_add_invariant` · `cz_add_finding` · `cz_resolve_finding` · `cz_add_lesson`
@@ -428,7 +428,7 @@ clauderize uninstall [--host <name>]   # reverse the full footprint (MCP config 
 **Resources** · `clauderizer://status` · `clauderizer://procedure` · `clauderizer://entity/{id}`
 **Prompts** · `cz-status` · `cz-next-phase` — surface as slash commands (e.g. `/cz-status`) on prompt-capable hosts
 
-In total: **41 tools + 3 resources + 2 prompts**.
+In total: **42 tools + 3 resources + 2 prompts**.
 
 The tools are deliberately separate and self-describing rather than one generic `mutate` — that's
 the whole point of going MCP-native: an agent dropped into the repo *discovers* the workflow from
