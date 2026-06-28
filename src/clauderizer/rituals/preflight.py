@@ -17,10 +17,12 @@ import os
 import re
 import subprocess
 import sys
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
+from .. import kinds
 from ..config import Config
 from ..locking import LockHeld, write_lock
 from ..markdown import writer
@@ -29,6 +31,33 @@ from ..profiles.detect import Profile
 from . import _tables, status_bundle
 
 _BASELINE_LABEL = "Current baseline test count"
+
+# The built-in structural checks (git state, gameplan/cascade/handoff hygiene).
+# Every OTHER enabled check name is a "command gate": a named shell command that
+# passes/fails by exit code (D9). tests/build are command gates whose command
+# falls back to the host profile; campaign-style gates (virality, brand_lint, …)
+# are wired by the user in .clauderizer/preflight.<kind>.toml and skip-with-hint
+# until wired. Clauderizer ships the mechanism, never the QA logic.
+_STRUCTURAL_CHECKS = frozenset({
+    "branch_base", "clean_tree", "deps_spotcheck",
+    "branch_creation", "cascade_hygiene", "handoff_presence",
+})
+
+
+def _load_preflight_gates(paths: RepoPaths, kind_name: str) -> dict[str, str]:
+    """Read ``.clauderizer/preflight.<kind>.toml`` -> ``{gate_name: shell command}``
+    from its ``[gates]`` table (the per-kind/per-repo gate wiring). Missing or
+    malformed file -> ``{}`` (the gate then skips-with-hint, never fails)."""
+    p = paths.clauderizer_dir / f"preflight.{kind_name}.toml"
+    if not p.exists():
+        return {}
+    try:
+        with p.open("rb") as fh:
+            raw = tomllib.load(fh)
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}
+    gates = raw.get("gates", {})
+    return {str(k): str(v) for k, v in gates.items() if str(v).strip()}
 
 
 def _generic_profile_hint(root, kind: str):
@@ -223,8 +252,20 @@ def run(
     runner = runner or _default_runner
     root = paths.root
     result = PreflightResult()
-    enabled = config.preflight_checks or ["clean_tree", "tests"]
     advisory = set(config.preflight_advisory or [])
+    gid = config.active_gameplan
+
+    # The check LIST comes from the focus gameplan's KIND when it defines one
+    # (e.g. a campaign's QA gates); otherwise from config.preflight_checks (so a
+    # driven gameplan — empty kind list — behaves EXACTLY as before). O-02: a
+    # kind's list wins when present; to override a kind's checks per-repo, edit the
+    # kind overlay (.clauderizer/kinds/<kind>.toml). The gate commands come from
+    # .clauderizer/preflight.<kind>.toml, resolved per kind.
+    kind_name = (status_bundle.gameplan_kind(paths.gameplan_dir(gid))
+                 if gid else "driven")
+    kind = kinds.resolve(kind_name, paths.kinds_dir)
+    enabled = kind.preflight_checks or config.preflight_checks or ["clean_tree", "tests"]
+    gates = _load_preflight_gates(paths, kind_name)
     n = 0
 
     def add(name: str, status: str, detail: str = "") -> None:
@@ -239,7 +280,18 @@ def run(
         if status == "fail":
             result.passed = False
 
-    if "branch_base" in enabled:
+    def _gate_command(name: str) -> str:
+        """Resolve a command gate's shell command: the per-kind wiring file first,
+        then the host profile for the canonical tests/build gates."""
+        if name in gates:
+            return gates[name]
+        if name == "tests":
+            return profile.command("test")
+        if name == "build":
+            return profile.command("build")
+        return ""
+
+    def check_branch_base() -> None:
         state, branch = _git_branch_state(root, runner)
         if state == "none":
             add("branch_base", "skip", "not a git repo")
@@ -252,7 +304,7 @@ def run(
         else:
             add("branch_base", "pass", f"on branch {branch}")
 
-    if "clean_tree" in enabled:
+    def check_clean_tree() -> None:
         code, out = _git("status --porcelain", root, runner)
         if code != 0:
             add("clean_tree", "skip", "not a git repo")
@@ -261,47 +313,14 @@ def run(
         else:
             add("clean_tree", "pass", "clean working tree")
 
-    if "tests" in enabled:
-        cmd = profile.command("test")
-        if not cmd:
-            hint = _generic_profile_hint(root, "test") if profile.name == "generic" else None
-            add("tests", "skip", hint or f"no test command for profile '{profile.name}'")
-        else:
-            code, out = runner(cmd, root)
-            count = None
-            if profile.baseline_test_regex:
-                m = re.search(profile.baseline_test_regex, out)
-                if m and m.groups():
-                    count = m.group(1)
-                    result.baseline_tests = count
-            if code == 0:
-                detail = f"`{cmd}` ok" + (f" ({count} tests)" if count else "")
-                # Green run with a measured count: keep the tracked baseline fresh.
-                old = _write_back_baseline(paths, config, count) if count else None
-                if old is not None:
-                    detail += f"; baseline updated {old} -> {count}"
-                add("tests", "pass", detail)
-            else:
-                add("tests", "fail", f"`{cmd}` exit {code}\n{out.strip()[:400]}")
-
-    if "build" in enabled:
-        cmd = profile.command("build")
-        if not cmd:
-            hint = _generic_profile_hint(root, "build") if profile.name == "generic" else None
-            add("build", "skip", hint or f"no build command for profile '{profile.name}'")
-        else:
-            code, out = runner(cmd, root)
-            add("build", "pass" if code == 0 else "fail", f"`{cmd}` exit {code}")
-
-    if "deps_spotcheck" in enabled:
-        gid = config.active_gameplan
+    def check_deps_spotcheck() -> None:
         gp = paths.gameplan_dir(gid) / "GAMEPLAN.md" if gid else None
         if gp and gp.exists():
             add("deps_spotcheck", "pass", f"active gameplan {gid} present on disk")
         else:
             add("deps_spotcheck", "fail", "active gameplan GAMEPLAN.md not found on disk")
 
-    if "branch_creation" in enabled:
+    def check_branch_creation() -> None:
         state, branch = _git_branch_state(root, runner)
         if state == "branch":
             add("branch_creation", "pass", f"current branch: {branch}")
@@ -312,8 +331,7 @@ def run(
         else:
             add("branch_creation", "skip", "not a git repo")
 
-    if "cascade_hygiene" in enabled:
-        gid = config.active_gameplan
+    def check_cascade_hygiene() -> None:
         pending = (
             status_bundle._pending_cascades(paths.gameplan_dir(gid) / "_cascade-reports")
             if gid else []
@@ -323,23 +341,79 @@ def run(
         else:
             add("cascade_hygiene", "pass", "no pending cascade reports")
 
-    if "handoff_presence" in enabled:
-        gid = config.active_gameplan
+    def check_handoff_presence() -> None:
         if not gid:
             add("handoff_presence", "skip", "no active gameplan")
+            return
+        had_table, missing = _missing_expected_handoffs(paths.gameplan_dir(gid))
+        if not had_table:
+            add("handoff_presence", "skip", "no phase table to check")
+        elif missing:
+            add("handoff_presence", "fail",
+                "expected handoff(s) missing on disk: " + ", ".join(missing)
+                + ". These rebuild losslessly from the canonical graph, so a "
+                "crashed session that never wrote one is recoverable. To unblock, "
+                "reply 'regenerate' to rebuild each via cz_write_handoff(phase_n=…), "
+                "or 'proceed anyway' to waive it once; for an intentionally "
+                "single-session gameplan, add 'handoff_presence' to preflight_advisory.")
         else:
-            had_table, missing = _missing_expected_handoffs(paths.gameplan_dir(gid))
-            if not had_table:
-                add("handoff_presence", "skip", "no phase table to check")
-            elif missing:
-                add("handoff_presence", "fail",
-                    "expected handoff(s) missing on disk: " + ", ".join(missing)
-                    + ". These rebuild losslessly from the canonical graph, so a "
-                    "crashed session that never wrote one is recoverable. To unblock, "
-                    "reply 'regenerate' to rebuild each via cz_write_handoff(phase_n=…), "
-                    "or 'proceed anyway' to waive it once; for an intentionally "
-                    "single-session gameplan, add 'handoff_presence' to preflight_advisory.")
+            add("handoff_presence", "pass", "all expected phase handoffs present")
+
+    def check_command_gate(name: str) -> None:
+        """A named shell-command gate: pass/fail by exit code. tests/build keep
+        their profile fallback + (for tests) baseline parse/writeback; a campaign
+        gate with no wired command skips with a hint rather than failing."""
+        cmd = _gate_command(name)
+        if not cmd:
+            if name in ("tests", "build"):
+                kind_cmd = "test" if name == "tests" else "build"
+                hint = (_generic_profile_hint(root, kind_cmd)
+                        if profile.name == "generic" else None)
+                add(name, "skip",
+                    hint or f"no {kind_cmd} command for profile '{profile.name}'")
             else:
-                add("handoff_presence", "pass", "all expected phase handoffs present")
+                add(name, "skip",
+                    f"no command wired for gate '{name}' — add it under [gates] in "
+                    f".clauderizer/preflight.{kind_name}.toml to enable it")
+            return
+        code, out = runner(cmd, root)
+        if name == "tests":
+            count = None
+            if profile.baseline_test_regex:
+                m = re.search(profile.baseline_test_regex, out)
+                if m and m.groups():
+                    count = m.group(1)
+                    result.baseline_tests = count
+            if code == 0:
+                detail = f"`{cmd}` ok" + (f" ({count} tests)" if count else "")
+                old = _write_back_baseline(paths, config, count) if count else None
+                if old is not None:
+                    detail += f"; baseline updated {old} -> {count}"
+                add("tests", "pass", detail)
+            else:
+                add("tests", "fail", f"`{cmd}` exit {code}\n{out.strip()[:400]}")
+        elif name == "build":
+            add("build", "pass" if code == 0 else "fail", f"`{cmd}` exit {code}")
+        elif code == 0:
+            add(name, "pass", f"`{cmd}` ok")
+        else:
+            add(name, "fail", f"`{cmd}` exit {code}\n{out.strip()[:400]}")
+
+    structural = {
+        "branch_base": check_branch_base,
+        "clean_tree": check_clean_tree,
+        "deps_spotcheck": check_deps_spotcheck,
+        "branch_creation": check_branch_creation,
+        "cascade_hygiene": check_cascade_hygiene,
+        "handoff_presence": check_handoff_presence,
+    }
+    # Iterate the enabled list in order so the report order = the kind/config order
+    # (driven's config order is unchanged, so its output is byte-identical).
+    for name in enabled:
+        handler = structural.get(name)
+        if handler is not None:
+            handler()
+        else:
+            check_command_gate(name)
 
     return result

@@ -82,11 +82,19 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Evidence**: src/clauderizer/kinds/ (__init__.py + driven/loop/campaign.toml), status_bundle.py (gameplan_card phase_label + compute lexicon), handoff.py (P heading relabel, marker-owned region), ops.cz_create_gameplan validation+templating; tests/test_kinds.py (10 tests)
 **Status**: active (2026-06-27)
 
+### D9 — Command-gate preflight primitive + per-kind check-list resolution (O-02)
+
+**Context**: preflight hardcoded tests/build pulling commands from the language Profile; a campaign needs QA gates (virality/brand-lint/duration), not pytest. Needed a generic gate mechanism plus a precedence rule for the check LIST.
+**Decision**: Generalized tests/build into ONE command-gate: any enabled check name that is NOT a built-in structural check (branch_base/clean_tree/deps_spotcheck/branch_creation/cascade_hygiene/handoff_presence) is a named shell gate that passes/fails by exit code. Its command resolves from .clauderizer/preflight.<kind>.toml [gates] first, else the host profile for the canonical tests/build gates; the tests gate keeps its baseline parse + writeback. An unwired gate skips-with-hint pointing at the wiring file. run() now iterates the enabled list IN ORDER, dispatching each name to a structural handler or the command-gate. Check-list precedence (O-02): the focus gameplan's kind.preflight_checks wins when non-empty (campaign's gates); otherwise config.preflight_checks (so driven, with an empty kind list, is unchanged). Per-repo override of a kind's checks = edit the kind overlay .clauderizer/kinds/<kind>.toml, not config. Advisory-downgrade applies to gates too.
+**Consequences**: Clauderizer ships the run-named-gates mechanism; the user wires the QA logic as shell commands. driven preflight is byte-identical (suite 656->661, +5 gate tests). cz_preflight is unchanged — it already passes paths+config and the kind is read from focus inside run(). The exit-criterion phrasing 'config as override' is realized as 'config is the fallback for kinds that define no list'.
+**Evidence**: src/clauderizer/rituals/preflight.py (_STRUCTURAL_CHECKS, _load_preflight_gates, run() dispatch + check_command_gate + _gate_command), kinds/campaign.toml [preflight].checks; tests/test_per_kind_preflight.py
+**Status**: active (2026-06-27)
+
 ## Open Items
 
 **O-01.** _(phase 4)_ Cross-gameplan cascade fan-out form: central report in focus gameplan + a per-axis pending pointer, vs a duplicated report per affected gameplan. Decide in Phase 4 (lean: central + pointer to avoid double-resolve).
 
-**O-02.** _(phase 3)_ Preflight check-list precedence when BOTH config.preflight_checks is set AND the kind defines checks: recommend kind-default unless config explicitly overrides — confirm and document in Phase 3.
+**O-02.** _(phase 3)_ Preflight check-list precedence when BOTH config.preflight_checks is set AND the kind defines checks: recommend kind-default unless config explicitly overrides — confirm and document in Phase 3. _(resolved 2026-06-27: Resolved: kind.preflight_checks wins when non-empty (campaign), else config.preflight_checks (driven unchanged). Per-repo override of a kind's list is the kind overlay .clauderizer/kinds/<kind>.toml, not a config-vs-kind flag — simpler and keeps driven byte-identical. See D9.)_
 
 **O-03.** _(phase 0)_ Implementation branch strategy: branch off main for this initiative rather than continuing on feat/abstract-index-fast-retrieval (which has its own in-flight gameplan). Confirm with user at Phase 1 greenlight. _(resolved 2026-06-27: Branched off main into feat/concurrent-multi-axis-gameplans in Phase 0 (0/0 vs main); confirmed the right call so this initiative stays independent of the in-flight abstract-index branch.)_
 
@@ -154,12 +162,12 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Named command-gate primitive runs a wired gate via injected stub runner (pass/fail by exit code)
-- [ ] Check list resolves from focus gameplan's kind definition with config.preflight_checks as override
-- [ ] Unwired gate skips with an actionable hint; advisory-downgrade still works
-- [ ] driven preflight output identical to today (tests/build from host profile)
-- [ ] cz_preflight resolves kind from focus
-- [ ] Full suite green vs baseline
+- [x] Named command-gate primitive runs a wired gate via injected stub runner (pass/fail by exit code)
+- [x] Check list resolves from focus gameplan's kind definition with config.preflight_checks as override
+- [x] Unwired gate skips with an actionable hint; advisory-downgrade still works
+- [x] driven preflight output identical to today (tests/build from host profile)
+- [x] cz_preflight resolves kind from focus
+- [x] Full suite green vs baseline
 
 ### Phase 4: Cross-gameplan dependencies and explicit scoping
 

@@ -1,7 +1,7 @@
 # Chat Handoff Index — concurrent multi-axis gameplans
 
 > Last updated: 2026-06-27
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -32,8 +32,8 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Bootstrap and back-compat harness | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Focus model (concurrent gameplans + portfolio) | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Kinds as real profiles (parse + lexicon) | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Per-kind / per-gameplan preflight | 🟢 READY | — | — | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Cross-gameplan dependencies and explicit scoping | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 3 | Per-kind / per-gameplan preflight | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-3-HANDOFF.md |
+| 4 | Cross-gameplan dependencies and explicit scoping | 🟢 READY | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Docs, dogfood, release | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -51,6 +51,10 @@ Focus model shipped. Config.focus is now the canonical pointer with active_gamep
 ### Phase 2 — completed 2026-06-27
 
 Kinds are now real, behavioral profiles. Added the kinds package (Kind dataclass + load_all/resolve/is_known, mirroring profiles) with packaged driven/loop/campaign tomls and a per-repo .clauderizer/kinds/ overlay (paths.kinds_dir). cz_create_gameplan validates the kind and templates the first phase from it (driven=Bootstrap, loop=Iterate, campaign=Concept). The lexicon is display-only (D3/D8): status_bundle summary + portfolio card phase word + handoff headings relabel for a campaign (stage/asset/creative decision) while on-disk section headings stay canonical, so the phase parser and every test keep working; the handoff relabel is safe because the headings sit inside the regenerated clauderizer:handoff marker block. driven is the identity lexicon so all driven digests/handoffs stay byte-identical (golden gate green). Verified live: a campaign focus reads in stage vocabulary; the portfolio tags [driven]/[loop]/[campaign]. Suite 646->656 (+10 kinds tests).
+
+### Phase 3 — completed 2026-06-27
+
+Per-kind preflight shipped. Generalized tests/build into one command-gate primitive: any enabled check that is not a built-in structural check is a named shell gate (pass/fail by exit code) whose command resolves from .clauderizer/preflight.<kind>.toml [gates] else the host profile (tests/build); the tests gate keeps baseline parse+writeback. run() iterates the enabled list in order, dispatching structural vs gate; unwired gates skip-with-hint. The check list comes from the focus kind (campaign -> its QA gates) else config (driven unchanged) — O-02 resolved (D9). Advisory-downgrade applies to gates. cz_preflight needed no change (kind read from focus inside run()). driven output byte-identical; suite 656->661 (+5). Clauderizer ships the mechanism, the user wires virality/brand-lint as shell commands.
 
 ## Accumulated Lessons
 

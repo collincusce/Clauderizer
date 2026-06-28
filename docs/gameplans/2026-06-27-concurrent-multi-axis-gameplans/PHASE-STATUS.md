@@ -10,8 +10,8 @@
 | 0 | Bootstrap and back-compat harness | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Focus model (concurrent gameplans + portfolio) | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Kinds as real profiles (parse + lexicon) | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Per-kind / per-gameplan preflight | 🟢 READY | — | — | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Cross-gameplan dependencies and explicit scoping | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 3 | Per-kind / per-gameplan preflight | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-3-HANDOFF.md |
+| 4 | Cross-gameplan dependencies and explicit scoping | 🟢 READY | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Docs, dogfood, release | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 ## Outputs Registry
