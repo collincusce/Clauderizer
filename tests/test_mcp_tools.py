@@ -36,16 +36,15 @@ def _call(server, name, args=None):
 
 
 def test_all_tools_are_discoverable(temp_repo):
+    """The server advertises EXACTLY the full tool surface — not a stale subset.
+    Welded to tools_list.TOOL_NAMES so a new/removed op can't silently drift the
+    advertised set (the parity gate's MCP-transport sibling)."""
+    from clauderizer.tools_list import TOOL_NAMES
+
     with _chdir(temp_repo):
         server = build_server()
         names = {t.name for t in asyncio.run(server.list_tools())}
-    expected = {
-        "cz_status", "cz_next_phase_context", "cz_graph_query", "cz_preflight",
-        "cz_cascade", "cz_write_handoff", "cz_upsert_entity", "cz_transition_status",
-        "cz_add_decision", "cz_add_invariant", "cz_add_finding", "cz_add_lesson",
-        "cz_add_correction", "cz_create_gameplan", "cz_add_phase", "cz_add_amendment",
-    }
-    assert expected <= names
+    assert names == set(TOOL_NAMES)
 
 
 def test_cz_status_tool(temp_repo):

@@ -88,8 +88,7 @@ def test_discover_never_writes(temp_repo, tmp_path):
     root.mkdir()
     _mk_skill(root, "x", "y")
     D.discover(paths, roots=[("test", root)])
-    assert not sdoc.exists()  # discovery is read-only
-    assert ops.REGISTRY["cz_discover_skills"].writes is False
+    assert not sdoc.exists()  # discovery is read-only (behavioral: no SKILLS.md written)
 
 
 def test_discovers_real_shipped_skills(temp_repo):
@@ -102,8 +101,6 @@ def test_discovers_real_shipped_skills(temp_repo):
     assert res["proposal_count"] >= 5  # six clauderizer-* skills ship
 
 
-def test_op_surface_is_read_only_and_registered(temp_repo):
-    from clauderizer.tools_list import TOOL_NAMES
-    assert "cz_discover_skills" in TOOL_NAMES
-    assert list(ops.REGISTRY) == TOOL_NAMES  # parity preserved
-    assert ops.REGISTRY["cz_discover_skills"].writes is False
+# cz_discover_skills registration + REGISTRY==TOOL_NAMES parity is the single
+# test_ops.py gate; its read-only-ness is covered behaviorally above
+# (test_discover_never_writes) and in tests/test_read_only_ops.py.

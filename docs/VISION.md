@@ -30,6 +30,16 @@ clauderizes any repo).
   handoffs assemble cumulatively — operations, not instructions to remember.
 - **Append-only memory with consolidation pressure, not caps.** Nothing is ever
   auto-deleted; overlap is synthesized and the enduring promoted.
+- **Many gameplans at once, each its own kind.** Run a feature build, a standing
+  maintenance loop, and a creative campaign side by side — the engine tracks the
+  whole portfolio, focuses one at a time, speaks each kind's own vocabulary (a
+  campaign's "stages" and "assets" over the same canonical structure), runs each
+  kind's own quality gates, and propagates a dependency from one axis to another
+  automatically.
+- **Addressable, summary-first recall.** A compact per-entry index lets the agent
+  pull exactly the decision, invariant, or lesson it needs — and see a one-line
+  summary inline — instead of loading a whole file; like the graph index it is
+  disposable and always rebuilt from the markdown.
 - **Host- and model-portable, not a Claude-only bet.** A host-neutral MCP server plus an
   `AGENTS.md` floor reach 11 agents (Claude Code, Cursor, Copilot, Codex, Gemini CLI,
   Windsurf, Cline, Amp, Continue, Zed, kimi); an injection-parity ladder delivers status by

@@ -9,7 +9,10 @@ from contextlib import contextmanager
 from clauderizer import analyze
 from clauderizer import config as cfg
 from clauderizer import mutations as M
+from clauderizer import ops
 from clauderizer import paths as P
+from clauderizer.graph import abstract_index
+from clauderizer.rituals import handoff
 
 
 def _ctx(repo):
@@ -25,6 +28,53 @@ def _chdir(path):
         yield
     finally:
         os.chdir(old)
+
+
+def test_handoff_and_index_agree_on_a_lesson_line():
+    """#5: the handoff ranker and the abstract index parse an L-NN line through the
+    SAME single-sourced grammar (abstract_index.parse_lesson_line) — no divergent
+    copy of the regex. Same input -> same id and same distinctive tokens."""
+    line = ("**L-42.** release-check counts UNTRACKED files as a dirty tree and "
+            "blocks the ritual. The surgical fix is .git/info/exclude. *(from g)*")
+    section = f"## Lessons\n\n{line}\n"
+
+    handoff_entries = handoff._project_lesson_entries(section)
+    parsed = abstract_index.parse_lesson_line(line)
+
+    assert parsed is not None
+    eid, title, body = parsed
+    assert len(handoff_entries) == 1
+    he = handoff_entries[0]
+    assert he["id"] == eid == "L-42"
+    # both paths reconstruct the same full text -> identical canonical token set
+    assert analyze._tokens(f"{he['title']} {he['body']}") == analyze._tokens(f"{title} {body}")
+
+
+def test_cz_get_mutates_no_tracked_markdown(temp_repo):
+    """#6c: cz_get is writes=False — it never mutates canonical markdown
+    (INVARIANT-01). It MAY (re)build the gitignored disposable abstract-index
+    cache, exactly as any graph read does; that does not make it a mutating op."""
+    paths, _ = _ctx(temp_repo)
+    did = M.add_decision(paths, title="Use Postgres for the billing ledger",
+                         context="durable transactional storage for invoices",
+                         decision="adopt postgresql", consequences="ops overhead")["id"]
+
+    def md_snapshot() -> dict:
+        return {str(p.relative_to(temp_repo)): p.read_bytes()
+                for p in sorted(paths.docs.rglob("*.md"))}
+
+    # Drop any pre-existing cache so we can prove cz_get's only side effect is THAT.
+    if paths.abstract_index_file.exists():
+        paths.abstract_index_file.unlink()
+    before = md_snapshot()
+    with _chdir(temp_repo):
+        res = ops.cz_get(did)
+    after = md_snapshot()
+
+    assert res["ok"] and res["id"] == did
+    assert before == after, "cz_get mutated canonical markdown — must be read-only"
+    # The disposable cache may now exist again; it is gitignored and rebuilt from
+    # markdown (INVARIANT-01), so it is not a tracked-doc mutation.
 
 
 def test_rank_relevant_scores_overlap_and_id_boost():
@@ -270,4 +320,3 @@ def test_cz_get_op_fetches_from_each_corpus_and_is_read_only(temp_repo):
             assert res["body"], f"{eid} returned an empty body"
         miss = ops.cz_get("D-404")
         assert miss["ok"] is False and "no corpus entry" in miss["error"]
-    assert ops.REGISTRY["cz_get"].writes is False

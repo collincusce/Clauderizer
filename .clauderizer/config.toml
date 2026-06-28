@@ -25,5 +25,5 @@ preflight = true
 cascade = true
 amendments = false
 
-[active_gameplan]
-id = "2026-06-25-abstract-index-fast-retrieval"
+[focus]
+id = "2026-06-28-integrity-patch"

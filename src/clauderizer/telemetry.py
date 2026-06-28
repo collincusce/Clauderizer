@@ -30,10 +30,21 @@ import re
 from datetime import date as _date
 from pathlib import Path
 
-# Token-set Jaccard at/above which two lessons are flagged a near-duplicate. High
-# (precision over recall): the curator (Phase 2) would rather miss a loose pair
-# than propose merging two lessons that only share boilerplate. Tunable later.
-_REDUNDANCY_THRESHOLD = 0.6
+# One canonical tokenizer for ALL lexical-overlap/similarity in the engine
+# (D-041): the redundancy metric here tokenizes exactly like the write-time
+# near-duplicate advisory (analyze.near_duplicate_lessons) and the abstract
+# index (analyze._tokens), so "near-duplicate lesson" has a single definition.
+# The prior local fork kept stopwords + 3-char noise and quietly diverged.
+from .analyze import _LESSON_DUP_JACCARD, _tokens
+
+# Token-set Jaccard at/above which two lessons are flagged a near-duplicate.
+# SINGLE-SOURCED with the write-time advisory (analyze._LESSON_DUP_JACCARD = 0.40):
+# corpus_health / curate_proposals and cz_add_lesson now share ONE near-duplicate
+# threshold, not two (0.6 here vs 0.40 there was the incoherence the v1.3.0
+# integrity audit flagged). Phase-0 measurement (2026-06-28) showed aligning to
+# 0.40 yields 0 false positives on the real 30-lesson corpus while removing the
+# contradiction — the value is set by data, not taste (O-01).
+_REDUNDANCY_THRESHOLD = _LESSON_DUP_JACCARD
 
 
 def _today(today: str | None) -> str:
@@ -105,11 +116,6 @@ def read_events(telemetry_file: Path) -> list[dict]:
     return out
 
 
-def _tokens(text: str) -> set:
-    # Deterministic lexical tokens (no ML, D-018): alnum runs > 2 chars, lowered.
-    return {t for t in re.findall(r"[a-z0-9]+", text.lower()) if len(t) > 2}
-
-
 def _jaccard(a: set, b: set) -> float:
     if not a or not b:
         return 0.0
@@ -117,20 +123,24 @@ def _jaccard(a: set, b: set) -> float:
 
 
 def _active_project_lessons(paths) -> list[dict]:
-    """``{id, text}`` for each ACTIVE ``L-NN`` lesson in docs/LESSONS.md."""
+    """``{id, text}`` for each ACTIVE ``L-NN`` lesson in docs/LESSONS.md.
+
+    The ``L-NN`` line grammar is single-sourced through
+    ``abstract_index.parse_lesson_line`` (#5) — no local copy of the regex."""
+    from .graph.abstract_index import parse_lesson_line
     from .markdown import lesson_state, sections
 
     doc = paths.doc("LESSONS")
     if not doc.exists():
         return []
     sec = sections.get_section(doc.read_text(encoding="utf-8"), "Lessons") or ""
-    num_re = re.compile(r"^\*\*(L-\d+)\.\*\*\s*(.*)$")
     out: list[dict] = []
     for line in sec.splitlines():
         s = line.strip()
-        m = num_re.match(s)
-        if m and lesson_state.is_active(s):
-            out.append({"id": m.group(1), "text": m.group(2)})
+        parsed = parse_lesson_line(s)
+        if parsed and lesson_state.is_active(s):
+            eid, title, body = parsed
+            out.append({"id": eid, "text": f"{title} {body}".strip()})
     return out
 
 

@@ -177,6 +177,22 @@ def test_empty_when_nothing_overlaps(temp_repo):
     assert frozenset(("subsys.alpha", "subsys.beta")) not in pairs
 
 
+def test_size_guard_skips_the_n_squared_scan_on_a_large_graph(temp_repo):
+    """#6b: suggest_edges runs on every cz_analyze incl. the UserPromptSubmit hook
+    (INVARIANT-06 — a hook stays cheap). The O(n^2) pair scan is guarded: once the
+    entity count exceeds max_entities the advisory is skipped (an honest empty),
+    even for a pair that WOULD otherwise be suggested."""
+    paths = _ctx(temp_repo)
+    _entity(paths, "subsys.invoice-ledger",
+            "Durable invoice ledger billing storage and posting.")
+    _entity(paths, "subsys.invoice-export",
+            "Invoice ledger billing export and reporting.")
+    target = frozenset(("subsys.invoice-ledger", "subsys.invoice-export"))
+    # Below the guard the pair surfaces; at/above it the scan is skipped entirely.
+    assert target in {_pair(s) for s in analyze.suggest_edges(paths, max_entities=999)}
+    assert analyze.suggest_edges(paths, max_entities=1) == []
+
+
 def test_analyze_result_carries_suggested_edges(temp_repo):
     """The analyze() result (and thus cz_analyze) exposes suggested_edges."""
     paths = _ctx(temp_repo)

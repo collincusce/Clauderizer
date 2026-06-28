@@ -53,7 +53,7 @@ def _foreign_lock(paths):
 
 
 def test_registry_is_exactly_the_tool_surface():
-    assert list(ops.REGISTRY) == TOOL_NAMES  # 24/24, same order — no drift
+    assert list(ops.REGISTRY) == TOOL_NAMES  # 42/42, same names, same order — no drift
     for name, spec in ops.REGISTRY.items():
         assert spec.fn.__name__ == name  # op names ARE the tool names
         assert spec.fn.__doc__  # every op self-describes

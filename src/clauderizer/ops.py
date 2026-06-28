@@ -128,6 +128,11 @@ def cz_get(id: str, kind: str = "auto") -> dict:
     paths, _ = repo_ctx()
     from . import analyze
 
+    # writes=False means cz_get never mutates CANONICAL markdown (INVARIANT-01).
+    # get_entry may still refresh the gitignored disposable abstract-index cache
+    # (.clauderizer/abstract_index.json) as any graph read does — same as
+    # cz_graph_query; that cache is rebuilt from markdown and safe to discard, so it
+    # does not make this a mutating op. (test_cz_get_mutates_no_tracked_markdown.)
     entry = analyze.get_entry(paths, id, kind=kind)
     if entry is None:
         return {"ok": False, "id": id,

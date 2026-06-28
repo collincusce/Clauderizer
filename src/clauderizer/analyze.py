@@ -264,6 +264,14 @@ def adjacent_entities(paths: RepoPaths, text: str, decision_ids,
 # trust; over-retrieval is net-negative — INVARIANT-05's "surface the right few").
 _EDGE_MIN_SHARED = 2
 
+# Hot-path size guard. suggest_edges runs on every cz_analyze, which is reachable
+# from the UserPromptSubmit hook (INVARIANT-06: a hook stays cheap). The pair scan
+# below is O(n^2) in the entity count; above this many entities the advisory is
+# skipped rather than taxing the hook on a large graph. Generous headroom over any
+# realistic project (the worst case here is ~MAX^2/2 cheap set intersections); the
+# skip is an honest empty, never a failure. Tunable.
+_EDGE_MAX_ENTITIES = 200
+
 # Structural boilerplate shared by entity docs BY CONSTRUCTION, which therefore
 # carries zero relatedness signal and would otherwise inflate every pair's
 # overlap. The id prefix segment (``subsys``/``feat``) and the type word are
@@ -311,7 +319,7 @@ def _rejected_pairs(graph) -> set[frozenset[str]]:
 
 
 def suggest_edges(paths: RepoPaths, min_shared: int = _EDGE_MIN_SHARED,
-                  k: int = 10) -> list[dict]:
+                  k: int = 10, max_entities: int = _EDGE_MAX_ENTITIES) -> list[dict]:
     """Suggest MISSING ``depends_on`` edges — the structural complement of D-018.
 
     For each unordered pair of tracked entities whose shared distinctive-token
@@ -327,6 +335,11 @@ def suggest_edges(paths: RepoPaths, min_shared: int = _EDGE_MIN_SHARED,
     graph = graph_index.build(paths.docs)
     ents = graph.all()
     if len(ents) < 2:
+        return []
+    # Hot-path size guard (INVARIANT-06): the pair scan below is O(n^2), and this
+    # runs on every cz_analyze incl. the UserPromptSubmit hook. Above max_entities,
+    # skip the advisory (an honest empty) rather than tax the hook on a large graph.
+    if len(ents) > max_entities:
         return []
     # Pre-compute each entity's distinctive-token set once (O(n) not O(n^2)).
     toks = {e.id: _entity_tokens(e) for e in ents}

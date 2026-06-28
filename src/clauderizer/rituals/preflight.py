@@ -186,8 +186,20 @@ class PreflightResult:
         n_pass = sum(1 for c in self.checks if c.status == "pass")
         n_fail = sum(1 for c in self.checks if c.status == "fail")
         n_skip = sum(1 for c in self.checks if c.status == "skip")
-        verdict = "PASS" if self.passed else "FAIL"
-        return f"preflight {verdict}: {n_pass} passed, {n_fail} failed, {n_skip} skipped"
+        n_warn = sum(1 for c in self.checks if c.status == "warn")
+        # A warn never fails preflight, but it must not read as a clean green
+        # (#6a: a campaign QA gate that was DECLARED but never ran). Surface it in
+        # the verdict so the result can't be misread as all-clear.
+        if not self.passed:
+            verdict = "FAIL"
+        elif n_warn:
+            verdict = "PASS WITH WARNINGS"
+        else:
+            verdict = "PASS"
+        parts = f"{n_pass} passed, {n_fail} failed, {n_skip} skipped"
+        if n_warn:
+            parts += f", {n_warn} warned"
+        return f"preflight {verdict}: {parts}"
 
 
 def _git(args: str, cwd: Path, runner: Runner) -> tuple[int, str]:
@@ -372,9 +384,18 @@ def run(
                 add(name, "skip",
                     hint or f"no {kind_cmd} command for profile '{profile.name}'")
             else:
-                add(name, "skip",
-                    f"no command wired for gate '{name}' — add it under [gates] in "
-                    f".clauderizer/preflight.{kind_name}.toml to enable it")
+                # #6a false-green fix: a gate the gameplan's KIND declared but with
+                # no wired command did NOT run — a campaign must not read a clean
+                # green on QA that never executed. WARN (visible, lowers the verdict
+                # to "PASS WITH WARNINGS") rather than SKIP (silent), but not FAIL:
+                # the engine ships the gate-running mechanism, never the QA logic, so
+                # the user isn't forced to implement e.g. virality tooling to get
+                # past preflight (INVARIANT-05 advisory spirit). Wiring it clears it.
+                add(name, "warn",
+                    f"gate '{name}' is declared by kind '{kind_name}' but no command "
+                    f"is wired — this QA gate did NOT run. Wire it under [gates] in "
+                    f".clauderizer/preflight.{kind_name}.toml (see the shipped "
+                    f".clauderizer/preflight.{kind_name}.toml.example) to enable it.")
             return
         code, out = runner(cmd, root)
         if name == "tests":

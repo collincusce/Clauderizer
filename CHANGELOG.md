@@ -2,6 +2,16 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.3.1] — 2026-06-28
+
+Integrity patch — coherence, test, and documentation hardening from a read-only audit at 1.3.0. No new features and no user-facing behavior regression; the tool surface stays 42.
+
+- **One canonical tokenizer (fix).** The corpus-health redundancy metric (behind `cz_corpus_health` / `cz_curate` / `cz_lesson_health` / `cz_loop_step`) had its own divergent token splitter at threshold 0.6, while the write-time near-duplicate advisory used the canonical tokenizer at 0.40 — two different definitions of "near-duplicate lesson". They are now single-sourced: one tokenizer (`analyze._tokens`) and one threshold (0.40), shared with the abstract index and relevance ranking. A guard test prevents a third fork from reappearing. Advisory output only (INVARIANT-05); it now reports an honest count on a consistent basis rather than a divergent one.
+- **Coherence fixes.** The `L-NN` lesson-line grammar is single-sourced (the handoff ranker and telemetry now parse through the one shared parser); `analyze.suggest_edges` gained a size guard so its O(n²) pair scan can't tax the hot prompt-submit hook on a large entity graph; `cz_get` documents that it never mutates canonical markdown (only the disposable cache).
+- **No false-green campaign QA.** A campaign preflight gate that is declared but unwired now warns ("declared but did not run") and lowers the verdict to "pass with warnings" instead of silently reading green; an example `.clauderizer/preflight.campaign.toml.example` ships.
+- **Test integrity.** Replaced tautological "is-it-read-only" assertions (which checked a registry flag, not behavior) with a behavioral gate that runs each read-only op and proves it mutates no tracked file; the MCP discoverability test now asserts the full tool surface; added tests for the SessionStart digest's advertised tool list and the per-kind preflight real-subprocess path; scrubbed a machine-specific path (and username) from a test.
+- **Docs.** `ARCHITECTURE.md` and `VISION.md` now describe the 1.2.0 (concurrent, multi-axis gameplans) and 1.3.0 (abstract index) feature sets; `docs/subsystems/mcp-server.md` version refreshed.
+
 ## [1.3.0] — 2026-06-28
 
 Fast retrieval — a deterministic **abstract index** over the memory corpus, so an agent reads exactly the entry it needs instead of loading whole files.
