@@ -114,7 +114,7 @@ already hit). Pass = right file up top, tolerable latency, reproducible install:
 - Corpora: PRIMARY = docs/ (curated markdown — decisions, lessons,
   invariants, handoffs, hardening, gameplans). SCROLLBACK (Phase 2, not now)
   = transcripts at
-  `C:\Users\rafaj\.claude\projects\--wsl-localhost-ubuntu-home-ccusce-Clauderizer\*.jsonl`.
+  `C:\Users\<user>\.claude\projects\--wsl-localhost-ubuntu-home-ccusce-Clauderizer\*.jsonl`.
 - Host: windows-wsl:ubuntu; engine venv /home/ccusce/Clauderizer/.venv;
   Clauderizer 0.10.0 Beta; suite 270. The PS→wsl quote chain is hostile —
   shell logic goes in a /tmp script, never inline (held all session).

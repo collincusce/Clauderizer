@@ -1,12 +1,15 @@
 """Run the failure-miner over the project's transcript corpus and print proposals
 for manual precision labeling (Phase 3 keep/discard evidence)."""
+import os
 import sys
 from collections import Counter
 
 from clauderizer import learn
 
-DIR = sys.argv[1] if len(sys.argv) > 1 else (
-    "/mnt/c/Users/rafaj/.claude/projects/--wsl-localhost-ubuntu-home-ccusce-Clauderizer")
+# Pass the transcript dir as argv[1], or set CLAUDERIZER_TRANSCRIPT_CORPUS —
+# no machine-specific home-dir/username literal in the repo.
+DIR = sys.argv[1] if len(sys.argv) > 1 else os.environ.get(
+    "CLAUDERIZER_TRANSCRIPT_CORPUS", "")
 
 res = learn.mine_dir(DIR)
 total = 0

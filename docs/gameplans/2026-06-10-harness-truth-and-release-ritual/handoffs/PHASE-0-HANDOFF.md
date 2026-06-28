@@ -76,7 +76,7 @@ resolves it with restart evidence).
 executes hook commands through Git Bash; MSYS2 POSIX→Windows argument
 conversion rewrites bare-path argv before `wsl.exe` spawns. Evidence:
 transcript hook attachments (sessions 228fb4d0 / 6b9a162f, lines 3–6 of each
-`C:\Users\rafaj\.claude\projects\--wsl-localhost-ubuntu-home-ccusce-Clauderizer\*.jsonl`)
+`C:\Users\<user>\.claude\projects\--wsl-localhost-ubuntu-home-ccusce-Clauderizer\*.jsonl`)
 record command, exitCode, stderr, durationMs per hook — the authoritative
 record of what the harness ran.
 
