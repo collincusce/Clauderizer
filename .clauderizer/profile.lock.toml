@@ -1,8 +1,11 @@
 profile = "python"
 
 [commands]
-# pyproject addopts already pass -q; doubling it (-qq) suppresses the
-# "N passed" summary line that baseline_test_regex needs to parse.
+# Bare `pytest`: H-17 makes preflight prepend the project venv's bin dir to PATH,
+# so the runner resolves across launch contexts (uvx / pipx / global). The earlier
+# explicit `.venv/bin/python -m pytest` was the Phase-0 workaround before H-17.
+# pyproject addopts already pass -q; don't add another (-qq would suppress the
+# "N passed" summary line that baseline_test_regex needs to parse).
 test = "pytest"
 build = ""
 lint = "ruff check ."

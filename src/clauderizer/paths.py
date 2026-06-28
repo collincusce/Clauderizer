@@ -40,6 +40,13 @@ class RepoPaths:
         return self.clauderizer_dir / "index.json"
 
     @property
+    def abstract_index_file(self) -> Path:
+        """The per-entry abstract index over the append-only corpus — a disposable
+        cache (sibling of ``index.json``), rebuilt from markdown on demand
+        (INVARIANT-01); see ``graph/abstract_index.py``."""
+        return self.clauderizer_dir / "abstract_index.json"
+
+    @property
     def profile_lock(self) -> Path:
         return self.clauderizer_dir / "profile.lock.toml"
 

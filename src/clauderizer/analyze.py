@@ -127,6 +127,52 @@ def rank_relevant(query: str, entries: list[dict], k: int = 5,
     return scored[:k]
 
 
+# --- write-time near-duplicate-lesson advisory (Phase 5) -------------------------
+#
+# SimpleMem's "online synthesis" borrow: at cz_add_lesson time, surface the existing
+# PROJECT lessons the new one strongly overlaps, so the agent can consolidate instead
+# of appending (the corpus is append-only — INVARIANT-03 — so this is a nudge, not a
+# block; the agent decides — INVARIANT-05). The signal is LENGTH-NORMALIZED token
+# overlap (Jaccard), NOT raw count: a long distinct-but-similar lesson trips a count
+# threshold by sheer size but not Jaccard. The Phase-5 measuring stick proved the
+# principled (Jaccard) detector beats a naive count strawman on adversarial
+# near-misses (precision 1.0 / recall 1.0; naive 2 false-positives, principled 0 —
+# L-40). Reuses analyze._tokens + the abstract index's per-entry token_set (L-14).
+
+# Pre-registered + measured keep threshold (do not tune ad hoc — Phase-5 fixture).
+_LESSON_DUP_JACCARD = 0.40
+
+
+def near_duplicate_lessons(paths: RepoPaths, text: str, *,
+                           threshold: float = _LESSON_DUP_JACCARD, k: int = 3,
+                           exclude_ids: tuple[str, ...] = ()) -> list[dict]:
+    """Active project lessons whose distinctive-token Jaccard with ``text`` is
+    ``>= threshold`` — the consolidate-instead-of-append candidates. Returns the top
+    ``k`` ``{id, title, jaccard}`` (descending), or ``[]`` (an honest "nothing
+    overlaps"). Surface-only; never mutates. Uses the abstract index's in-memory
+    ``build`` (no cache write), so it is safe inside the locked ``add_lesson``."""
+    from .graph import abstract_index  # lazy: abstract_index imports analyze
+
+    nt = _tokens(text)
+    if not nt:
+        return []
+    out: list[dict] = []
+    for rec in abstract_index.build(paths)["entries"].values():
+        if rec.get("kind") != "lesson" or rec["id"] in exclude_ids:
+            continue
+        if str(rec.get("status") or "active").lower() != "active":
+            continue  # an obsolete lesson is not a live consolidation target
+        et = set(rec.get("token_set") or ())
+        union = len(nt | et)
+        if not union:
+            continue
+        j = len(nt & et) / union
+        if j >= threshold:
+            out.append({"id": rec["id"], "title": rec["title"], "jaccard": round(j, 3)})
+    out.sort(key=lambda d: (-d["jaccard"], d["id"]))
+    return out[:k]
+
+
 # --- gap-finder: one-hop graph adjacency (D-018) ---------------------------------
 #
 # The keyword ranker above answers "what might this CONTRADICT?"; the gap-finder
@@ -326,7 +372,78 @@ def analyze(paths: RepoPaths, text: str, k: int = 5,
     invariants = rank_relevant(
         text, parse_entries(writer.full_text(paths.doc("INVARIANTS")), "Invariants"),
         k=k, exclude_ids=exclude_ids)
+    # Surface each ranked hit's one-line abstract (a D-013 pointer): the agent can
+    # often judge relevance — or answer outright — straight from it, without a
+    # cz_get round-trip for the full body. cz_analyze ranks only em-dash entries
+    # (decisions + invariants), whose abstract IS the capped title, so this reuses
+    # the abstract index's canonical cap rule on the title already in hand — NO
+    # index build and NO cache write. That keeps this shared path read-only and
+    # fast for its hot caller, the UserPromptSubmit hook (INVARIANT-06); a test
+    # cross-checks the value against the built index so the shortcut cannot drift.
+    from .graph import abstract_index
+    for hit in (*decisions, *invariants):
+        hit["abstract"] = abstract_index._cap(hit["title"])
     adjacent = adjacent_entities(paths, text, {d["id"] for d in decisions})
     suggested_edges = suggest_edges(paths)
     return {"decisions": decisions, "invariants": invariants, "adjacent": adjacent,
             "suggested_edges": suggested_edges}
+
+
+# --- cz_get: addressable single-entry body fetch (the D-013 pointer store's other
+# half) ---------------------------------------------------------------------------
+#
+# The abstract index carries each entry's id -> kind/anchor + a one-line abstract,
+# but deliberately NOT its body (D1/D-013), so a consumer can scan the whole corpus
+# cheaply. cz_get completes the loop: given an id, learn its kind from the index,
+# then re-parse only THAT one corpus file for the full body — canonical markdown
+# stays the single source of the body (INVARIANT-01), and the agent fetches exactly
+# the entry it asked for instead of loading a whole file.
+
+
+def _entry_body(paths: RepoPaths, rec: dict) -> str:
+    """Re-parse the one corpus file named by ``rec`` for that entry's full body.
+
+    The index record supplies the kind; the body it intentionally omits is read
+    back from canonical markdown — em-dash kinds via :func:`parse_entries` (the
+    single-sourced block grammar), lessons via ``abstract_index.parse_lesson_line``
+    (the single-sourced line grammar). Returns ``""`` if the entry is no longer in
+    the file (markdown moved out from under the cache — INVARIANT-01 lets the caller
+    treat that as absence)."""
+    from .graph import abstract_index
+
+    doc_name, section = abstract_index._DOC_SECTION_BY_KIND[rec["kind"]]
+    text = writer.full_text(paths.doc(doc_name))
+    if rec["kind"] == "lesson":
+        for raw in text.splitlines():
+            parsed = abstract_index.parse_lesson_line(raw)
+            if parsed and parsed[0] == rec["id"]:
+                return parsed[2]
+        return ""
+    for e in parse_entries(text, section):
+        if e["id"] == rec["id"]:
+            return e["body"].strip()
+    return ""
+
+
+def get_entry(paths: RepoPaths, entry_id: str, kind: str = "auto") -> dict | None:
+    """Resolve one corpus entry's full record by id — the cz_get read path.
+
+    Looks ``entry_id`` up in the abstract index to learn its kind + anchor, then
+    re-parses only that one corpus file for the body the index omits, returning
+    ``{id, title, body, status, anchor, kind}`` — or ``None`` if the id is unknown.
+    Status, title, anchor and kind come from the index record (its status parser
+    handles every corpus form); only the body is re-read. ``kind`` is an optional
+    hint — ids are globally unique across the four corpora (D-/INVARIANT-/H-/L-) so
+    it is normally inferred, but a non-``auto`` value that disagrees with the id is
+    treated as a miss. Read-only: it may refresh the disposable index cache (as any
+    graph read does) but never touches canonical markdown or the write lock (L-03).
+    """
+    from .graph import abstract_index
+
+    rec = abstract_index.load_or_rebuild(paths)["entries"].get(entry_id)
+    if rec is None:
+        return None
+    if kind != "auto" and rec["kind"] != kind:
+        return None  # caller asked for a kind this id does not resolve to
+    return {"id": rec["id"], "title": rec["title"], "body": _entry_body(paths, rec),
+            "status": rec["status"], "anchor": rec["anchor"], "kind": rec["kind"]}

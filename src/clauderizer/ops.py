@@ -113,6 +113,29 @@ def cz_graph_query(entity_id: str = "", kind: str = "lookup", transitive: bool =
     return {"ok": ent is not None, "entity": ent.to_dict() if ent else None}
 
 
+def cz_get(id: str, kind: str = "auto") -> dict:
+    """Fetch one corpus entry's full body by id — the addressable read that makes
+    loading a whole corpus file unnecessary.
+
+    cz_analyze hits and the handoff carry an entry's id + a one-line abstract (a
+    pointer, not the body — D-013); when the abstract is not enough, cz_get resolves
+    the FULL text from canonical markdown on demand. Returns {ok, id, title, body,
+    status, anchor, kind}; ok is False when the id is unknown. Works for any corpus
+    id — a decision (D-NNN), invariant (INVARIANT-NN), finding (H-NN), or lesson
+    (L-NN); `kind` is an optional hint, normally inferred since ids are globally
+    unique. Read-only — no write lock on the read path (L-03).
+    """
+    paths, _ = repo_ctx()
+    from . import analyze
+
+    entry = analyze.get_entry(paths, id, kind=kind)
+    if entry is None:
+        return {"ok": False, "id": id,
+                "error": f"no corpus entry with id {id!r} in docs/ "
+                         f"(expected a D-/INVARIANT-/H-/L- id)"}
+    return {"ok": True, **entry}
+
+
 def cz_analyze(text: str, k: int = 5) -> dict:
     """Surface the existing decisions/invariants most relevant to `text`, the
     one-hop graph neighbors `text` touches but has not connected, AND the
@@ -130,6 +153,9 @@ def cz_analyze(text: str, k: int = 5) -> dict:
     accounted for, that is a gap to close; for a `suggested_edges` pair, add the
     real edge with cz_upsert_entity(depends_on=[...]) or dismiss it permanently via
     cz_upsert_entity(fields={'not_related_to': [...]}).
+
+    Each ranked decision/invariant hit also carries a one-line `abstract` (a D-013
+    pointer); when it is not enough, call cz_get(id) for that entry's full body.
     """
     paths, _ = repo_ctx()
     from . import analyze as _analyze
@@ -505,6 +531,10 @@ def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "",
     `evidence` optionally cites the concrete provenance that produced the lesson
     (commit, file:line, phase, output id); it renders inline and rides along in
     every handoff rollup.
+
+    If the new lesson strongly overlaps an existing PROJECT lesson, the result carries
+    a `related_lessons` list + an `advisory` nudging consolidation
+    (cz_consolidate_lessons) instead of appending — advisory only, never blocks.
     """
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
@@ -915,6 +945,7 @@ REGISTRY: dict[str, Op] = {
     "cz_next_phase_context": Op(cz_next_phase_context, writes=False),
     "cz_gameplans": Op(cz_gameplans, writes=False),
     "cz_graph_query": Op(cz_graph_query, writes=False),
+    "cz_get": Op(cz_get, writes=False),
     "cz_preflight": Op(cz_preflight, writes=True),  # baseline refresh, locked at the write site
     "cz_cascade": Op(cz_cascade, writes=True),
     "cz_resolve_cascade": Op(cz_resolve_cascade, writes=True),

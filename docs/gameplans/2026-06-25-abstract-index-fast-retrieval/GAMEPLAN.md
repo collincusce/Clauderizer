@@ -1,0 +1,216 @@
+# abstract-index-fast-retrieval Gameplan
+
+> Created: 2026-06-25
+> Status: Complete
+> Kind: driven
+> Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
+
+## Project Overview
+
+_(1–2 paragraphs: what this gameplan accomplishes.)_
+
+## Subsystems Touched
+
+_(list the subsystems/features this gameplan affects.)_
+
+## Source-of-Truth Captures
+
+_(Real values captured from real systems at gameplan start. Authority over the
+gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
+
+## Amendments
+
+### A-001 — Phase 4 injected-surface win was already banked; deliver measurement + regression guard, not a body→abstract swap
+
+- **Date**: 2026-06-25
+- **Affected sections in GAMEPLAN.md**: Phase 4 (Phase Breakdown); Phase 4 exit criteria
+- **Affected phases**: 4
+- **Triggered by**: Phase-4 investigation + empirical measurement (measure_context_tokens on the live repo) following the cross-session Phase-3 review
+- **What changed**: Phase 4 planned to thread abstract+anchor instead of full bodies through the injected handoff/status surfaces and re-measure a token reduction. Measurement found NO avoidable full-body injection remains: the SessionStart/UserPromptSubmit digest is counts+pointers only (315 tok; D-027 trim), and the handoff (3704 tok) carries invariant POINTERS (id+title), lesson pointers, and lessons-in-full (2132 tok = 58%), with ZERO decision/finding bodies injected anywhere. Decisions/findings are retrieval-only via the Phase-2 cz_get (by id), and cz_get-by-id already makes every injected pointer an addressable handle. Lessons must ride FULL per D-009 (self-contained handoff); the empirical-memory-gains focused-injection eval already validated top-k-full == full accuracy at -55%/-73% tokens, so converting them to abstract+anchor would REGRESS validated behavior. So Phase 4 delivers: (1) the empirical injection-composition measurement, (2) a regression-guard integration test at the shared injection seam (tests/test_injection_pointer_not_body.py) locking the D-013 pointers-not-bodies property, and records that the realized win is the Phase-3 retrieval path (48.3%) plus the already-banked focused-injection (-55%) — not a code swap.
+- **Why**: L-32/L-38: a "realize the win" phase whose win was already banked by an earlier gameplan (focused-injection) and an earlier phase (Phase-2 cz_get) is honestly closed by measuring + guarding the property, not by manufacturing a change that would regress D-009 full-lesson propagation. The Phase-3 session's own Phase-4 handoff explicitly flagged this ("if little remains to realize, say so — do NOT manufacture a change"). Phases 5-7 proceed unaffected.
+
+## Decisions
+
+### D1 — Abstract-index invalidation: scoped per-file mtime plus per-entry content-hash plus a schema-version gate, atomic write, unlocked read path
+
+**Context**: The new cache mirrors graph/index.py, whose load_or_rebuild always re-parses markdown and uses mtime only to skip the cache WRITE (index.py:71-90). Lens findings: (1) graph _latest_mtime scans all of docs/ — too broad for a corpus-only cache; (2) index.json carries version:1 but load_or_rebuild never gates on it, so a schema bump would silently serve a stale-schema cache (latent bug, lens-1 risk #3); (3) write_cache is an unlocked write_text — benign race for identical output, but a larger payload risks a torn write; (4) read paths must not touch the write lock (L-03).
+**Decision**: Invalidate on the max mtime of ONLY the four corpus files (not all of docs/), AND store a per-entry content_hash = sha256(title + body) in the cached shape, AND gate load_or_rebuild on a schema_version field (a version bump forces rebuild even when mtime is unchanged — the fix the graph index lacks). Always re-parse from markdown on read; skip the write only when nothing changed. Write atomically (write .tmp then os.replace) to avoid torn reads. The read/build path acquires NO write lock (L-03); the benign concurrent-write race is acceptable exactly as it is for index.json. Cache lives at .clauderizer/abstract_index.json (a sibling of index.json), gitignored.
+**Consequences**: Correctness is ironclad (markdown canonical; cache always discardable — INVARIANT-01). Per-entry hashes also let tests and cache-aware callers detect single-entry mutations. The schema-version gate is the upgrade-safety keystone (see the upgrade-path decision). Mirrors existing patterns so reviewers recognize it; the float-mtime compare must use the 1e-6 tolerance like index.py:81.
+**Evidence**: graph/index.py:50-90 (build/_latest_mtime/load_or_rebuild), index.py:31 (version:1 ungated), locking.py (write.lock, L-03 read-path rule)
+**Status**: active (2026-06-25)
+
+### D2 — Cost gain-gate: pre-registered payload-reduction threshold on a deterministic token proxy, fixture-first, DISCARD is a valid outcome
+
+**Context**: A prior ranker spike (2026-06-24) died because its recall fixture was saturated at 1.0 — no lift was possible (L-39). This feature's KPI is COST, not recall, which has real headroom: a 5-entry-body payload (~1500 chars) vs a 1-abstract payload (~100 chars) is ~6x, measurable with zero calibration. The engine already has a deterministic token proxy token_estimate(text)=len(text)//4 (tests/benchmarks/metrics.py:17, validated by test_benchmarks.py:60-61) and a two-arm harness scaffold (harness.py:88-116 measure_context_tokens; agent_eval.py:34-42 focused-vs-full).
+**Decision**: Pre-register the keep/discard gate BEFORE building the consumer (fixture-first, harness-before-feature — L-36): KEEP requires (a) mean payload-char reduction per lookup >= 30%, measured via token_estimate, AND (b) answer accuracy candidate >= baseline (no accuracy regression), AND (c) tool round-trips-to-resolve not worse than baseline. Measure deterministically — no live LLM in the gate. Build the cost fixture so the correct answer needs only 1 of N entry bodies (ground-truth wasted tokens = (N-1) * body_size), and include a negative control (a no-op candidate must show ~0% saving) so the harness has discriminating power (L-40). A DISCARD verdict closes the gameplan early as a success (L-32), recorded with its numbers.
+**Consequences**: The experiment can return an honest negative and we will not have shipped machinery first. The 30% threshold is a pre-registration choice and is itself recorded so it cannot be moved post hoc to manufacture a KEEP. Escapes the L-39 saturation trap because the metric is cost, which is not pre-saturated.
+**Evidence**: tests/benchmarks/metrics.py:17, harness.py:88-116, agent_eval.py:34-42, 2026-06-24-ranker-spike/_experiments/bm25_spike.py:244-299; L-39/L-40/L-36/L-32
+**Status**: active (2026-06-25)
+
+### D3 — Upgrade path for existing repos: init/reindex build the index, doctor only detects-and-advises, dogfooded on an isolated copy
+
+**Context**: Existing clauderized repos (e.g. this one at 1.1.1) have no abstract index. doctor already hard-checks index PRESENCE (cli.py:314) and init/reindex build the graph cache (scaffold/init.py:381-384; cli.py:110-118), but nothing detects a stale SCHEMA. INVARIANT-06 forbids a hook or any read path from mutating docs or blocking a session. L-29 requires isolating destructive/irreversible ops from the real repo and PROVING the isolation before running.
+**Decision**: init and reindex BUILD/refresh the abstract index (the only two surfaces that build derived state), idempotently via the existing patterns (_rewrite_if_diff, refuse_if_symlink, _ensure_gitignore for the new file, second-run-zero-diff). doctor DETECTS a missing OR schema-stale index (mirroring the _procedure_drift check at cli.py:580) and ADVISES the user to run reindex/init — it is read-only and never builds the index itself, and no hook ever does either (INVARIANT-06). The runtime load_or_rebuild self-heals on first use as a fallback. The upgrade is dogfooded on an ISOLATED copy/clone of a real existing repo (a tempfile clone, never the live repo in place — L-29), proving the corpus + graph are byte-unchanged except the new gitignored cache, and that a re-run is a no-op.
+**Consequences**: Upgrade is safe, idempotent, and observable; the user is nudged but never surprised by an auto-mutation. The schema-version gate (invalidation decision) is what makes "stale" detectable. First-run-after-upgrade rebuild cost is borne by reindex/init, not silently inside a request.
+**Evidence**: cli.py:314 (presence check), scaffold/init.py:381-384, cli.py:110-118 (reindex), cli.py:580-591 (_procedure_drift pattern); INVARIANT-06, L-29
+**Status**: active (2026-06-25)
+
+### D4 — Branch hygiene: keep the feature branch a clean fast-forward over main across all phases
+
+**Context**: feat/abstract-index-fast-retrieval is an 8-phase branch off main. After Phase 0 it is a clean fast-forward over main (main is an ancestor; git log feat..main is empty). Over 8 phases the later phases touch shared core files (analyze.py, ops.py, tools_list.py, handoff.py, status_bundle.py, scaffold/init.py, cli.py) and the tool-count docs (README, docs/subsystems/mcp-server.md) — high-traffic surfaces where independent main-side work would conflict. The H-17 preflight fix was deliberately landed on main FIRST and merged back (main->feature, c95bcb0), proving the pattern. The dogfood profile.lock carries a Phase-0 workaround (test = .venv/bin/python -m pytest) that diverges from main's bare `pytest`.
+**Decision**: (1) Land any independently-shippable engine fix on main FIRST, then merge main->feature — never leave a shippable fix only on the feature branch. (2) At every phase close-out, merge main->feature so divergence never piles up into a big-bang reconcile and the branch stays a clean fast-forward. (3) Keep the Phase-0 profile.lock workaround ONLY during development (it keeps live cz_preflight green on the uvx-launched server that lacks H-17); revert it to bare `pytest` as the LAST step before the final feature->main merge, since H-17 makes bare pytest resolve. (4) Gate the final feature->main merge on the Phase-7 merge-back checklist (open item).
+**Consequences**: The eventual merge stays conflict-free by construction; the cost is a per-phase merge step. The profile.lock divergence is intentional and time-boxed, not drift. If main advances via origin (e.g. the parallel chip session pushing a duplicate H-17), reconcile by merging origin/main->feature before continuing.
+**Status**: active (2026-06-25)
+
+### D5 — Cost gain-gate verdict: KEEP — the abstract index + cz_get cuts retrieval payload 48.3% on the real corpus at equal accuracy
+
+**Context**: Phase 3 (D2, THE GATE) wired the live abstract index + analyze.get_entry (the cz_get read path) into the frozen Phase-0 cost harness (tests/benchmarks/cost.py) and measured against the PRE-REGISTERED thresholds — MIN_SAVING=0.30, accuracy non-regression, MAX_ROUND_TRIPS=2 — over 105 real corpus entries as 1-of-5 lookups (docs/.../\_experiments/run_live_experiment.py). Deterministic, no live LLM (token proxy len//4).
+**Decision**: KEEP. Measured: mean payload-token saving 48.3% (>= 30%); candidate accuracy 1.00 == baseline 1.00 (no regression); max round-trips 2 <= 2. The verdict is credible, not a saturated-fixture artifact: the controls still discriminate on the LIVE wiring (L-39/L-40) — noop_full shows 0.0% saving (no phantom win) and starve saves MORE (70.7%) but its accuracy collapses to 0.08, so both are DISCARDed. Proceed to Phase 4 (realize the win in injected handoff/status surfaces); phases 4/6/7 are unlocked.
+**Consequences**: The feature is empirically justified to ship (pending Phase 4-7). The 48.3% is CONSERVATIVE — it keeps the small title/abstract redundancy cz_analyze emits, short-bodied invariants dilute the mean, and the baseline is the lenient "load the K surfaced bodies" rather than the real "read the whole file" status quo, so the realized win is at least this. The pre-registered threshold was honored exactly (not moved to manufacture the KEEP).
+**Evidence**: docs/gameplans/2026-06-25-abstract-index-fast-retrieval/_experiments/run_live_experiment.py (verdict KEEP, exit 0) + RESULTS-live.txt; cost.py MIN_SAVING/MAX_ROUND_TRIPS; commit 82a8a49
+**Status**: active (2026-06-25)
+
+### D6 — Phase 5 mini-gate KEEP — the write-time near-dup-lesson advisory (Jaccard) beats the naive count strawman on adversarial near-misses
+
+**Context**: Phase 5 added a write-time advisory on cz_add_lesson surfacing near-duplicate PROJECT lessons (the SimpleMem online-synthesis borrow, the symmetric write-time enrichment add_decision already had). It carried its OWN mini gain-gate per L-40: a labeled fixture (true dups + adversarial distinct-but-similar near-misses + novel) and a deliberately NAIVE raw-overlap-count strawman the principled detector must beat — built FIRST (_experiments/lesson_dedup_measure.py).
+**Decision**: KEEP. The principled detector — length-normalized token Jaccard >= 0.40 over analyze._tokens (analyze.near_duplicate_lessons) — hit precision 1.00 / recall 1.00 on the fixture AND beat the naive raw-count strawman on 2/2 adversarial near-misses (naive 2 false-positives, principled 0). Wired into mutations.add_lesson as advisory-only (result.related_lessons + result.advisory), NEVER blocking the append-only write (INVARIANT-03/05), no config flag. The naive count is the trap (a long distinct lesson trips it by size); Jaccard length-normalizes, which is the real mechanism (not a no-check tautology — L-40).
+**Consequences**: cz_add_lesson now nudges consolidation at write time, directly attacking the standing 25-project-lesson bloat. Reuses _tokens + the abstract index token_set (L-14, no new dep, no new tool — only the return is enriched). Scoped to cz_add_lesson per the Phase-5 handoff; extending the same analyze.near_duplicate_lessons to cz_promote_lesson (where project-lesson bloat actually grows) is a clean follow-up.
+**Evidence**: docs/gameplans/2026-06-25-abstract-index-fast-retrieval/_experiments/lesson_dedup_measure.py (KEEP, exit 0); src/clauderizer/analyze.py near_duplicate_lessons; tests/test_lesson_dedup.py (4 tests); commit e3de440
+**Status**: active (2026-06-25)
+
+## Open Items
+
+**O-01.** _(phase 1)_ Decide the exact deterministic ABSTRACT extraction rule: first sentence vs first N chars vs a dedicated summary line, plus a char budget. Pick against the Phase-1/3 cost data so the abstract is small enough to save tokens but informative enough to often avoid a cz_get round-trip. _(resolved 2026-06-25: Abstract rule decided: abstract = the entry title (for a lesson, its first sentence), collapsed to one line and capped at ABSTRACT_CAP=200 chars on a word boundary. Deterministic; the title is already the entry's summary for em-dash entries, so this is bounded and informative without the ADR-template body boilerplate. Phase 3 may tune the cap. Implemented as abstract_index._cap.)_
+
+**O-02.** _(phase 1)_ Latent graph-index bug discovered while planning: graph/index.py writes version:1 but load_or_rebuild gates on mtime ONLY, so a schema bump would silently serve a stale-schema cache. Decide whether this gameplan also retrofits the schema-version gate onto the EXISTING graph index or scopes the fix to the new abstract index only (avoid scope creep, but record the bug either way). _(resolved 2026-06-25: Scoped to the NEW cache. abstract_index.load_or_rebuild gates on schema_version AND mtime (D1). Did NOT retrofit graph/index.py: its mtime-only gate is COSMETIC because load_or_rebuild there always re-parses and returns build() (the cache only skips the write), so a stale-schema cache file is never served as data. Filing a separate engine fix would be scope creep for a non-bug. Noted in abstract_index.py docstring.)_
+
+**O-03.** _(phase 1)_ Confirm the LESSONS dual-parser coverage: verify markdown/lesson_state's regex captures every lesson shape (numbered **N.**, consolidated/obsolete "(consolidated into L-NN)" markers, category headers) so the abstract index neither misses nor garbles lesson entries. A missed shape silently drops lessons from the index. _(resolved 2026-06-25: Confirmed and handled. docs/LESSONS.md uses **L-NN.** lines; lesson_state.LESSON_LINE_RE is **N.** (the gameplan-handoff form) and would silently drop EVERY project lesson. So the abstract index uses its own _LESSON_LINE_RE = ^\*\*(L-\d+)\.\*\* (sibling of handoff._PROJECT_LESSON_NUM_RE) for matching, and lesson_state.parse_state ONLY for active/obsolete/promoted status. Tested: test_lessons_use_the_L_NN_format_not_the_gameplan_N_form + test_status_parsed_for_each_kind (obsolete marker).)_
+
+**O-04.** _(phase 7)_ MERGE-BACK CHECKLIST before the final feature->main merge: (a) revert .clauderizer/profile.lock.toml test command from `.venv/bin/python -m pytest` back to bare `pytest` (H-17 makes it resolve; the explicit-venv form was the Phase-0 pre-fix workaround, kept only so live cz_preflight stayed green on the uvx server); (b) re-sweep tool-count docs (README 'N tools' line, docs/subsystems/mcp-server.md reads count) for L-21 drift introduced by cz_get; (c) confirm `git merge-base --is-ancestor main feat/abstract-index-fast-retrieval` (clean FF) and that local main is pushed so origin does not diverge; (d) delete the now-merged fix/preflight-venv-detection branch. _(resolved 2026-06-28: Merge-back checklist done: (a) .clauderizer/profile.lock.toml test reverted to bare `pytest` and verified to resolve via H-17's venv-prepend (cz_preflight tests pass, 711, baseline 663->711); (b) tool-count docs swept (README + mcp-server.md -> 42, +cz_get); (c) clean FF confirmed (`git merge-base --is-ancestor main HEAD` true) and origin/main in sync; (d) fix/preflight-venv-detection branch deleted (its H-17 commit is on main).)_
+
+## Phase Breakdown
+
+### Phase 0: Branch, baseline &amp; cost-harness (fixture-first)
+
+**Goal**: _(one sentence.)_
+**Depends on**: nothing (first phase).
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 0.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [x] Work branch feat/abstract-index-fast-retrieval exists off main and main is untouched
+- [x] Green baseline test count captured via cz_preflight and recorded as an output
+- [x] Token-accounting harness measures baseline payload chars, token_estimate (len//4), and round-trips deterministically with no live LLM
+- [x] Cost fixture exists where the correct answer needs only 1 of N entry bodies, and the gain-gate thresholds (>=30% payload reduction, accuracy non-regression, round-trips non-worse) are pre-registered in a committed file
+- [x] Harness discriminates: a no-op negative-control candidate shows ~0% saving and a synthetic abstract-only candidate shows the predicted multi-x saving, all BEFORE the real feature exists
+
+### Phase 1: Abstract index builder (data structure, dual parser, invalidation)
+
+**Goal**: Implement the abstract-index module (e.g. src/clauderizer/graph/abstract_index.py) mirroring graph/index.py, with NO consumer wired yet. build() parses the four corpus files into per-entry records {id, title, abstract, anchor (file:line), token_set, content_hash, status, kind}. write_cache()/load_or_rebuild() implement the D1 invalidation design: max mtime over ONLY the four corpus files (DECISIONS/LESSONS/INVARIANTS/HARDENING), a per-entry content_hash = sha256(title+body), a schema_version gate (a version bump forces rebuild even when mtime is unchanged — the fix the graph index lacks), and an atomic write (.tmp then os.replace); always re-parse on read and skip the write only when nothing changed; a corrupt/absent cache rebuilds rather than crashing. Handle the DUAL parser: reuse analyze.parse_entries/_ENTRY_RE for the em-dash entries (### D-001 — title) in DECISIONS/INVARIANTS/HARDENING AND the LESSONS **N.** numbered format via markdown/lesson_state. The abstract is a deterministic head of the body (exact rule decided against the open item). Reuse analyze._tokens so there is no new similarity metric (L-14). Cache at .clauderizer/abstract_index.json, gitignored.
+**Depends on**: 0.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 1.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [x] build() yields a record for every entry across all four corpora INCLUDING lessons, with the count matching an independent parse
+- [x] load_or_rebuild gates on BOTH mtime AND schema_version; a unit test proves a schema bump forces rebuild while mtime is unchanged
+- [x] Cache writes atomically via os.replace; a corrupt/absent/BOM/CRLF/unicode/empty cache rebuilds and never raises (adversarial test, L-24)
+- [x] Delete-then-rebuild yields byte-identical cache content (INVARIANT-01 round-trip)
+- [x] Suite green and no consumer references the index yet (grep shows zero call sites outside the module and its tests)
+
+### Phase 2: Addressable fetch (cz_get) and abstract surfacing on cz_analyze
+
+**Goal**: Add the retrieval primitive that makes whole-file reads unnecessary. (1) analyze.get_entry(id) reads a single entry's body from the abstract index (re-parsing only the named corpus file on a cache miss). (2) ops.cz_get(id, kind="auto") returns {id, title, body, status, anchor} — read-only (Op writes=False), no write lock on the read path (L-03), safe under INVARIANT-06. (3) enrich cz_analyze output at analyze.py:118 to return {id, title, score, abstract} so the agent can answer from the abstract without a round-trip. Update EVERY tool-surface parity surface or the suite fails: tools_list.TOOL_NAMES (add cz_get), ops.REGISTRY (Op(cz_get, writes=False) + docstring + JSON-serializable defaults), and the parity/introspection tests (test_ops.py test_registry_is_exactly_the_tool_surface + test_mcp_registers_the_registry_functions; test_ops_introspection.py both tests; test_skill_discovery.py). Defer human-doc tool-count updates (README 38->39, docs/subsystems/mcp-server.md reads count) to the release phase per L-21.
+**Depends on**: 1.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 2.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [x] cz_get(id) returns a single entry body for an id drawn from each of the four corpora
+- [x] cz_analyze hits include an abstract field
+- [x] Tool-surface parity green: test_registry_is_exactly_the_tool_surface, MCP registration, both ops-introspection tests, and skill-discovery parity
+- [x] cz_get is read-only (Op writes=False asserted) with a docstring and JSON-serializable defaults
+- [x] Full suite green
+
+### Phase 3: Cost experiment and gain-gate verdict (KEEP/DISCARD)
+
+**Goal**: Wire the live feature (Phase 2) into the Phase-0 token-accounting harness and run the pre-registered cost experiment (D2). Baseline arm = current whole-file/full-body load; candidate arm = abstract+anchor surfaced, body fetched via cz_get only when needed. Compute the verdict against the pre-registered thresholds: KEEP requires mean payload-char reduction per lookup >= 30% (via token_estimate len//4) AND answer-accuracy candidate >= baseline AND round-trips not worse; the negative control (no-op candidate) must show ~0% saving (proves the harness discriminates — L-40). Record the measured numbers in the outputs registry (cz_add_output) and record the KEEP/DISCARD as a decision. THIS IS THE GATE: on DISCARD, raise an honest amendment (L-38) and close the gameplan early as a success with the negative result captured (L-32) — phases 4/6/7 do not proceed. On KEEP, proceed.
+**Depends on**: 2.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 3.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [x] Experiment run on the LIVE feature: baseline (full-body) vs candidate (abstract+cz_get) measured on the cost fixture
+- [x] Verdict computed against the pre-registered thresholds and recorded as a decision
+- [x] Measured payload-reduction %, accuracy delta, and round-trip delta recorded in the outputs registry
+- [x] On DISCARD: an amendment is raised and the gameplan closes early with the negative result captured (a valid success)
+
+### Phase 4: Realize the win in injected surfaces (handoff/status) and re-measure
+
+**Goal**: PROCEED ONLY ON A KEEP VERDICT. Thread abstract+anchor (instead of full bodies, where avoidable) through the surfaces that actually get injected into agent context: the handoff assembly (rituals/handoff.py:221-227 relevant_invariant_pointer and the lesson injection) and the status bundle (rituals/status_bundle.py). This is the L-34 cross-cutting concern: the phase that ADDS the field is not the phase that OWNS the shared injection path, so add an explicit integration test at the shared seam. Re-measure the realized handoff/status token delta on the harness (target: a meaningful reduction at equal agent-eval accuracy, comparable to the prior -55% focused-injection result), and record the realized numbers in the outputs registry. Keep markdown canonical — surfaces carry pointers, the body is fetched on demand via cz_get.
+**Depends on**: 3.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 4.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [x] Proceeded only on a KEEP verdict
+- [x] Handoff and status surfaces carry abstract+anchor instead of full bodies where avoidable
+- [x] An integration test exists at the shared injection seam (L-34)
+- [x] Realized handoff/status token delta re-measured and recorded at equal agent-eval accuracy
+- [x] Full suite green
+
+### Phase 5: Write-time lesson-synthesis advisory (own fixture, own mini gain-gate)
+
+**Goal**: Fold in the SimpleMem "online synthesis" borrow, riding the Phase-1 index. At cz_add_lesson time, reuse analyze.rank_relevant over the abstract index's per-entry token_sets to surface near-duplicate EXISTING lessons as an advisory ("this overlaps L-NN strongly — consolidate instead of append?"). Advisory only — never blocks the write, no config flag (INVARIANT-05); it mirrors the write-time analyze enrichment that cz_add_decision already has (mutations.py:163) but cz_add_lesson lacks. Discipline: build a near-duplicate-lessons fixture FIRST and a naive strawman the principled detector must beat on adversarial near-misses (a genuinely distinct-but-similar lesson must NOT be flagged) — credible only if it beats the strawman, not merely a no-check baseline (L-40). Pre-register its own precision/recall keep bar. This phase only needs Phase 1; it runs parallel to the cost spine and bundles into the same release.
+**Depends on**: 1.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 5.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [x] cz_add_lesson surfaces a near-duplicate advisory that never blocks the write and adds no config flag (INVARIANT-05)
+- [x] A near-duplicate-lessons fixture and a naive strawman detector both exist
+- [x] The principled detector beats the strawman on adversarial near-misses, and a genuinely distinct-but-similar lesson is NOT flagged (L-40)
+- [x] Its own precision/recall keep bar is pre-registered and met, or the feature is honestly dropped
+- [x] Full suite green
+
+### Phase 6: Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy
+
+**Goal**: PROCEED ONLY ON KEEP. Ship the upgrade per D3. (1) init step 12 (scaffold/init.py:381-386) and reindex (cli.py:110-118) BUILD/refresh the abstract index, idempotently (_rewrite_if_diff, refuse_if_symlink, _ensure_gitignore for the new file, second-run-zero-diff invariant). (2) doctor (cli.py near :314, mirroring the _procedure_drift check at :580) DETECTS a missing OR schema-stale abstract index and ADVISES reindex/init — read-only, never builds it, with the right exit code; no hook ever builds it (INVARIANT-06). Handle absent docs/.clauderizer gracefully. (3) DOGFOOD the real upgrade an existing 1.1.1 user hits, on an ISOLATED tempfile clone of this repo — never in place (L-29): prove doctor-flags-missing -> reindex-builds -> retrieval-uses-abstracts, with the corpus + graph byte-unchanged except the new gitignored cache, and a re-run is a no-op. Prove the isolation guard BEFORE any step. Capture a friction log as a first-class deliverable.
+**Depends on**: 4.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 6.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [x] init and reindex build the abstract index idempotently (a second-run-zero-diff test passes)
+- [x] doctor flags BOTH a missing and a schema-stale index with the correct exit code and advice, and never mutates (read-only)
+- [x] Cold upgrade on an isolated tempfile clone: doctor-flags-missing then reindex-builds then retrieval-uses-abstracts, with corpus+graph byte-unchanged except the new gitignored cache and a no-op re-run
+- [x] The isolation guard is proven BEFORE any destructive step (L-29) and a friction log is recorded
+
+### Phase 7: Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready
+
+**Goal**: Make the branch merge-ready WITHOUT performing the release (the D-011 version-bump/tag/PyPI ritual stays a separate user-initiated act; INVARIANT-07 parity preserved). (1) Run the suite on EVERY CI host leg — the D-012 9-cell matrix — before claiming cross-platform safety: a green on one OS is a guess and a path/separator assertion is itself a platform claim (L-20/L-31). Verify the cache specifically on win32: mtime granularity, atomic os.replace semantics, and the H-10 unlink concerns for the sibling file. (2) Sweep human-facing docs that drift on a tool-surface change (L-21): README MCP-surface tool count 38->39, docs/subsystems/mcp-server.md reads count, and any cross-host doc; update the mcp-server subsystem entity. (3) Confirm the whole feature green end-to-end and the branch is clean and rebased on main. Write the post-mortem and promote any enduring lessons. Then hand back to the user for the release decision.
+**Depends on**: 4, 5, 6.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 7.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [x] The D-012 9-cell CI matrix is green
+- [x] win32 cache behavior verified: mtime granularity, atomic os.replace semantics, and H-10 unlink concerns for the sibling file
+- [x] Human-doc drift swept (README tool count 38->39, docs/subsystems/mcp-server.md reads count, cross-host docs) and the mcp-server entity updated
+- [x] Branch is clean, rebased on main, and merge-ready; post-mortem written and enduring lessons promoted; release handed back to the user (no auto-release, INVARIANT-07)

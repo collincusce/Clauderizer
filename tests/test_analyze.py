@@ -170,3 +170,104 @@ def test_adjacent_matches_entity_id_ending_a_sentence(temp_repo):
     res = analyze.analyze(paths, "we are changing subsys.mid.")
     adj = {a["id"] for a in res["adjacent"]}
     assert "subsys.core" in adj and "subsys.top" in adj  # subsys.mid was seeded despite the '.'
+
+
+# --- abstract surfacing on cz_analyze (Phase 2) -----------------------------------
+
+
+def test_analyze_hits_carry_abstract_equal_to_the_index(temp_repo):
+    """Each ranked hit gains a one-line `abstract`, and it is exactly the abstract
+    index's abstract for that id — the shortcut (cap-the-title, no index build on
+    the hot hook path) must not drift from the canonical record."""
+    from clauderizer.graph import abstract_index as A
+
+    paths, _ = _ctx(temp_repo)
+    M.add_decision(paths, title="Use Postgres for the billing ledger",
+                   context="durable transactional storage", decision="adopt postgresql",
+                   consequences="operational overhead")
+    res = analyze.analyze(paths, "billing ledger storage on postgres")
+    assert res["decisions"], "expected the postgres decision to surface"
+    built = A.build(paths)["entries"]
+    for hit in res["decisions"]:
+        assert hit["abstract"] == built[hit["id"]]["abstract"]
+        assert "\n" not in hit["abstract"]
+
+
+def test_cz_analyze_op_hits_include_abstract(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    M.add_decision(paths, title="Use Postgres for the billing ledger",
+                   context="durable transactional storage", decision="adopt postgresql",
+                   consequences="operational overhead")
+    from clauderizer import ops
+    with _chdir(temp_repo):
+        res = ops.cz_analyze("billing ledger storage on postgres")
+    assert res["ok"] and res["decisions"]
+    assert all("abstract" in d for d in res["decisions"])
+
+
+# --- cz_get / get_entry: addressable single-entry fetch (Phase 2) -----------------
+
+_DECISIONS = ("# Decisions\n\n## Decisions\n\n"
+              "### D-001 — Use Postgres for the billing ledger\n\n"
+              "**Status**: active\n\n**Context**: durable writes.\n")
+_INVARIANTS = ("# Invariants\n\n## Invariants\n\n"
+               "### INVARIANT-01 — Markdown is canonical\n\nMarkdown always wins.\n")
+_HARDENING = ("# Hardening\n\n## Risks\n\n### H-01 — A concurrency race\n\n"
+              "- **Severity**: high\n- **Status**: resolved (2026-01-01)\n"
+              "- **Impact**: data loss under contention.\n")
+_LESSONS = ("# Lessons\n\n## Lessons\n\n"
+            "**L-01.** Measure before shipping. A discard is a success. *(from x)*\n")
+
+
+def _seed_corpora(tmp_path):
+    (tmp_path / "docs").mkdir(exist_ok=True)
+    paths = P.resolve(tmp_path)
+    paths.doc("DECISIONS").write_text(_DECISIONS, encoding="utf-8")
+    paths.doc("INVARIANTS").write_text(_INVARIANTS, encoding="utf-8")
+    paths.doc("HARDENING").write_text(_HARDENING, encoding="utf-8")
+    paths.doc("LESSONS").write_text(_LESSONS, encoding="utf-8")
+    return paths
+
+
+def test_get_entry_returns_body_for_each_of_the_four_corpora(tmp_path):
+    paths = _seed_corpora(tmp_path)
+    d = analyze.get_entry(paths, "D-001")
+    assert d and d["kind"] == "decision" and "durable writes" in d["body"]
+    assert d["anchor"].startswith("docs/DECISIONS.md:")
+    inv = analyze.get_entry(paths, "INVARIANT-01")
+    assert inv and inv["kind"] == "invariant" and "Markdown always wins" in inv["body"]
+    h = analyze.get_entry(paths, "H-01")
+    assert h and h["kind"] == "finding" and "data loss" in h["body"]
+    assert h["status"] == "resolved"   # index status parser handles the `- **Status**` form
+    lsn = analyze.get_entry(paths, "L-01")
+    assert lsn and lsn["kind"] == "lesson"
+    assert lsn["title"] == "Measure before shipping."   # first sentence is the title
+    assert "discard is a success" in lsn["body"]
+
+
+def test_get_entry_unknown_id_returns_none(tmp_path):
+    paths = _seed_corpora(tmp_path)
+    assert analyze.get_entry(paths, "D-999") is None
+
+
+def test_get_entry_kind_hint_mismatch_is_a_miss(tmp_path):
+    paths = _seed_corpora(tmp_path)
+    assert analyze.get_entry(paths, "D-001", kind="lesson") is None
+    assert analyze.get_entry(paths, "D-001", kind="decision")["id"] == "D-001"
+
+
+def test_cz_get_op_fetches_from_each_corpus_and_is_read_only(temp_repo):
+    paths = P.resolve(temp_repo)
+    # the fixture ships DECISIONS (D-001) + INVARIANTS (INVARIANT-01); add the rest
+    paths.doc("HARDENING").write_text(_HARDENING, encoding="utf-8")
+    paths.doc("LESSONS").write_text(_LESSONS, encoding="utf-8")
+    from clauderizer import ops
+    with _chdir(temp_repo):
+        for eid, kind in [("D-001", "decision"), ("INVARIANT-01", "invariant"),
+                          ("H-01", "finding"), ("L-01", "lesson")]:
+            res = ops.cz_get(eid)
+            assert res["ok"] and res["id"] == eid and res["kind"] == kind
+            assert res["body"], f"{eid} returned an empty body"
+        miss = ops.cz_get("D-404")
+        assert miss["ok"] is False and "no corpus entry" in miss["error"]
+    assert ops.REGISTRY["cz_get"].writes is False

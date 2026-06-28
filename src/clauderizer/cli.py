@@ -21,7 +21,7 @@ from pathlib import Path
 
 from . import PROCEDURE_VERSION, __version__, hosts, hosttargets
 from .config import Config, ConfigError
-from .graph import index
+from .graph import abstract_index, index
 from .paths import find_repo_root, resolve
 from .rituals import status_bundle
 from .scaffold.init import WiringRefused, _resolve_invocation, init as run_init
@@ -162,7 +162,10 @@ def cmd_reindex(args: argparse.Namespace) -> int:
         return 1
     graph = index.build(paths.docs)
     index.write_cache(graph, paths.index_file, paths.docs)
+    aidx = abstract_index.build(paths)
+    abstract_index.write_cache(aidx, paths.abstract_index_file)
     print(f"Reindexed {len(graph.entities)} entities -> {paths.index_file}")
+    print(f"Reindexed {len(aidx['entries'])} corpus entries -> {paths.abstract_index_file}")
     return 0
 
 
@@ -360,6 +363,11 @@ def cmd_doctor(args: argparse.Namespace) -> int:
              "not installed (direct engine wiring) — re-run `clauderize init` to add "
              "the cold-start breadcrumb wrapper (D4)")
     check("index cache present", paths.index_file.exists())
+    # Abstract index (D3): detect a missing/schema-stale cache and advise reindex —
+    # read-only (never builds it; the runtime self-heals). The upgrade nudge an
+    # existing repo gets after moving to an engine that ships the abstract index.
+    ai_status = abstract_index.cache_status(paths)
+    check("abstract index fresh", ai_status is None, ai_status or "")
     # A lock that doesn't parse is silently ignored by load_for_repo — surface it.
     lock_err = _lock_parse_error(paths.profile_lock)
     check("profile.lock.toml parses", lock_err is None, lock_err or "")

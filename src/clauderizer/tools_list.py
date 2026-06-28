@@ -9,6 +9,7 @@ TOOL_NAMES = [
     "cz_next_phase_context",
     "cz_gameplans",
     "cz_graph_query",
+    "cz_get",
     "cz_preflight",
     "cz_cascade",
     "cz_resolve_cascade",
