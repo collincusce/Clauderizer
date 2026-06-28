@@ -1,7 +1,7 @@
 # Chat Handoff Index — integrity-patch
 
 > Last updated: 2026-06-28
-> Status: Phase 5 ready
+> Status: All 6 phases complete
 
 ## How This Works
 
@@ -34,7 +34,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 2 | Code coherence and small traps | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Test integrity | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Docs refresh to 1.3.0 | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Close and 1.3.1 patch release | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Close and 1.3.1 patch release | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -60,6 +60,10 @@ Made the suite reflect behavior, not module-load constants (D1, #3). Removed the
 
 Closed the documentation drift (#2, the L-21 non-single-sourced-doc sweep). docs/ARCHITECTURE.md (frozen ~0.15.0) gained two capability sections — "Concurrent, multi-axis gameplans (1.2.0)" (focus+portfolio via cz_focus/cz_gameplans, kinds driven/loop/campaign with display-only lexicon + per-kind preflight gates, cross-gameplan deps via cz_consumes + cascade fan-out) and "Fast retrieval — the abstract index (1.3.0)" (cz_get addressable fetch, abstracts on cz_analyze, the write-time near-duplicate-lesson advisory, all on the one canonical tokenizer/threshold of D-041) — matching the doc's existing prose-with-light-references style. docs/VISION.md (pre-1.2.0) gained two jargon-free differentiation bullets covering the same two feature sets (human-first, no agent shorthand — D-038/D-039). docs/subsystems/mcp-server.md frontmatter version bumped 0.5.0→0.9.0 via cz_upsert_entity (blessed write, not a hand-edit; body + depends_on + last_verified preserved; nothing depends on subsys.mcp-server so no cascade/pin-violation). README finding part was already satisfied — cz_resolve_finding is present in the canonical tool reference (README.md:422) alongside cz_add_finding; no edit needed, 42-tool count correct. Docs-only: git diff --stat shows zero changes under src/ or tests/, so the suite stays 716 passed / 5 skipped. CLAUDE.md/AGENTS.md single-sourced stanza (L-16) untouched.
 
+### Phase 5 — completed 2026-06-28
+
+Shipped the hardening as the 1.3.1 patch via the full D-011 ritual (on the user's explicit go — INVARIANT-07). Bumped pyproject.toml + __init__.py 1.3.0→1.3.1 (PROCEDURE_VERSION stays 1.4.0), wrote the CHANGELOG 1.3.1 entry framing the tokenizer-unify as a fix, refreshed the editable install (L-19). Promoted D-041 to INVARIANT-09 now that the guard test makes one-canonical-tokenizer machine-checked (O-04 resolved). Pushed fix/integrity-patch, opened PR #17, 9-cell CI green on the release commit (run 28334191426 — 3 OS × 3.11/3.12/3.13), squash-merged to main (ffb3e6f). release-check exit 0 (four registries unclaimed, origin/main==HEAD). Tagged v1.3.1 on the full SHA (L-46), cut the GitHub Release (latest, non-prerelease), publish.yml OIDC success (run 28334267359). Verified PyPI info.version=1.3.1 and uvx --refresh→1.3.1. Self-critique clean on Coherence/Grounding/Self-enhancement/Authority. Suite 716 passed / 5 skipped; tool surface 42 unchanged. Downstream unblock flagged: with the tokenizer unified and cz_corpus_health now on a trustworthy, single-sourced basis, the 2026-06-21-standing-curator-loop gameplan can do the 30-lesson consolidation on a sound redundancy metric.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -69,4 +73,4 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 _(none yet)_
 
-**1.** An audit finding names a SYMPTOM plus a HYPOTHESIZED cause — and the hypothesis is falsifiable, so measure it before fixing (extends L-39/L-40 from eval-gates to audit-remediation). Here the audit predicted "the fork tokenizer HIDES near-duplicate lesson pairs the canonical tokenizer would surface"; the Phase-0 measurement showed BOTH tokenizers report 0 pairs at every threshold (max real Jaccard 0.19), falsifying the predicted under-count. The real defect was INCOHERENCE, not under-reporting — two different definitions of "near-duplicate" (a fork tokenizer @0.6 vs the canonical @0.40) — so the correct fix was single-sourcing the tokenizer AND the threshold (D-041→INVARIANT-09), not manufacturing pairs by lowering a threshold. Record the before/after as gameplan outputs so the reframed fix is justified by data, not by the audit's prose. *(evidence: 2026-06-28-integrity-patch Phase 0 outputs redundancy_measurement/divergence_finding + A-001; Phase 1 D3; INVARIANT-09 (promoted from D-041); tests/test_canonical_tokenizer.py)*
+**1.** An audit finding names a SYMPTOM plus a HYPOTHESIZED cause — and the hypothesis is falsifiable, so measure it before fixing (extends L-39/L-40 from eval-gates to audit-remediation). Here the audit predicted "the fork tokenizer HIDES near-duplicate lesson pairs the canonical tokenizer would surface"; the Phase-0 measurement showed BOTH tokenizers report 0 pairs at every threshold (max real Jaccard 0.19), falsifying the predicted under-count. The real defect was INCOHERENCE, not under-reporting — two different definitions of "near-duplicate" (a fork tokenizer @0.6 vs the canonical @0.40) — so the correct fix was single-sourcing the tokenizer AND the threshold (D-041→INVARIANT-09), not manufacturing pairs by lowering a threshold. Record the before/after as gameplan outputs so the reframed fix is justified by data, not by the audit's prose. *(evidence: 2026-06-28-integrity-patch Phase 0 outputs redundancy_measurement/divergence_finding + A-001; Phase 1 D3; INVARIANT-09 (promoted from D-041); tests/test_canonical_tokenizer.py)* (promoted 2026-06-28: L-46)

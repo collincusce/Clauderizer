@@ -1,7 +1,7 @@
 # integrity-patch Gameplan
 
 > Created: 2026-06-28
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -165,9 +165,9 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 5.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_preflight green and the 9-cell CI matrix green on the release commit (D-012/L-31)
+- [x] cz_preflight green and the 9-cell CI matrix green on the release commit (D-012/L-31)
 - [x] Version is 1.3.1 in both pyproject.toml and src/clauderizer/__init__.py; CHANGELOG.md has a 1.3.1 entry framing the tokenizer-unify as a fix plus the docs/test hardening
-- [ ] release-check exits 0 (four-registry sweep); tag v1.3.1 is on the pushed commit; GitHub Release is latest + non-prerelease
-- [ ] PyPI info.version=1.3.1 and uvx --refresh resolves to 1.3.1 (release performed only on the user's go — INVARIANT-07)
+- [x] release-check exits 0 (four-registry sweep); tag v1.3.1 is on the pushed commit; GitHub Release is latest + non-prerelease
+- [x] PyPI info.version=1.3.1 and uvx --refresh resolves to 1.3.1 (release performed only on the user's go — INVARIANT-07)
 - [x] A decision records whether D-041 (one canonical tokenizer) is promoted to an INVARIANT now that a guard test enforces it
-- [ ] Post-mortem written; the gameplan is closed and the focus pointer cleared; the standing-curator-loop unblock (trustworthy cz_corpus_health) is flagged
+- [x] Post-mortem written; the gameplan is closed and the focus pointer cleared; the standing-curator-loop unblock (trustworthy cz_corpus_health) is flagged

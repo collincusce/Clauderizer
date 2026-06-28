@@ -12,7 +12,7 @@
 | 2 | Code coherence and small traps | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Test integrity | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Docs refresh to 1.3.0 | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Close and 1.3.1 patch release | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Close and 1.3.1 patch release | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-5-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -29,6 +29,12 @@ O-01_recalibration_direction: Recommendation for Phase 1: do NOT keep 0.6. Singl
 
 ```
 post_fix_corpus_health: After unifying the tokenizer + threshold: cz_corpus_health reports 30 active lessons, redundant_pairs=0 (honest 0 — same canonical analyze._tokens basis as analyze.near_duplicate_lessons + the abstract index token_set; threshold now 0.40). never_surfaced=6. Full suite 714 passed / 4 skipped (711 baseline + 3 new guard tests in test_canonical_tokenizer.py).
+```
+
+### Phase 5 Outputs
+
+```
+release_1.3.1: SHIPPED 2026-06-28. Squash-merged PR #17 to main (commit ffb3e6f); 9-cell CI green on the release commit (run 28334191426, all 3 OS × 3.11/3.12/3.13). release-check exit 0 (four registries unclaimed, origin/main==HEAD). Tag v1.3.1 on ffb3e6f (full SHA; tagged tree version 1.3.1). GitHub Release v1.3.1 "Integrity patch" (latest, non-prerelease). publish.yml OIDC success (run 28334267359). Verified: PyPI info.version=1.3.1; uvx --refresh resolves clauderizer to 1.3.1. Tool surface 42 unchanged; suite 716 passed / 5 skipped.
 ```
 
 ## Corrections Log
