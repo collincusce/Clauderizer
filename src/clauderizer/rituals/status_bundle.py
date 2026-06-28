@@ -312,6 +312,117 @@ def _drift_warnings(paths: RepoPaths, rows: list) -> list[str]:
     return warnings
 
 
+# --- portfolio (the derived open-set across concurrent gameplans) -------------
+# Multi-axis support (D2): a repo may have several open gameplans at once. The
+# focus pointer (config.focus) is the single default-target that persists; the
+# OPEN SET is DERIVED here from each gameplan's phase table, never stored.
+
+_GP_KIND_RE = re.compile(r"^>\s*Kind:\s*(.+?)\s*$", re.M)
+
+
+def gameplan_kind(gdir: Path) -> str:
+    """A gameplan's kind from its GAMEPLAN.md ``> Kind:`` header (default
+    ``driven`` when absent, so legacy gameplans need no rewrite). Phase 2 layers
+    the full kind-definition (lexicon/preflight/template) on top of this parse."""
+    gp = gdir / "GAMEPLAN.md"
+    if gp.exists():
+        m = _GP_KIND_RE.search(gp.read_text(encoding="utf-8"))
+        if m:
+            return m.group(1).strip()
+    return "driven"
+
+
+def _phase_rows(gdir: Path):
+    src = gdir / "CHAT-HANDOFF-INDEX.md"
+    if not src.exists():
+        src = gdir / "PHASE-STATUS.md"
+    if not src.exists():
+        return []
+    return _tables.parse_phase_table(src.read_text(encoding="utf-8"))
+
+
+def _lifecycle(rows) -> str:
+    """planning | executing | complete — derived from the phase table exactly as
+    mutations._refresh_tracker_headers derives the GAMEPLAN.md ``> Status:`` header,
+    so the two never disagree."""
+    if not rows:
+        return "planning"
+    if all(r.status == "complete" for r in rows):
+        return "complete"
+    if any(r.status in ("in_progress", "complete", "blocked", "failed") for r in rows):
+        return "executing"
+    return "planning"
+
+
+def gameplan_card(gdir: Path, focus_id: str | None,
+                  kinds_overlay: Path | None = None) -> dict:
+    """One portfolio entry: id, kind, lifecycle, the current/next phase, blocker
+    and pending-cascade counts, the open flag, and whether it is the focus.
+    ``phase_label`` is the kind's display word for "phase" (D3 lexicon, e.g.
+    "stage" for a campaign) — display-only; the on-disk table still says Phase."""
+    from .. import kinds
+
+    rows = _phase_rows(gdir)
+    cur = next((r for r in rows if r.status == "in_progress"), None)
+    nxt = next((r for r in rows if r.status in ("ready", "not_started")), None)
+    lifecycle = _lifecycle(rows)
+    if cur:
+        phase = {"number": cur.number, "name": cur.name, "state": "in_progress"}
+    elif nxt:
+        phase = {"number": nxt.number, "name": nxt.name, "state": "ready"}
+    else:
+        phase = None
+    gid = gdir.name
+    kind_name = gameplan_kind(gdir)
+    return {
+        "id": gid,
+        "kind": kind_name,
+        "phase_label": kinds.resolve(kind_name, kinds_overlay).label("phase"),
+        "lifecycle": lifecycle,
+        "open": lifecycle != "complete",
+        "total_phases": len(rows),
+        "phase": phase,
+        "blockers": [r.name for r in rows if r.status == "blocked"],
+        "pending_cascades": len(pending_cascades(gdir / "_cascade-reports")),
+        "is_focus": gid == focus_id,
+    }
+
+
+def portfolio(paths: RepoPaths, config: Config, *, include_closed: bool = False) -> list[dict]:
+    """All gameplans as portfolio cards (open by default), focus first then by id.
+    The open set is derived from each gameplan's phase table — only the single
+    focus pointer persists in config (D2)."""
+    cards: list[dict] = []
+    root = paths.gameplans
+    if root.exists():
+        for d in sorted(root.iterdir()):
+            if not (d.is_dir() and (d / "GAMEPLAN.md").exists()):
+                continue
+            card = gameplan_card(d, config.focus, paths.kinds_dir)
+            if include_closed or card["open"]:
+                cards.append(card)
+    cards.sort(key=lambda c: (not c["is_focus"], c["id"]))
+    return cards
+
+
+def _portfolio_lines(cards: list[dict]) -> list[str]:
+    """Render portfolio cards as compact digest lines (focus marked ★)."""
+    out = []
+    for c in cards:
+        mark = "★" if c["is_focus"] else "•"
+        ph = c.get("phase")
+        plabel = c.get("phase_label", "phase")  # D3 lexicon (display-only)
+        phase_str = (f' {plabel} {ph["number"]}/{c["total_phases"]} "{ph["name"]}"'
+                     if ph else f" {c['lifecycle']}")
+        extra = ""
+        if c["blockers"]:
+            extra += f" (blocked: {', '.join(c['blockers'])})"
+        if c["pending_cascades"]:
+            extra += f" ({c['pending_cascades']} pending cascade)"
+        out.append(f"  {mark} {c['id']} [{c['kind']}]{phase_str}{extra}")
+    return out
+
+
 def compute(paths: RepoPaths, config: Config) -> dict:
     gid = config.active_gameplan
     bundle: dict = {
@@ -329,6 +440,11 @@ def compute(paths: RepoPaths, config: Config) -> dict:
         "open_items": [],
         "memory": None,
     }
+    # The focus pointer + the derived open-set portfolio ride in every bundle
+    # (cheap). render_digest expands the portfolio ONLY when >1 gameplan is open,
+    # so a single-gameplan repo renders byte-identically to before (D6 golden gate).
+    bundle["focus"] = gid
+    bundle["portfolio"] = portfolio(paths, config)
     if not gid:
         bundle["summary"] = "No active gameplan. Use cz_create_gameplan to start one."
         return bundle
@@ -373,42 +489,64 @@ def compute(paths: RepoPaths, config: Config) -> dict:
         except Exception:
             pass  # the gauge is best-effort; never break the digest
     total = len(bundle["phases"])
+    # Display-only lexicon (D3): the focus kind's word for "phase"/"gameplan"
+    # (e.g. stage/campaign). Identity for driven, so the golden single-gameplan
+    # digest stays byte-identical. The on-disk tables/headings are untouched.
+    from .. import kinds
+
+    _k = kinds.resolve(gameplan_kind(gdir), paths.kinds_dir)
+    ph_w, gp_w = _k.label("phase"), _k.label("gameplan")
+    bundle["kind"] = _k.name
     if cur:
         bundle["summary"] = (
-            f"Gameplan {gid}: phase {cur['number']}/{total} IN PROGRESS — \"{cur['name']}\"."
+            f"Gameplan {gid}: {ph_w} {cur['number']}/{total} IN PROGRESS — \"{cur['name']}\"."
         )
-        bundle["next_action"] = "cz_preflight, then execute the phase tasks."
+        bundle["next_action"] = f"cz_preflight, then execute the {ph_w} tasks."
     elif nxt:
         bundle["summary"] = (
-            f"Gameplan {gid}: next ready phase {nxt['number']}/{total} — \"{nxt['name']}\"."
+            f"Gameplan {gid}: next ready {ph_w} {nxt['number']}/{total} — \"{nxt['name']}\"."
         )
         bundle["next_action"] = "cz_next_phase_context, then cz_preflight."
     elif total and all(p["status"] == "complete" for p in bundle["phases"]):
         # A finished gameplan is a success state, not a confusing dead end.
-        bundle["summary"] = f"Gameplan {gid}: all {total} phase(s) COMPLETE. 🎉"
+        bundle["summary"] = f"Gameplan {gid}: all {total} {ph_w}(s) COMPLETE. 🎉"
         bundle["next_action"] = (
-            "Close out the gameplan (post-mortem, final cascade), or "
+            f"Close out the {gp_w} (post-mortem, final cascade), or "
             "cz_create_gameplan to start the next initiative."
         )
         # No next phase means no handoff to size — say so instead of silently
         # dropping the figure the CHANGELOG promises (H-03).
         bundle["memory"]["handoff_note"] = "n/a: gameplan complete"
     else:
-        bundle["summary"] = f"Gameplan {gid}: no in-progress or ready phase found."
-        bundle["next_action"] = "Review the gameplan or cz_add_phase."
+        bundle["summary"] = f"Gameplan {gid}: no in-progress or ready {ph_w} found."
+        bundle["next_action"] = f"Review the {gp_w} or cz_add_phase."
     return bundle
 
 
 def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
     """Render the compact ``[Clauderizer]`` block the hook prints to stdout."""
     lines = []
+    open_cards = [c for c in (bundle.get("portfolio") or []) if c.get("open")]
     if not bundle.get("active_gameplan"):
-        lines.append("[Clauderizer] No active gameplan. cz_create_gameplan to start.")
+        # No focus set: still surface any open gameplans so they aren't lost (the
+        # multi-axis case where focus was cleared), else the cold-start message.
+        if open_cards:
+            lines.append(
+                f"[Clauderizer] No focus set; {len(open_cards)} open gameplan(s) — "
+                f"cz_focus <id> to pick one:")
+            lines += _portfolio_lines(open_cards)
+        else:
+            lines.append("[Clauderizer] No active gameplan. cz_create_gameplan to start.")
         return "\n".join(lines)
     lines.append(
         f"[Clauderizer] {bundle['summary']} "
         f"(size={bundle['size']}, profile={bundle['host_profile']})"
     )
+    # The portfolio block expands only with >1 open gameplan (the multi-axis case);
+    # a single open gameplan keeps the digest byte-identical to before (D6).
+    if len(open_cards) > 1:
+        lines.append(f"Portfolio ({len(open_cards)} open):")
+        lines += _portfolio_lines(open_cards)
     if bundle.get("baseline_tests"):
         lines.append(f"Baseline: {bundle['baseline_tests']} tests.")
     mem = bundle.get("memory")

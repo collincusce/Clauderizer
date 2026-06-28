@@ -74,6 +74,26 @@ def cz_next_phase_context() -> dict:
     return result
 
 
+def cz_gameplans(include_closed: bool = False) -> dict:
+    """List gameplans as a portfolio — the multi-axis view across concurrent
+    gameplans. Open ones by default (include_closed=True adds finished ones); each
+    card carries kind, lifecycle, the current/next phase, blockers, pending-cascade
+    count, and whether it is the focus. Read-only (L-03)."""
+    paths, config = repo_ctx()
+    cards = status_bundle.portfolio(paths, config, include_closed=include_closed)
+    open_n = sum(1 for c in cards if c["open"])
+    return {
+        "ok": True,
+        "focus": config.focus,
+        "gameplans": cards,
+        "summary": (
+            f"{open_n} open gameplan(s)"
+            + (f", {len(cards) - open_n} closed" if include_closed else "")
+            + (f"; focus = {config.focus}" if config.focus else "; no focus set")
+        ),
+    }
+
+
 def cz_graph_query(entity_id: str = "", kind: str = "lookup", transitive: bool = False) -> dict:
     """Query the Project DAG. kind = lookup | dependents | dependencies. Empty id with kind=lookup lists all entities and pin violations."""
     paths, _ = repo_ctx()
@@ -260,9 +280,17 @@ def cz_cascade(entity_id: str, transition: str, dry_run: bool = False) -> dict:
     # doesn't route through mutations.*, so lock here.
     with write_lock(paths.write_lock_file):
         res = cascade_mod.run(g, entity_id, transition, reports_dir, dry_run=False)
+        # Cross-gameplan fan-out (D10): flag any OTHER open gameplan that declared
+        # it consumes this entity (cz_consumes), so its own cascade_hygiene catches it.
+        cross = cascade_mod.fanout_cross_gameplan(
+            g, entity_id, transition, focus_gid=config.active_gameplan,
+            gameplans_root=paths.gameplans)
     # The full report is written to disk; don't dump the whole markdown blob
     # back through the tool result (keeps the return shallow + JSON-clean).
     res.pop("report_md", None)
+    if cross:
+        res["cross_gameplan_refs"] = cross
+        res["summary"] += f"; fanned out to {len(cross)} other gameplan(s)"
     return res
 
 
@@ -320,22 +348,80 @@ def cz_write_handoff(phase_n: str, gameplan_id: str = "") -> dict:
 # --- mutation ops ----------------------------------------------------------------
 
 
-def cz_create_gameplan(name: str, first_phase: str = "Bootstrap",
-                       kind: str = "driven") -> dict:
-    """Scaffold a new gameplan directory and make it active.
+def cz_create_gameplan(name: str, first_phase: str = "",
+                       kind: str = "driven", focus: bool = True) -> dict:
+    """Scaffold a new gameplan directory and (by default) make it the focus.
 
-    `kind`: "driven" (a finite phase DAG with a terminal post-mortem) or "loop" (a
-    standing iterative maintenance gameplan — see GAMEPLAN-PROCEDURE.md "Loop
-    Gameplans"; driven gameplans feed the loop, the loop spawns driven ones).
+    `kind`: a registered gameplan kind — "driven" (a finite phase DAG with a
+    terminal post-mortem), "loop" (a standing iterative maintenance gameplan — see
+    GAMEPLAN-PROCEDURE.md "Loop Gameplans"), "campaign" (a creative campaign), or a
+    custom kind defined in .clauderizer/kinds/. An unknown kind is rejected with the
+    list of known ones.
+
+    `first_phase`: name of the first phase; defaults to the KIND's template first
+    phase (driven→Bootstrap, loop→Iterate, campaign→Concept) when left blank.
+
+    `focus` (default True): make the new gameplan the focus. Pass False to create a
+    second axis WITHOUT stealing focus from the current one (O-04) — the other open
+    gameplans stay exactly where they are; switch later with cz_focus.
     """
+    from . import kinds
+
     paths, config = repo_ctx()
-    # The scaffold write locks inside mutations.*; the active-gameplan config
-    # flip must sit in the same critical section (reentrant), or two creators
-    # could interleave scaffold and flip.
+    if not kinds.is_known(kind, paths.kinds_dir):
+        known = ", ".join(sorted(kinds.load_all(paths.kinds_dir)))
+        return {"ok": False,
+                "error": f"unknown kind {kind!r}; known kinds: {known} "
+                         f"(define a custom one in .clauderizer/kinds/<name>.toml)"}
+    # Template the first phase from the kind when the caller didn't name one.
+    first_phase = first_phase or kinds.resolve(kind, paths.kinds_dir).first_phase
+    # The scaffold write locks inside mutations.*; the focus config flip must sit
+    # in the same critical section (reentrant), or two creators could interleave
+    # scaffold and flip.
     with write_lock(paths.write_lock_file):
         result = mutations.create_gameplan(paths, name, first_phase=first_phase, kind=kind)
-        config.active_gameplan = result["gameplan_id"]
+        if focus:
+            config.focus = result["gameplan_id"]
+            paths.config_file.write_text(config.to_toml(), encoding="utf-8")
+    result["focused"] = focus
+    result["kind"] = kind
+    return result
+
+
+def cz_focus(gameplan_id: str = "") -> dict:
+    """Switch focus — the default-target gameplan for cz_status / do-phase /
+    handoff / preflight when no gameplan_id is given — to `gameplan_id`.
+
+    The blessed write for the focus pointer (replaces hand-editing config.toml).
+    An empty `gameplan_id` reports the current focus + the open portfolio instead
+    of switching. Warns (never blocks) if the target is closed or missing.
+    """
+    paths, config = repo_ctx()
+    if not gameplan_id:
+        cards = status_bundle.portfolio(paths, config)
+        return {
+            "ok": True, "focus": config.focus, "gameplans": cards,
+            "summary": (f"focus = {config.focus}" if config.focus else "no focus set")
+                       + f"; {len(cards)} open gameplan(s)",
+        }
+    gdir = paths.gameplan_dir(gameplan_id)
+    if not (gdir / "GAMEPLAN.md").exists():
+        return {"ok": False,
+                "error": f"no gameplan {gameplan_id!r} on disk "
+                         f"(docs/gameplans/{gameplan_id}/GAMEPLAN.md not found)"}
+    card = status_bundle.gameplan_card(gdir, gameplan_id, paths.kinds_dir)
+    prev = config.focus
+    # The focus flip is a tracked write; serialize with every other writer (H-05).
+    with write_lock(paths.write_lock_file):
+        config.focus = gameplan_id
         paths.config_file.write_text(config.to_toml(), encoding="utf-8")
+    result = {"ok": True, "focus": gameplan_id, "previous_focus": prev,
+              "summary": f"focus {prev or '(none)'} -> {gameplan_id}"}
+    if not card["open"]:
+        result["warning"] = (
+            f"{gameplan_id} is {card['lifecycle']} (closed) — you focused a finished "
+            f"gameplan; pick an open one with cz_gameplans or start one with "
+            f"cz_create_gameplan")
     return result
 
 
@@ -585,6 +671,34 @@ def cz_upsert_entity(id: str, type: str, version: str = "", status: str = "",
                                    status=status or None, depends_on=depends_on, fields=fields)
 
 
+def cz_consumes(consumes: list[str], gameplan_id: str = "") -> dict:
+    """Declare that a gameplan CONSUMES tracked entities produced elsewhere — the
+    cross-gameplan dependency edge (D10).
+
+    Upserts a `gameplan.<gid>` graph node whose depends_on UNIONS the given entity
+    ids, so transitioning or cascading any of them flags THIS gameplan as a
+    dependent — and the cascade fans a pending cross-ref into its _cascade-reports
+    even when another gameplan has focus. Sugar over cz_upsert_entity(id=
+    'gameplan.<gid>', type='gameplan', depends_on=[...]); call again to add more
+    (the list accumulates). Use for an artifact built by one axis (e.g. a tool from
+    the code gameplan) that another axis (e.g. a campaign) relies on.
+    """
+    paths, config = repo_ctx()
+    gid = gameplan_id or config.active_gameplan
+    if not gid:
+        return {"ok": False, "error": "no gameplan specified or active"}
+    node_id = f"gameplan.{gid}"
+    g = _graph(paths)
+    node = g.get(node_id)
+    existing = [str(p.target) for p in node.depends_on] if node else []
+    merged = list(dict.fromkeys(existing + list(consumes)))  # union, order-stable
+    res = mutations.upsert_entity(paths, id=node_id, type="gameplan", depends_on=merged)
+    res["gameplan"] = gid
+    res["consumes"] = merged
+    res["summary"] = f"{node_id} consumes {len(merged)} entit(y/ies): {', '.join(merged)}"
+    return res
+
+
 def cz_transition_status(id: str, to_status: str, run_cascade: bool = True) -> dict:
     """Transition an entity's status; fires cascade automatically when enabled.
 
@@ -829,6 +943,7 @@ class Op:
 REGISTRY: dict[str, Op] = {
     "cz_status": Op(cz_status, writes=False),
     "cz_next_phase_context": Op(cz_next_phase_context, writes=False),
+    "cz_gameplans": Op(cz_gameplans, writes=False),
     "cz_graph_query": Op(cz_graph_query, writes=False),
     "cz_get": Op(cz_get, writes=False),
     "cz_preflight": Op(cz_preflight, writes=True),  # baseline refresh, locked at the write site
@@ -836,6 +951,7 @@ REGISTRY: dict[str, Op] = {
     "cz_resolve_cascade": Op(cz_resolve_cascade, writes=True),
     "cz_write_handoff": Op(cz_write_handoff, writes=True),
     "cz_upsert_entity": Op(cz_upsert_entity, writes=True),
+    "cz_consumes": Op(cz_consumes, writes=True),
     "cz_transition_status": Op(cz_transition_status, writes=True),
     "cz_add_decision": Op(cz_add_decision, writes=True),
     "cz_add_invariant": Op(cz_add_invariant, writes=True),
@@ -851,6 +967,7 @@ REGISTRY: dict[str, Op] = {
     "cz_add_output": Op(cz_add_output, writes=True),
     "cz_add_phase_summary": Op(cz_add_phase_summary, writes=True),
     "cz_create_gameplan": Op(cz_create_gameplan, writes=True),
+    "cz_focus": Op(cz_focus, writes=True),
     "cz_add_phase": Op(cz_add_phase, writes=True),
     "cz_transition_phase": Op(cz_transition_phase, writes=True),
     "cz_add_amendment": Op(cz_add_amendment, writes=True),

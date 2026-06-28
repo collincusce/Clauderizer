@@ -51,6 +51,12 @@ class RepoPaths:
         return self.clauderizer_dir / "profile.lock.toml"
 
     @property
+    def kinds_dir(self) -> Path:
+        """Per-repo gameplan-kind overlay: ``.clauderizer/kinds/<name>.toml`` files
+        that override a packaged kind or add a custom one (kinds.load_all overlay)."""
+        return self.clauderizer_dir / "kinds"
+
+    @property
     def write_lock_file(self) -> Path:
         """The advisory inter-process write lock (H-05); see ``locking.py``."""
         return self.clauderizer_dir / "write.lock"

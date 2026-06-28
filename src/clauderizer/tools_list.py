@@ -7,6 +7,7 @@ exposes.
 TOOL_NAMES = [
     "cz_status",
     "cz_next_phase_context",
+    "cz_gameplans",
     "cz_graph_query",
     "cz_get",
     "cz_preflight",
@@ -14,6 +15,7 @@ TOOL_NAMES = [
     "cz_resolve_cascade",
     "cz_write_handoff",
     "cz_upsert_entity",
+    "cz_consumes",
     "cz_transition_status",
     "cz_add_decision",
     "cz_add_invariant",
@@ -29,6 +31,7 @@ TOOL_NAMES = [
     "cz_add_output",
     "cz_add_phase_summary",
     "cz_create_gameplan",
+    "cz_focus",
     "cz_add_phase",
     "cz_transition_phase",
     "cz_add_amendment",

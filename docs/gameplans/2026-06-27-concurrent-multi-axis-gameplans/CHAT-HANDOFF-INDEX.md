@@ -1,0 +1,80 @@
+# Chat Handoff Index — concurrent multi-axis gameplans
+
+> Last updated: 2026-06-27
+> Status: All 6 phases complete
+
+## How This Works
+
+This is the coordination point for sessions executing this gameplan. A fresh
+session gets current state automatically from the Clauderizer SessionStart hook,
+then calls `cz_next_phase_context` for the active phase. No manual reading order.
+
+## Pre-Flight Verification
+
+Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
+
+**Current baseline test count**: 0
+
+## Ending Protocol
+
+1. `cz_transition_phase` the finished phase to complete.
+2. `cz_add_output` each concrete produced value; `cz_add_phase_summary` the recap;
+   `cz_add_correction` / `cz_add_lesson` as earned.
+3. `cz_transition_status` on touched entities (fires cascade); `cz_resolve_cascade`
+   the verdicts.
+4. `cz_write_handoff` for the next phase.
+5. Run exit verification; report the test count.
+
+## Phase Status Table
+
+| Phase | Name | Status | Started | Completed | Handoff |
+|-------|------|--------|---------|-----------|---------|
+| 0 | Bootstrap and back-compat harness | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-0-HANDOFF.md |
+| 1 | Focus model (concurrent gameplans + portfolio) | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-1-HANDOFF.md |
+| 2 | Kinds as real profiles (parse + lexicon) | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-2-HANDOFF.md |
+| 3 | Per-kind / per-gameplan preflight | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-3-HANDOFF.md |
+| 4 | Cross-gameplan dependencies and explicit scoping | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-4-HANDOFF.md |
+| 5 | Docs, dogfood, release | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-5-HANDOFF.md |
+
+**Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
+
+## Per-Phase Completion Summaries
+
+### Phase 0 — completed 2026-06-27
+
+Bootstrap + back-compat harness complete. Branched off main into feat/concurrent-multi-axis-gameplans (clean, 0/0 vs main). Captured the real baseline (629 passed / 4 skipped / 633 collected on v1.1.1) and corrected the inherited 663 figure (C-01: that was the abstract-index branch). Wrote tests/test_back_compat_focus.py: a frozen golden snapshot of the single-gameplan status digest + bundle (the byte-identical gate every later phase must keep green), plus legacy [active_gameplan] config load + rewrite round-trip stubs that Phase 1 extends when Config.focus lands. Full suite green at 633 passed. Design decisions D1-D6 already recorded at scaffold.
+
+### Phase 1 — completed 2026-06-27
+
+Focus model shipped. Config.focus is now the canonical pointer with active_gameplan kept as a get/set property alias (D7) — zero churn across ~40 call sites; the config file migrates [active_gameplan]->[focus] on rewrite with read-fallback for old repos. Added cz_gameplans (read portfolio) and cz_focus (switch focus, with focus<-empty reporting + closed/missing warnings) ops + clauderize gameplans / focus CLI verbs, both welded into tools_list parity. The open-set is derived in status_bundle.portfolio()/gameplan_card() from each gameplan's phase table (never stored); render_digest + the SessionStart hook expand a portfolio block only when >1 gameplan is open, so single-gameplan repos stay byte-identical (golden gate green). cz_create_gameplan gained focus=False (O-04). Verified live: clauderize gameplans lists 5 open axes on this branch with the focus marked. Suite 636->646, all green; baseline on main 629.
+
+### Phase 2 — completed 2026-06-27
+
+Kinds are now real, behavioral profiles. Added the kinds package (Kind dataclass + load_all/resolve/is_known, mirroring profiles) with packaged driven/loop/campaign tomls and a per-repo .clauderizer/kinds/ overlay (paths.kinds_dir). cz_create_gameplan validates the kind and templates the first phase from it (driven=Bootstrap, loop=Iterate, campaign=Concept). The lexicon is display-only (D3/D8): status_bundle summary + portfolio card phase word + handoff headings relabel for a campaign (stage/asset/creative decision) while on-disk section headings stay canonical, so the phase parser and every test keep working; the handoff relabel is safe because the headings sit inside the regenerated clauderizer:handoff marker block. driven is the identity lexicon so all driven digests/handoffs stay byte-identical (golden gate green). Verified live: a campaign focus reads in stage vocabulary; the portfolio tags [driven]/[loop]/[campaign]. Suite 646->656 (+10 kinds tests).
+
+### Phase 3 — completed 2026-06-27
+
+Per-kind preflight shipped. Generalized tests/build into one command-gate primitive: any enabled check that is not a built-in structural check is a named shell gate (pass/fail by exit code) whose command resolves from .clauderizer/preflight.<kind>.toml [gates] else the host profile (tests/build); the tests gate keeps baseline parse+writeback. run() iterates the enabled list in order, dispatching structural vs gate; unwired gates skip-with-hint. The check list comes from the focus kind (campaign -> its QA gates) else config (driven unchanged) — O-02 resolved (D9). Advisory-downgrade applies to gates. cz_preflight needed no change (kind read from focus inside run()). driven output byte-identical; suite 656->661 (+5). Clauderizer ships the mechanism, the user wires virality/brand-lint as shell commands.
+
+### Phase 4 — completed 2026-06-27
+
+Cross-gameplan dependencies shipped. A gameplan is now a graph node gameplan.<gid> (docs/entities/<gid>.md) whose depends_on lists consumed entities; cz_consumes unions into it (sugar over cz_upsert_entity). Because the node depends on the shared entity, the existing dependents walk flags it cross-gameplan; cascade.fanout_cross_gameplan then drops a pending cross-ref into each NON-FOCUS consumer's _cascade-reports (O-01: full report in focus + lightweight per-axis pointer, no double-resolve), wired into both manual cz_cascade and transition_status auto-cascade. The handoff renders a Consumes (Cross-Gameplan) section with the deps + their status and an inline note documenting project/gameplan/cross-gameplan scoping. Kind-agnostic (proven between driven gameplans). Additive + back-compat: no consumer => no section, no fan-out. Tool surface 40->41 (cz_consumes); suite 661->668 (+7).
+
+### Phase 5 — completed 2026-06-27
+
+Docs, dogfood, and release all shipped. Docs: kinds.md subsystem doc, profiles.md cross-ref, GAMEPLAN-PROCEDURE v1.4.0 (template + repo copy) + PROCEDURE_VERSION bump, README (Running several gameplans section + CLI verbs + MCP surface 38->41). Dogfood: a permanent end-to-end integration test (test_multi_axis_integration.py) + a live isolated fresh-init dogfood (L-29) exercising two concurrent axes (driven + campaign) through focus/portfolio/kinds-lexicon/per-kind-preflight/cross-gameplan all at once. Release 1.2.0 (minor): full D-011 ritual green and verified live on PyPI + uvx. Feature 4 (Spaces) deliberately out of scope. The single-gameplan golden gate stayed byte-identical across the whole gameplan = zero breakage for existing repos.
+
+## Accumulated Lessons
+
+_(Numbered sequentially across the whole gameplan. Categorized. Pruned of
+obsolete items — mark with "(obsolete)" rather than deleting.)_
+
+### Category: Process
+
+**1.** A SessionStart baseline reflects the focused gameplan's branch, not main; when a new initiative branches off main, re-measure the baseline on that branch rather than trusting the inherited digest figure.
+
+**2.** An identity default (driven kind = identity lexicon, empty preflight list) lets a large generalization land with ZERO behavior change for the existing path: every existing gameplan resolves to the identity, so a byte-identical golden snapshot of the status digest stays green through the whole feature with no per-call-site adjustment. Build the new axis so the legacy case IS the default value, not a special-cased branch. *(evidence: concurrent-multi-axis-gameplans: kinds/driven.toml identity + Config.active_gameplan property over focus; golden gate tests/test_back_compat_focus.py green across Phases 0-5; suite 629->669)* (promoted 2026-06-27: L-41)
+
+### Category: Release
+
+**3.** release-check's clean_tree counts UNTRACKED files (foreign tool artifacts, regenerable caches) as a dirty tree and blocks the ritual, even though the published artifact builds from origin/main + the tag (which never contain them). The surgical, honest fix is .git/info/exclude (local-only, non-committed, deletes nothing) for files that aren't this repo's content — not deleting another tool's files and not committing junk. Verify `git status --untracked-files=no` is empty first to prove no real source change is uncommitted. *(evidence: 1.2.0 release: 8 untracked (.agents/, higgsfield skills, skills-lock.json, abstract_index.json, fixture index.json) -> .git/info/exclude -> release-check exit 0)* (promoted 2026-06-27: L-42)

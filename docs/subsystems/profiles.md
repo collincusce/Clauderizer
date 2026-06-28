@@ -11,6 +11,8 @@ last_verified: 2026-06-20
 
 The engine reads and writes Markdown and is **agnostic to the host project's language**. Everything language-specific — how to run tests, build, lint, typecheck, and how to read a baseline test count — lives in a **profile**: a TOML data file, not code. Adding a language is a new `<lang>.toml`, never an engine change.
 
+> The profile is the **language** axis. It is orthogonal to a gameplan's **kind** (`subsys.kinds`, `kinds/*.toml`), which is the vocabulary + template + preflight *skin*. The two compose — a `campaign` kind on a `python` host resolves preflight from the kind (QA gates), not pytest.
+
 ## The profile shape
 
 A profile is parsed into the `Profile` dataclass (`detect.py`) from a TOML file with a `name`, a `[detect]` section (marker `files` + a `weight`), `[commands]`, and `[preflight]`. `python.toml`:

@@ -100,6 +100,80 @@ def render_report(
     return "\n".join(lines)
 
 
+def _cross_ref_report(entity_id: str, transition: str, source_gid: str,
+                      other_gid: str, now: datetime) -> str:
+    """A pending cross-gameplan cascade cross-ref dropped into a CONSUMING
+    gameplan's report dir. Carries the same `_needs review_` / fill-in markers a
+    normal report does, so that gameplan's own cascade_hygiene flags it until its
+    session resolves it (cz_resolve_cascade with a verdict for gameplan.<gid>)."""
+    ts = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return "\n".join([
+        f"# Cascade Report: {entity_id} {transition} (cross-gameplan)",
+        "",
+        f"> Generated: {ts}",
+        f"> Source gameplan: {source_gid}",
+        "",
+        "## Trigger",
+        "",
+        f"`{entity_id}` — {transition} (changed while gameplan `{source_gid}` had focus)",
+        "",
+        f"This gameplan (`gameplan.{other_gid}`) declares it CONSUMES `{entity_id}` "
+        "(cross-gameplan dependency). Verify whether the change affects this axis.",
+        "",
+        "## Affected entities",
+        "",
+        "### Direct dependents",
+        "",
+        f"- **gameplan.{other_gid}** (consumer) — checked: _needs review_",
+        "",
+        "## Updates applied",
+        "",
+        "_(fill in concrete edits made to each affected entity, or 'no change needed')_",
+        "",
+        "## Updates deferred",
+        "",
+        "_(anything flagged but not yet acted on, with reason + follow-up)_",
+        "",
+    ])
+
+
+def fanout_cross_gameplan(
+    graph: Graph,
+    entity_id: str,
+    transition: str,
+    *,
+    focus_gid: str | None,
+    gameplans_root: Path,
+    now: datetime | None = None,
+) -> list[str]:
+    """Walk the cascade ACROSS gameplans (D10). For every ``gameplan.<gid>`` node
+    that depends on ``entity_id`` and is NOT the focus gameplan, drop a pending
+    cross-ref into that gameplan's ``_cascade-reports`` so its own cascade_hygiene
+    surfaces the change on the other axis. Returns the cross-ref paths written.
+
+    The focus gameplan already gets the normal report from ``run`` — this only
+    fans out to the OTHER open axes that declared consumption (cz_consumes)."""
+    now = now or datetime.now(timezone.utc)
+    written: list[str] = []
+    for dep in sorted(set(query.transitive_dependents(graph, entity_id))):
+        if not dep.startswith("gameplan."):
+            continue
+        other_gid = dep.split(".", 1)[1]
+        if other_gid == focus_gid:
+            continue
+        gdir = gameplans_root / other_gid
+        if not gdir.is_dir():
+            continue
+        reports_dir = gdir / "_cascade-reports"
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        path = reports_dir / report_filename(entity_id, now, reports_dir)
+        path.write_text(
+            _cross_ref_report(entity_id, transition, focus_gid or "(none)", other_gid, now),
+            encoding="utf-8")
+        written.append(str(path))
+    return written
+
+
 def report_filename(entity_id: str, now: datetime | None = None,
                     reports_dir: Path | None = None) -> str:
     """Name a cascade report: ``YYYY-MM-DD-<entity>-NN.md``.

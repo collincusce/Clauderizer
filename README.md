@@ -225,6 +225,31 @@ You steer; Claude keeps the memory, the graph, and the rituals honest between se
 
 ---
 
+## Running several gameplans at once
+
+One repo, more than one long-lived initiative — say a **code** gameplan and a **marketing
+campaign** — each advanced in its own sessions, without losing the other.
+
+- **Focus.** One gameplan is the *focus* (the default target for status, do-phase, handoff,
+  preflight). Switch with `clauderize focus <id>`; see them all with `clauderize gameplans`. The
+  status digest grows a portfolio block automatically once a second gameplan is open — and a
+  single-gameplan repo reads exactly as before.
+- **Kinds.** A gameplan has a **kind** — `driven` (code), `loop` (maintenance), `campaign`
+  (creative), or your own in `.clauderizer/kinds/<name>.toml`. The kind sets the vocabulary, the
+  starting phase, and the preflight checks. The vocabulary is presentation-only: a campaign reads
+  in *stages* and *assets*, but the file structure is identical, so everything else just works.
+- **Its own preflight.** A campaign's preflight runs *its* QA gates (virality, brand-lint,
+  duration, …) — generic shell commands you wire in `.clauderizer/preflight.<kind>.toml` — instead
+  of tests/build. Clauderizer ships the mechanism; you supply the checks.
+- **Cross-gameplan dependencies.** When the campaign relies on a tool the code gameplan builds,
+  say so once (`cz_consumes`); changing that tool then flags the campaign axis too — the cascade
+  walks across gameplans, not just within one.
+
+*"a campaign **is** a gameplan"* — the same phased, decision-logged, exit-criteria control
+structure, just over creative assets instead of code.
+
+---
+
 ## Maturity: 1.0 — stable, with receipts
 
 The classifier says **Production/Stable**, and it earned it — every 1.0 readiness gate is
@@ -376,6 +401,8 @@ clauderize init [--size pet|standard|saas] [--profile auto|node|python|go|ruby]
                 [--host <name>] [--list-hosts]   # which agent tool drives this repo (default claude-code)
                 [--session-host native|windows-wsl:<distro>] [--no-spawn-test]
 clauderize status [--json]   # the current digest
+clauderize gameplans [--all] [--json]   # list open gameplans (the portfolio); --all includes finished
+clauderize focus [<id>] [--json]        # switch the focus gameplan (default target); no id = report focus
 clauderize doctor            # present AND runnable for the session host of record;
                              # exit 0 ok · 1 not clauderized · 2 drift · 3 ok-but-unverifiable
 clauderize reindex           # rebuild the graph cache from markdown
@@ -389,19 +416,19 @@ clauderize uninstall [--host <name>]   # reverse the full footprint (MCP config 
 
 ## MCP surface
 
-**Read** · `cz_status` · `cz_next_phase_context` · `cz_graph_query`
+**Read** · `cz_status` · `cz_next_phase_context` · `cz_gameplans` · `cz_graph_query`
 **Rituals** · `cz_preflight` · `cz_cascade` · `cz_resolve_cascade` · `cz_write_handoff`
-**Mutations** · `cz_create_gameplan` · `cz_add_phase` · `cz_transition_phase` · `cz_add_amendment`
+**Mutations** · `cz_create_gameplan` · `cz_focus` · `cz_add_phase` · `cz_transition_phase` · `cz_add_amendment`
 · `cz_add_decision` · `cz_add_invariant` · `cz_add_finding` · `cz_resolve_finding` · `cz_add_lesson`
 · `cz_obsolete_lesson` · `cz_consolidate_lessons` · `cz_promote_lesson`
 · `cz_add_correction` · `cz_add_output` · `cz_add_phase_summary`
-· `cz_upsert_entity` · `cz_transition_status`
+· `cz_upsert_entity` · `cz_consumes` · `cz_transition_status`
 **Discipline & analysis** (advisory — they surface findings for you to act on, never changing anything on their own) · `cz_analyze` · `cz_critique` · `cz_mine_failures` · `cz_corpus_health` · `cz_lesson_health` · `cz_curate` · `cz_loop_step` · `cz_add_open_item` · `cz_resolve_open_item` · `cz_set_exit_criteria` · `cz_check_exit_criterion`
 **Skills** (Clauderizer finds the skills your project already has and proposes them — you confirm; never auto-added) · `cz_register_skill` · `cz_obsolete_skill` · `cz_discover_skills`
 **Resources** · `clauderizer://status` · `clauderizer://procedure` · `clauderizer://entity/{id}`
 **Prompts** · `cz-status` · `cz-next-phase` — surface as slash commands (e.g. `/cz-status`) on prompt-capable hosts
 
-In total: **38 tools + 3 resources + 2 prompts**.
+In total: **41 tools + 3 resources + 2 prompts**.
 
 The tools are deliberately separate and self-describing rather than one generic `mutate` — that's
 the whole point of going MCP-native: an agent dropped into the repo *discovers* the workflow from

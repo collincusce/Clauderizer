@@ -1,0 +1,24 @@
+# A creative campaign expressed as a gameplan: the same multi-phase,
+# decision-logged, exit-criteria control structure over creative assets instead of
+# code. Display-only lexicon (D3): the on-disk headings stay canonical (## Phase
+# Breakdown, ### Phase N) so every parser keeps working; only digests/handoffs/
+# summaries read in campaign vocabulary.
+#
+# The preflight checks below are GENERIC GATE NAMES the user wires to real shell
+# commands in .clauderizer/preflight.campaign.toml (Phase 3). Clauderizer ships
+# the run-named-gates mechanism, never the virality/brand-lint logic. An unwired
+# gate skips with a hint rather than failing.
+name = "campaign"
+
+[template]
+first_phase = "Concept"
+
+[lexicon]
+phase = "stage"
+decision = "creative decision"
+output = "asset"
+preflight = "QA"
+gameplan = "campaign"
+
+[preflight]
+checks = ["clean_tree", "virality", "brand_lint", "duration"]
