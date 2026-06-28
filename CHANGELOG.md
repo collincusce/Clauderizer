@@ -2,6 +2,40 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.2.0] — 2026-06-27
+
+Concurrent multi-axis gameplans — run several long-lived gameplans in one repo at once.
+
+A repo is no longer limited to a single active gameplan. You can drive a **code** gameplan
+and a **marketing campaign** (or any number of axes) in parallel, each advanced in its own
+sessions, without losing the others. Fully back-compatible: a single-gameplan repo behaves
+exactly as before (proven by a byte-identical golden snapshot of the status digest).
+
+- **Focus + portfolio.** One gameplan is the *focus* — the default target for status,
+  do-phase, handoff, and preflight. Switch it with `cz_focus` / `clauderize focus <id>`; see
+  every open gameplan with `cz_gameplans` / `clauderize gameplans`. The status digest grows a
+  portfolio block automatically once a second gameplan is open. The set of open gameplans is
+  derived from each gameplan's phase table, not stored; only the one focus pointer persists
+  (the config migrates `[active_gameplan]` → `[focus]`, with read-fallback for old repos).
+- **Kinds as data.** Every gameplan has a **kind** — `driven` (code), `loop` (maintenance),
+  `campaign` (creative), or a custom kind in `.clauderizer/kinds/<name>.toml`. A kind sets the
+  vocabulary, the first phase, and the preflight checks. The vocabulary is display-only: a
+  campaign reads in *stages* and *assets* in digests and handoffs while the on-disk structure
+  stays identical, so every parser and tool is unchanged.
+- **Per-kind preflight.** A campaign's preflight runs its own QA gates (virality, brand-lint,
+  duration, …) — generic shell commands wired in `.clauderizer/preflight.<kind>.toml` — instead
+  of tests/build. Clauderizer ships the run-named-gates mechanism; you supply the checks. An
+  unwired gate skips with a hint.
+- **Cross-gameplan dependencies.** Declare that one axis consumes an artifact another produces
+  with `cz_consumes`; changing that artifact then cascades **across** gameplans — the consuming
+  axis gets a pending cross-ref its own cascade check catches. Memory scoping is explicit:
+  project invariants/ADRs are shared, a gameplan's decisions/lessons are local, and consumed
+  artifacts surface in the handoff's "Consumes" section.
+
+New tools: `cz_focus`, `cz_gameplans`, `cz_consumes` (surface 38 → 41). New CLI verbs:
+`clauderize focus`, `clauderize gameplans`. Procedure version 1.3.0 → 1.4.0. Also includes the
+H-17 preflight fix (detect the project venv so the test command resolves under uvx/pipx).
+
 ## [1.1.1] — 2026-06-25
 
 Documentation only — no change to engine behavior.
