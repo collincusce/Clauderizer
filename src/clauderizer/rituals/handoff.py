@@ -349,6 +349,27 @@ def _merge(existing: str, core: str) -> tuple[str, str]:
     return block + "\n" + existing, "preserved"
 
 
+def _consumes_section(paths: RepoPaths, gid: str) -> str:
+    """Render this gameplan's cross-gameplan consumes (the gameplan.<gid> node's
+    depends_on) as a markdown list with each consumed entity's current status, or
+    "" when the gameplan declared none (cz_consumes)."""
+    from ..graph import index
+
+    g = index.load_or_rebuild(paths.docs, paths.index_file)
+    node = g.get(f"gameplan.{gid}")
+    if node is None or not node.depends_on:
+        return ""
+    lines = []
+    for pin in node.depends_on:
+        dep = g.get(str(pin.target))
+        if dep is None:
+            note = " — _(not found in graph)_"
+        else:
+            note = f" (status: {dep.status})" if dep.status else ""
+        lines.append(f"- **{pin.target}**{note}")
+    return "\n".join(lines)
+
+
 def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write: bool = True) -> dict:
     index_text = _gameplan_text(paths, gid, "CHAT-HANDOFF-INDEX.md")
     gameplan_text = _gameplan_text(paths, gid, "GAMEPLAN.md")
@@ -406,6 +427,20 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
         "- `CLAUDE.md`",
         "",
     ]
+    consumes_md = _consumes_section(paths, gid)
+    if consumes_md:
+        parts += [
+            "## Consumes (Cross-Gameplan)",
+            "",
+            "_(Entities produced on OTHER axes that this gameplan depends on, "
+            "declared via cz_consumes. Memory scoping: project invariants/ADRs are "
+            "shared by every gameplan; this gameplan's own decisions/lessons are "
+            "local; these are explicit cross-gameplan reads — if one changes, its "
+            "cascade fans a pending cross-ref into this gameplan.)_",
+            "",
+            consumes_md,
+            "",
+        ]
     if invariants_focus:
         inv_md, inv_shown, inv_total = invariants_focus
         parts += [

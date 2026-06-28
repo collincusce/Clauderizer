@@ -90,9 +90,17 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Evidence**: src/clauderizer/rituals/preflight.py (_STRUCTURAL_CHECKS, _load_preflight_gates, run() dispatch + check_command_gate + _gate_command), kinds/campaign.toml [preflight].checks; tests/test_per_kind_preflight.py
 **Status**: active (2026-06-27)
 
+### D10 — Cross-gameplan deps via gameplan.<gid> node + cascade fan-out (O-01)
+
+**Context**: The graph already spans all docs/ and cz_cascade walks it, but gameplan-internal outputs/decisions are not graph nodes, so one axis cannot declare a dependency on another's artifact, and a shared-entity change is invisible to the other axis.
+**Decision**: Represent a gameplan as a graph node gameplan.<gid> (type=gameplan, written to docs/entities/<gid>.md, indexed like any entity) whose depends_on lists the entities it consumes. cz_consumes(consumes, gameplan_id) is ergonomic sugar that UNIONS into that node (reuses cz_upsert_entity; call again to add). Because the node depends_on the shared entity, the existing dependents walk already flags it cross-gameplan. New: cascade.fanout_cross_gameplan drops a pending cross-ref into each NON-FOCUS consuming gameplan's _cascade-reports. O-01 resolved: the focus gameplan gets the normal FULL report; each consumer gets a lightweight pending CROSS-REF (carrying the needs-review/fill-in markers) so its OWN cascade_hygiene catches it independently — not a duplicate, and no double-resolve (each axis resolves its own with cz_resolve_cascade). Wired into BOTH manual cz_cascade and the auto-cascade in transition_status. The handoff renders a Consumes (Cross-Gameplan) section listing the node's deps + their live status, with an inline note documenting the three memory scopes (project shared / gameplan local / cross-gameplan reads).
+**Consequences**: Cross-gameplan cascade is real and kind-agnostic (proven between driven gameplans; a campaign opts into cascade_hygiene by listing it in its kind checks). Reuses the graph + cascade; one new ergonomic op (cz_consumes), tool surface 40->41. Additive: no consumer declared => no Consumes section and no fan-out, so back-compat holds (suite 661->668).
+**Evidence**: graph/cascade.py (fanout_cross_gameplan + _cross_ref_report), ops.cz_consumes + cz_cascade fan-out, mutations.transition_status fan-out, rituals/handoff.py _consumes_section; tests/test_cross_gameplan.py (7 tests)
+**Status**: active (2026-06-27)
+
 ## Open Items
 
-**O-01.** _(phase 4)_ Cross-gameplan cascade fan-out form: central report in focus gameplan + a per-axis pending pointer, vs a duplicated report per affected gameplan. Decide in Phase 4 (lean: central + pointer to avoid double-resolve).
+**O-01.** _(phase 4)_ Cross-gameplan cascade fan-out form: central report in focus gameplan + a per-axis pending pointer, vs a duplicated report per affected gameplan. Decide in Phase 4 (lean: central + pointer to avoid double-resolve). _(resolved 2026-06-27: Resolved: focus gameplan gets the full cascade report; each non-focus consumer gets a lightweight pending cross-ref in its own _cascade-reports (needs-review markers) so its cascade_hygiene flags it independently — central report + per-axis pointer, not duplicated, avoiding double-resolve. See D10.)_
 
 **O-02.** _(phase 3)_ Preflight check-list precedence when BOTH config.preflight_checks is set AND the kind defines checks: recommend kind-default unless config explicitly overrides — confirm and document in Phase 3. _(resolved 2026-06-27: Resolved: kind.preflight_checks wins when non-empty (campaign), else config.preflight_checks (driven unchanged). Per-repo override of a kind's list is the kind overlay .clauderizer/kinds/<kind>.toml, not a config-vs-kind flag — simpler and keeps driven byte-identical. See D9.)_
 
@@ -179,11 +187,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] A gameplan.<gid> node with a consumes list produces cross-gameplan cascade dependents on transition of a shared entity
-- [ ] A non-focus affected gameplan receives a pending cross-ref its cascade_hygiene preflight catches
-- [ ] Handoff renders a Consumes (cross-gameplan) section
-- [ ] Project vs gameplan memory scoping documented and surfaced
-- [ ] Full suite green vs baseline
+- [x] A gameplan.<gid> node with a consumes list produces cross-gameplan cascade dependents on transition of a shared entity
+- [x] A non-focus affected gameplan receives a pending cross-ref its cascade_hygiene preflight catches
+- [x] Handoff renders a Consumes (cross-gameplan) section
+- [x] Project vs gameplan memory scoping documented and surfaced
+- [x] Full suite green vs baseline
 
 ### Phase 5: Docs, dogfood, release
 

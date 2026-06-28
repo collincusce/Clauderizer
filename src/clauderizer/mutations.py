@@ -1375,8 +1375,17 @@ def transition_status(
     }
     if run_cascade and config.ritual_enabled("cascade") and config.active_gameplan:
         graph = index.load_or_rebuild(paths.docs, paths.index_file)  # refresh
+        transition = f"status {from_status} -> {to_status}"
         reports_dir = paths.gameplan_dir(config.active_gameplan) / "_cascade-reports"
-        casc = cascade.run(graph, id, f"status {from_status} -> {to_status}", reports_dir)
+        casc = cascade.run(graph, id, transition, reports_dir)
         result["cascade"] = casc
         result["files_changed"].append(casc["report_path"])
+        # Cross-gameplan fan-out (D10): a shared entity changing on this axis flags
+        # every OTHER open gameplan that declared it consumes the entity.
+        cross = cascade.fanout_cross_gameplan(
+            graph, id, transition, focus_gid=config.active_gameplan,
+            gameplans_root=paths.gameplans)
+        if cross:
+            casc["cross_gameplan_refs"] = cross
+            result["files_changed"].extend(cross)
     return result

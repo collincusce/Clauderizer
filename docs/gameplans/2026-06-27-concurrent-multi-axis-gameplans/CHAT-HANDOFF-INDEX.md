@@ -1,7 +1,7 @@
 # Chat Handoff Index — concurrent multi-axis gameplans
 
 > Last updated: 2026-06-27
-> Status: Phase 4 ready
+> Status: Phase 5 ready
 
 ## How This Works
 
@@ -33,8 +33,8 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Focus model (concurrent gameplans + portfolio) | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Kinds as real profiles (parse + lexicon) | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Per-kind / per-gameplan preflight | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Cross-gameplan dependencies and explicit scoping | 🟢 READY | — | — | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Docs, dogfood, release | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 4 | Cross-gameplan dependencies and explicit scoping | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-4-HANDOFF.md |
+| 5 | Docs, dogfood, release | 🟢 READY | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -55,6 +55,10 @@ Kinds are now real, behavioral profiles. Added the kinds package (Kind dataclass
 ### Phase 3 — completed 2026-06-27
 
 Per-kind preflight shipped. Generalized tests/build into one command-gate primitive: any enabled check that is not a built-in structural check is a named shell gate (pass/fail by exit code) whose command resolves from .clauderizer/preflight.<kind>.toml [gates] else the host profile (tests/build); the tests gate keeps baseline parse+writeback. run() iterates the enabled list in order, dispatching structural vs gate; unwired gates skip-with-hint. The check list comes from the focus kind (campaign -> its QA gates) else config (driven unchanged) — O-02 resolved (D9). Advisory-downgrade applies to gates. cz_preflight needed no change (kind read from focus inside run()). driven output byte-identical; suite 656->661 (+5). Clauderizer ships the mechanism, the user wires virality/brand-lint as shell commands.
+
+### Phase 4 — completed 2026-06-27
+
+Cross-gameplan dependencies shipped. A gameplan is now a graph node gameplan.<gid> (docs/entities/<gid>.md) whose depends_on lists consumed entities; cz_consumes unions into it (sugar over cz_upsert_entity). Because the node depends on the shared entity, the existing dependents walk flags it cross-gameplan; cascade.fanout_cross_gameplan then drops a pending cross-ref into each NON-FOCUS consumer's _cascade-reports (O-01: full report in focus + lightweight per-axis pointer, no double-resolve), wired into both manual cz_cascade and transition_status auto-cascade. The handoff renders a Consumes (Cross-Gameplan) section with the deps + their status and an inline note documenting project/gameplan/cross-gameplan scoping. Kind-agnostic (proven between driven gameplans). Additive + back-compat: no consumer => no section, no fan-out. Tool surface 40->41 (cz_consumes); suite 661->668 (+7).
 
 ## Accumulated Lessons
 

@@ -254,9 +254,17 @@ def cz_cascade(entity_id: str, transition: str, dry_run: bool = False) -> dict:
     # doesn't route through mutations.*, so lock here.
     with write_lock(paths.write_lock_file):
         res = cascade_mod.run(g, entity_id, transition, reports_dir, dry_run=False)
+        # Cross-gameplan fan-out (D10): flag any OTHER open gameplan that declared
+        # it consumes this entity (cz_consumes), so its own cascade_hygiene catches it.
+        cross = cascade_mod.fanout_cross_gameplan(
+            g, entity_id, transition, focus_gid=config.active_gameplan,
+            gameplans_root=paths.gameplans)
     # The full report is written to disk; don't dump the whole markdown blob
     # back through the tool result (keeps the return shallow + JSON-clean).
     res.pop("report_md", None)
+    if cross:
+        res["cross_gameplan_refs"] = cross
+        res["summary"] += f"; fanned out to {len(cross)} other gameplan(s)"
     return res
 
 
@@ -633,6 +641,34 @@ def cz_upsert_entity(id: str, type: str, version: str = "", status: str = "",
                                    status=status or None, depends_on=depends_on, fields=fields)
 
 
+def cz_consumes(consumes: list[str], gameplan_id: str = "") -> dict:
+    """Declare that a gameplan CONSUMES tracked entities produced elsewhere — the
+    cross-gameplan dependency edge (D10).
+
+    Upserts a `gameplan.<gid>` graph node whose depends_on UNIONS the given entity
+    ids, so transitioning or cascading any of them flags THIS gameplan as a
+    dependent — and the cascade fans a pending cross-ref into its _cascade-reports
+    even when another gameplan has focus. Sugar over cz_upsert_entity(id=
+    'gameplan.<gid>', type='gameplan', depends_on=[...]); call again to add more
+    (the list accumulates). Use for an artifact built by one axis (e.g. a tool from
+    the code gameplan) that another axis (e.g. a campaign) relies on.
+    """
+    paths, config = repo_ctx()
+    gid = gameplan_id or config.active_gameplan
+    if not gid:
+        return {"ok": False, "error": "no gameplan specified or active"}
+    node_id = f"gameplan.{gid}"
+    g = _graph(paths)
+    node = g.get(node_id)
+    existing = [str(p.target) for p in node.depends_on] if node else []
+    merged = list(dict.fromkeys(existing + list(consumes)))  # union, order-stable
+    res = mutations.upsert_entity(paths, id=node_id, type="gameplan", depends_on=merged)
+    res["gameplan"] = gid
+    res["consumes"] = merged
+    res["summary"] = f"{node_id} consumes {len(merged)} entit(y/ies): {', '.join(merged)}"
+    return res
+
+
 def cz_transition_status(id: str, to_status: str, run_cascade: bool = True) -> dict:
     """Transition an entity's status; fires cascade automatically when enabled.
 
@@ -884,6 +920,7 @@ REGISTRY: dict[str, Op] = {
     "cz_resolve_cascade": Op(cz_resolve_cascade, writes=True),
     "cz_write_handoff": Op(cz_write_handoff, writes=True),
     "cz_upsert_entity": Op(cz_upsert_entity, writes=True),
+    "cz_consumes": Op(cz_consumes, writes=True),
     "cz_transition_status": Op(cz_transition_status, writes=True),
     "cz_add_decision": Op(cz_add_decision, writes=True),
     "cz_add_invariant": Op(cz_add_invariant, writes=True),

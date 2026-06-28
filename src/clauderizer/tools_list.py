@@ -14,6 +14,7 @@ TOOL_NAMES = [
     "cz_resolve_cascade",
     "cz_write_handoff",
     "cz_upsert_entity",
+    "cz_consumes",
     "cz_transition_status",
     "cz_add_decision",
     "cz_add_invariant",
