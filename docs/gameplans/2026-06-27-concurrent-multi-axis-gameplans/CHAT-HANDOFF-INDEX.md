@@ -1,7 +1,7 @@
 # Chat Handoff Index — concurrent multi-axis gameplans
 
 > Last updated: 2026-06-27
-> Status: Phase 5 ready
+> Status: All 6 phases complete
 
 ## How This Works
 
@@ -34,7 +34,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 2 | Kinds as real profiles (parse + lexicon) | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Per-kind / per-gameplan preflight | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Cross-gameplan dependencies and explicit scoping | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Docs, dogfood, release | 🟢 READY | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Docs, dogfood, release | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -60,6 +60,10 @@ Per-kind preflight shipped. Generalized tests/build into one command-gate primit
 
 Cross-gameplan dependencies shipped. A gameplan is now a graph node gameplan.<gid> (docs/entities/<gid>.md) whose depends_on lists consumed entities; cz_consumes unions into it (sugar over cz_upsert_entity). Because the node depends on the shared entity, the existing dependents walk flags it cross-gameplan; cascade.fanout_cross_gameplan then drops a pending cross-ref into each NON-FOCUS consumer's _cascade-reports (O-01: full report in focus + lightweight per-axis pointer, no double-resolve), wired into both manual cz_cascade and transition_status auto-cascade. The handoff renders a Consumes (Cross-Gameplan) section with the deps + their status and an inline note documenting project/gameplan/cross-gameplan scoping. Kind-agnostic (proven between driven gameplans). Additive + back-compat: no consumer => no section, no fan-out. Tool surface 40->41 (cz_consumes); suite 661->668 (+7).
 
+### Phase 5 — completed 2026-06-27
+
+Docs, dogfood, and release all shipped. Docs: kinds.md subsystem doc, profiles.md cross-ref, GAMEPLAN-PROCEDURE v1.4.0 (template + repo copy) + PROCEDURE_VERSION bump, README (Running several gameplans section + CLI verbs + MCP surface 38->41). Dogfood: a permanent end-to-end integration test (test_multi_axis_integration.py) + a live isolated fresh-init dogfood (L-29) exercising two concurrent axes (driven + campaign) through focus/portfolio/kinds-lexicon/per-kind-preflight/cross-gameplan all at once. Release 1.2.0 (minor): full D-011 ritual green and verified live on PyPI + uvx. Feature 4 (Spaces) deliberately out of scope. The single-gameplan golden gate stayed byte-identical across the whole gameplan = zero breakage for existing repos.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -67,6 +71,10 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-_(none yet)_
-
 **1.** A SessionStart baseline reflects the focused gameplan's branch, not main; when a new initiative branches off main, re-measure the baseline on that branch rather than trusting the inherited digest figure.
+
+**2.** An identity default (driven kind = identity lexicon, empty preflight list) lets a large generalization land with ZERO behavior change for the existing path: every existing gameplan resolves to the identity, so a byte-identical golden snapshot of the status digest stays green through the whole feature with no per-call-site adjustment. Build the new axis so the legacy case IS the default value, not a special-cased branch. *(evidence: concurrent-multi-axis-gameplans: kinds/driven.toml identity + Config.active_gameplan property over focus; golden gate tests/test_back_compat_focus.py green across Phases 0-5; suite 629->669)* (promoted 2026-06-27: L-41)
+
+### Category: Release
+
+**3.** release-check's clean_tree counts UNTRACKED files (foreign tool artifacts, regenerable caches) as a dirty tree and blocks the ritual, even though the published artifact builds from origin/main + the tag (which never contain them). The surgical, honest fix is .git/info/exclude (local-only, non-committed, deletes nothing) for files that aren't this repo's content — not deleting another tool's files and not committing junk. Verify `git status --untracked-files=no` is empty first to prove no real source change is uncommitted. *(evidence: 1.2.0 release: 8 untracked (.agents/, higgsfield skills, skills-lock.json, abstract_index.json, fixture index.json) -> .git/info/exclude -> release-check exit 0)* (promoted 2026-06-27: L-42)

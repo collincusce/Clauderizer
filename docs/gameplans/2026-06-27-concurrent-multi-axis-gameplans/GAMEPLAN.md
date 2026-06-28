@@ -1,7 +1,7 @@
 # concurrent multi-axis gameplans Gameplan
 
 > Created: 2026-06-27
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -205,6 +205,6 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Exit criteria**:
 - [x] GAMEPLAN-PROCEDURE, relevant docs/subsystems pages, and README updated for focus/kinds/cross-gameplan
 - [x] Dogfood on an ISOLATED repo copy (L-29): two concurrent gameplans (one campaign kind) advance independently with correct per-kind preflight and portfolio
-- [ ] Full D-011 release ritual green (release-check 0, CI matrix green, tag, GitHub Release, publish)
-- [ ] Minor version bumped and verified on PyPI
+- [x] Full D-011 release ritual green (release-check 0, CI matrix green, tag, GitHub Release, publish)
+- [x] Minor version bumped and verified on PyPI
 - [x] Spaces (Feature 4) confirmed out of scope / noted as future
