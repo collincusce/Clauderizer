@@ -1,7 +1,7 @@
 # Chat Handoff Index — abstract-index-fast-retrieval
 
 > Last updated: 2026-06-28
-> Status: Phase 7 ready
+> Status: All 8 phases complete
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 663
+**Current baseline test count**: 711
 
 ## Ending Protocol
 
@@ -36,7 +36,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 4 | Realize the win in injected surfaces (handoff/status) and re-measure | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-6-HANDOFF.md |
-| 7 | Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready | 🟢 READY | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 7 | Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-7-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -82,6 +82,10 @@ The discipline WAS the phase (L-40): built the measuring stick FIRST (_experimen
 
 Upgrade path shipped (D3). init + reindex build/refresh the abstract index idempotently and gitignore it; doctor detects a missing or schema-stale cache via the new read-only abstract_index.cache_status and advises reindex without ever building it (INVARIANT-06; runtime self-heals). Reconciled with main first (merged 1.2.0 in — clean auto-merge but for the config focus pointer; union suite green). Proven on an isolated tempfile clone (L-29, isolation asserted before any step): doctor-flags-missing -> reindex-builds (107 entries) -> cz_get resolves a real id -> git status clean (corpus+graph byte-unchanged, caches gitignored) -> no-op re-run; friction log recorded. Suite 707->711 (+4). Phase 7 (release readiness/merge-ready, NOT the release) remains.
 
+### Phase 7 — completed 2026-06-28
+
+Release readiness reached; merge-ready, NOT released (INVARIANT-07 — the version bump/tag/PyPI ritual is handed back to the user). 9-cell CI green on PR #16 (ubuntu/macos/windows x py3.11-3.13 all pass); the windows legs verify the cache's os.replace atomicity, mtime granularity, and schema gate via the abstract-index tests. Docs swept: README 41->42 + cz_get in the Read line; mcp-server.md headline 31->42, reads 6->13, enumeration refreshed; subsys.mcp-server entity last_verified bumped. O-04 merge-back checklist completed (profile.lock reverted to bare pytest + H-17-verified, clean FF confirmed, branch cleanup). POST-MORTEM.md written; lesson L-43 promoted (orthogonal feature sets reconcile cleanly — dry-run the merge to measure before assuming a rewrite). Union suite 711 passed, 4 skipped. PR: https://github.com/collincusce/Clauderizer/pull/16
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -90,6 +94,8 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Process
 
 **5.** A downstream "realize/exploit the win" phase can be a no-op whose win an earlier phase or prior gameplan already banked — MEASURE before building, and if so, deliver a measurement + a regression guard that LOCKS the property + an honest amendment, never a manufactured change that regresses validated behavior. Phase 4 ("thread abstract+anchor into injected handoff/status surfaces") measured the surfaces and found: the digest is counts+pointers (D-027 trim), the handoff injects no decision/finding bodies at all, and its only full-text payload is lessons — which D-009 mandates stay full and the prior focused-injection eval already cut -55% at equal accuracy. The architectural reason the win was pre-banked is reusable: an addressable getter keyed by id (Phase-2 cz_get(id)) retroactively upgrades EVERY existing id-bearing pointer into a fetch handle, so "injected pointers" already ARE "abstract+anchor" with zero injection-side change. Extends L-32 (park-by-analysis when the metric is saturated by an earlier phase) to the realize-the-win case, and pairs with L-38 (amend honestly, don't fake the checkbox). *(evidence: Phase 4 of 2026-06-25-abstract-index-fast-retrieval: amendment A-001; harness.measure_context_tokens (digest 315 / handoff 3704 / lessons 2132 tok, 0 decision-finding body tokens injected); tests/test_injection_pointer_not_body.py locks D-013; realized retrieval win = Phase-3 48.3%)*
+
+**7.** A parked feature branch that has fallen behind a newer release reconciles cleanly when the two feature sets are orthogonal in code: dry-run the merge (git merge --no-commit main) to MEASURE the real conflict surface before assuming a heavy rewrite. Here main(1.2.0) auto-merged into the abstract-index branch with a single config-pointer conflict; the union suite went green with zero manual code fixes. Complete parked work by reconciling with the release line FIRST, then finishing the remaining phases against the real target. *(evidence: abstract-index Phase 6/7 resume 2026-06-28: merged main into feat/abstract-index-fast-retrieval, 1 conflict (.clauderizer/config.toml), union suite 711, PR #16 9-cell green)* (promoted 2026-06-28: L-43)
 
 ### Category: Integration
 

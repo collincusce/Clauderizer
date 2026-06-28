@@ -14,7 +14,7 @@
 | 4 | Realize the win in injected surfaces (handoff/status) and re-measure | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Write-time lesson-synthesis advisory (own fixture, own mini gain-gate) | ✅ COMPLETE | 2026-06-25 | 2026-06-25 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Upgrade path (init/reindex build, doctor detect) and dogfood on an isolated repo copy | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-6-HANDOFF.md |
-| 7 | Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready | 🟢 READY | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 7 | Release readiness: CI 9-cell, docs sweep, cross-platform, merge-ready | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-7-HANDOFF.md |
 
 ## Outputs Registry
 

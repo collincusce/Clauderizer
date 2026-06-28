@@ -57,6 +57,8 @@
 
 **L-41.** An identity default (driven kind = identity lexicon, empty preflight list) lets a large generalization land with ZERO behavior change for the existing path: every existing gameplan resolves to the identity, so a byte-identical golden snapshot of the status digest stays green through the whole feature with no per-call-site adjustment. Build the new axis so the legacy case IS the default value, not a special-cased branch. *(evidence: concurrent-multi-axis-gameplans: kinds/driven.toml identity + Config.active_gameplan property over focus; golden gate tests/test_back_compat_focus.py green across Phases 0-5; suite 629->669)* *(from 2026-06-27-concurrent-multi-axis-gameplans)*
 
+**L-43.** A parked feature branch that has fallen behind a newer release reconciles cleanly when the two feature sets are orthogonal in code: dry-run the merge (git merge --no-commit main) to MEASURE the real conflict surface before assuming a heavy rewrite. Here main(1.2.0) auto-merged into the abstract-index branch with a single config-pointer conflict; the union suite went green with zero manual code fixes. Complete parked work by reconciling with the release line FIRST, then finishing the remaining phases against the real target. *(evidence: abstract-index Phase 6/7 resume 2026-06-28: merged main into feat/abstract-index-fast-retrieval, 1 conflict (.clauderizer/config.toml), union suite 711, PR #16 9-cell green)* *(from 2026-06-25-abstract-index-fast-retrieval)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)* (obsolete 2026-06-21: consolidated into L-25)

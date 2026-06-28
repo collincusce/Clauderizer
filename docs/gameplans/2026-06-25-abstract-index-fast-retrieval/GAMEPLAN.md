@@ -1,7 +1,7 @@
 # abstract-index-fast-retrieval Gameplan
 
 > Created: 2026-06-25
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -86,7 +86,7 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 **O-03.** _(phase 1)_ Confirm the LESSONS dual-parser coverage: verify markdown/lesson_state's regex captures every lesson shape (numbered **N.**, consolidated/obsolete "(consolidated into L-NN)" markers, category headers) so the abstract index neither misses nor garbles lesson entries. A missed shape silently drops lessons from the index. _(resolved 2026-06-25: Confirmed and handled. docs/LESSONS.md uses **L-NN.** lines; lesson_state.LESSON_LINE_RE is **N.** (the gameplan-handoff form) and would silently drop EVERY project lesson. So the abstract index uses its own _LESSON_LINE_RE = ^\*\*(L-\d+)\.\*\* (sibling of handoff._PROJECT_LESSON_NUM_RE) for matching, and lesson_state.parse_state ONLY for active/obsolete/promoted status. Tested: test_lessons_use_the_L_NN_format_not_the_gameplan_N_form + test_status_parsed_for_each_kind (obsolete marker).)_
 
-**O-04.** _(phase 7)_ MERGE-BACK CHECKLIST before the final feature->main merge: (a) revert .clauderizer/profile.lock.toml test command from `.venv/bin/python -m pytest` back to bare `pytest` (H-17 makes it resolve; the explicit-venv form was the Phase-0 pre-fix workaround, kept only so live cz_preflight stayed green on the uvx server); (b) re-sweep tool-count docs (README 'N tools' line, docs/subsystems/mcp-server.md reads count) for L-21 drift introduced by cz_get; (c) confirm `git merge-base --is-ancestor main feat/abstract-index-fast-retrieval` (clean FF) and that local main is pushed so origin does not diverge; (d) delete the now-merged fix/preflight-venv-detection branch.
+**O-04.** _(phase 7)_ MERGE-BACK CHECKLIST before the final feature->main merge: (a) revert .clauderizer/profile.lock.toml test command from `.venv/bin/python -m pytest` back to bare `pytest` (H-17 makes it resolve; the explicit-venv form was the Phase-0 pre-fix workaround, kept only so live cz_preflight stayed green on the uvx server); (b) re-sweep tool-count docs (README 'N tools' line, docs/subsystems/mcp-server.md reads count) for L-21 drift introduced by cz_get; (c) confirm `git merge-base --is-ancestor main feat/abstract-index-fast-retrieval` (clean FF) and that local main is pushed so origin does not diverge; (d) delete the now-merged fix/preflight-venv-detection branch. _(resolved 2026-06-28: Merge-back checklist done: (a) .clauderizer/profile.lock.toml test reverted to bare `pytest` and verified to resolve via H-17's venv-prepend (cz_preflight tests pass, 711, baseline 663->711); (b) tool-count docs swept (README + mcp-server.md -> 42, +cz_get); (c) clean FF confirmed (`git merge-base --is-ancestor main HEAD` true) and origin/main in sync; (d) fix/preflight-venv-detection branch deleted (its H-17 commit is on main).)_
 
 ## Phase Breakdown
 
@@ -210,7 +210,7 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 7.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] The D-012 9-cell CI matrix is green
-- [ ] win32 cache behavior verified: mtime granularity, atomic os.replace semantics, and H-10 unlink concerns for the sibling file
-- [ ] Human-doc drift swept (README tool count 38->39, docs/subsystems/mcp-server.md reads count, cross-host docs) and the mcp-server entity updated
-- [ ] Branch is clean, rebased on main, and merge-ready; post-mortem written and enduring lessons promoted; release handed back to the user (no auto-release, INVARIANT-07)
+- [x] The D-012 9-cell CI matrix is green
+- [x] win32 cache behavior verified: mtime granularity, atomic os.replace semantics, and H-10 unlink concerns for the sibling file
+- [x] Human-doc drift swept (README tool count 38->39, docs/subsystems/mcp-server.md reads count, cross-host docs) and the mcp-server entity updated
+- [x] Branch is clean, rebased on main, and merge-ready; post-mortem written and enduring lessons promoted; release handed back to the user (no auto-release, INVARIANT-07)

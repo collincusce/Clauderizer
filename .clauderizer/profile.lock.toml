@@ -1,12 +1,12 @@
 profile = "python"
 
 [commands]
-# Use the repo venv's interpreter explicitly: the MCP server's subprocess does
-# not inherit .venv/bin on PATH, so bare `pytest` is not found (exit 127). This
-# removes the PATH dependency so preflight is robust across launch contexts.
-# pyproject addopts already pass -q; don't add another -q (-qq would suppress the
+# Bare `pytest`: H-17 makes preflight prepend the project venv's bin dir to PATH,
+# so the runner resolves across launch contexts (uvx / pipx / global). The earlier
+# explicit `.venv/bin/python -m pytest` was the Phase-0 workaround before H-17.
+# pyproject addopts already pass -q; don't add another (-qq would suppress the
 # "N passed" summary line that baseline_test_regex needs to parse).
-test = ".venv/bin/python -m pytest"
+test = "pytest"
 build = ""
 lint = "ruff check ."
 typecheck = "mypy ."
