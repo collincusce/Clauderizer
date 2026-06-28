@@ -68,3 +68,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Process
 
 _(none yet)_
+
+**1.** An audit finding names a SYMPTOM plus a HYPOTHESIZED cause — and the hypothesis is falsifiable, so measure it before fixing (extends L-39/L-40 from eval-gates to audit-remediation). Here the audit predicted "the fork tokenizer HIDES near-duplicate lesson pairs the canonical tokenizer would surface"; the Phase-0 measurement showed BOTH tokenizers report 0 pairs at every threshold (max real Jaccard 0.19), falsifying the predicted under-count. The real defect was INCOHERENCE, not under-reporting — two different definitions of "near-duplicate" (a fork tokenizer @0.6 vs the canonical @0.40) — so the correct fix was single-sourcing the tokenizer AND the threshold (D-041→INVARIANT-09), not manufacturing pairs by lowering a threshold. Record the before/after as gameplan outputs so the reframed fix is justified by data, not by the audit's prose. *(evidence: 2026-06-28-integrity-patch Phase 0 outputs redundancy_measurement/divergence_finding + A-001; Phase 1 D3; INVARIANT-09 (promoted from D-041); tests/test_canonical_tokenizer.py)*
