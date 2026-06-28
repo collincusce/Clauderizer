@@ -30,10 +30,21 @@ import re
 from datetime import date as _date
 from pathlib import Path
 
-# Token-set Jaccard at/above which two lessons are flagged a near-duplicate. High
-# (precision over recall): the curator (Phase 2) would rather miss a loose pair
-# than propose merging two lessons that only share boilerplate. Tunable later.
-_REDUNDANCY_THRESHOLD = 0.6
+# One canonical tokenizer for ALL lexical-overlap/similarity in the engine
+# (D-041): the redundancy metric here tokenizes exactly like the write-time
+# near-duplicate advisory (analyze.near_duplicate_lessons) and the abstract
+# index (analyze._tokens), so "near-duplicate lesson" has a single definition.
+# The prior local fork kept stopwords + 3-char noise and quietly diverged.
+from .analyze import _LESSON_DUP_JACCARD, _tokens
+
+# Token-set Jaccard at/above which two lessons are flagged a near-duplicate.
+# SINGLE-SOURCED with the write-time advisory (analyze._LESSON_DUP_JACCARD = 0.40):
+# corpus_health / curate_proposals and cz_add_lesson now share ONE near-duplicate
+# threshold, not two (0.6 here vs 0.40 there was the incoherence the v1.3.0
+# integrity audit flagged). Phase-0 measurement (2026-06-28) showed aligning to
+# 0.40 yields 0 false positives on the real 30-lesson corpus while removing the
+# contradiction — the value is set by data, not taste (O-01).
+_REDUNDANCY_THRESHOLD = _LESSON_DUP_JACCARD
 
 
 def _today(today: str | None) -> str:
@@ -103,11 +114,6 @@ def read_events(telemetry_file: Path) -> list[dict]:
             if isinstance(obj, dict):
                 out.append(obj)
     return out
-
-
-def _tokens(text: str) -> set:
-    # Deterministic lexical tokens (no ML, D-018): alnum runs > 2 chars, lowered.
-    return {t for t in re.findall(r"[a-z0-9]+", text.lower()) if len(t) > 2}
 
 
 def _jaccard(a: set, b: set) -> float:

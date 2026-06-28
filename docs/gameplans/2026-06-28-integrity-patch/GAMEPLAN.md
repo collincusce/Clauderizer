@@ -47,9 +47,17 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 **Evidence**: D-011 release ritual (docs/RELEASING.md); the 1.3.0 release precedent (PR #16); INVARIANT-07; tool surface 42 (tools_list.TOOL_NAMES)
 **Status**: active (2026-06-28)
 
+### D3 — Single-source the near-duplicate threshold to analyze._LESSON_DUP_JACCARD (0.40), not keep 0.6
+
+**Context**: corpus_health/curate_proposals used _REDUNDANCY_THRESHOLD=0.6 with a fork tokenizer, while the write-time advisory analyze.near_duplicate_lessons used 0.40 with the canonical analyze._tokens. Two definitions of "near-duplicate lesson". Phase-0 measurement over the real 30-lesson corpus: max pairwise Jaccard 0.19 (canonical); 0 redundant pairs at every threshold 0.3–0.7. O-01 asked whether to keep 0.6 or recalibrate, by data.
+**Decision**: Replace telemetry._tokens with `from .analyze import _tokens` (D-041) AND set `_REDUNDANCY_THRESHOLD = _LESSON_DUP_JACCARD` (0.40) so both the tokenizer and the threshold are single-sourced with the write-time advisory. The value is chosen by data + coherence, not taste: aligning to 0.40 removes the 0.6-vs-0.40 contradiction and costs 0 false positives on the real corpus (canonical@0.40 = 0 pairs).
+**Consequences**: cz_corpus_health, cz_curate, cz_lesson_health, cz_loop_step now share ONE near-duplicate definition with cz_add_lesson. Post-fix cz_corpus_health honestly reports 0 redundant pairs — the 30-lesson bloat is volume/conceptual overlap, not lexical duplication, so the standing-curator consolidation needs semantic judgment, not a lower lexical gate. A guard test (test_canonical_tokenizer.py) enforces exactly one _tokens def in src/ + import identity + threshold single-sourcing, so a third fork can't reappear. Fixture tests (test_telemetry/test_curator: L-01/L-02 Jaccard 0.857) stay green.
+**Evidence**: telemetry.py:36 (_REDUNDANCY_THRESHOLD = _LESSON_DUP_JACCARD), telemetry.py import of analyze._tokens; analyze.py:143 (_LESSON_DUP_JACCARD=0.40); tests/test_canonical_tokenizer.py; Phase-0 outputs redundancy_measurement + O-01_recalibration_direction; A-001
+**Status**: active (2026-06-28)
+
 ## Open Items
 
-**O-01.** Threshold recalibration (Phase 1): does corpus_health._REDUNDANCY_THRESHOLD (currently 0.6, tuned for the stopword-keeping fork) need a new value once routed through the canonical analyze._tokens? Decide from the Phase-0 before/after Jaccard distribution — keep 0.6 only if the data supports it; otherwise recalibrate and record why. Resolves into a Phase-1 decision/output.
+**O-01.** Threshold recalibration (Phase 1): does corpus_health._REDUNDANCY_THRESHOLD (currently 0.6, tuned for the stopword-keeping fork) need a new value once routed through the canonical analyze._tokens? Decide from the Phase-0 before/after Jaccard distribution — keep 0.6 only if the data supports it; otherwise recalibrate and record why. Resolves into a Phase-1 decision/output. _(resolved 2026-06-28: Recalibrated by data, not taste: set _REDUNDANCY_THRESHOLD = analyze._LESSON_DUP_JACCARD (0.40), single-sourcing the threshold with the write-time advisory rather than keeping 0.6. Phase-0 showed 0.6-vs-0.40 was an incoherence and that 0.40 yields 0 false positives on the real corpus (D3, A-001).)_
 
 **O-02.** Campaign preflight false-green (Phase 2, finding #6a): pick the fix for kinds/campaign.toml declaring virality/brand_lint/duration gates with no shipped wiring — (a) loud-warn in preflight/doctor that declared gates are unwired, (b) ship an example .clauderizer/preflight.campaign.toml, or both. Constraint: a campaign gameplan must not read green on gates that never ran. Resolves into the Phase-2 implementation + test.
 
@@ -84,11 +92,11 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] telemetry.py no longer defines its own token splitter; corpus_health._jaccard tokenizes via the canonical analyze._tokens
-- [ ] A guard test asserts there is exactly ONE token-splitter definition in src/ (corpus_health/telemetry route through analyze._tokens) — a second fork makes the test fail
-- [ ] _REDUNDANCY_THRESHOLD is set from the Phase-0 data (kept or recalibrated), with the chosen value justified by the measured distribution and recorded as a decision/output
-- [ ] cz_corpus_health's post-fix redundancy count is recorded and shares the same tokenizer basis as analyze.near_duplicate_lessons (Phase-5 advisory) and the abstract index token_set
-- [ ] Full suite green; no user-facing behavior change beyond the advisory redundancy output (D2)
+- [x] telemetry.py no longer defines its own token splitter; corpus_health._jaccard tokenizes via the canonical analyze._tokens
+- [x] A guard test asserts there is exactly ONE token-splitter definition in src/ (corpus_health/telemetry route through analyze._tokens) — a second fork makes the test fail
+- [x] _REDUNDANCY_THRESHOLD is set from the Phase-0 data (kept or recalibrated), with the chosen value justified by the measured distribution and recorded as a decision/output
+- [x] cz_corpus_health's post-fix redundancy count is recorded and shares the same tokenizer basis as analyze.near_duplicate_lessons (Phase-5 advisory) and the abstract index token_set
+- [x] Full suite green; no user-facing behavior change beyond the advisory redundancy output (D2)
 
 ### Phase 2: Code coherence and small traps
 
