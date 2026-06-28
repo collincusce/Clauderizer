@@ -96,8 +96,3 @@ def test_create_loop_gameplan_records_kind(temp_repo):
     gid = res[0]["result"]["gameplan_id"]
     gp = (temp_repo / "docs" / "gameplans" / gid / "GAMEPLAN.md").read_text(encoding="utf-8")
     assert "> Kind: loop" in gp
-
-
-def test_cz_loop_step_is_read_only():
-    assert ops.REGISTRY["cz_loop_step"].writes is False
-    assert ops.REGISTRY["cz_loop_step"].fn.__name__ == "cz_loop_step"

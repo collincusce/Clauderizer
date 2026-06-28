@@ -1,7 +1,7 @@
 # Chat Handoff Index — integrity-patch
 
 > Last updated: 2026-06-28
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Branch, baseline, and measure the tokenizer divergence | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Unify the canonical tokenizer | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Code coherence and small traps | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Test integrity | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Test integrity | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Docs refresh to 1.3.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Close and 1.3.1 patch release | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
@@ -51,6 +51,10 @@ Resolved the keystone finding (D-041). Deleted the divergent local telemetry._to
 ### Phase 2 — completed 2026-06-28
 
 Fixed the four code-coherence / robustness findings, each with a test. #5: single-sourced the L-NN lesson-line grammar — handoff._project_lesson_entries and telemetry._active_project_lessons now parse via abstract_index.parse_lesson_line (deleted handoff._PROJECT_LESSON_NUM_RE and telemetry's local num_re copy; the gameplan-lesson `\\d+` regex at telemetry.py:277 is a different grammar, left intact); test_handoff_and_index_agree_on_a_lesson_line asserts the index and handoff paths agree on id + token set. #6a (O-02→D4): unwired kind-declared QA gates now WARN with verdict "PASS WITH WARNINGS" instead of silently skipping, plus an inert .clauderizer/preflight.campaign.toml.example ships — a campaign can't read green on gates that never ran; not a hard-fail (INVARIANT-05); two bug-encoding tests updated + 2 new tests. #6b: analyze.suggest_edges gained a max_entities size guard (default 200) before the O(n^2) pair loop so the UserPromptSubmit hot path is bounded (INVARIANT-06); test_size_guard_skips_the_n_squared_scan_on_a_large_graph. #6c: cz_get gained a clarifying comment (writes=False = no canonical-markdown mutation; the gitignored abstract-index cache may refresh, INVARIANT-01) + test_cz_get_mutates_no_tracked_markdown snapshots docs/*.md across the call. Full suite 718 passed / 4 skipped; tool surface unchanged at 42 (no REGISTRY/TOOL_NAMES change).
+
+### Phase 3 — completed 2026-06-28
+
+Made the suite reflect behavior, not module-load constants (D1, #3). Removed the 5 tautological writes-is-False/__name__ tests: deleted the 3 standalone ones (test_cz_lesson_health_is_read_only, test_cz_curate_is_read_only, test_cz_loop_step_is_read_only) and the redundant test_op_surface_is_read_only_and_registered (parity is the test_ops gate), and stripped the trailing writes-is-False asserts from two otherwise-behavioral tests (cz_get in test_analyze, cz_discover_skills in test_skill_discovery — its real `assert not sdoc.exists()` behavioral check stays). Added tests/test_read_only_ops.py: a behavioral gate that RUNS each declared-read-only op (cz_status/cz_corpus_health/cz_lesson_health/cz_curate/cz_loop_step/cz_discover_skills/cz_gameplans + cz_get) against a seeded repo and asserts every tracked file is byte-identical after (only the gitignored cache/lock may change). Upgraded test_mcp_tools.test_all_tools_are_discoverable from a hardcoded 16-tool subset to `== set(TOOL_NAMES)`; fixed the stale '24/24' comment at test_ops.py:56 to '42/42'. Added two genuinely-missing tests: (a, O-03) test_sessionstart_digest_advertises_exactly_the_tool_surface drives the real SessionStart hook and asserts the digest's Tools: line == TOOL_NAMES; (b) test_command_gate_runs_a_real_subprocess exercises the per-kind preflight via the REAL _default_runner (two runs: exit-0→pass, exit-7→fail with the code captured in detail, unwired→warn, advisory→downgraded warn, in enabled order). Scrubbed the PII (#4): test_diverse_robustness.py:262 no longer hardcodes /mnt/c/Users/<username>/... — now opt-in via CLAUDERIZER_TRANSCRIPT_CORPUS (portable, username-free). Full suite 716 passed / 5 skipped (718-4 deleted tautologies; the PII smoke now correctly SKIPS on this dogfood machine instead of running; +3 new). Three PRE-EXISTING username leaks in other gameplans' append-only history + an _experiments script are out of scope — flagged as a separate background task (task_455387ca), not hand-edited here (append-only discipline).
 
 ## Accumulated Lessons
 

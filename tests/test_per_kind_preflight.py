@@ -130,6 +130,49 @@ def test_shipped_campaign_preflight_example_is_inert():
     assert not data.get("gates"), "example gates must be commented out (inert)"
 
 
+def test_command_gate_runs_a_real_subprocess(temp_repo):
+    """#3 (b): exercise the command-gate via the REAL runner (a true subprocess,
+    not the fake) — exit-code -> status mapping, output capture, and the
+    wired/unwired/advisory ordering, all in one check list.
+
+    Two real runs over the same campaign:
+      A) no advisory -> a non-zero gate FAILS preflight, its detail carries the exit
+         code (output is captured), wired-pass passes, unwired WARNS;
+      B) the same failing gate marked advisory -> it downgrades to warn, passed=True.
+    """
+    import sys
+
+    py = sys.executable
+    pass_cmd = f'"{py}" -c "import sys; sys.exit(0)"'
+    fail_cmd = f'"{py}" -c "import sys; sys.exit(7)"'
+
+    paths, config = _make_campaign(temp_repo)
+    # virality wired-pass, brand_lint wired-fail; duration left UNWIRED. Written with
+    # TOML literal (single-quoted) strings since the commands contain double quotes.
+    (paths.clauderizer_dir / "preflight.campaign.toml").write_text(
+        "[gates]\n" f"virality = '{pass_cmd}'\n" f"brand_lint = '{fail_cmd}'\n",
+        encoding="utf-8")
+    profile = Profile(name="python", commands={})
+
+    # --- run A: real subprocess, no advisory --------------------------------------
+    result = preflight.run(paths, config, profile)  # no runner= -> _default_runner
+    by = {c.name: c for c in result.checks}
+    # ordering follows the kind's enabled list
+    assert [c.name for c in result.checks] == ["clean_tree", "virality", "brand_lint", "duration"]
+    assert by["virality"].status == "pass"                  # exit 0 -> pass
+    assert by["brand_lint"].status == "fail"                # exit 7 -> fail
+    assert "exit 7" in by["brand_lint"].detail             # output/exit captured
+    assert by["duration"].status == "warn"                  # declared but unwired (#6a)
+    assert result.passed is False                           # a real failing gate fails preflight
+
+    # --- run B: same failing gate, now advisory -> downgraded on the real path -----
+    config.preflight_advisory = ["brand_lint"]
+    result2 = preflight.run(paths, config, profile)
+    by2 = {c.name: c for c in result2.checks}
+    assert by2["brand_lint"].status == "warn" and "(advisory)" in by2["brand_lint"].detail
+    assert result2.passed is True                           # advisory failure never hard-fails
+
+
 def test_gate_failure_downgraded_by_advisory(temp_repo):
     paths, config = _make_campaign(temp_repo)
     config.preflight_advisory = ["brand_lint"]

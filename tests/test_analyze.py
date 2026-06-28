@@ -320,4 +320,3 @@ def test_cz_get_op_fetches_from_each_corpus_and_is_read_only(temp_repo):
             assert res["body"], f"{eid} returned an empty body"
         miss = ops.cz_get("D-404")
         assert miss["ok"] is False and "no corpus entry" in miss["error"]
-    assert ops.REGISTRY["cz_get"].writes is False

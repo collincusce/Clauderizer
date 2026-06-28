@@ -72,11 +72,6 @@ def test_flag_for_mediocre_utility(tmp_path):
     assert flags[0]["suggested_op"] is None         # review-only, no auto-op
 
 
-def test_cz_curate_is_read_only():
-    assert ops.REGISTRY["cz_curate"].writes is False
-    assert ops.REGISTRY["cz_curate"].fn.__name__ == "cz_curate"
-
-
 def test_promote_proposal_for_high_utility_gameplan_lesson(temp_repo):
     GID = "2026-05-01-bootstrap"
     cwd = os.getcwd(); os.chdir(temp_repo)

@@ -231,6 +231,23 @@ def _payload(event, **extra) -> bytes:
     return json.dumps({"hook_event_name": event, **extra}).encode()
 
 
+def test_sessionstart_digest_advertises_exactly_the_tool_surface(monkeypatch, capsys,
+                                                                  empty_python_repo):
+    """O-03 / #3: the SessionStart digest's advertised 'Tools:' line lists EXACTLY
+    TOOL_NAMES — so a new/removed op can't leave the digest advertising a stale
+    surface. Asserts the rendered seam end-to-end, not a hardcoded copy."""
+    from clauderizer.tools_list import TOOL_NAMES
+
+    init(empty_python_repo, gameplan="demo-plan", spawn_test=False)
+    monkeypatch.chdir(empty_python_repo)
+    rc, out = run(monkeypatch, capsys, stdin=_payload("SessionStart", source="startup"))
+    assert rc == 0
+    tool_lines = [ln for ln in out.splitlines() if ln.startswith("Tools: ")]
+    assert len(tool_lines) == 1, f"expected exactly one Tools: line in the digest\n{out}"
+    advertised = [t.strip() for t in tool_lines[0][len("Tools: "):].split(",") if t.strip()]
+    assert advertised == TOOL_NAMES
+
+
 def test_session_start_prints_digest_even_without_gameplan(monkeypatch, capsys, empty_python_repo):
     init(empty_python_repo, spawn_test=False)
     monkeypatch.chdir(empty_python_repo)

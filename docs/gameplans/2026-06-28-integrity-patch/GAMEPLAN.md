@@ -69,7 +69,7 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 **O-02.** Campaign preflight false-green (Phase 2, finding #6a): pick the fix for kinds/campaign.toml declaring virality/brand_lint/duration gates with no shipped wiring — (a) loud-warn in preflight/doctor that declared gates are unwired, (b) ship an example .clauderizer/preflight.campaign.toml, or both. Constraint: a campaign gameplan must not read green on gates that never ran. Resolves into the Phase-2 implementation + test. _(resolved 2026-06-28: Both (a)+(b): unwired kind-declared QA gates now WARN (status "warn", verdict "PASS WITH WARNINGS") instead of silently skipping, and an inert .clauderizer/preflight.campaign.toml.example ships. A campaign can no longer read green on gates that never ran; not a hard-fail (INVARIANT-05). Covered by tests (D4).)_
 
-**O-03.** Digest tool-advertisement testability (Phase 3, finding #3a): confirm where the SessionStart digest renders its advertised tool list (status_bundle.render_digest / the digest assembler) and that it reflects the passed-in tool names, so the new test can assert advertised-list == TOOL_NAMES rather than a hardcoded copy. If the digest derives the list indirectly, decide the right seam to assert. Resolves into the Phase-3 test.
+**O-03.** Digest tool-advertisement testability (Phase 3, finding #3a): confirm where the SessionStart digest renders its advertised tool list (status_bundle.render_digest / the digest assembler) and that it reflects the passed-in tool names, so the new test can assert advertised-list == TOOL_NAMES rather than a hardcoded copy. If the digest derives the list indirectly, decide the right seam to assert. Resolves into the Phase-3 test. _(resolved 2026-06-28: Render seam confirmed: the SessionStart hook (hook/handlers.py:66) and the MCP/CLI digests (mcp_server.py:90/121, cli.py:106) all call status_bundle.render_digest(bundle, tools=TOOL_NAMES); render_digest emits the "Tools:" line from the passed list (status_bundle.py:586). New test test_sessionstart_digest_advertises_exactly_the_tool_surface drives the real SessionStart handler and asserts the digest's parsed Tools: line == TOOL_NAMES (end-to-end, not a hardcoded copy).)_
 
 **O-04.** Promote D-041 to an INVARIANT? (Phase 5): once one-canonical-tokenizer is enforced by the Phase-1 guard test, decide whether \"all lexical-overlap/similarity computations use the single analyze._tokens tokenizer\" graduates from a project decision (D-041) to a numbered INVARIANT (INVARIANT-09). Lean yes if the guard test makes it a hard, machine-checked rule; record the rationale either way.
 
@@ -132,12 +132,12 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] The ~5 tautological writes-is-False/__name__ tests (test_lesson_health.py:86, test_loop_gameplan.py:101, test_curator.py:75, test_skill_discovery.py:105, test_analyze.py:273) are replaced with behavioral read-only assertions or removed where test_ops.py's parity+signature-drift gate already covers them
-- [ ] test_mcp_tools.py:38 asserts the full 42-tool surface (or is folded into the test_ops parity gate); the stale '24/24' comment at test_ops.py:56 reads 42
-- [ ] New test: the SessionStart digest's advertised tool list equals TOOL_NAMES
-- [ ] New test: per-kind preflight command-gate exercised via a REAL subprocess (not the fake runner) — exit-code→status mapping, output, and wired/unwired/advisory ordering
-- [ ] test_diverse_robustness.py:262 no longer contains any home-dir/username literal; the skip is portable (passes/skips correctly on a machine without that path) and a grep for the username across tests/ returns nothing
-- [ ] Full suite green
+- [x] The ~5 tautological writes-is-False/__name__ tests (test_lesson_health.py:86, test_loop_gameplan.py:101, test_curator.py:75, test_skill_discovery.py:105, test_analyze.py:273) are replaced with behavioral read-only assertions or removed where test_ops.py's parity+signature-drift gate already covers them
+- [x] test_mcp_tools.py:38 asserts the full 42-tool surface (or is folded into the test_ops parity gate); the stale '24/24' comment at test_ops.py:56 reads 42
+- [x] New test: the SessionStart digest's advertised tool list equals TOOL_NAMES
+- [x] New test: per-kind preflight command-gate exercised via a REAL subprocess (not the fake runner) — exit-code→status mapping, output, and wired/unwired/advisory ordering
+- [x] test_diverse_robustness.py:262 no longer contains any home-dir/username literal; the skip is portable (passes/skips correctly on a machine without that path) and a grep for the username across tests/ returns nothing
+- [x] Full suite green
 
 ### Phase 4: Docs refresh to 1.3.0
 

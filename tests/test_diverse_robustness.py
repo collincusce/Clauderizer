@@ -258,11 +258,14 @@ def test_blank_lesson_line_is_harmless():
 
 
 # --- lens 5: real-corpus smoke (local only) ----------------------------------
+# Opt-in via an env var pointing at a local transcript corpus — no home-dir or
+# username literal in the repo (portable + PII-free; skips cleanly anywhere the
+# var is unset or the path is absent).
+_CORPUS = os.environ.get("CLAUDERIZER_TRANSCRIPT_CORPUS", "")
 
-_CORPUS = "/mnt/c/Users/rafaj/.claude/projects/--wsl-localhost-ubuntu-home-ccusce-Clauderizer"
 
-
-@pytest.mark.skipif(not os.path.isdir(_CORPUS), reason="local transcript corpus only")
+@pytest.mark.skipif(not _CORPUS or not os.path.isdir(_CORPUS),
+                    reason="set CLAUDERIZER_TRANSCRIPT_CORPUS to a local transcript dir")
 def test_real_corpus_deterministic_and_crash_free():
     a = learn.mine_dir(_CORPUS)
     b = learn.mine_dir(_CORPUS)

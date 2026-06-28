@@ -82,7 +82,6 @@ def test_window_limits_recency(tmp_path):
     assert full["utility"] == 0.5
     assert windowed["utility"] == 1.0               # only the 2 most-recent surfacings
 
-
-def test_cz_lesson_health_is_read_only():
-    assert ops.REGISTRY["cz_lesson_health"].writes is False
-    assert ops.REGISTRY["cz_lesson_health"].fn.__name__ == "cz_lesson_health"
+# cz_lesson_health's registration + name parity is the test_ops.py gate
+# (REGISTRY == TOOL_NAMES + signature-drift); its read-only-ness is proven
+# behaviorally in tests/test_read_only_ops.py — not by a tautological flag assert.
