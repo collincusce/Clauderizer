@@ -1,11 +1,12 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.3.0
-**Last updated**: 2026-06-21
+**Procedure version**: 1.4.0
+**Last updated**: 2026-06-27
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.4.0** (2026-06-27): **Concurrent multi-axis gameplans.** A repo can run several gameplans at once with an ergonomic **focus** (the default target; `cz_focus` / `cz_gameplans` + a portfolio in the status digest). Gameplan **kinds** become data (`kinds/*.toml`: vocabulary + first-phase template + preflight set; `driven` / `loop` / `campaign` + custom overlays in `.clauderizer/kinds/`; the lexicon is display-only — on-disk structure is identical across kinds). **Per-kind preflight** runs the kind's checks via a command-gate primitive wired in `.clauderizer/preflight.<kind>.toml`. **Cross-gameplan dependencies** (`cz_consumes`) let a cascade fan out across axes. Back-compatible: a single-gameplan repo behaves exactly as before.
 - **v1.3.0** (2026-06-21): Added the **Loop Gameplan** (`kind: loop`) as a first-class type — a standing, iterative maintenance initiative (trigger / iteration body / per-iteration exit / convergence metric / spawn-driven escape hatch), complementing the finite driven gameplan. Realized by `cz_loop_step` over the curator (`cz_curate`); autonomous in cadence, supervised in mutation.
 - **v1.2.1** (2026-06-09): Amendment entries carry a `Cascade report` line only when the `amendments` ritual is enabled, and as a pending pointer (`run cz_cascade for the affected entities`) rather than a per-amendment filename — cascade reports are per-entity files, so `<date>-A-NNN.md` never exists (the dangling-pointer bug).
 - **v1.2.0** (2026-06-09): Named `clauderize ops <file.json|->` the canonical no-MCP fallback for every tracked write: op names and arg shapes are exactly the `cz_*` tool names and schemas, so recording never depends on a live MCP client. Ad-hoc stdio-probe/shim patterns are retired.
@@ -15,6 +16,16 @@
 > This document is project-agnostic. Copy it as-is into any new project's `docs/gameplans/GAMEPLAN-PROCEDURE.md`. All project-specific content goes in `CLAUDE.md` (project root) and `docs/` named files.
 
 ---
+
+## Concurrent gameplans: focus, kinds, cross-gameplan
+
+A repo can run **several gameplans at once** — e.g. a *code* gameplan and a *campaign* gameplan — each advanced in its own sessions. The model:
+
+- **Focus.** One gameplan is the *focus* — the default target for `cz_status`, do-phase, handoff, and preflight when you don't name a `gameplan_id`. Switch it with `cz_focus <id>` (or `clauderize focus <id>`); never hand-edit the config pointer. The set of **open** gameplans is *derived* from each gameplan's phase table, never stored.
+- **Portfolio.** `cz_gameplans` (or `clauderize gameplans`) lists every open gameplan with its kind, phase, blockers, and the focus mark. The status digest expands a portfolio block automatically once more than one gameplan is open; with a single gameplan it reads exactly as before.
+- **Kinds.** Every gameplan has a **kind** (`> Kind:` in `GAMEPLAN.md`) that sets its vocabulary, first-phase template, and preflight checks — `driven` (code), `loop` (maintenance), `campaign` (creative), or a custom kind defined in `.clauderizer/kinds/<name>.toml`. The vocabulary is **display-only**: a campaign reads in *stages* and *assets* while the on-disk structure (`## Phase Breakdown`, `### Phase N`) stays identical, so every parser and tool is unchanged.
+- **Per-kind preflight.** A kind's preflight runs *its* checks — a campaign's QA gates (virality, brand-lint, duration, …) instead of tests/build. Gates are generic shell commands you wire in `.clauderizer/preflight.<kind>.toml`; an unwired gate skips with a hint. The engine ships the mechanism; you supply the checks.
+- **Cross-gameplan dependencies.** When one axis produces an artifact another consumes, declare it with `cz_consumes` — the consuming gameplan becomes a dependent in the graph, so changing the shared artifact cascades **across** gameplans: the other axis gets a pending cross-ref its own `cascade_hygiene` catches. Memory scoping stays explicit — project invariants/ADRs are shared by all gameplans, a gameplan's own decisions/lessons are local, and consumed artifacts are surfaced in the handoff's "Consumes" section.
 
 ## Loop Gameplans (kind: loop)
 

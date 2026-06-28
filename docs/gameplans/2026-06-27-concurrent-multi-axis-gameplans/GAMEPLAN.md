@@ -203,8 +203,8 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 5.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] GAMEPLAN-PROCEDURE, relevant docs/subsystems pages, and README updated for focus/kinds/cross-gameplan
-- [ ] Dogfood on an ISOLATED repo copy (L-29): two concurrent gameplans (one campaign kind) advance independently with correct per-kind preflight and portfolio
+- [x] GAMEPLAN-PROCEDURE, relevant docs/subsystems pages, and README updated for focus/kinds/cross-gameplan
+- [x] Dogfood on an ISOLATED repo copy (L-29): two concurrent gameplans (one campaign kind) advance independently with correct per-kind preflight and portfolio
 - [ ] Full D-011 release ritual green (release-check 0, CI matrix green, tag, GitHub Release, publish)
 - [ ] Minor version bumped and verified on PyPI
-- [ ] Spaces (Feature 4) confirmed out of scope / noted as future
+- [x] Spaces (Feature 4) confirmed out of scope / noted as future

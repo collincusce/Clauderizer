@@ -24,6 +24,13 @@ impl_branch: feat/concurrent-multi-axis-gameplans, created off main (44984a7); 0
 golden_harness: tests/test_back_compat_focus.py: frozen single-gameplan digest + bundle snapshot, plus legacy [active_gameplan] load + rewrite round-trip stubs (4 tests, all green)
 ```
 
+### Phase 5 Outputs
+
+```
+dogfood_result: Live isolated-repo dogfood PASSED (fresh clauderize init in a tempdir, L-29): two concurrent axes (driven 'build the tool' + campaign 'launch campaign' created focus=false), portfolio showed both kinds with focus marked, cross-gameplan cz_consumes+transition flagged BOTH axes (cascades:1), campaign focus read in 'stage' vocabulary, per-kind preflight ran campaign QA gates (virality/brand_lint pass, duration skip) NOT pytest, refocus left the campaign untouched. Also captured permanently as tests/test_multi_axis_integration.py.
+docs_updated: docs/subsystems/kinds.md (new subsys.kinds), profiles.md cross-ref, GAMEPLAN-PROCEDURE.md (template + repo copy, v1.3.0->1.4.0 + Concurrent-gameplans section), PROCEDURE_VERSION 1.3.0->1.4.0, README (Running several gameplans section + CLI focus/gameplans verbs + MCP surface +cz_focus/cz_gameplans/cz_consumes + count 38->41). doctor: procedure version compatible. Suite 669 passed, 4 skipped.
+```
+
 ## Corrections Log
 
 ### C-01 — Phase 0
