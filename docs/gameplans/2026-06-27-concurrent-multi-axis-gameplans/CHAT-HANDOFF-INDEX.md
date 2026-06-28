@@ -1,7 +1,7 @@
 # Chat Handoff Index — concurrent multi-axis gameplans
 
 > Last updated: 2026-06-27
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -31,8 +31,8 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Bootstrap and back-compat harness | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Focus model (concurrent gameplans + portfolio) | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Kinds as real profiles (parse + lexicon) | 🟢 READY | — | — | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Per-kind / per-gameplan preflight | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 2 | Kinds as real profiles (parse + lexicon) | ✅ COMPLETE | 2026-06-27 | 2026-06-27 | handoffs/PHASE-2-HANDOFF.md |
+| 3 | Per-kind / per-gameplan preflight | 🟢 READY | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Cross-gameplan dependencies and explicit scoping | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Docs, dogfood, release | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
@@ -47,6 +47,10 @@ Bootstrap + back-compat harness complete. Branched off main into feat/concurrent
 ### Phase 1 — completed 2026-06-27
 
 Focus model shipped. Config.focus is now the canonical pointer with active_gameplan kept as a get/set property alias (D7) — zero churn across ~40 call sites; the config file migrates [active_gameplan]->[focus] on rewrite with read-fallback for old repos. Added cz_gameplans (read portfolio) and cz_focus (switch focus, with focus<-empty reporting + closed/missing warnings) ops + clauderize gameplans / focus CLI verbs, both welded into tools_list parity. The open-set is derived in status_bundle.portfolio()/gameplan_card() from each gameplan's phase table (never stored); render_digest + the SessionStart hook expand a portfolio block only when >1 gameplan is open, so single-gameplan repos stay byte-identical (golden gate green). cz_create_gameplan gained focus=False (O-04). Verified live: clauderize gameplans lists 5 open axes on this branch with the focus marked. Suite 636->646, all green; baseline on main 629.
+
+### Phase 2 — completed 2026-06-27
+
+Kinds are now real, behavioral profiles. Added the kinds package (Kind dataclass + load_all/resolve/is_known, mirroring profiles) with packaged driven/loop/campaign tomls and a per-repo .clauderizer/kinds/ overlay (paths.kinds_dir). cz_create_gameplan validates the kind and templates the first phase from it (driven=Bootstrap, loop=Iterate, campaign=Concept). The lexicon is display-only (D3/D8): status_bundle summary + portfolio card phase word + handoff headings relabel for a campaign (stage/asset/creative decision) while on-disk section headings stay canonical, so the phase parser and every test keep working; the handoff relabel is safe because the headings sit inside the regenerated clauderizer:handoff marker block. driven is the identity lexicon so all driven digests/handoffs stay byte-identical (golden gate green). Verified live: a campaign focus reads in stage vocabulary; the portfolio tags [driven]/[loop]/[campaign]. Suite 646->656 (+10 kinds tests).
 
 ## Accumulated Lessons
 

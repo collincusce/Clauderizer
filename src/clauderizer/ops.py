@@ -314,19 +314,33 @@ def cz_write_handoff(phase_n: str, gameplan_id: str = "") -> dict:
 # --- mutation ops ----------------------------------------------------------------
 
 
-def cz_create_gameplan(name: str, first_phase: str = "Bootstrap",
+def cz_create_gameplan(name: str, first_phase: str = "",
                        kind: str = "driven", focus: bool = True) -> dict:
     """Scaffold a new gameplan directory and (by default) make it the focus.
 
-    `kind`: "driven" (a finite phase DAG with a terminal post-mortem) or "loop" (a
-    standing iterative maintenance gameplan — see GAMEPLAN-PROCEDURE.md "Loop
-    Gameplans"; driven gameplans feed the loop, the loop spawns driven ones).
+    `kind`: a registered gameplan kind — "driven" (a finite phase DAG with a
+    terminal post-mortem), "loop" (a standing iterative maintenance gameplan — see
+    GAMEPLAN-PROCEDURE.md "Loop Gameplans"), "campaign" (a creative campaign), or a
+    custom kind defined in .clauderizer/kinds/. An unknown kind is rejected with the
+    list of known ones.
+
+    `first_phase`: name of the first phase; defaults to the KIND's template first
+    phase (driven→Bootstrap, loop→Iterate, campaign→Concept) when left blank.
 
     `focus` (default True): make the new gameplan the focus. Pass False to create a
     second axis WITHOUT stealing focus from the current one (O-04) — the other open
     gameplans stay exactly where they are; switch later with cz_focus.
     """
+    from . import kinds
+
     paths, config = repo_ctx()
+    if not kinds.is_known(kind, paths.kinds_dir):
+        known = ", ".join(sorted(kinds.load_all(paths.kinds_dir)))
+        return {"ok": False,
+                "error": f"unknown kind {kind!r}; known kinds: {known} "
+                         f"(define a custom one in .clauderizer/kinds/<name>.toml)"}
+    # Template the first phase from the kind when the caller didn't name one.
+    first_phase = first_phase or kinds.resolve(kind, paths.kinds_dir).first_phase
     # The scaffold write locks inside mutations.*; the focus config flip must sit
     # in the same critical section (reentrant), or two creators could interleave
     # scaffold and flip.
@@ -336,6 +350,7 @@ def cz_create_gameplan(name: str, first_phase: str = "Bootstrap",
             config.focus = result["gameplan_id"]
             paths.config_file.write_text(config.to_toml(), encoding="utf-8")
     result["focused"] = focus
+    result["kind"] = kind
     return result
 
 
@@ -360,7 +375,7 @@ def cz_focus(gameplan_id: str = "") -> dict:
         return {"ok": False,
                 "error": f"no gameplan {gameplan_id!r} on disk "
                          f"(docs/gameplans/{gameplan_id}/GAMEPLAN.md not found)"}
-    card = status_bundle.gameplan_card(gdir, gameplan_id)
+    card = status_bundle.gameplan_card(gdir, gameplan_id, paths.kinds_dir)
     prev = config.focus
     # The focus flip is a tracked write; serialize with every other writer (H-05).
     with write_lock(paths.write_lock_file):

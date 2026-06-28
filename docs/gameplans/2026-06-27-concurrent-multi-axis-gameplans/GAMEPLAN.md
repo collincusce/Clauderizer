@@ -74,6 +74,14 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Evidence**: src/clauderizer/config.py (focus field + active_gameplan property + [focus] emit/fallback), status_bundle.py (portfolio/gameplan_card/_portfolio_lines + render_digest expansion), ops.py (cz_gameplans/cz_focus + create_gameplan focus flag), tools_list.py, cli.py (cmd_focus/cmd_gameplans); tests/test_focus_portfolio.py, tests/test_back_compat_focus.py
 **Status**: active (2026-06-27)
 
+### D8 — Kinds layer shape + safe display-only handoff relabel
+
+**Context**: Phase 2 needed the lexicon to relabel handoff headings too, but the handoff has many '## ... Phase ...' headings; renaming a PARSED section would break extraction or the agent-notes preservation.
+**Decision**: kinds is a package (src/clauderizer/kinds/) mirroring profiles: a Kind dataclass + load_all(overlay)/resolve(name)/is_known(name), packaged driven/loop/campaign tomls, and a per-repo overlay at .clauderizer/kinds/ (paths.kinds_dir) that overrides a packaged kind or adds a custom one. The lexicon is applied DISPLAY-ONLY at three seams: status_bundle.compute summary, the portfolio card phase word (gameplan_card phase_label), and handoff headings. The handoff relabel is SAFE because _merge is MARKER-based (clauderizer:handoff): the relabeled headings live INSIDE the regenerated marker block and are never parsed back, and agent-owned notes outside the marker are untouched. driven is the identity lexicon, so every existing driven handoff/digest stays byte-identical. cz_create_gameplan now validates kind against load_all (unknown -> error listing known) and templates first_phase from the kind (driven=Bootstrap, loop=Iterate, campaign=Concept); its first_phase default changed from 'Bootstrap' to '' so the kind supplies it.
+**Consequences**: Adding a kind is a new toml, never engine code. On-disk section headings stay canonical so all parsers/tests are unaffected (suite 646->656, golden gate green). Phase 3 reads kind.preflight_checks for per-kind preflight.
+**Evidence**: src/clauderizer/kinds/ (__init__.py + driven/loop/campaign.toml), status_bundle.py (gameplan_card phase_label + compute lexicon), handoff.py (P heading relabel, marker-owned region), ops.cz_create_gameplan validation+templating; tests/test_kinds.py (10 tests)
+**Status**: active (2026-06-27)
+
 ## Open Items
 
 **O-01.** _(phase 4)_ Cross-gameplan cascade fan-out form: central report in focus gameplan + a per-axis pending pointer, vs a duplicated report per affected gameplan. Decide in Phase 4 (lean: central + pointer to avoid double-resolve).
@@ -129,12 +137,12 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] gameplan_kind() parses > Kind: header, defaults to driven when absent
-- [ ] kinds/{driven,loop,campaign}.toml ship; .clauderizer/kinds/ overlay loads (mirrors profiles load_for_repo)
-- [ ] cz_create_gameplan validates kind and templates first_phase from it
-- [ ] Campaign focus: digest/handoff/summaries show lexicon (Stage/asset) while on-disk headings unchanged AND phase parser still finds phases
-- [ ] driven kind reproduces current lexicon exactly (golden gate green)
-- [ ] Full suite green vs baseline
+- [x] gameplan_kind() parses > Kind: header, defaults to driven when absent
+- [x] kinds/{driven,loop,campaign}.toml ship; .clauderizer/kinds/ overlay loads (mirrors profiles load_for_repo)
+- [x] cz_create_gameplan validates kind and templates first_phase from it
+- [x] Campaign focus: digest/handoff/summaries show lexicon (Stage/asset) while on-disk headings unchanged AND phase parser still finds phases
+- [x] driven kind reproduces current lexicon exactly (golden gate green)
+- [x] Full suite green vs baseline
 
 ### Phase 3: Per-kind / per-gameplan preflight
 

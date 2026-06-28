@@ -354,9 +354,14 @@ def _lifecycle(rows) -> str:
     return "planning"
 
 
-def gameplan_card(gdir: Path, focus_id: str | None) -> dict:
+def gameplan_card(gdir: Path, focus_id: str | None,
+                  kinds_overlay: Path | None = None) -> dict:
     """One portfolio entry: id, kind, lifecycle, the current/next phase, blocker
-    and pending-cascade counts, the open flag, and whether it is the focus."""
+    and pending-cascade counts, the open flag, and whether it is the focus.
+    ``phase_label`` is the kind's display word for "phase" (D3 lexicon, e.g.
+    "stage" for a campaign) — display-only; the on-disk table still says Phase."""
+    from .. import kinds
+
     rows = _phase_rows(gdir)
     cur = next((r for r in rows if r.status == "in_progress"), None)
     nxt = next((r for r in rows if r.status in ("ready", "not_started")), None)
@@ -368,9 +373,11 @@ def gameplan_card(gdir: Path, focus_id: str | None) -> dict:
     else:
         phase = None
     gid = gdir.name
+    kind_name = gameplan_kind(gdir)
     return {
         "id": gid,
-        "kind": gameplan_kind(gdir),
+        "kind": kind_name,
+        "phase_label": kinds.resolve(kind_name, kinds_overlay).label("phase"),
         "lifecycle": lifecycle,
         "open": lifecycle != "complete",
         "total_phases": len(rows),
@@ -391,7 +398,7 @@ def portfolio(paths: RepoPaths, config: Config, *, include_closed: bool = False)
         for d in sorted(root.iterdir()):
             if not (d.is_dir() and (d / "GAMEPLAN.md").exists()):
                 continue
-            card = gameplan_card(d, config.focus)
+            card = gameplan_card(d, config.focus, paths.kinds_dir)
             if include_closed or card["open"]:
                 cards.append(card)
     cards.sort(key=lambda c: (not c["is_focus"], c["id"]))
@@ -404,7 +411,8 @@ def _portfolio_lines(cards: list[dict]) -> list[str]:
     for c in cards:
         mark = "★" if c["is_focus"] else "•"
         ph = c.get("phase")
-        phase_str = (f' phase {ph["number"]}/{c["total_phases"]} "{ph["name"]}"'
+        plabel = c.get("phase_label", "phase")  # D3 lexicon (display-only)
+        phase_str = (f' {plabel} {ph["number"]}/{c["total_phases"]} "{ph["name"]}"'
                      if ph else f" {c['lifecycle']}")
         extra = ""
         if c["blockers"]:
@@ -481,29 +489,37 @@ def compute(paths: RepoPaths, config: Config) -> dict:
         except Exception:
             pass  # the gauge is best-effort; never break the digest
     total = len(bundle["phases"])
+    # Display-only lexicon (D3): the focus kind's word for "phase"/"gameplan"
+    # (e.g. stage/campaign). Identity for driven, so the golden single-gameplan
+    # digest stays byte-identical. The on-disk tables/headings are untouched.
+    from .. import kinds
+
+    _k = kinds.resolve(gameplan_kind(gdir), paths.kinds_dir)
+    ph_w, gp_w = _k.label("phase"), _k.label("gameplan")
+    bundle["kind"] = _k.name
     if cur:
         bundle["summary"] = (
-            f"Gameplan {gid}: phase {cur['number']}/{total} IN PROGRESS — \"{cur['name']}\"."
+            f"Gameplan {gid}: {ph_w} {cur['number']}/{total} IN PROGRESS — \"{cur['name']}\"."
         )
-        bundle["next_action"] = "cz_preflight, then execute the phase tasks."
+        bundle["next_action"] = f"cz_preflight, then execute the {ph_w} tasks."
     elif nxt:
         bundle["summary"] = (
-            f"Gameplan {gid}: next ready phase {nxt['number']}/{total} — \"{nxt['name']}\"."
+            f"Gameplan {gid}: next ready {ph_w} {nxt['number']}/{total} — \"{nxt['name']}\"."
         )
         bundle["next_action"] = "cz_next_phase_context, then cz_preflight."
     elif total and all(p["status"] == "complete" for p in bundle["phases"]):
         # A finished gameplan is a success state, not a confusing dead end.
-        bundle["summary"] = f"Gameplan {gid}: all {total} phase(s) COMPLETE. 🎉"
+        bundle["summary"] = f"Gameplan {gid}: all {total} {ph_w}(s) COMPLETE. 🎉"
         bundle["next_action"] = (
-            "Close out the gameplan (post-mortem, final cascade), or "
+            f"Close out the {gp_w} (post-mortem, final cascade), or "
             "cz_create_gameplan to start the next initiative."
         )
         # No next phase means no handoff to size — say so instead of silently
         # dropping the figure the CHANGELOG promises (H-03).
         bundle["memory"]["handoff_note"] = "n/a: gameplan complete"
     else:
-        bundle["summary"] = f"Gameplan {gid}: no in-progress or ready phase found."
-        bundle["next_action"] = "Review the gameplan or cz_add_phase."
+        bundle["summary"] = f"Gameplan {gid}: no in-progress or ready {ph_w} found."
+        bundle["next_action"] = f"Review the {gp_w} or cz_add_phase."
     return bundle
 
 

@@ -1,0 +1,13 @@
+# The default kind: a finite phase DAG with a terminal post-mortem. Identity
+# lexicon and an empty preflight list (defer to config.preflight_checks) so a
+# driven gameplan behaves EXACTLY as before kinds existed.
+name = "driven"
+
+[template]
+first_phase = "Bootstrap"
+
+[lexicon]
+# (no relabels — driven uses the engine's canonical vocabulary)
+
+[preflight]
+checks = []

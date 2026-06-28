@@ -1,0 +1,13 @@
+# A standing, iterative maintenance gameplan (see GAMEPLAN-PROCEDURE.md "Loop
+# Gameplans"): no terminal state; its "phases" are recurring iterations driven by
+# cz_loop_step. Display-only: an iteration reads as an "iteration".
+name = "loop"
+
+[template]
+first_phase = "Iterate"
+
+[lexicon]
+phase = "iteration"
+
+[preflight]
+checks = []
