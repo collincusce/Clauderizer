@@ -66,15 +66,23 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Consequences**: Any accidental behavior drift fails CI immediately; the back-compat promise is enforced rather than documented.
 **Status**: active (2026-06-27)
 
+### D7 — Implementation shape of the focus layer
+
+**Context**: active_gameplan is read in ~40 sites and set in 2; recorded D2 wants focus canonical with active_gameplan as the alias. No caller constructs Config(active_gameplan=...), and tests only read/set the attribute.
+**Decision**: Made `focus` the dataclass field and `active_gameplan` a get/set @property delegating to it (zero call-site churn, faithful to D2). Config.to_toml emits [focus] (the migration); load reads [focus] then falls back to legacy [active_gameplan]; both stay in _MODELED_KEYS so neither leaks to extra. New ops: cz_gameplans (read, registered after cz_next_phase_context) and cz_focus (write, after cz_create_gameplan), added to tools_list.TOOL_NAMES at the identical positions to keep the list(REGISTRY)==TOOL_NAMES parity weld. The open-set is DERIVED in status_bundle.portfolio()/gameplan_card() from each gameplan's phase table; render_digest expands the portfolio block only when >1 gameplan is open. cz_create_gameplan gained focus=True|False (resolves O-04).
+**Consequences**: Single-gameplan repos render byte-identically (the Phase-0 golden gate stays green); suite 636->646 (+10 focus/portfolio tests). MCP auto-registers the 2 new ops from REGISTRY. A long-lived MCP server started before the edit lacks the new ops until restart — use `clauderize ops` (fresh process) in the meantime.
+**Evidence**: src/clauderizer/config.py (focus field + active_gameplan property + [focus] emit/fallback), status_bundle.py (portfolio/gameplan_card/_portfolio_lines + render_digest expansion), ops.py (cz_gameplans/cz_focus + create_gameplan focus flag), tools_list.py, cli.py (cmd_focus/cmd_gameplans); tests/test_focus_portfolio.py, tests/test_back_compat_focus.py
+**Status**: active (2026-06-27)
+
 ## Open Items
 
 **O-01.** _(phase 4)_ Cross-gameplan cascade fan-out form: central report in focus gameplan + a per-axis pending pointer, vs a duplicated report per affected gameplan. Decide in Phase 4 (lean: central + pointer to avoid double-resolve).
 
 **O-02.** _(phase 3)_ Preflight check-list precedence when BOTH config.preflight_checks is set AND the kind defines checks: recommend kind-default unless config explicitly overrides — confirm and document in Phase 3.
 
-**O-03.** _(phase 0)_ Implementation branch strategy: branch off main for this initiative rather than continuing on feat/abstract-index-fast-retrieval (which has its own in-flight gameplan). Confirm with user at Phase 1 greenlight.
+**O-03.** _(phase 0)_ Implementation branch strategy: branch off main for this initiative rather than continuing on feat/abstract-index-fast-retrieval (which has its own in-flight gameplan). Confirm with user at Phase 1 greenlight. _(resolved 2026-06-27: Branched off main into feat/concurrent-multi-axis-gameplans in Phase 0 (0/0 vs main); confirmed the right call so this initiative stays independent of the in-flight abstract-index branch.)_
 
-**O-04.** _(phase 1)_ Should cz_create_gameplan gain a focus=True flag so a new gameplan can be created WITHOUT stealing focus? Minor ergonomic; decide during Phase 1.
+**O-04.** _(phase 1)_ Should cz_create_gameplan gain a focus=True flag so a new gameplan can be created WITHOUT stealing focus? Minor ergonomic; decide during Phase 1. _(resolved 2026-06-27: Implemented cz_create_gameplan(focus=False): creates a second axis without stealing focus; default True preserves prior behavior. Covered by test_create_gameplan_focus_false_does_not_steal.)_
 
 ## Phase Breakdown
 
@@ -104,12 +112,12 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Config.focus loads via [focus] with [active_gameplan] read-fallback; rewrite emits [focus] and round-trips; config.active_gameplan alias still works
-- [ ] cz_focus and cz_gameplans present in BOTH ops.REGISTRY and tools_list.TOOL_NAMES (parity test green)
-- [ ] clauderize focus <id> and clauderize gameplans CLI verbs work
-- [ ] Portfolio block in status_bundle; render_digest + SessionStart expand it ONLY when >1 gameplan open
-- [ ] Golden single-gameplan digest gate still byte-identical
-- [ ] Full suite green vs 663 baseline
+- [x] Config.focus loads via [focus] with [active_gameplan] read-fallback; rewrite emits [focus] and round-trips; config.active_gameplan alias still works
+- [x] cz_focus and cz_gameplans present in BOTH ops.REGISTRY and tools_list.TOOL_NAMES (parity test green)
+- [x] clauderize focus <id> and clauderize gameplans CLI verbs work
+- [x] Portfolio block in status_bundle; render_digest + SessionStart expand it ONLY when >1 gameplan open
+- [x] Golden single-gameplan digest gate still byte-identical
+- [x] Full suite green vs 663 baseline
 
 ### Phase 2: Kinds as real profiles (parse + lexicon)
 

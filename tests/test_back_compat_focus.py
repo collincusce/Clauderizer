@@ -106,18 +106,43 @@ id = "2026-05-01-bootstrap"
 
 def test_legacy_active_gameplan_config_loads(tmp_path):
     """A config carrying only the legacy [active_gameplan] pointer loads and
-    resolves the target. Phase 1 will add: config.focus == this value, and a
-    rewrite emits [focus]. This stub locks the legacy-read path today."""
+    resolves the target via BOTH the new focus field and the back-compat alias."""
     p = _write_config(tmp_path, _LEGACY_ACTIVE_ONLY)
     config = cfg.Config.load(p)
-    assert config.active_gameplan == "2026-05-01-bootstrap"
+    assert config.focus == "2026-05-01-bootstrap"
+    assert config.active_gameplan == "2026-05-01-bootstrap"  # alias
 
 
-def test_config_rewrite_preserves_active_pointer(tmp_path):
-    """Loading then re-emitting a legacy config round-trips the pointer (the
-    invariant the [active_gameplan] -> [focus] migration must not break)."""
+def test_config_rewrite_migrates_active_to_focus(tmp_path):
+    """Loading a legacy [active_gameplan] config then re-emitting it migrates the
+    section to [focus] while round-tripping the pointer — the migration itself."""
     p = _write_config(tmp_path, _LEGACY_ACTIVE_ONLY)
     config = cfg.Config.load(p)
-    p.write_text(config.to_toml(), encoding="utf-8")
+    out = config.to_toml()
+    assert "[focus]" in out
+    assert "[active_gameplan]" not in out  # migrated away, not duplicated
+    p.write_text(out, encoding="utf-8")
     reloaded = cfg.Config.load(p)
+    assert reloaded.focus == "2026-05-01-bootstrap"
     assert reloaded.active_gameplan == "2026-05-01-bootstrap"
+
+
+def test_focus_native_config_loads(tmp_path):
+    """A config already written with [focus] loads directly."""
+    body = _LEGACY_ACTIVE_ONLY.replace("[active_gameplan]", "[focus]")
+    p = _write_config(tmp_path, body)
+    assert cfg.Config.load(p).focus == "2026-05-01-bootstrap"
+
+
+def test_focus_wins_when_both_sections_present(tmp_path):
+    """A half-migrated file with both sections resolves to [focus]."""
+    body = _LEGACY_ACTIVE_ONLY + '\n[focus]\nid = "2026-06-01-newer"\n'
+    p = _write_config(tmp_path, body)
+    assert cfg.Config.load(p).focus == "2026-06-01-newer"
+
+
+def test_active_gameplan_setter_writes_focus(tmp_path):
+    """config.active_gameplan = gid (used across the codebase + tests) updates focus."""
+    config = cfg.Config()
+    config.active_gameplan = "2026-05-01-bootstrap"
+    assert config.focus == "2026-05-01-bootstrap"

@@ -74,6 +74,26 @@ def cz_next_phase_context() -> dict:
     return result
 
 
+def cz_gameplans(include_closed: bool = False) -> dict:
+    """List gameplans as a portfolio — the multi-axis view across concurrent
+    gameplans. Open ones by default (include_closed=True adds finished ones); each
+    card carries kind, lifecycle, the current/next phase, blockers, pending-cascade
+    count, and whether it is the focus. Read-only (L-03)."""
+    paths, config = repo_ctx()
+    cards = status_bundle.portfolio(paths, config, include_closed=include_closed)
+    open_n = sum(1 for c in cards if c["open"])
+    return {
+        "ok": True,
+        "focus": config.focus,
+        "gameplans": cards,
+        "summary": (
+            f"{open_n} open gameplan(s)"
+            + (f", {len(cards) - open_n} closed" if include_closed else "")
+            + (f"; focus = {config.focus}" if config.focus else "; no focus set")
+        ),
+    }
+
+
 def cz_graph_query(entity_id: str = "", kind: str = "lookup", transitive: bool = False) -> dict:
     """Query the Project DAG. kind = lookup | dependents | dependencies. Empty id with kind=lookup lists all entities and pin violations."""
     paths, _ = repo_ctx()
@@ -295,21 +315,64 @@ def cz_write_handoff(phase_n: str, gameplan_id: str = "") -> dict:
 
 
 def cz_create_gameplan(name: str, first_phase: str = "Bootstrap",
-                       kind: str = "driven") -> dict:
-    """Scaffold a new gameplan directory and make it active.
+                       kind: str = "driven", focus: bool = True) -> dict:
+    """Scaffold a new gameplan directory and (by default) make it the focus.
 
     `kind`: "driven" (a finite phase DAG with a terminal post-mortem) or "loop" (a
     standing iterative maintenance gameplan — see GAMEPLAN-PROCEDURE.md "Loop
     Gameplans"; driven gameplans feed the loop, the loop spawns driven ones).
+
+    `focus` (default True): make the new gameplan the focus. Pass False to create a
+    second axis WITHOUT stealing focus from the current one (O-04) — the other open
+    gameplans stay exactly where they are; switch later with cz_focus.
     """
     paths, config = repo_ctx()
-    # The scaffold write locks inside mutations.*; the active-gameplan config
-    # flip must sit in the same critical section (reentrant), or two creators
-    # could interleave scaffold and flip.
+    # The scaffold write locks inside mutations.*; the focus config flip must sit
+    # in the same critical section (reentrant), or two creators could interleave
+    # scaffold and flip.
     with write_lock(paths.write_lock_file):
         result = mutations.create_gameplan(paths, name, first_phase=first_phase, kind=kind)
-        config.active_gameplan = result["gameplan_id"]
+        if focus:
+            config.focus = result["gameplan_id"]
+            paths.config_file.write_text(config.to_toml(), encoding="utf-8")
+    result["focused"] = focus
+    return result
+
+
+def cz_focus(gameplan_id: str = "") -> dict:
+    """Switch focus — the default-target gameplan for cz_status / do-phase /
+    handoff / preflight when no gameplan_id is given — to `gameplan_id`.
+
+    The blessed write for the focus pointer (replaces hand-editing config.toml).
+    An empty `gameplan_id` reports the current focus + the open portfolio instead
+    of switching. Warns (never blocks) if the target is closed or missing.
+    """
+    paths, config = repo_ctx()
+    if not gameplan_id:
+        cards = status_bundle.portfolio(paths, config)
+        return {
+            "ok": True, "focus": config.focus, "gameplans": cards,
+            "summary": (f"focus = {config.focus}" if config.focus else "no focus set")
+                       + f"; {len(cards)} open gameplan(s)",
+        }
+    gdir = paths.gameplan_dir(gameplan_id)
+    if not (gdir / "GAMEPLAN.md").exists():
+        return {"ok": False,
+                "error": f"no gameplan {gameplan_id!r} on disk "
+                         f"(docs/gameplans/{gameplan_id}/GAMEPLAN.md not found)"}
+    card = status_bundle.gameplan_card(gdir, gameplan_id)
+    prev = config.focus
+    # The focus flip is a tracked write; serialize with every other writer (H-05).
+    with write_lock(paths.write_lock_file):
+        config.focus = gameplan_id
         paths.config_file.write_text(config.to_toml(), encoding="utf-8")
+    result = {"ok": True, "focus": gameplan_id, "previous_focus": prev,
+              "summary": f"focus {prev or '(none)'} -> {gameplan_id}"}
+    if not card["open"]:
+        result["warning"] = (
+            f"{gameplan_id} is {card['lifecycle']} (closed) — you focused a finished "
+            f"gameplan; pick an open one with cz_gameplans or start one with "
+            f"cz_create_gameplan")
     return result
 
 
@@ -799,6 +862,7 @@ class Op:
 REGISTRY: dict[str, Op] = {
     "cz_status": Op(cz_status, writes=False),
     "cz_next_phase_context": Op(cz_next_phase_context, writes=False),
+    "cz_gameplans": Op(cz_gameplans, writes=False),
     "cz_graph_query": Op(cz_graph_query, writes=False),
     "cz_preflight": Op(cz_preflight, writes=True),  # baseline refresh, locked at the write site
     "cz_cascade": Op(cz_cascade, writes=True),
@@ -820,6 +884,7 @@ REGISTRY: dict[str, Op] = {
     "cz_add_output": Op(cz_add_output, writes=True),
     "cz_add_phase_summary": Op(cz_add_phase_summary, writes=True),
     "cz_create_gameplan": Op(cz_create_gameplan, writes=True),
+    "cz_focus": Op(cz_focus, writes=True),
     "cz_add_phase": Op(cz_add_phase, writes=True),
     "cz_transition_phase": Op(cz_transition_phase, writes=True),
     "cz_add_amendment": Op(cz_add_amendment, writes=True),

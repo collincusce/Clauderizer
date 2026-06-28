@@ -107,6 +107,54 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_gameplans(args: argparse.Namespace) -> int:
+    """List the open gameplans (the portfolio); --all includes finished ones."""
+    from . import ops
+
+    try:
+        res = ops.cz_gameplans(include_closed=args.all)
+    except Exception as exc:  # not-a-repo and friends — report, don't traceback
+        print(f"Error: {exc}")
+        return 1
+    if args.json:
+        print(json.dumps(res, indent=2))
+        return 0
+    print(res["summary"])
+    for c in res["gameplans"]:
+        mark = "*" if c["is_focus"] else " "
+        ph = c["phase"]
+        ph_s = (f'phase {ph["number"]}/{c["total_phases"]} "{ph["name"]}"'
+                if ph else c["lifecycle"])
+        extra = ""
+        if c["blockers"]:
+            extra += f"  blocked:{len(c['blockers'])}"
+        if c["pending_cascades"]:
+            extra += f"  cascades:{c['pending_cascades']}"
+        print(f" {mark} {c['id']}  [{c['kind']}]  {ph_s}{extra}")
+    return 0
+
+
+def cmd_focus(args: argparse.Namespace) -> int:
+    """Switch focus to a gameplan; with no id, report current focus + portfolio."""
+    from . import ops
+
+    try:
+        res = ops.cz_focus(gameplan_id=args.gameplan_id or "")
+    except Exception as exc:
+        print(f"Error: {exc}")
+        return 1
+    if args.json:
+        print(json.dumps(res, indent=2))
+        return 0
+    if not res.get("ok"):
+        print(res.get("error", "focus failed"))
+        return 1
+    print(res["summary"])
+    if res.get("warning"):
+        print(f"⚠ {res['warning']}")
+    return 0
+
+
 def cmd_reindex(args: argparse.Namespace) -> int:
     paths, config = _load()
     if config is None:
@@ -625,6 +673,17 @@ def build_parser() -> argparse.ArgumentParser:
     ps = sub.add_parser("status", help="print current gameplan status")
     ps.add_argument("--json", action="store_true")
     ps.set_defaults(func=cmd_status)
+
+    pg = sub.add_parser("gameplans", help="list open gameplans (the portfolio)")
+    pg.add_argument("--all", action="store_true", help="include finished gameplans")
+    pg.add_argument("--json", action="store_true")
+    pg.set_defaults(func=cmd_gameplans)
+
+    pf = sub.add_parser("focus", help="switch the focus gameplan (default target)")
+    pf.add_argument("gameplan_id", nargs="?",
+                    help="gameplan id to focus; omit to report current focus + portfolio")
+    pf.add_argument("--json", action="store_true")
+    pf.set_defaults(func=cmd_focus)
 
     pr = sub.add_parser("reindex", help="rebuild the graph cache from markdown")
     pr.set_defaults(func=cmd_reindex)

@@ -312,6 +312,109 @@ def _drift_warnings(paths: RepoPaths, rows: list) -> list[str]:
     return warnings
 
 
+# --- portfolio (the derived open-set across concurrent gameplans) -------------
+# Multi-axis support (D2): a repo may have several open gameplans at once. The
+# focus pointer (config.focus) is the single default-target that persists; the
+# OPEN SET is DERIVED here from each gameplan's phase table, never stored.
+
+_GP_KIND_RE = re.compile(r"^>\s*Kind:\s*(.+?)\s*$", re.M)
+
+
+def gameplan_kind(gdir: Path) -> str:
+    """A gameplan's kind from its GAMEPLAN.md ``> Kind:`` header (default
+    ``driven`` when absent, so legacy gameplans need no rewrite). Phase 2 layers
+    the full kind-definition (lexicon/preflight/template) on top of this parse."""
+    gp = gdir / "GAMEPLAN.md"
+    if gp.exists():
+        m = _GP_KIND_RE.search(gp.read_text(encoding="utf-8"))
+        if m:
+            return m.group(1).strip()
+    return "driven"
+
+
+def _phase_rows(gdir: Path):
+    src = gdir / "CHAT-HANDOFF-INDEX.md"
+    if not src.exists():
+        src = gdir / "PHASE-STATUS.md"
+    if not src.exists():
+        return []
+    return _tables.parse_phase_table(src.read_text(encoding="utf-8"))
+
+
+def _lifecycle(rows) -> str:
+    """planning | executing | complete — derived from the phase table exactly as
+    mutations._refresh_tracker_headers derives the GAMEPLAN.md ``> Status:`` header,
+    so the two never disagree."""
+    if not rows:
+        return "planning"
+    if all(r.status == "complete" for r in rows):
+        return "complete"
+    if any(r.status in ("in_progress", "complete", "blocked", "failed") for r in rows):
+        return "executing"
+    return "planning"
+
+
+def gameplan_card(gdir: Path, focus_id: str | None) -> dict:
+    """One portfolio entry: id, kind, lifecycle, the current/next phase, blocker
+    and pending-cascade counts, the open flag, and whether it is the focus."""
+    rows = _phase_rows(gdir)
+    cur = next((r for r in rows if r.status == "in_progress"), None)
+    nxt = next((r for r in rows if r.status in ("ready", "not_started")), None)
+    lifecycle = _lifecycle(rows)
+    if cur:
+        phase = {"number": cur.number, "name": cur.name, "state": "in_progress"}
+    elif nxt:
+        phase = {"number": nxt.number, "name": nxt.name, "state": "ready"}
+    else:
+        phase = None
+    gid = gdir.name
+    return {
+        "id": gid,
+        "kind": gameplan_kind(gdir),
+        "lifecycle": lifecycle,
+        "open": lifecycle != "complete",
+        "total_phases": len(rows),
+        "phase": phase,
+        "blockers": [r.name for r in rows if r.status == "blocked"],
+        "pending_cascades": len(pending_cascades(gdir / "_cascade-reports")),
+        "is_focus": gid == focus_id,
+    }
+
+
+def portfolio(paths: RepoPaths, config: Config, *, include_closed: bool = False) -> list[dict]:
+    """All gameplans as portfolio cards (open by default), focus first then by id.
+    The open set is derived from each gameplan's phase table — only the single
+    focus pointer persists in config (D2)."""
+    cards: list[dict] = []
+    root = paths.gameplans
+    if root.exists():
+        for d in sorted(root.iterdir()):
+            if not (d.is_dir() and (d / "GAMEPLAN.md").exists()):
+                continue
+            card = gameplan_card(d, config.focus)
+            if include_closed or card["open"]:
+                cards.append(card)
+    cards.sort(key=lambda c: (not c["is_focus"], c["id"]))
+    return cards
+
+
+def _portfolio_lines(cards: list[dict]) -> list[str]:
+    """Render portfolio cards as compact digest lines (focus marked ★)."""
+    out = []
+    for c in cards:
+        mark = "★" if c["is_focus"] else "•"
+        ph = c.get("phase")
+        phase_str = (f' phase {ph["number"]}/{c["total_phases"]} "{ph["name"]}"'
+                     if ph else f" {c['lifecycle']}")
+        extra = ""
+        if c["blockers"]:
+            extra += f" (blocked: {', '.join(c['blockers'])})"
+        if c["pending_cascades"]:
+            extra += f" ({c['pending_cascades']} pending cascade)"
+        out.append(f"  {mark} {c['id']} [{c['kind']}]{phase_str}{extra}")
+    return out
+
+
 def compute(paths: RepoPaths, config: Config) -> dict:
     gid = config.active_gameplan
     bundle: dict = {
@@ -329,6 +432,11 @@ def compute(paths: RepoPaths, config: Config) -> dict:
         "open_items": [],
         "memory": None,
     }
+    # The focus pointer + the derived open-set portfolio ride in every bundle
+    # (cheap). render_digest expands the portfolio ONLY when >1 gameplan is open,
+    # so a single-gameplan repo renders byte-identically to before (D6 golden gate).
+    bundle["focus"] = gid
+    bundle["portfolio"] = portfolio(paths, config)
     if not gid:
         bundle["summary"] = "No active gameplan. Use cz_create_gameplan to start one."
         return bundle
@@ -402,13 +510,27 @@ def compute(paths: RepoPaths, config: Config) -> dict:
 def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
     """Render the compact ``[Clauderizer]`` block the hook prints to stdout."""
     lines = []
+    open_cards = [c for c in (bundle.get("portfolio") or []) if c.get("open")]
     if not bundle.get("active_gameplan"):
-        lines.append("[Clauderizer] No active gameplan. cz_create_gameplan to start.")
+        # No focus set: still surface any open gameplans so they aren't lost (the
+        # multi-axis case where focus was cleared), else the cold-start message.
+        if open_cards:
+            lines.append(
+                f"[Clauderizer] No focus set; {len(open_cards)} open gameplan(s) — "
+                f"cz_focus <id> to pick one:")
+            lines += _portfolio_lines(open_cards)
+        else:
+            lines.append("[Clauderizer] No active gameplan. cz_create_gameplan to start.")
         return "\n".join(lines)
     lines.append(
         f"[Clauderizer] {bundle['summary']} "
         f"(size={bundle['size']}, profile={bundle['host_profile']})"
     )
+    # The portfolio block expands only with >1 open gameplan (the multi-axis case);
+    # a single open gameplan keeps the digest byte-identical to before (D6).
+    if len(open_cards) > 1:
+        lines.append(f"Portfolio ({len(open_cards)} open):")
+        lines += _portfolio_lines(open_cards)
     if bundle.get("baseline_tests"):
         lines.append(f"Baseline: {bundle['baseline_tests']} tests.")
     mem = bundle.get("memory")

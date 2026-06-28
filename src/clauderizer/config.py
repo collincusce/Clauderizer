@@ -36,6 +36,7 @@ _MODELED_KEYS: dict[str, set[str]] = {
     "memory": {"active_lessons_warn", "project_lessons_warn"},
     "modules": {"enabled"},
     "active_gameplan": {"id"},
+    "focus": {"id"},
 }
 _KNOWN_SECTIONS = set(_MODELED_KEYS) | {"rituals"}
 
@@ -121,7 +122,14 @@ class Config:
     rituals: dict[str, bool] = field(default_factory=dict)
     preflight_checks: list[str] = field(default_factory=list)
     preflight_advisory: list[str] = field(default_factory=list)
-    active_gameplan: str | None = None
+    # The default-target gameplan for status / do-phase / handoff — the "focus"
+    # (D2 of concurrent-multi-axis-gameplans). Stored canonically as ``focus``;
+    # ``active_gameplan`` remains a property alias (below) so the ~40 existing call
+    # sites and ``config.active_gameplan = gid`` writes keep working unchanged
+    # while the config file migrates [active_gameplan] -> [focus]. The set of OPEN
+    # gameplans is derived (status_bundle.portfolio), never stored — only the one
+    # focus pointer persists.
+    focus: str | None = None
     # [memory] — D-009 is pressure + visibility, not caps: above these counts
     # the status digest nudges toward consolidation; nothing is auto-pruned.
     # active_lessons_warn: the current gameplan's active lessons (every handoff
@@ -151,6 +159,18 @@ class Config:
     def ritual_enabled(self, name: str) -> bool:
         return bool(self.rituals.get(name, False))
 
+    @property
+    def active_gameplan(self) -> str | None:
+        """Back-compat alias for :attr:`focus` (D2): every existing
+        ``config.active_gameplan`` read and ``config.active_gameplan = gid`` write
+        keeps working unchanged; new code uses ``focus``. Not a dataclass field
+        (no annotation) so it is invisible to ``__init__``/``asdict``."""
+        return self.focus
+
+    @active_gameplan.setter
+    def active_gameplan(self, value: str | None) -> None:
+        self.focus = value
+
     @classmethod
     def load(cls, path: Path) -> "Config":
         # Wrap the parse so a corrupt config surfaces as a clean, named ConfigError
@@ -166,7 +186,10 @@ class Config:
             paths = raw.get("paths", {})
             modules = raw.get("modules", {})
             rituals = raw.get("rituals", {})
-            active = raw.get("active_gameplan", {})
+            # [focus] is canonical; fall back to the legacy [active_gameplan]
+            # section (the migration — an old repo keeps its pointer, a rewrite
+            # re-emits it under [focus]). focus wins if a half-migrated file has both.
+            active = raw.get("focus") or raw.get("active_gameplan", {})
             memory = raw.get("memory", {})
             # Capture anything this engine doesn't model so to_toml can re-emit it
             # (forward/cross-version safe — never drop an unrecognized field).
@@ -193,7 +216,7 @@ class Config:
                 rituals={k: bool(v) for k, v in rituals.items()},
                 preflight_checks=list(cz.get("preflight_checks", [])),
                 preflight_advisory=list(cz.get("preflight_advisory", [])),
-                active_gameplan=(active.get("id") or None),
+                focus=(active.get("id") or None),
                 # int() raises on garbage — a malformed threshold must be visible,
                 # never silently replaced by a default (L-04).
                 active_lessons_warn=int(memory.get("active_lessons_warn", 12)),
@@ -244,8 +267,12 @@ class Config:
         ]
         for k, v in self.rituals.items():
             lines.append(f"{k} = {'true' if v else 'false'}")
-        lines += ["", "[active_gameplan]", f'id = "{self.active_gameplan or ""}"',
-                  *ex("active_gameplan"), ""]
+        # Migrate the pointer to [focus]; the legacy [active_gameplan] section is
+        # no longer emitted (an old repo's pointer was read into self.focus above).
+        # ex("active_gameplan") re-emits any stray non-"id" keys a legacy section
+        # carried, so a rewrite still never drops an unrecognized field.
+        lines += ["", "[focus]", f'id = "{self.focus or ""}"',
+                  *ex("focus"), *ex("active_gameplan"), ""]
         # unknown WHOLE sections, preserved verbatim (forward/cross-version safe).
         for section, body in self.extra.items():
             if section in _KNOWN_SECTIONS:
@@ -288,7 +315,7 @@ def merge_missing(existing: Config, defaults: Config) -> Config:
         rituals=existing.rituals or defaults.rituals,
         preflight_checks=existing.preflight_checks or defaults.preflight_checks,
         preflight_advisory=existing.preflight_advisory or defaults.preflight_advisory,
-        active_gameplan=existing.active_gameplan or defaults.active_gameplan,
+        focus=existing.focus or defaults.focus,
         # ints always carry a value after load (defaults applied there); `or`
         # would clobber a deliberate 0 ("warn always"), so pass through as-is.
         active_lessons_warn=existing.active_lessons_warn,
