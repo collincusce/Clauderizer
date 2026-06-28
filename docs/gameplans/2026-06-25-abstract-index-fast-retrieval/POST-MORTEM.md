@@ -1,6 +1,6 @@
 # Post-mortem — abstract-index-fast-retrieval
 
-> Completed: 2026-06-28 · Outcome: KEPT, merge-ready (PR #16), release handed to the user
+> Completed: 2026-06-28 · Outcome: KEPT and **SHIPPED as 1.3.0** (PR #16 merged → main; tag v1.3.0; GitHub Release latest; PyPI via Trusted Publishing — verified `uvx --refresh`→1.3.0; 9-cell CI green on the release commit)
 
 ## What shipped
 
@@ -49,3 +49,7 @@ The gameplan sat at phase 6/8 for three days while a separate initiative
 
 Union suite 711 passed / 4 skipped · tool surface 41 → 42 (`cz_get`) · 9-cell CI
 green (PR #16) · abstract index 107 entries on this repo · schema_version 1.
+
+## Shipped
+
+**2026-06-28 as 1.3.0** (on the user's go, after an independent cross-session verification of the completed work). PR #16 merged → main (`eec9822`); release commit `4be4916`, tag `v1.3.0`, GitHub Release (latest, non-prerelease); `release-check` exit 0 (four-registry sweep); Publish-to-PyPI workflow green (build + publish, Trusted Publishing); verified PyPI `info.version`=1.3.0 + `uvx --refresh`→1.3.0. O-04 fully done: profile.lock reverted to bare `pytest` (H-17 makes it resolve), the fix branch is deleted, docs at 42 tools. Promoted L-44 (Jaccard-for-dedup vs count-for-relevance) and L-45 (a realize-the-win phase can be a measure+guard+amend no-op).
