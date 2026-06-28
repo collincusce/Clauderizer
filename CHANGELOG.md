@@ -2,6 +2,19 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.3.0] — 2026-06-28
+
+Fast retrieval — a deterministic **abstract index** over the memory corpus, so an agent reads exactly the entry it needs instead of loading whole files.
+
+Memory is markdown and stays that way: this adds a disposable, rebuilt-from-markdown index that makes retrieval cheap without embeddings or any new runtime dependency (INVARIANT-01 — markdown is canonical; the index is a derived cache).
+
+- **`cz_get(id)` — addressable single-entry fetch.** Resolve one decision (`D-NNN`), invariant (`INVARIANT-NN`), finding (`H-NN`), or lesson (`L-NN`) by id — its full body read from canonical markdown on demand — instead of loading a whole corpus file. Read-only.
+- **Abstracts on `cz_analyze`.** Each ranked hit now carries a one-line `abstract` (a pointer, not the body), so the agent can often answer without a follow-up fetch. A pre-registered cost experiment on this repo's real corpus measured a **48.3% mean payload-token reduction** per lookup at equal answer accuracy — deterministic, no live LLM.
+- **Write-time near-duplicate-lesson advisory.** `cz_add_lesson` surfaces existing project lessons the new one strongly overlaps (length-normalized Jaccard) and nudges consolidation instead of appending — advisory only, never blocks (INVARIANT-05); the corpus stays append-only (INVARIANT-03).
+- **Upgrade path.** `clauderize init` and `clauderize reindex` build/refresh the gitignored abstract index idempotently; `clauderize doctor` detects a missing or schema-stale cache and advises `reindex` (read-only — the runtime self-heals on first use).
+
+New tool: `cz_get` (surface 41 → 42).
+
 ## [1.2.0] — 2026-06-27
 
 Concurrent multi-axis gameplans — run several long-lived gameplans in one repo at once.
