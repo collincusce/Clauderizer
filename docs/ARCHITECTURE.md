@@ -77,6 +77,53 @@ The harness itself (LongMemEval 5-ability taxonomy + 3-stage ablation, stdlib-on
 is the reusable asset future memory-feature work pre-registers its hypothesis
 against (see `docs/LESSONS.md` L-26/L-27/L-28 and the gameplan post-mortem).
 
+### Concurrent, multi-axis gameplans (1.2.0)
+
+A project can run more than one gameplan at once — a feature build, a standing
+maintenance loop, a creative campaign — each its own axis of work. The engine keeps
+a single **focus** pointer (the default target for status, handoffs, preflight) and
+a **portfolio** view across every open gameplan:
+
+- **Focus & portfolio** — `cz_focus` switches the focused gameplan; `cz_gameplans`
+  lists the whole portfolio (each card carries its kind, lifecycle, current/next
+  phase, blockers, and pending cascades). The legacy single-gameplan path is just
+  the one-axis case: it resolves to the identity default, so existing projects behave
+  exactly as before.
+- **Gameplan kinds** — every gameplan has a *kind* (`driven` — a finite phase DAG
+  with a terminal post-mortem; `loop` — a standing iterative maintenance gameplan;
+  `campaign` — a creative campaign), defined as data and extensible via a
+  `.clauderizer/kinds/` overlay. A kind carries a display-only lexicon (a campaign's
+  phases read as "stages", its outputs as "assets") over canonical on-disk headings,
+  so every parser keeps working while digests and handoffs speak the kind's
+  vocabulary.
+- **Per-kind preflight** — a kind can declare its own preflight gates, wired to real
+  shell commands in `.clauderizer/preflight.<kind>.toml`. A declared-but-unwired QA
+  gate warns ("declared but did not run") rather than reading a false green.
+- **Cross-gameplan dependencies** — `cz_consumes` records that one gameplan relies on
+  a tracked entity another axis owns; transitioning or cascading that entity then
+  fans a pending cross-reference into the consuming gameplan, even when a different
+  axis holds focus.
+
+### Fast retrieval — the abstract index (1.3.0)
+
+A compact, addressable record per corpus entry (id, title, a one-line abstract, an
+anchor, a distinctive-token set, a content hash) kept in a **disposable** cache that
+is always rebuilt from canonical markdown (INVARIANT-01), so a consumer can find and
+read exactly the entry it needs instead of loading a whole corpus file:
+
+- **`cz_get`** — fetch one entry's full body by id (a decision, invariant, finding,
+  or lesson). The read path may refresh the disposable cache but never mutates
+  canonical markdown, so it stays a read.
+- **Abstracts on `cz_analyze`** — each ranked hit now carries its one-line abstract,
+  so the agent can often judge relevance straight from the result without a follow-up
+  fetch. The abstract is a pointer to canonical markdown, never an authority (D-013).
+- **Write-time near-duplicate advisory** — `cz_add_lesson` checks the new lesson's
+  distinctive-token overlap against the existing corpus and, above a length-normalized
+  threshold, nudges "consider consolidating" — advisory only, never a block. The same
+  single canonical tokenizer and near-duplicate threshold back this advisory, the
+  abstract index, relevance ranking, and the corpus-health redundancy metric, so the
+  whole engine shares one definition of "near-duplicate" (D-041).
+
 ### Host targeting & the injection-parity ladder
 
 **`host_target`** is a third host axis, orthogonal to `session_host` (where commands

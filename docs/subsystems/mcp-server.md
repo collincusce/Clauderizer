@@ -1,7 +1,7 @@
 ---
 id: subsys.mcp-server
 type: subsystem
-version: 0.5.0
+version: 0.9.0
 status: active
 depends_on:
   - subsys.graph@^0.1.0

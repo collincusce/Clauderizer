@@ -11,7 +11,7 @@
 | 1 | Unify the canonical tokenizer | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Code coherence and small traps | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Test integrity | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Docs refresh to 1.3.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Docs refresh to 1.3.0 | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Close and 1.3.1 patch release | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 ## Outputs Registry

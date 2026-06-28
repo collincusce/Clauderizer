@@ -149,11 +149,11 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] docs/ARCHITECTURE.md and docs/VISION.md both describe the 1.2.0 feature set (concurrent/multi-axis gameplans, kinds driven/loop/campaign, cz_focus/cz_gameplans/cz_consumes, cross-gameplan deps) and the 1.3.0 feature set (abstract index, cz_get, abstracts on cz_analyze, write-time dedup advisory)
-- [ ] docs/subsystems/mcp-server.md frontmatter version no longer reads 0.5.0 (reflects the current release)
-- [ ] README mutations listing includes cz_resolve_finding alongside cz_add_finding; the 42-tool count stays correct
-- [ ] Change is docs-only: no diff under src/ or tests/, and the suite count is unchanged from Phase 3
-- [ ] Visible doc prose stays human-first (D-038/D-039); the single-sourced CLAUDE.md/AGENTS.md stanza (L-16) is untouched
+- [x] docs/ARCHITECTURE.md and docs/VISION.md both describe the 1.2.0 feature set (concurrent/multi-axis gameplans, kinds driven/loop/campaign, cz_focus/cz_gameplans/cz_consumes, cross-gameplan deps) and the 1.3.0 feature set (abstract index, cz_get, abstracts on cz_analyze, write-time dedup advisory)
+- [x] docs/subsystems/mcp-server.md frontmatter version no longer reads 0.5.0 (reflects the current release)
+- [x] README mutations listing includes cz_resolve_finding alongside cz_add_finding; the 42-tool count stays correct
+- [x] Change is docs-only: no diff under src/ or tests/, and the suite count is unchanged from Phase 3
+- [x] Visible doc prose stays human-first (D-038/D-039); the single-sourced CLAUDE.md/AGENTS.md stanza (L-16) is untouched
 
 ### Phase 5: Close and 1.3.1 patch release
 

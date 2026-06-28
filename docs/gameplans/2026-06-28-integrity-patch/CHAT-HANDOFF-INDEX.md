@@ -1,7 +1,7 @@
 # Chat Handoff Index — integrity-patch
 
 > Last updated: 2026-06-28
-> Status: Phase 4 ready
+> Status: Phase 5 ready
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Unify the canonical tokenizer | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Code coherence and small traps | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Test integrity | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Docs refresh to 1.3.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Docs refresh to 1.3.0 | ✅ COMPLETE | 2026-06-28 | 2026-06-28 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Close and 1.3.1 patch release | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -55,6 +55,10 @@ Fixed the four code-coherence / robustness findings, each with a test. #5: singl
 ### Phase 3 — completed 2026-06-28
 
 Made the suite reflect behavior, not module-load constants (D1, #3). Removed the 5 tautological writes-is-False/__name__ tests: deleted the 3 standalone ones (test_cz_lesson_health_is_read_only, test_cz_curate_is_read_only, test_cz_loop_step_is_read_only) and the redundant test_op_surface_is_read_only_and_registered (parity is the test_ops gate), and stripped the trailing writes-is-False asserts from two otherwise-behavioral tests (cz_get in test_analyze, cz_discover_skills in test_skill_discovery — its real `assert not sdoc.exists()` behavioral check stays). Added tests/test_read_only_ops.py: a behavioral gate that RUNS each declared-read-only op (cz_status/cz_corpus_health/cz_lesson_health/cz_curate/cz_loop_step/cz_discover_skills/cz_gameplans + cz_get) against a seeded repo and asserts every tracked file is byte-identical after (only the gitignored cache/lock may change). Upgraded test_mcp_tools.test_all_tools_are_discoverable from a hardcoded 16-tool subset to `== set(TOOL_NAMES)`; fixed the stale '24/24' comment at test_ops.py:56 to '42/42'. Added two genuinely-missing tests: (a, O-03) test_sessionstart_digest_advertises_exactly_the_tool_surface drives the real SessionStart hook and asserts the digest's Tools: line == TOOL_NAMES; (b) test_command_gate_runs_a_real_subprocess exercises the per-kind preflight via the REAL _default_runner (two runs: exit-0→pass, exit-7→fail with the code captured in detail, unwired→warn, advisory→downgraded warn, in enabled order). Scrubbed the PII (#4): test_diverse_robustness.py:262 no longer hardcodes /mnt/c/Users/<username>/... — now opt-in via CLAUDERIZER_TRANSCRIPT_CORPUS (portable, username-free). Full suite 716 passed / 5 skipped (718-4 deleted tautologies; the PII smoke now correctly SKIPS on this dogfood machine instead of running; +3 new). Three PRE-EXISTING username leaks in other gameplans' append-only history + an _experiments script are out of scope — flagged as a separate background task (task_455387ca), not hand-edited here (append-only discipline).
+
+### Phase 4 — completed 2026-06-28
+
+Closed the documentation drift (#2, the L-21 non-single-sourced-doc sweep). docs/ARCHITECTURE.md (frozen ~0.15.0) gained two capability sections — "Concurrent, multi-axis gameplans (1.2.0)" (focus+portfolio via cz_focus/cz_gameplans, kinds driven/loop/campaign with display-only lexicon + per-kind preflight gates, cross-gameplan deps via cz_consumes + cascade fan-out) and "Fast retrieval — the abstract index (1.3.0)" (cz_get addressable fetch, abstracts on cz_analyze, the write-time near-duplicate-lesson advisory, all on the one canonical tokenizer/threshold of D-041) — matching the doc's existing prose-with-light-references style. docs/VISION.md (pre-1.2.0) gained two jargon-free differentiation bullets covering the same two feature sets (human-first, no agent shorthand — D-038/D-039). docs/subsystems/mcp-server.md frontmatter version bumped 0.5.0→0.9.0 via cz_upsert_entity (blessed write, not a hand-edit; body + depends_on + last_verified preserved; nothing depends on subsys.mcp-server so no cascade/pin-violation). README finding part was already satisfied — cz_resolve_finding is present in the canonical tool reference (README.md:422) alongside cz_add_finding; no edit needed, 42-tool count correct. Docs-only: git diff --stat shows zero changes under src/ or tests/, so the suite stays 716 passed / 5 skipped. CLAUDE.md/AGENTS.md single-sourced stanza (L-16) untouched.
 
 ## Accumulated Lessons
 
