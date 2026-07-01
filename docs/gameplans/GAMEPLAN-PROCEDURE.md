@@ -1,16 +1,17 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.4.0
-**Last updated**: 2026-06-27
+**Procedure version**: 1.5.0
+**Last updated**: 2026-07-01
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.5.0** (2026-07-01): **Scoped memory, approval criteria, deliverables, standing conditions, corpus modernization.** Invariants may carry a **Scope** (project-wide, or one gameplan's) and an **Audience** label, and lessons an audience tag — reads *filter* (a gameplan's context carries the shared rules plus its own; untagged entries reach everyone), and nothing is ever hidden from the canonical files or the written handoff. An exit criterion may be an **approval** (`APPROVAL: <artifact-path> — <description>`): recording the sign-off binds it to the artifact's content hash, so editing the artifact makes the approval read as stale everywhere until it is re-approved. Campaign-style kinds define a **deliverable lifecycle**; each deliverable is a tracked entity moving through it, with a board in the gameplan's detail view. Loop and campaign gameplans may declare **standing conditions** (`.clauderizer/conditions.<gameplan-id>.toml`) — probes evaluated whenever status is asked for, proposing an iteration when one trips. **`clauderize upgrade`** modernizes an older corpus: mechanical updates apply automatically (the config's procedure stamp and migrations, missing gate-example files, refreshing this document); memory-shaped improvements only ever surface as proposals. All additive; a repo using none of it behaves exactly as before.
 - **v1.4.0** (2026-06-27): **Concurrent multi-axis gameplans.** A repo can run several gameplans at once with an ergonomic **focus** (the default target; `cz_focus` / `cz_gameplans` + a portfolio in the status digest). Gameplan **kinds** become data (`kinds/*.toml`: vocabulary + first-phase template + preflight set; `driven` / `loop` / `campaign` + custom overlays in `.clauderizer/kinds/`; the lexicon is display-only — on-disk structure is identical across kinds). **Per-kind preflight** runs the kind's checks via a command-gate primitive wired in `.clauderizer/preflight.<kind>.toml`. **Cross-gameplan dependencies** (`cz_consumes`) let a cascade fan out across axes. Back-compatible: a single-gameplan repo behaves exactly as before.
-- **v1.3.0** (2026-06-21): Added the **Loop Gameplan** (`kind: loop`) as a first-class type — a standing, iterative maintenance initiative (trigger / iteration body / per-iteration exit / convergence metric / spawn-driven escape hatch), complementing the finite driven gameplan. Realized by `cz_loop_step` over the curator (`cz_curate`); autonomous in cadence, supervised in mutation.
-- **v1.2.1** (2026-06-09): Amendment entries carry a `Cascade report` line only when the `amendments` ritual is enabled, and as a pending pointer (`run cz_cascade for the affected entities`) rather than a per-amendment filename — cascade reports are per-entity files, so `<date>-A-NNN.md` never exists (the dangling-pointer bug).
-- **v1.2.0** (2026-06-09): Named `clauderize ops <file.json|->` the canonical no-MCP fallback for every tracked write: op names and arg shapes are exactly the `cz_*` tool names and schemas, so recording never depends on a live MCP client. Ad-hoc stdio-probe/shim patterns are retired.
-- **v1.1.0** (2026-05-02): Added **Amendment (`A-NNN`)** concept as a first-class entity for tracking gameplan body changes after Phase 0 starts. Added "Procedure: Amend a Gameplan" with cascade-to-affected-phases rules. Added mini-gameplan-vs-amend-existing decision rule of thumb. Projects adopting may declare an invariant that gameplan amendments cascade before a session ends (poe2.design adopts; smaller projects may not).
+- **v1.3.0** (2026-06-21): Added the **Loop Gameplan** (`kind: loop`) as a first-class type — a standing, iterative maintenance initiative (trigger / iteration body / per-iteration exit / convergence metric / spawn-driven escape hatch), complementing the finite driven gameplan. Realized by `cz_loop_step` over the curator (`cz_curate`); autonomous in cadence, supervised in mutation (INVARIANT-05).
+- **v1.2.1** (2026-06-09): Amendment entries carry a `Cascade report` line only when the `amendments` ritual is enabled, and as a pending pointer (`run cz_cascade for the affected entities`) rather than a per-amendment filename — cascade reports are per-entity files, so `<date>-A-NNN.md` never exists (the A-001 dangling-pointer bug).
+- **v1.2.0** (2026-06-09): Named `clauderize ops <file.json|->` the canonical no-MCP fallback for every tracked write (L-05): op names and arg shapes are exactly the `cz_*` tool names and schemas, so recording never depends on a live MCP client. Ad-hoc stdio-probe/shim patterns are retired.
+- **v1.1.0** (2026-05-02): Added **Amendment (`A-NNN`)** concept as a first-class entity for tracking gameplan body changes after Phase 0 starts. Added "Procedure: Amend a Gameplan" with cascade-to-affected-phases rules. Added mini-gameplan-vs-amend-existing decision rule of thumb. Projects adopting may declare `INVARIANT-13: Gameplan amendments cascade before session ends` (poe2.design adopts; smaller projects may not).
 - **v1.0.0** (2026-05-02): Initial synthesis from existing project procedures + session-derived improvements.
 
 > This document is project-agnostic. Copy it as-is into any new project's `docs/gameplans/GAMEPLAN-PROCEDURE.md`. All project-specific content goes in `CLAUDE.md` (project root) and `docs/` named files.
@@ -25,19 +26,69 @@ A repo can run **several gameplans at once** — e.g. a *code* gameplan and a *c
 - **Portfolio.** `cz_gameplans` (or `clauderize gameplans`) lists every open gameplan with its kind, phase, blockers, and the focus mark. The status digest expands a portfolio block automatically once more than one gameplan is open; with a single gameplan it reads exactly as before.
 - **Kinds.** Every gameplan has a **kind** (`> Kind:` in `GAMEPLAN.md`) that sets its vocabulary, first-phase template, and preflight checks — `driven` (code), `loop` (maintenance), `campaign` (creative), or a custom kind defined in `.clauderizer/kinds/<name>.toml`. The vocabulary is **display-only**: a campaign reads in *stages* and *assets* while the on-disk structure (`## Phase Breakdown`, `### Phase N`) stays identical, so every parser and tool is unchanged.
 - **Per-kind preflight.** A kind's preflight runs *its* checks — a campaign's QA gates (virality, brand-lint, duration, …) instead of tests/build. Gates are generic shell commands you wire in `.clauderizer/preflight.<kind>.toml`; an unwired gate skips with a hint. The engine ships the mechanism; you supply the checks.
-- **Cross-gameplan dependencies.** When one axis produces an artifact another consumes, declare it with `cz_consumes` — the consuming gameplan becomes a dependent in the graph, so changing the shared artifact cascades **across** gameplans: the other axis gets a pending cross-ref its own `cascade_hygiene` catches. Memory scoping stays explicit — project invariants/ADRs are shared by all gameplans, a gameplan's own decisions/lessons are local, and consumed artifacts are surfaced in the handoff's "Consumes" section.
+- **Cross-gameplan dependencies.** When one axis produces an artifact another consumes, declare it with `cz_consumes` — the consuming gameplan becomes a dependent in the graph, so changing the shared artifact cascades **across** gameplans: the other axis gets a pending cross-ref its own `cascade_hygiene` catches. Memory scoping stays explicit — project invariants/ADRs are shared by all gameplans, a gameplan's own decisions/lessons are local, and consumed artifacts are surfaced in the handoff's "Consumes" section (with each entity's current status and version).
+
+## Scoped Memory (project · gameplan · audience)
+
+Shared memory has two levels and one optional tag, and reads **filter — never shadow, never hide**:
+
+- **Scope.** An invariant is project-wide by default. One that belongs to a single gameplan — a campaign's brand rules, say — is recorded with `scope="gameplan:<id>"` on `cz_add_invariant` and rendered with a `**Scope**:` line. Another gameplan's context simply doesn't carry it; the canonical `INVARIANTS.md` always holds everything, append-only.
+- **Audience.** An invariant or lesson meant for one working role (a copywriter, an art director, a coder) may carry an audience label. `cz_next_phase_context(audience=...)` returns that role's view: other roles' tagged entries drop out, untagged entries always pass. The **written handoff file is never filtered** — it stays the complete, self-contained record.
+- **Duplication pressure.** Recording an invariant that strongly overlaps an existing one surfaces the overlap and suggests a scoped entry instead of a global re-declaration — advisory, the write always stands. Curation never proposes consolidating entries across scopes or audiences.
 
 ## Loop Gameplans (kind: loop)
 
 Most gameplans are **driven**: a finite phase DAG with a terminal post-mortem, advanced phase by phase. A **loop gameplan** (`kind: loop`) is the complement — a *standing* initiative whose "phases" are recurring **iterations** of a maintenance/curation cycle, with no terminal state:
 
-- **Trigger** — what wakes an iteration: a schedule, a threshold (e.g. lessons past a bound), or a gameplan close.
-- **Iteration body** — gather signal → SURFACE proposals → the agent confirms via blessed writes (never auto-mutation). In Clauderizer this is `cz_loop_step` (a corpus-health metric + `cz_curate` proposals + a `converged` flag).
+- **Trigger** — what wakes an iteration: a schedule, a threshold (e.g. lessons past a bound), or a gameplan close. Threshold triggers can be *declared* as standing conditions (below) so status itself watches them; calendar cadence belongs to the host's scheduler, which simply opens a session that asks for status.
+- **Iteration body** — gather signal → SURFACE proposals → the agent confirms via blessed writes (never auto-mutation, INVARIANT-05). In Clauderizer this is `cz_loop_step` (a corpus-health metric + `cz_curate` proposals + a `converged` flag).
 - **Per-iteration exit** — the Loop-Engineering `/goal` triad: an explicit end state, a runnable check, and a guardrail (max-iterations / scope pin). An iteration ends when no actionable proposal remains (`converged`).
 - **Convergence metric** — a corpus-health measure trended across iterations (monotone-improving, not a one-shot "done").
 - **Escape hatch** — when an iteration detects structural work too big for a maintenance pass, it SUGGESTS spawning a *driven* gameplan (`spawn_gameplan`); it never auto-creates one.
 
 Driven and loop gameplans interlock: driven gameplans **feed** the loop (their lessons/outcomes are its telemetry); the loop **spawns** driven gameplans for the structural work it surfaces. A loop gameplan is **autonomous in cadence, supervised in mutation**.
+
+## Standing Conditions
+
+A loop or campaign gameplan may declare its threshold triggers in `.clauderizer/conditions.<gameplan-id>.toml`:
+
+```toml
+[conditions]
+backlog_low = "test $(ls campaigns/shorts/approved | wc -l) -lt 3"
+weekly_due  = "python tools/cadence_due.py"
+```
+
+Each condition is a shell probe — exit 0 means **met**. Probes run only when status is explicitly asked for (`cz_status`, `clauderize status`, pre-flight, `cz_loop_step`), never on a timer and never from the session-start hook. A met condition surfaces as one line — *"standing condition met — iteration proposed"* — and that is all: the engine proposes, the agent decides.
+
+## Deliverables (campaign-style gameplans)
+
+A campaign's real execution units are its **deliverables** — a flagship film, a pillar short, a deck — each progressing independently. A kind may define their lifecycle in its TOML (`[lifecycle] statuses = [...]`; the shipped campaign kind uses `concept → spec-approved → produced → assembled → qa → shipped`), and each deliverable is recorded as a normal tracked entity:
+
+```
+cz_upsert_entity(id="deliv.flagship-film", type="deliverable",
+                 status="concept", fields={"gameplan": "<gameplan-id>"})
+```
+
+Its status then moves through the lifecycle via `cz_transition_status` (an unfamiliar status warns, never blocks), and the gameplan's detail view (`cz_gameplans gameplan_id=...`) renders the deliverables board. The status digest carries at most a one-line rollup ("Deliverables: 3/6 shipped").
+
+**A deliverable is never an individual rendered file.** One film may produce thirty exports across aspect ratios and caption variants — those stay in the repo (a manifest, a directory listing); the *deliverable entity* is the film. Keeping that line is what keeps handoffs small.
+
+## Approval Criteria (hash-bound sign-offs)
+
+The highest-leverage human control — "someone signs off on this artifact before money or reputation is spent" — is an exit criterion of the form:
+
+```
+- [ ] APPROVAL: briefs/shot-spec.md — human signs off the shot spec
+```
+
+Recording the sign-off (`cz_approve_gate`) stamps the criterion with the artifact's content hash and the date. Every later read recomputes the hash: **edit the artifact and the approval reads as stale everywhere** — check-off, phase completion, pre-flight — until it is re-approved. A hand-ticked checkbox never counts as an approval. Like every gate, this surfaces and never blocks.
+
+## Corpus Modernization (upgrading delivers improvements)
+
+The engine stamps each repo's config with the procedure version it was last brought up to. When a newer engine meets an older corpus, the status digest and `clauderize doctor` say so in one line, and **`clauderize upgrade`** closes the gap in two tiers:
+
+- **Mechanical — applied for you**: the config stamp and config migrations, missing per-kind gate example files, the refresh of this document. All engine-owned, all visible in `git diff`.
+- **Memory — proposed, never applied**: declared QA gates with no wired command, near-duplicate invariants that look like scope-tag candidates, campaigns without deliverable entities, loops without standing conditions. Each proposal names the ordinary recording tool that would act on it; decisions, invariants, lessons, and findings are never edited by the engine.
 
 ---
 
@@ -176,7 +227,7 @@ Captured as a numbered entry in a `## Amendments` section near the top of `GAMEP
 - **Cascade report**: _pending — run `cz_cascade` for the affected entities; reports land in `_cascade-reports/`_
 ```
 
-The `Cascade report` line appears only when the project's `amendments` ritual is enabled (in projects that adopt amendment cascade as an invariant), and always as the pending pointer above — cascade reports are per-entity files named by the engine, so an amendment entry never promises a `<date>-A-NNN.md` filename.
+The `Cascade report` line appears only when the project's `amendments` ritual is enabled (INVARIANT-13 adopters), and always as the pending pointer above — cascade reports are per-entity files named by the engine, so an amendment entry never promises a `<date>-A-NNN.md` filename.
 
 Amendments are append-only (just like decisions) — superseded amendments stay in the record with `Status: superseded` and a `Superseded-by: A-MMM` link.
 
@@ -186,7 +237,7 @@ Amendments are append-only (just like decisions) — superseded amendments stay 
 - **New mini-gameplan** (separate `docs/gameplans/<new-id>/` directory): the change is *outside* the existing scope. Examples: a post-launch leaderboard feature has a different goal and is separable work; a major refactor unrelated to the original gameplan's mission.
 - **Rule of thumb**: if you'd write the same `## Project Overview` paragraph for the new work as for the original gameplan, amend; if a fresh project overview makes more sense, mini-gameplan.
 
-Cascade discipline applies to amendments when the project adopts amendment cascade as an invariant (the project's own `INVARIANTS.md` declares whether it does — `attago` and `poe2.design` do; smaller projects may not).
+Cascade discipline applies to amendments per INVARIANT-13 (if adopted; the project's own `INVARIANTS.md` declares whether it adopts amendment cascade as an invariant — `attago` and `poe2.design` do; smaller projects may not).
 
 ### Status Values
 
@@ -1110,7 +1161,7 @@ When something changes (status, version, decision), do this:
 - Invariant (project): `INVARIANT-NN`
 - Phase: `Phase N` (bare integers `0`–`N`) or `Phase 0A`, `Phase 0B` (sub-phases). Found in gameplan `GAMEPLAN.md` phase breakdown.
 - Task within a phase: `N.M` (e.g., `0.1`, `1.4`). Found in the phase's task table inside `GAMEPLAN.md`.
-- Legacy `STEP-NN` IDs: only in historical documents predating the current convention (e.g., the original 2026-04-30 design brainstorm in `docs/plans/`); no longer the active convention.
+- Legacy `STEP-NN` IDs: only in pre-D-028 historical documents (e.g., the original 2026-04-30 design brainstorm in `docs/plans/`); no longer the active convention.
 
 ### Symlinks vs Copies
 
@@ -1171,7 +1222,7 @@ update PHASE-STATUS.md, run cascade for status transitions.
 ### Recording Without MCP — `clauderize ops`
 
 The `cz_*` tools are the primary write surface, but recording must never be
-hostage to a live MCP connection. When the tools are absent or the
+hostage to a live MCP connection (L-05). When the tools are absent or the
 server can't attach, every operation — reads and writes — is reachable from a
 shell:
 

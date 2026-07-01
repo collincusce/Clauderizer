@@ -15,8 +15,8 @@
 | 5 | Standing conditions + consumes surfacing | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Corpus modernization framework | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Docs & procedure 1.5.0 & version bump | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-7-HANDOFF.md |
-| 8 | Dogfood & live verification | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
-| 9 | Ship 1.4.0 — release ritual & close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-9-HANDOFF.md |
+| 8 | Dogfood & live verification | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-8-HANDOFF.md |
+| 9 | Ship 1.4.0 — release ritual & close-out | 🟡 IN PROGRESS | 2026-07-01 | — | handoffs/PHASE-9-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -70,6 +70,12 @@ phase6_suite: 754 passed, 5 skipped (+6 tests/test_modernize.py, +1 golden delib
 phase7_versions: engine 1.4.0 (pyproject + __init__), PROCEDURE_VERSION 1.5.0 with template changelog + 5 new sections (Scoped Memory / Standing Conditions / Deliverables / Approval Criteria / Corpus Modernization); CHANGELOG 1.4.0 entry; README+UPGRADING now teach the three-move update incl. clauderize upgrade; ARCHITECTURE 1.4.0 section; VISION 2 new differentiation bullets; jargon sweep JARGON_CLEAN; .venv reinstalled post-bump; suite 754 green
 ```
 
+### Phase 8 Outputs
+
+```
+phase8_dogfood: THIS repo: upgrade applied stamp+kinds-dir+procedure-doc-refresh (1.4.0→1.5.0), digest ⚙ 1→0, proposal correctly targets curator-loop conditions. marketing-studio: stamp 1.5.0 + doc refresh applied; portfolio byte-identical before/after; report-after = 0 mechanical + 2 proposals (INVARIANT-03/08 Jaccard 0.467 — the brief's real duplication — and stale_kind_overlay with the exact [lifecycle] TOML); their wired lib.qa gates correctly silent. Dogfood DISCOVERED overlay-shadowing (new detector + test, suite 755) and MEASURED the subset-dup blind spot (O-02 resolved keep-0.40; O-04 filed for overlap coefficient)
+```
+
 ## Corrections Log
 
 ### C-01 — Phase 2
@@ -85,3 +91,10 @@ phase7_versions: engine 1.4.0 (pyproject + __init__), PROCEDURE_VERSION 1.5.0 wi
 **What gameplan said**: Consumes surfacing must be ADDED: "cz_next_phase_context/handoff renders the gameplan's declared consumed entities … so cross-gameplan consequences are visible where work starts."
 **What was actually correct**: handoff.assemble has rendered a "Consumes (Cross-Gameplan)" section with per-entity status since 1.2.0 (_consumes_section), and cz_next_phase_context shares that assembly. Phase 5 verified it end to end with a new test (declare → render → cross-axis transition → pending cross-ref on the portfolio card) and enriched the rendering with the consumed entity's version.
 **Why**: The feature brief (GR-8) claimed the surfacing was absent, and the plan inherited that claim without re-checking the 1.2.0 changelog. The code recon during Phase 2 falsified it — the gap was evidence (no test) and a missing version display, not a missing feature.
+
+### C-03 — Phase 8
+
+**Phase**: 8
+**What gameplan said**: marketing-studio's upgrade would scaffold preflight.campaign.toml.example and the report would propose unwired campaign gates, the INVARIANT-03/04/05 vs 07/08/09 near-dup pairs, and campaigns without deliverable entities.
+**What was actually correct**: Three of four predictions were overtaken by reality. (1) The studio wired REAL QA gate commands (preflight.campaign.toml with lib.qa CLIs) after the brief was written, so no example scaffold was needed and the unwired-gates proposal correctly stayed silent. (2) Only the 03/08 pair (Jaccard 0.467) fired; 05/07 and 04/09 are SUBSET-shaped duplicates (a terse restatement inside a longer rule) that symmetric Jaccard scores below 0.40. (3) The no-deliverables proposal was masked by their pre-lifecycle .clauderizer/kinds/campaign.toml overlay overriding the packaged kind's lifecycle away — a genuine upgrade-path gap the dogfood discovered; a stale_kind_overlay tier-2 detector was added (with test) and now proposes the exact [lifecycle] table to add. Applied cleanly: stamp 1.5.0 + procedure-doc refresh; portfolio/mid-flight gameplans byte-identical before/after.
+**Why**: The plan froze the brief's 2026-07-01-morning evidence; the studio kept working (gates wired same-day) and the overlay-shadowing failure mode was unknowable before running the pass against a real corpus — which is exactly what the dogfood phase is for.

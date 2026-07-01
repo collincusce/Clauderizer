@@ -60,9 +60,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 **O-01.** cz_analyze keeps resurfacing 10 suggested subsystem edge pairs (mutations↔rituals, rituals↔scaffold, ...) — pre-existing graph hygiene, not this gameplan's scope. Triage once: add real depends_on edges or dismiss via not_related_to.
 
-**O-02.** _(phase 8)_ Invariant near-dup advisory reuses _LESSON_DUP_JACCARD=0.40 for INVARIANT-09 single-sourcing. Recalibrate against marketing-studio's real duplication (INVARIANT-03/04/05 vs 07/08/09 pairs) once Phase 8 measures them — if verbatim pairs score below 0.40, the threshold needs its own reasoned value.
+**O-02.** _(phase 8)_ Invariant near-dup advisory reuses _LESSON_DUP_JACCARD=0.40 for INVARIANT-09 single-sourcing. Recalibrate against marketing-studio's real duplication (INVARIANT-03/04/05 vs 07/08/09 pairs) once Phase 8 measures them — if verbatim pairs score below 0.40, the threshold needs its own reasoned value. _(resolved 2026-07-01: Measured on marketing-studio's real duplication (Phase 8): keep 0.40 — the same-length verbatim pair (INVARIANT-03/08) fires at 0.467 with zero false positives, and lowering the threshold would add noise without catching the misses. The 05/07 and 04/09 pairs are subset-shaped (short restatement ⊂ long rule) and structurally invisible to symmetric Jaccard at any sane threshold; the fix is a containment metric (overlap coefficient), filed as O-04 for a future release.)_
 
 **O-03.** _(phase 8)_ marketing-studio's brief session expects a §6 protocol reply (audit + restatement + questions) and the step-0 usage fixes (wire campaign preflight gates for real, reclassify shorts as kind=loop, curate 13 lessons, record cz_consumes edges). Deliver after 1.4.0 ships; Phase 8's upgrade run covers only the mechanical scaffold half.
+
+**O-04.** Subset-shaped near-duplicates (a terse invariant restating a longer one, e.g. marketing-studio's "logo never AI-generated" vs the full sentence) score below symmetric Jaccard 0.40 by construction. Add an overlap-coefficient (|A∩B|/min(|A|,|B|)) companion signal to the near-dup advisory + modernize detector in a future release — single-sourced beside _LESSON_DUP_JACCARD per INVARIANT-09, with its own measured threshold.
 
 ## Phase Breakdown
 
@@ -206,11 +208,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 8.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] This repo: cz_modernize report → apply → digest modernization line appears then clears; config stamped 1.5.0
-- [ ] marketing-studio live: clauderize upgrade scaffolds preflight.campaign.toml.example + stamps config; report proposes unwired campaign gates, the INVARIANT-03/04/05 vs 07/08/09 near-dup pairs, and campaigns without deliverable entities
-- [ ] marketing-studio mid-flight gameplans unchanged (portfolio digest still shows both campaigns at their stages)
-- [ ] Cold-session digest parity on this repo (INVARIANT-07)
-- [ ] Full suite green
+- [x] This repo: cz_modernize report → apply → digest modernization line appears then clears; config stamped 1.5.0
+- [x] marketing-studio live: clauderize upgrade stamps config 1.5.0 + refreshes the procedure doc; the report proposes the real residual gaps — the INVARIANT-03/08 near-dup pair (Jaccard 0.467) and the stale pre-lifecycle kind overlay (new stale_kind_overlay detector, added with test after the dogfood exposed overlay shadowing; see correction C-03). Wired gates correctly produce silence; subset-shaped pairs deferred to O-04
+- [x] marketing-studio mid-flight gameplans unchanged (portfolio digest byte-identical before/after upgrade)
+- [x] Cold-session digest parity on this repo (INVARIANT-07): post-upgrade status digest carries no modernization line and standard content
+- [x] Full suite green
 
 ### Phase 9: Ship 1.4.0 — release ritual & close-out
 

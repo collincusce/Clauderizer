@@ -126,6 +126,26 @@ def test_digest_modernization_line_stale_vs_current(temp_repo):
     assert "clauderize upgrade" in d2
 
 
+def test_stale_kind_overlay_proposal(temp_repo):
+    paths, config = _ctx(temp_repo)
+    M.create_gameplan(paths, "Ad Push", kind="campaign", today="2026-07-01")
+    kdir = paths.clauderizer_dir / "kinds"
+    kdir.mkdir(parents=True, exist_ok=True)
+    # a pre-lifecycle overlay: overrides the packaged campaign kind away
+    (kdir / "campaign.toml").write_text(
+        'name = "campaign"\n[preflight]\nchecks = ["clean_tree", "virality"]\n',
+        encoding="utf-8")
+    rep = modernize.report(paths, config)
+    stale = [p for p in rep["proposals"] if p["kind"] == "stale_kind_overlay"]
+    assert stale and "lifecycle" in stale[0]["detail"]
+    # an overlay that keeps a lifecycle raises no proposal
+    (kdir / "campaign.toml").write_text(
+        'name = "campaign"\n[lifecycle]\nstatuses = ["draft", "done"]\n',
+        encoding="utf-8")
+    rep2 = modernize.report(paths, config)
+    assert not [p for p in rep2["proposals"] if p["kind"] == "stale_kind_overlay"]
+
+
 def test_cli_upgrade_subcommand(temp_repo, monkeypatch, capsys):
     from clauderizer import cli
 

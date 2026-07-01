@@ -167,6 +167,26 @@ def report(paths: RepoPaths, config: Config) -> dict:
                 "detail": f"loop gameplan '{gid}' declares no standing conditions — "
                           f"declare threshold probes in .clauderizer/conditions.{gid}.toml "
                           "so status can propose iterations when they trip"})
+    # A per-repo overlay of a packaged kind pins that kind's capability set to
+    # whatever the overlay declares — an overlay written before the packaged
+    # kind gained a deliverable lifecycle silently overrides the lifecycle
+    # away. The overlay is user-authored, so this is a proposal, never an edit.
+    packaged = kinds.load_all(None)
+    for kind_name in sorted(set(open_kinds.values())):
+        pk = packaged.get(kind_name)
+        if not pk or not pk.lifecycle:
+            continue
+        overlay = (paths.kinds_dir / f"{kind_name}.toml") if paths.kinds_dir else None
+        if (overlay and overlay.exists()
+                and not kinds.resolve(kind_name, paths.kinds_dir).lifecycle):
+            statuses = ", ".join(f'"{s}"' for s in pk.lifecycle)
+            proposals.append({
+                "kind": "stale_kind_overlay",
+                "detail": f".clauderizer/kinds/{kind_name}.toml predates the packaged "
+                          f"'{kind_name}' kind's deliverable lifecycle and overrides it "
+                          f"away — add a [lifecycle] table (statuses = [{statuses}]) to "
+                          "the overlay, or delete the overlay if it no longer customizes "
+                          "anything, to enable deliverable tracking"})
     for a, b, jac in _near_dup_invariant_pairs(paths):
         proposals.append({
             "kind": "near_dup_invariants",
