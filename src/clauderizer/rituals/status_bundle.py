@@ -215,6 +215,86 @@ def unresolved_open_items(gameplan_dir: Path, phase: str | None = None) -> list[
 
 _EC_CHECK_RE = re.compile(r"^\s*-\s*\[([ xX])\]\s*(.*)$")
 
+# --- approval criteria (gameplan 2026-07-01, decision D1) -------------------------
+# An exit criterion may bind a HUMAN APPROVAL to a content hash:
+#     - [ ] APPROVAL: briefs/shot-spec.md — human signs off the shot spec
+# cz_approve_gate records the artifact's short sha256 in a trailing marker:
+#     _(approved 2026-07-01 sha256:a1b2c3d4e5f6 — note)_
+# Satisfaction is COMPUTED at read time, never enforced: a recorded hash that no
+# longer matches the artifact means the approval is STALE and the criterion
+# reports unsatisfied — surfaced by every reader (check / transition / preflight /
+# status), never blocking anything (INVARIANT-05). Hash-derived authority adapted
+# to a passive ask-time layer: edit the artifact and the old approval stops
+# counting, with no daemon and no lockout.
+_APPROVAL_TEXT_RE = re.compile(r"^APPROVAL:\s*(\S+)(?:\s*—\s*(.*?))?\s*$")
+_APPROVED_MARKER_RE = re.compile(
+    r"_\(approved (\d{4}-\d{2}-\d{2}) sha256:([0-9a-f]{8,64})((?:[^)])*)\)_\s*$")
+APPROVAL_HASH_LEN = 12
+
+
+def artifact_hash(root: Path, rel_path: str) -> str | None:
+    """Short sha256 of a repo file's bytes, or ``None`` when it is not a file
+    (missing artifacts surface as a state, never an exception)."""
+    import hashlib
+
+    try:
+        p = root / rel_path
+        if not p.is_file():
+            return None
+        return hashlib.sha256(p.read_bytes()).hexdigest()[:APPROVAL_HASH_LEN]
+    except OSError:
+        return None
+
+
+def split_approval(text: str) -> tuple[str, str, dict | None] | None:
+    """Parse a criterion text as an approval row.
+
+    Returns ``(base_text, artifact, approval)`` — ``approval`` is
+    ``{date, hash, note}`` from the trailing marker, or ``None`` when not yet
+    approved. Returns ``None`` when the text is not an APPROVAL row at all."""
+    m = _APPROVED_MARKER_RE.search(text)
+    base = text[:m.start()].rstrip() if m else text
+    am = _APPROVAL_TEXT_RE.match(base)
+    if not am:
+        return None
+    approval = None
+    if m:
+        approval = {"date": m.group(1), "hash": m.group(2),
+                    "note": (m.group(3) or "").strip(" —-")}
+    return base, am.group(1), approval
+
+
+def _evaluate_approval(entry: dict, gameplan_dir: Path) -> dict:
+    """Fold computed approval state into an exit-criteria entry (D1).
+
+    For an APPROVAL row, ``checked`` becomes the COMPUTED satisfaction — a
+    checkbox glyph without a current recorded hash does not count. Non-approval
+    rows pass through untouched."""
+    parsed = split_approval(entry["text"])
+    if parsed is None:
+        return entry
+    base, artifact, approval = parsed
+    entry["kind"] = "approval"
+    entry["artifact"] = artifact
+    # gameplan_dir is <root>/docs/gameplans/<gid> (paths.gameplan_dir), so the
+    # repo root — which artifact paths are relative to — is two levels up.
+    current = artifact_hash(gameplan_dir.parents[2], artifact)
+    if approval is None:
+        entry["state"], entry["checked"] = "unapproved", False
+        entry["detail"] = (f"approval for '{artifact}' not recorded — "
+                           "record it with cz_approve_gate")
+    elif current is None:
+        entry["state"], entry["checked"] = "missing", False
+        entry["detail"] = f"approved artifact '{artifact}' is missing on disk"
+    elif current == approval["hash"]:
+        entry["state"], entry["checked"] = "approved", True
+        entry["detail"] = f"approved {approval['date']} (sha256 {approval['hash']})"
+    else:
+        entry["state"], entry["checked"] = "stale", False
+        entry["detail"] = (f"approval stale — '{artifact}' changed since "
+                           f"{approval['date']} (sha256 {approval['hash']} → {current})")
+    return entry
+
 
 def phase_block(breakdown_body: str, phase: str):
     """``(lines, start, end)`` of the ``### Phase N`` block within a Phase
@@ -246,7 +326,8 @@ def exit_criteria(gameplan_dir: Path, phase: str) -> list[dict]:
             text = m.group(2).strip()
             if sections.is_placeholder(text):  # ignore the scaffold "_(verifiable)_"
                 continue
-            out.append({"checked": m.group(1).lower() == "x", "text": text})
+            out.append(_evaluate_approval(
+                {"checked": m.group(1).lower() == "x", "text": text}, gameplan_dir))
     return out
 
 
@@ -388,6 +469,50 @@ def gameplan_card(gdir: Path, focus_id: str | None,
     }
 
 
+def deliverables_for(paths: RepoPaths, gid: str) -> list[dict]:
+    """Tracked deliverable entities owned by gameplan ``gid`` (D2): docs/entities/
+    docs with ``type: deliverable`` + ``gameplan: <gid>`` frontmatter, as
+    ``{id, status, version}`` sorted by id. Deliverables are a campaign's
+    execution units (a flagship film, a pillar short) — never individual
+    rendered asset files."""
+    from ..markdown import frontmatter
+
+    ent_dir = paths.docs / "entities"
+    out: list[dict] = []
+    if not ent_dir.exists():
+        return out
+    for p in sorted(ent_dir.glob("*.md")):
+        try:
+            data, _body = frontmatter.parse(p.read_text(encoding="utf-8"))
+        except OSError:
+            continue
+        if (str(data.get("type", "")) == "deliverable"
+                and str(data.get("gameplan", "")) == gid):
+            out.append({"id": str(data.get("id", p.stem)),
+                        "status": str(data.get("status", "planned")),
+                        "version": str(data.get("version", ""))})
+    return out
+
+
+def deliverable_matrix_md(delivs: list[dict], lifecycle: list[str]) -> str:
+    """The deliverables×lifecycle board as a markdown table — DETAIL views only,
+    never the injected digest (D-027/INVARIANT-08). Without a kind-defined
+    lifecycle it falls back to a plain status list; a status outside the
+    lifecycle renders beside the id instead of a column (advisory model)."""
+    if not delivs:
+        return "_(no deliverables tracked)_"
+    if not lifecycle:
+        return "\n".join(f"- {d['id']}: {d['status']}" for d in delivs)
+    header = "| deliverable | " + " | ".join(lifecycle) + " |"
+    sep = "|" + "---|" * (len(lifecycle) + 1)
+    rows = []
+    for d in delivs:
+        label = d["id"] if d["status"] in lifecycle else f"{d['id']} ({d['status']})"
+        cells = ["●" if d["status"] == s else "" for s in lifecycle]
+        rows.append("| " + label + " | " + " | ".join(cells) + " |")
+    return "\n".join([header, sep] + rows)
+
+
 def portfolio(paths: RepoPaths, config: Config, *, include_closed: bool = False) -> list[dict]:
     """All gameplans as portfolio cards (open by default), focus first then by id.
     The open set is derived from each gameplan's phase table — only the single
@@ -423,7 +548,10 @@ def _portfolio_lines(cards: list[dict]) -> list[str]:
     return out
 
 
-def compute(paths: RepoPaths, config: Config) -> dict:
+def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> dict:
+    """``conditions=True`` additionally evaluates the focus gameplan's standing
+    conditions (D3) — shell probes, so ONLY tool calls pass it; the default
+    keeps the read-only hook digest free of subprocesses (INVARIANT-06)."""
     gid = config.active_gameplan
     bundle: dict = {
         "ok": True,
@@ -445,6 +573,16 @@ def compute(paths: RepoPaths, config: Config) -> dict:
     # so a single-gameplan repo renders byte-identically to before (D6 golden gate).
     bundle["focus"] = gid
     bundle["portfolio"] = portfolio(paths, config)
+    # Modernization staleness (D-042): the LIGHT check only — a version-string
+    # compare against the config stamp, read-only and hook-safe. The full
+    # detector suite (probes, pairwise scans) lives in cz_modernize.
+    from .. import PROCEDURE_VERSION as _engine_procedure
+
+    if (config.procedure_version or "") != _engine_procedure:
+        bundle["modernization"] = {
+            "corpus": config.procedure_version or None,
+            "engine": _engine_procedure,
+        }
     if not gid:
         bundle["summary"] = "No active gameplan. Use cz_create_gameplan to start one."
         return bundle
@@ -497,6 +635,22 @@ def compute(paths: RepoPaths, config: Config) -> dict:
     _k = kinds.resolve(gameplan_kind(gdir), paths.kinds_dir)
     ph_w, gp_w = _k.label("phase"), _k.label("gameplan")
     bundle["kind"] = _k.name
+    # Deliverable rollup (D2): present ONLY when this gameplan tracks deliverable
+    # entities — a repo without them renders its digest exactly as before.
+    delivs = deliverables_for(paths, gid)
+    if delivs:
+        done_status = _k.lifecycle[-1] if _k.lifecycle else ""
+        bundle["deliverables"] = {
+            "total": len(delivs),
+            "done": sum(1 for d in delivs if d["status"] == done_status),
+            "done_label": done_status,
+        }
+    if conditions:
+        from . import conditions as _cond
+
+        conds = _cond.evaluate(paths, gid)
+        if conds:
+            bundle["standing_conditions"] = conds
     if cur:
         bundle["summary"] = (
             f"Gameplan {gid}: {ph_w} {cur['number']}/{total} IN PROGRESS — \"{cur['name']}\"."
@@ -549,6 +703,20 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         lines += _portfolio_lines(open_cards)
     if bundle.get("baseline_tests"):
         lines.append(f"Baseline: {bundle['baseline_tests']} tests.")
+    dl = bundle.get("deliverables")
+    if dl and dl.get("total"):
+        # One rollup line, focused gameplan only (D2); the full board lives in
+        # cz_gameplans' detail view, never the injected digest (D-027).
+        if dl.get("done_label"):
+            lines.append(f"Deliverables: {dl['done']}/{dl['total']} {dl['done_label']}.")
+        else:
+            lines.append(f"Deliverables: {dl['total']} tracked.")
+    met = [c["name"] for c in (bundle.get("standing_conditions") or []) if c.get("met")]
+    if met:
+        # One line, only when a declared condition is actually met (D3); the
+        # engine proposes, the agent decides — nothing runs by itself.
+        lines.append("⏰ Standing condition met: " + ", ".join(met)
+                     + " — iteration proposed (cz_loop_step).")
     mem = bundle.get("memory")
     if mem:
         tok = mem.get("handoff_est_tokens")
@@ -571,6 +739,12 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
     oi = bundle.get("open_items") or []
     if oi:
         lines.append(f"Open items: {len(oi)} unresolved ({', '.join(oi)}).")
+    mz = bundle.get("modernization")
+    if mz:
+        lines.append(
+            f"⚙ Modernization: corpus procedure {mz.get('corpus') or 'unstamped'} vs "
+            f"engine {mz['engine']} — `clauderize upgrade` applies the mechanical "
+            "updates; cz_modernize lists the advisory proposals.")
     if bundle.get("blockers"):
         lines.append("Blocked: " + ", ".join(bundle["blockers"]))
     for warn in bundle.get("drift") or []:

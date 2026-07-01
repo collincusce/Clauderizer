@@ -99,7 +99,9 @@ def cmd_status(args: argparse.Namespace) -> int:
     if config is None:
         print("Not a clauderized repo. Run `clauderize init`.")
         return 1
-    bundle = status_bundle.compute(paths, config)
+    # An explicit CLI ask evaluates standing conditions (D3), same as cz_status;
+    # only the read-only hook path stays probe-free.
+    bundle = status_bundle.compute(paths, config, conditions=True)
     if args.json:
         print(json.dumps(bundle, indent=2))
     else:
@@ -181,6 +183,31 @@ def _mcp_wiring_missing_extra(wiring: list[str] | None) -> bool:
     spec = wiring[i + 1] if i + 1 < len(wiring) else ""
     runs_mcp = any(tok.endswith("clauderizer-mcp") for tok in wiring)
     return runs_mcp and spec.startswith("clauderizer") and "[mcp]" not in spec
+
+
+def cmd_upgrade(args: argparse.Namespace) -> int:
+    """Modernize the corpus (D-042): the mechanical tier applies, the memory
+    tier prints as proposals — never auto-applied."""
+    paths, config = _load()
+    if config is None:
+        print("Not a clauderized repo. Run `clauderize init`.")
+        return 1
+    from . import modernize
+
+    res = (modernize.report(paths, config) if args.report
+           else modernize.apply(paths, config))
+    if args.json:
+        print(json.dumps(res, indent=2))
+        return 0
+    print(res["summary"])
+    for item in res.get("mechanical", []):
+        print(f"  would apply: {item['action']} — {item['detail']}")
+    for act in res.get("applied", []):
+        print(f"  applied: {act}")
+    for p in res.get("proposals", []):
+        tag = f" [{p['gameplan']}]" if p.get("gameplan") else ""
+        print(f"  proposal{tag}: {p['detail']}")
+    return 0
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
@@ -387,6 +414,16 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     # procedure version drift (MAJOR)
     drift = _procedure_drift(paths.procedure_file)
     check("procedure version compatible", drift is None, drift or "")
+    # Corpus modernization stamp (D-042) — advisory: stale means newer engine
+    # capabilities haven't been delivered to this corpus yet; never a failure.
+    stamp = config.procedure_version or ""
+    if stamp == PROCEDURE_VERSION:
+        print(f"✓ corpus modernized to procedure v{PROCEDURE_VERSION}")
+    else:
+        warn("corpus modernization available",
+             f"corpus stamp {stamp or '(unstamped)'} vs engine v{PROCEDURE_VERSION} — "
+             "run `clauderize upgrade` to apply mechanical updates and review "
+             "the advisory proposals")
     if config.active_gameplan:
         gp = paths.gameplan_dir(config.active_gameplan) / "GAMEPLAN.md"
         check(f"active gameplan {config.active_gameplan} on disk", gp.exists())
@@ -695,6 +732,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     pr = sub.add_parser("reindex", help="rebuild the graph cache from markdown")
     pr.set_defaults(func=cmd_reindex)
+
+    pup = sub.add_parser(
+        "upgrade",
+        help="modernize this repo's corpus: apply the engine's mechanical updates "
+             "(config stamp + migrations, missing gate-example files, the "
+             "procedure-doc refresh) and print advisory proposals it never "
+             "auto-applies")
+    pup.add_argument("--report", action="store_true", help="report only — apply nothing")
+    pup.add_argument("--json", action="store_true")
+    pup.set_defaults(func=cmd_upgrade)
 
     pd = sub.add_parser("doctor", help="verify the install and report drift")
     pd.set_defaults(func=cmd_doctor)

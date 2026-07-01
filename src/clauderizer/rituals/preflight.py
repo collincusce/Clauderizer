@@ -437,4 +437,53 @@ def run(
         else:
             check_command_gate(name)
 
+    def check_approval_gates() -> None:
+        """Appended ONLY when the current phase declares APPROVAL criteria, so a
+        repo without them keeps a byte-identical check list (INVARIANT-07).
+        Stale or missing-artifact approvals WARN, never fail (INVARIANT-05) —
+        the spend/ship decision stays with the agent, visibly."""
+        if not gid:
+            return
+        cur = status_bundle.compute(paths, config).get("current_phase")
+        if not cur:
+            return
+        crits = status_bundle.exit_criteria(paths.gameplan_dir(gid), str(cur["number"]))
+        approvals = [c for c in crits if c.get("kind") == "approval"]
+        if not approvals:
+            return
+        bad = [c for c in approvals if c.get("state") in ("stale", "missing")]
+        pending = [c for c in approvals if c.get("state") == "unapproved"]
+        if bad:
+            add("approval_gates", "warn",
+                "; ".join(c["detail"] for c in bad)
+                + " — review and re-record with cz_approve_gate")
+        elif pending:
+            add("approval_gates", "pass",
+                f"{len(pending)} approval(s) pending (not yet recorded), "
+                f"{len(approvals) - len(pending)} current")
+        else:
+            add("approval_gates", "pass", f"all {len(approvals)} approval(s) current")
+
+    check_approval_gates()
+
+    def check_standing_conditions() -> None:
+        """Appended only when the focus gameplan declares standing conditions
+        (.clauderizer/conditions.<gid>.toml); absent otherwise so a classic
+        repo's check list is byte-identical (INVARIANT-07). A met condition is
+        information, never a failure — the agent decides what to do with it."""
+        if not gid:
+            return
+        from . import conditions as _cond
+
+        conds = _cond.evaluate(paths, gid)
+        if not conds:
+            return
+        met = [c["name"] for c in conds if c["met"]]
+        if met:
+            add("standing_conditions", "pass",
+                f"met: {', '.join(met)} — iteration proposed (cz_loop_step)")
+        else:
+            add("standing_conditions", "pass", f"{len(conds)} declared, none met")
+
+    check_standing_conditions()
     return result

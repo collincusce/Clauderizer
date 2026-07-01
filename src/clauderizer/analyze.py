@@ -91,6 +91,22 @@ def parse_entries(doc_text: str, section: str) -> list[dict]:
 _STALE_STATUSES = {"superseded", "deprecated", "retired", "obsolete"}
 
 
+def scope_filter(entries: list[dict], focus_gameplan: str = "") -> list[dict]:
+    """D-043 read-time scope filtering — pure filtering, no shadowing.
+
+    Keeps every project-scoped entry and any entry scoped to ``focus_gameplan``;
+    drops entries scoped to a different gameplan. With no ``focus_gameplan``
+    given, returns ``entries`` unchanged (an unknown focus never hides a rule).
+    Scope is read from the entry body's ``**Scope**:`` line through the
+    single-sourced parser (INVARIANT-09-style: one definition of scope)."""
+    if not focus_gameplan:
+        return entries
+    from .graph.abstract_index import parse_scope  # lazy: cycle guard
+
+    keep = {"project", f"gameplan:{focus_gameplan}"}
+    return [e for e in entries if parse_scope(e.get("body", "")) in keep]
+
+
 def rank_relevant(query: str, entries: list[dict], k: int = 5,
                   exclude_ids: tuple[str, ...] = ()) -> list[dict]:
     """Rank ``entries`` by keyword + entity-id overlap with ``query``.
@@ -143,14 +159,16 @@ def rank_relevant(query: str, entries: list[dict], k: int = 5,
 _LESSON_DUP_JACCARD = 0.40
 
 
-def near_duplicate_lessons(paths: RepoPaths, text: str, *,
-                           threshold: float = _LESSON_DUP_JACCARD, k: int = 3,
-                           exclude_ids: tuple[str, ...] = ()) -> list[dict]:
-    """Active project lessons whose distinctive-token Jaccard with ``text`` is
-    ``>= threshold`` — the consolidate-instead-of-append candidates. Returns the top
-    ``k`` ``{id, title, jaccard}`` (descending), or ``[]`` (an honest "nothing
-    overlaps"). Surface-only; never mutates. Uses the abstract index's in-memory
-    ``build`` (no cache write), so it is safe inside the locked ``add_lesson``."""
+def _near_duplicates(paths: RepoPaths, text: str, *, kind: str,
+                     threshold: float = _LESSON_DUP_JACCARD, k: int = 3,
+                     exclude_ids: tuple[str, ...] = ()) -> list[dict]:
+    """Shared engine for the write-time near-duplicate advisories: active corpus
+    entries of ``kind`` whose distinctive-token Jaccard with ``text`` is
+    ``>= threshold``, as the top ``k`` ``{id, title, jaccard}`` (descending), or
+    ``[]`` (an honest "nothing overlaps"). One tokenizer, one threshold across
+    every caller (INVARIANT-09). Surface-only; never mutates. Uses the abstract
+    index's in-memory ``build`` (no cache write), so it is safe inside a locked
+    mutation."""
     from .graph import abstract_index  # lazy: abstract_index imports analyze
 
     nt = _tokens(text)
@@ -158,10 +176,10 @@ def near_duplicate_lessons(paths: RepoPaths, text: str, *,
         return []
     out: list[dict] = []
     for rec in abstract_index.build(paths)["entries"].values():
-        if rec.get("kind") != "lesson" or rec["id"] in exclude_ids:
+        if rec.get("kind") != kind or rec["id"] in exclude_ids:
             continue
         if str(rec.get("status") or "active").lower() != "active":
-            continue  # an obsolete lesson is not a live consolidation target
+            continue  # a retired entry is not a live consolidation target
         et = set(rec.get("token_set") or ())
         union = len(nt | et)
         if not union:
@@ -171,6 +189,25 @@ def near_duplicate_lessons(paths: RepoPaths, text: str, *,
             out.append({"id": rec["id"], "title": rec["title"], "jaccard": round(j, 3)})
     out.sort(key=lambda d: (-d["jaccard"], d["id"]))
     return out[:k]
+
+
+def near_duplicate_lessons(paths: RepoPaths, text: str, *,
+                           threshold: float = _LESSON_DUP_JACCARD, k: int = 3,
+                           exclude_ids: tuple[str, ...] = ()) -> list[dict]:
+    """Active project lessons whose distinctive-token Jaccard with ``text`` is
+    ``>= threshold`` — the consolidate-instead-of-append candidates."""
+    return _near_duplicates(paths, text, kind="lesson", threshold=threshold, k=k,
+                            exclude_ids=exclude_ids)
+
+
+def near_duplicate_invariants(paths: RepoPaths, text: str, *,
+                              threshold: float = _LESSON_DUP_JACCARD, k: int = 3,
+                              exclude_ids: tuple[str, ...] = ()) -> list[dict]:
+    """Active invariants whose distinctive-token Jaccard with ``text`` is
+    ``>= threshold`` — the scope-it-instead-of-redeclaring candidates (D-043).
+    Shares the lesson advisory's tokenizer and threshold (INVARIANT-09)."""
+    return _near_duplicates(paths, text, kind="invariant", threshold=threshold, k=k,
+                            exclude_ids=exclude_ids)
 
 
 # --- gap-finder: one-hop graph adjacency (D-018) ---------------------------------
@@ -374,17 +411,23 @@ def suggest_edges(paths: RepoPaths, min_shared: int = _EDGE_MIN_SHARED,
 
 
 def analyze(paths: RepoPaths, text: str, k: int = 5,
-            exclude_ids: tuple[str, ...] = ()) -> dict:
+            exclude_ids: tuple[str, ...] = (), focus_gameplan: str = "") -> dict:
     """Surface the most relevant decisions + invariants for ``text``, plus the
     one-hop graph neighbors it has not yet connected (the gap-finder, D-018), and
     the plausibly-MISSING edges between tracked entities (the structural
-    complement of D-018) — all advisory, for the agent to judge."""
+    complement of D-018) — all advisory, for the agent to judge.
+
+    ``focus_gameplan`` applies D-043 scope filtering to invariants: an invariant
+    scoped to a DIFFERENT gameplan is dropped from the candidates (its rules are
+    not this axis's rules). Project-scoped and focus-scoped entries always pass;
+    with no focus known, nothing is filtered (surfacing bias — better a stray
+    candidate than a hidden rule)."""
     decisions = rank_relevant(
         text, parse_entries(writer.full_text(paths.doc("DECISIONS")), "Decisions"),
         k=k, exclude_ids=exclude_ids)
-    invariants = rank_relevant(
-        text, parse_entries(writer.full_text(paths.doc("INVARIANTS")), "Invariants"),
-        k=k, exclude_ids=exclude_ids)
+    inv_entries = parse_entries(writer.full_text(paths.doc("INVARIANTS")), "Invariants")
+    inv_entries = scope_filter(inv_entries, focus_gameplan)
+    invariants = rank_relevant(text, inv_entries, k=k, exclude_ids=exclude_ids)
     # Surface each ranked hit's one-line abstract (a D-013 pointer): the agent can
     # often judge relevance — or answer outright — straight from it, without a
     # cz_get round-trip for the full body. cz_analyze ranks only em-dash entries

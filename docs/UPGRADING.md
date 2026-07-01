@@ -8,7 +8,7 @@
 
 Clauderizer separates the **engine** (the installed package) from the
 **wiring** (the files `init` writes into your repo). Upgrading is always the
-same two moves:
+same three moves:
 
 ```bash
 # 1. update the engine — pick your install mode:
@@ -19,6 +19,9 @@ uv tool upgrade clauderizer       # uv tool installs
 
 # 2. refresh the wiring (idempotent; engine-owned files only):
 uvx --from clauderizer clauderize init
+
+# 3. modernize the repo — deliver the new version's improvements:
+uvx --from clauderizer clauderize upgrade
 uvx --from clauderizer clauderize doctor    # expect exit 0
 ```
 
@@ -26,6 +29,27 @@ uvx --from clauderizer clauderize doctor    # expect exit 0
 marker block, and `.clauderizer/profile.lock.toml` edits survive every
 re-run. Only engine-owned files — the hook wrapper, the skills, the stanza
 between the markers — are refreshed.
+
+### What `clauderize upgrade` does (and refuses to do)
+
+Each repo's config carries the procedure version it was last brought up to;
+a newer engine on an older repo shows one status line until you run
+`upgrade`. The command works in two strictly separated tiers:
+
+- **Applied for you (mechanical, git-diffable):** the config version stamp
+  and any config migrations, missing per-kind preflight example files
+  (`.clauderizer/preflight.<kind>.toml.example`), a fresh copy of the
+  engine-owned `docs/gameplans/GAMEPLAN-PROCEDURE.md`, and the
+  `.clauderizer/kinds/` overlay directory.
+- **Proposed, never applied (your memory):** declared QA gates with no wired
+  command, invariants that look like duplicates and could be scoped to one
+  gameplan, campaign gameplans with no tracked deliverables, loop gameplans
+  with no standing conditions. Each proposal names the ordinary recording
+  command that would act on it. Your decisions, invariants, lessons, and
+  findings are never edited by a version bump.
+
+`clauderize upgrade --report` prints both tiers without applying anything;
+`--json` emits the full report for scripting.
 
 ### What doctor tells you after an engine update
 

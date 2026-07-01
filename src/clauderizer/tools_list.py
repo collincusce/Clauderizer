@@ -39,6 +39,8 @@ TOOL_NAMES = [
     "cz_resolve_open_item",
     "cz_set_exit_criteria",
     "cz_check_exit_criterion",
+    "cz_approve_gate",
+    "cz_modernize",
     "cz_analyze",
     "cz_critique",
     "cz_mine_failures",

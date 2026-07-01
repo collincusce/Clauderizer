@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from clauderizer import PROCEDURE_VERSION
 from clauderizer import config as cfg
 from clauderizer import paths as P
 from clauderizer.rituals import status_bundle as S
@@ -23,6 +24,11 @@ from clauderizer.rituals import status_bundle as S
 def _paths_and_config(repo: Path):
     paths = P.resolve(repo)
     config = cfg.Config.load(paths.config_file)
+    # The golden models a MODERNIZED corpus (what init/upgrade stamp), so the
+    # frozen digest proves byte-identity for current corpora; the legacy
+    # unstamped corpus's one ⚙ modernization line is pinned separately in
+    # test_modernize.py (deliberate golden decision, engine 1.4.0 / D-042).
+    config.procedure_version = config.procedure_version or PROCEDURE_VERSION
     return paths, config
 
 

@@ -22,3 +22,11 @@ gameplan = "campaign"
 
 [preflight]
 checks = ["clean_tree", "virality", "brand_lint", "duration"]
+
+# The deliverable lifecycle (engine 1.4.0): the states a tracked deliverable —
+# a flagship film, a pillar short, a deck — moves through. Deliverables are a
+# campaign's execution units, recorded as entities (type = "deliverable" with a
+# gameplan: field); individual rendered files (the 30 exports of one film) are
+# never deliverable entities.
+[lifecycle]
+statuses = ["concept", "spec-approved", "produced", "assembled", "qa", "shipped"]

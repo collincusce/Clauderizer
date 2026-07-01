@@ -222,19 +222,60 @@ def _mark_superseded(path: Path, section: str, target_id: str, new_id: str,
 
 @_locked
 def add_invariant(
-    paths: RepoPaths, *, text: str, introduced_by: str | None = None
+    paths: RepoPaths, *, text: str, introduced_by: str | None = None,
+    scope: str = "project", audience: str | None = None,
 ) -> dict:
+    scope = (scope or "project").strip()
+    if scope != "project" and not (scope.startswith("gameplan:")
+                                   and scope.split(":", 1)[1].strip()):
+        return {"ok": False,
+                "summary": "scope must be 'project' or 'gameplan:<id>' (D-043)"}
     path = paths.doc("INVARIANTS")
     _ensure_doc(path, "INVARIANTS")
     doc = writer.full_text(path)
     new_id = next_numbered_id(doc, "INVARIANT", sep="-", width=2)
-    intro = f"\n**Introduced by**: {introduced_by}" if introduced_by else ""
+    meta = []
+    if introduced_by:
+        meta.append(f"**Introduced by**: {introduced_by}")
+    if scope != "project":
+        meta.append(f"**Scope**: {scope}")
+    if audience and audience.strip():
+        meta.append(f"**Audience**: {audience.strip()}")
+    intro = ("\n" + "\n".join(meta)) if meta else ""
     # First line becomes the title; remainder the body.
     title = text.strip().split("\n", 1)[0]
     entry = f"### {new_id} — {title}{intro}\n\n{text.strip()}"
     writer.append_to_section(path, "Invariants", entry)
-    return {"ok": True, "id": new_id, "path": str(path),
-            "files_changed": [str(path)], "summary": f"added {new_id}"}
+    result = {"ok": True, "id": new_id, "path": str(path),
+              "files_changed": [str(path)], "summary": f"added {new_id}"}
+    advisories: list[str] = []
+    if scope.startswith("gameplan:"):
+        gid = scope.split(":", 1)[1].strip()
+        if not (paths.gameplan_dir(gid) / "GAMEPLAN.md").exists():
+            advisories.append(f"scope names gameplan '{gid}' which has no "
+                              "GAMEPLAN.md on disk — check the id")
+    # Write-time near-duplicate advisory, the invariant sibling of add_lesson's
+    # (D-043): a strong overlap with an existing invariant usually means a rule
+    # for one gameplan is being re-declared globally — scope it instead. The new
+    # entry is already appended (INVARIANT-03) and must exclude itself from the
+    # scan (both live in the same file, unlike the lesson advisory's two files).
+    try:
+        from . import analyze as _analyze
+
+        dups = _analyze.near_duplicate_invariants(paths, text, exclude_ids=(new_id,))
+        if dups:
+            result["related_invariants"] = dups
+            advisories.append(
+                "This invariant strongly overlaps existing invariant(s): "
+                + ", ".join(f"{d['id']} (Jaccard {d['jaccard']})" for d in dups)
+                + " — if it restates a rule for one gameplan, record it with "
+                  "scope='gameplan:<id>' instead of re-declaring it globally (D-043)."
+            )
+    except Exception:
+        pass
+    if advisories:
+        result["advisory"] = " ".join(advisories)
+    return result
 
 
 @_locked
@@ -340,7 +381,7 @@ def resolve_finding(paths: RepoPaths, *, finding_id: str, status: str = "resolve
 @_locked
 def add_lesson(
     paths: RepoPaths, *, gameplan_id: str, text: str, category: str = "Process",
-    evidence: str | None = None,
+    evidence: str | None = None, audience: str | None = None,
 ) -> dict:
     path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
     full = writer.full_text(path)
@@ -355,6 +396,10 @@ def add_lesson(
     # (obsolete|promoted …) marker at line end), so state parsing is unaffected.
     if evidence and evidence.strip():
         lesson_line += f" *(evidence: {evidence.strip()})*"
+    if audience and audience.strip():
+        # Audience rides inline like evidence (D-043); read paths filter on it
+        # via abstract_index.parse_audience. Not a lesson-state marker either.
+        lesson_line += f" *(audience: {audience.strip()})*"
     new_section = _insert_under_category(body, category, lesson_line)
     writer.upsert_section(path, "Accumulated Lessons", new_section)
     result = {"ok": True, "number": n, "path": str(path),
@@ -1056,7 +1101,10 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
                     return f"{t} [measured: baseline {baseline} tests]"
                 return t
 
-            items = [_annot(c["text"]) for c in unchecked]
+            # An approval row carries its computed state (stale/missing/
+            # unapproved) — show that instead of the raw text's old marker.
+            items = [f"{c['text']} [{c['detail']}]" if c.get("detail")
+                     else _annot(c["text"]) for c in unchecked]
             advisories.append({
                 "kind": "exit_criteria",
                 "items": items,
@@ -1320,9 +1368,86 @@ def check_exit_criterion(
                 "summary": f"exit criterion already {'checked' if checked else 'unchecked'}"}
     lines[i] = re.sub(r"\[[ xX]\]", f"[{want}]", lines[i], count=1)  # flip the box only
     writer.upsert_section(path, "Phase Breakdown", "\n".join(lines))
-    return {"ok": True, "phase": str(phase), "criterion": text,
-            "checked": checked, "changed": True, "files_changed": [str(path)],
-            "summary": f"exit criterion {'checked' if checked else 'unchecked'}"}
+    result = {"ok": True, "phase": str(phase), "criterion": text,
+              "checked": checked, "changed": True, "files_changed": [str(path)],
+              "summary": f"exit criterion {'checked' if checked else 'unchecked'}"}
+    from .rituals.status_bundle import split_approval
+    if checked and split_approval(text) is not None:
+        result["advisory"] = (
+            "this is an APPROVAL criterion — satisfaction is computed from the "
+            "recorded content hash, so a hand-checked box does not count as "
+            "approved. Record the approval with cz_approve_gate.")
+    return result
+
+
+@_locked
+def approve_gate(
+    paths: RepoPaths, *, gameplan_id: str, phase: str, criterion: str,
+    note: str = "", today: str | None = None,
+) -> dict:
+    """Record a human approval on an APPROVAL exit criterion, bound to the
+    artifact's content hash (gameplan 2026-07-01, D1).
+
+    Finds the criterion (same exact-or-unique-substring rules as
+    check_exit_criterion), computes the artifact's short sha256, and rewrites the
+    line checked with an ``_(approved <date> sha256:<hash> …)_`` marker —
+    re-approving replaces the marker. Every read path recomputes the hash, so
+    editing the artifact makes this approval report stale until re-approved.
+    """
+    if not gameplan_id:
+        return {"ok": False, "error": "approval gates require a gameplan_id"}
+    from .rituals.status_bundle import (
+        _EC_CHECK_RE, artifact_hash, phase_block, split_approval,
+    )
+
+    path = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
+    body = sections.get_section(writer.full_text(path), "Phase Breakdown")
+    if body is None:
+        return {"ok": False, "summary": "no Phase Breakdown section"}
+    blk = phase_block(body, phase)
+    if blk is None:
+        return {"ok": False, "summary": f"phase {phase} not found in Phase Breakdown"}
+    lines, start, end = blk
+    target = criterion.strip().lower()
+    matches = []
+    for i in range(start, end):
+        m = _EC_CHECK_RE.match(lines[i])
+        if m and target in m.group(2).strip().lower():
+            matches.append((i, m))
+    if not matches:
+        return {"ok": False,
+                "summary": f"no exit criterion matching {criterion!r} in phase {phase}"}
+    exact = [(i, m) for i, m in matches if m.group(2).strip().lower() == target]
+    if exact:
+        i, m = exact[0]
+    elif len(matches) == 1:
+        i, m = matches[0]
+    else:
+        hits = "; ".join(m.group(2).strip() for _, m in matches)
+        return {"ok": False, "summary": f"{criterion!r} matches {len(matches)} criteria "
+                f"in phase {phase} ({hits}) — pass the exact criterion text"}
+    text = m.group(2).strip()
+    parsed = split_approval(text)
+    if parsed is None:
+        return {"ok": False, "summary": (
+            f"criterion is not an APPROVAL row: {text!r} — approval criteria read "
+            "'APPROVAL: <artifact-path> — <description>'")}
+    base, artifact, _prior = parsed
+    h = artifact_hash(paths.root, artifact)
+    if h is None:
+        return {"ok": False, "summary": (
+            f"artifact missing: '{artifact}' is not a file under the repo root — "
+            "fix the path (or produce the artifact) before approving")}
+    # Parens would terminate the marker's own ( ) — map them to brackets.
+    clean_note = (note or "").strip().replace("(", "[").replace(")", "]")
+    marker = (f"_(approved {_today(today)} sha256:{h}"
+              + (f" — {clean_note}" if clean_note else "") + ")_")
+    indent = lines[i][:len(lines[i]) - len(lines[i].lstrip())]
+    lines[i] = f"{indent}- [x] {base} {marker}"
+    writer.upsert_section(path, "Phase Breakdown", "\n".join(lines))
+    return {"ok": True, "phase": str(phase), "criterion": base, "artifact": artifact,
+            "hash": h, "files_changed": [str(path)],
+            "summary": f"approval recorded for '{artifact}' (sha256 {h})"}
 
 
 # --- entities + status --------------------------------------------------------
@@ -1339,6 +1464,25 @@ def _entity_path(paths: RepoPaths, entity_id: str, type_: str) -> Path:
     folder, _ = _TYPE_DIR.get(type_, ("entities", ""))
     slug = entity_id.split(".", 1)[-1]
     return paths.docs / folder / f"{slug}.md"
+
+
+def _deliverable_status_advisory(paths: RepoPaths, gameplan, status) -> str | None:
+    """D2 advisory for a deliverable entity: it should carry its owning gameplan,
+    and its status should be one of that gameplan's kind lifecycle statuses.
+    Advisory only — the write always stands (INVARIANT-05)."""
+    if not gameplan:
+        return ("deliverables usually carry a gameplan field (fields={'gameplan': "
+                "'<id>'}) so they render in that gameplan's deliverable board "
+                "(cz_gameplans gameplan_id=...)")
+    from . import kinds
+    from .rituals.status_bundle import gameplan_kind
+
+    kind = kinds.resolve(gameplan_kind(paths.gameplan_dir(str(gameplan))),
+                         paths.kinds_dir)
+    if kind.lifecycle and status and status not in kind.lifecycle:
+        return (f"status '{status}' is not a '{kind.name}' lifecycle status "
+                f"({' → '.join(kind.lifecycle)}) — kept as written, advisory only")
+    return None
 
 
 @_locked
@@ -1367,9 +1511,14 @@ def upsert_entity(
     existed = path.exists()
     body = "" if existed else f"\n# {id.split('.', 1)[-1].replace('-', ' ').title()}\n\n_(describe.)_\n"
     writer.write_entity(path, data, body=body, preserve_body=True)
-    return {"ok": True, "id": id, "path": str(path), "created": not existed,
-            "files_changed": [str(path)],
-            "summary": f"{'updated' if existed else 'created'} {id}"}
+    result = {"ok": True, "id": id, "path": str(path), "created": not existed,
+              "files_changed": [str(path)],
+              "summary": f"{'updated' if existed else 'created'} {id}"}
+    if type == "deliverable":
+        adv = _deliverable_status_advisory(paths, (fields or {}).get("gameplan"), status)
+        if adv:
+            result["advisory"] = adv
+    return result
 
 
 @_locked
@@ -1395,6 +1544,16 @@ def transition_status(
         "files_changed": [str(entity.path)],
         "summary": f"{id}: {from_status} -> {to_status}",
     }
+    if getattr(entity, "type", "") == "deliverable":
+        try:
+            from .markdown import frontmatter as _fm
+
+            data, _ = _fm.parse(Path(entity.path).read_text(encoding="utf-8"))
+            adv = _deliverable_status_advisory(paths, data.get("gameplan"), to_status)
+            if adv:
+                result["advisory"] = adv
+        except OSError:
+            pass
     if run_cascade and config.ritual_enabled("cascade") and config.active_gameplan:
         graph = index.load_or_rebuild(paths.docs, paths.index_file)  # refresh
         transition = f"status {from_status} -> {to_status}"

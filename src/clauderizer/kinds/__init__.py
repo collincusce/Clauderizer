@@ -33,6 +33,11 @@ class Kind:
     # The kind's default preflight check list. Empty = "defer to config" (driven
     # keeps the size-manifest list). Wired into preflight in Phase 3.
     preflight_checks: list[str] = field(default_factory=list)
+    # The kind's DELIVERABLE lifecycle statuses (engine 1.4.0, D2): the ordered
+    # states a type=deliverable entity moves through on this kind of gameplan
+    # (campaign: concept → … → shipped). Empty = the kind tracks no deliverable
+    # lifecycle (driven/loop) — everything then behaves exactly as before.
+    lifecycle: list[str] = field(default_factory=list)
 
     def label(self, term: str) -> str:
         """Display label for a canonical term — identity when this kind does not
@@ -48,6 +53,7 @@ class Kind:
             lexicon={k: str(v) for k, v in raw.get("lexicon", {}).items()},
             first_phase=str(raw.get("template", {}).get("first_phase", "Bootstrap")),
             preflight_checks=list(raw.get("preflight", {}).get("checks", [])),
+            lifecycle=[str(s) for s in raw.get("lifecycle", {}).get("statuses", [])],
         )
 
 

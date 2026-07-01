@@ -123,11 +123,12 @@ def _jaccard(a: set, b: set) -> float:
 
 
 def _active_project_lessons(paths) -> list[dict]:
-    """``{id, text}`` for each ACTIVE ``L-NN`` lesson in docs/LESSONS.md.
+    """``{id, text, audience}`` for each ACTIVE ``L-NN`` lesson in docs/LESSONS.md.
 
     The ``L-NN`` line grammar is single-sourced through
-    ``abstract_index.parse_lesson_line`` (#5) — no local copy of the regex."""
-    from .graph.abstract_index import parse_lesson_line
+    ``abstract_index.parse_lesson_line`` (#5) — no local copy of the regex; the
+    audience tag comes from its sibling ``parse_audience`` (D-043)."""
+    from .graph.abstract_index import parse_audience, parse_lesson_line
     from .markdown import lesson_state, sections
 
     doc = paths.doc("LESSONS")
@@ -140,7 +141,8 @@ def _active_project_lessons(paths) -> list[dict]:
         parsed = parse_lesson_line(s)
         if parsed and lesson_state.is_active(s):
             eid, title, body = parsed
-            out.append({"id": eid, "text": f"{title} {body}".strip()})
+            out.append({"id": eid, "text": f"{title} {body}".strip(),
+                        "audience": parse_audience(s)})
     return out
 
 
@@ -156,10 +158,14 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
     surfaced = [e for e in events if e.get("kind") == "surfaced"]
     outcomes = [e for e in events if e.get("kind") == "outcome"]
 
-    toks = [(l["id"], _tokens(l["text"])) for l in lessons]
+    toks = [(l["id"], _tokens(l["text"]), l.get("audience", "")) for l in lessons]
     redundant: list[tuple[str, str]] = []
     for i in range(len(toks)):
         for j in range(i + 1, len(toks)):
+            # D-043: never pair across audiences — a copywriter rule and a coder
+            # rule are not consolidation candidates even when they overlap.
+            if toks[i][2] != toks[j][2]:
+                continue
             if _jaccard(toks[i][1], toks[j][1]) >= _REDUNDANCY_THRESHOLD:
                 redundant.append((toks[i][0], toks[j][0]))
 
@@ -333,10 +339,13 @@ def curate_proposals(paths, gid: str = "") -> dict:
     lessons = _active_project_lessons(paths)
     proposals: list[dict] = []
 
-    # consolidate: lexically redundant project-lesson pairs.
-    toks = [(l["id"], _tokens(l["text"])) for l in lessons]
+    # consolidate: lexically redundant project-lesson pairs. Same-audience only
+    # (D-043) — consolidation across working roles is never proposed.
+    toks = [(l["id"], _tokens(l["text"]), l.get("audience", "")) for l in lessons]
     for i in range(len(toks)):
         for j in range(i + 1, len(toks)):
+            if toks[i][2] != toks[j][2]:
+                continue
             jac = _jaccard(toks[i][1], toks[j][1])
             if jac >= _REDUNDANCY_THRESHOLD:
                 a, b = toks[i][0], toks[j][0]

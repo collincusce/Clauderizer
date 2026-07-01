@@ -30,7 +30,8 @@ class ConfigError(ValueError):
 # so a rewrite never drops it. [rituals] is intentionally absent — every key there
 # is modeled by the dynamic ``rituals`` dict.
 _MODELED_KEYS: dict[str, set[str]] = {
-    "clauderizer": {"version", "size", "preflight_checks", "preflight_advisory"},
+    "clauderizer": {"version", "size", "preflight_checks", "preflight_advisory",
+                    "procedure_version"},
     "host": {"profile", "session_host", "target"},
     "paths": {"docs", "gameplans"},
     "memory": {"active_lessons_warn", "project_lessons_warn"},
@@ -122,6 +123,11 @@ class Config:
     rituals: dict[str, bool] = field(default_factory=dict)
     preflight_checks: list[str] = field(default_factory=list)
     preflight_advisory: list[str] = field(default_factory=list)
+    # The GAMEPLAN-PROCEDURE version this corpus was last modernized to (D-042).
+    # Stamped by `clauderize init` / `clauderize upgrade`; "" = a legacy corpus
+    # that predates stamping — the status digest then surfaces one modernization
+    # line until the corpus is brought current. Never gates anything.
+    procedure_version: str = ""
     # The default-target gameplan for status / do-phase / handoff — the "focus"
     # (D2 of concurrent-multi-axis-gameplans). Stored canonically as ``focus``;
     # ``active_gameplan`` remains a property alias (below) so the ~40 existing call
@@ -216,6 +222,7 @@ class Config:
                 rituals={k: bool(v) for k, v in rituals.items()},
                 preflight_checks=list(cz.get("preflight_checks", [])),
                 preflight_advisory=list(cz.get("preflight_advisory", [])),
+                procedure_version=str(cz.get("procedure_version", "")),
                 focus=(active.get("id") or None),
                 # int() raises on garbage — a malformed threshold must be visible,
                 # never silently replaced by a default (L-04).
@@ -241,6 +248,10 @@ class Config:
             f'size = "{self.size}"',
             _toml_kv("preflight_checks", self.preflight_checks),
             _toml_kv("preflight_advisory", self.preflight_advisory),
+            # Emitted only once stamped, so a legacy config rewrite stays
+            # byte-identical until init/upgrade deliberately stamps it.
+            *([f'procedure_version = "{self.procedure_version}"']
+              if self.procedure_version else []),
             *ex("clauderizer"),
             "",
             "[host]",
@@ -315,6 +326,7 @@ def merge_missing(existing: Config, defaults: Config) -> Config:
         rituals=existing.rituals or defaults.rituals,
         preflight_checks=existing.preflight_checks or defaults.preflight_checks,
         preflight_advisory=existing.preflight_advisory or defaults.preflight_advisory,
+        procedure_version=existing.procedure_version or defaults.procedure_version,
         focus=existing.focus or defaults.focus,
         # ints always carry a value after load (defaults applied there); `or`
         # would clobber a deliberate 0 ("warn always"), so pass through as-is.

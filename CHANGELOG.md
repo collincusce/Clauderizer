@@ -2,6 +2,19 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.4.0] — 2026-07-01
+
+General modernization — the release where **upgrading the engine delivers its improvements to your repo**, plus four additive memory/gameplan capabilities distilled from the heaviest multi-campaign deployment. Everything is opt-in by shape: a repo that uses none of it behaves exactly as 1.3.1 (procedure 1.4.0 → 1.5.0, MINOR).
+
+- **`clauderize upgrade` — corpus modernization.** The config now carries the procedure version the repo was last brought up to (stamped by `init`). When a newer engine meets an older corpus, the status digest and `clauderize doctor` say so in one line, and `clauderize upgrade` closes the gap in two tiers: **mechanical updates apply for you** (the config stamp and migrations, missing per-kind gate example files, the engine-owned `GAMEPLAN-PROCEDURE.md` refresh — all visible in `git diff`), while **memory-shaped improvements are only proposed** (unwired QA gates, near-duplicate invariants that look scope-taggable, campaigns without deliverable entities, loops without standing conditions) — your decisions, invariants, and lessons are never auto-edited. This also makes 1.3.1's `preflight.<kind>.toml.example` real: the hint referenced an example file that nothing actually scaffolded; `upgrade` now writes it.
+- **Scoped memory.** `cz_add_invariant` accepts a scope (project-wide, or one gameplan's — a campaign's brand rules stop leaking into every other gameplan's context) and an audience label; `cz_add_lesson` accepts an audience. Reads filter — `cz_analyze` and the handoff's governing-invariants list skip other gameplans' scoped rules, and `cz_next_phase_context(audience=...)` returns one working role's view — but the canonical files and the written handoff always carry everything. The write-time near-duplicate advisory now covers invariants too (same single tokenizer and threshold), and curation never proposes consolidating across scopes or audiences.
+- **Approval criteria — sign-offs bound to content.** An exit criterion of the form `APPROVAL: <artifact-path> — <description>` plus the new `cz_approve_gate` records a human approval as the artifact's content hash. Every later read recomputes it: edit the artifact and the approval reads as stale — in check-off, phase completion, and pre-flight — until re-approved. A hand-ticked box never counts. Surfaced everywhere, enforced nowhere.
+- **Deliverables for campaign-style gameplans.** A kind may define a deliverable lifecycle (the campaign kind ships `concept → spec-approved → produced → assembled → qa → shipped`); each deliverable — a film, a short, a deck, never an individual rendered file — is a tracked entity with a `gameplan` field. `cz_gameplans gameplan_id=...` renders the deliverables board; the digest adds at most a one-line rollup ("Deliverables: 3/6 shipped").
+- **Standing conditions.** A loop or campaign gameplan may declare threshold probes in `.clauderizer/conditions.<gameplan-id>.toml` (exit 0 = met). They run only when status is explicitly asked for — never on a timer, never from the session-start hook — and a met condition surfaces one line: "iteration proposed". The engine proposes; you decide.
+- **Cross-gameplan consumes, pinned.** The handoff's "Consumes" section now shows each consumed entity's version alongside its status, and the whole chain — declare, render, cross-axis change, pending cross-ref on the portfolio card — is covered by an end-to-end test.
+
+New tools: `cz_approve_gate`, `cz_modernize` (surface 42 → 44). New CLI subcommand: `clauderize upgrade`.
+
 ## [1.3.1] — 2026-06-28
 
 Integrity patch — coherence, test, and documentation hardening from a read-only audit at 1.3.0. No new features and no user-facing behavior regression; the tool surface stays 42.

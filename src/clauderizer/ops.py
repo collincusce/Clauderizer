@@ -50,9 +50,14 @@ def _graph(paths: RepoPaths):
 
 
 def cz_status() -> dict:
-    """Current state: active gameplan, phase table, baseline tests, pending cascades, blockers."""
+    """Current state: active gameplan, phase table, baseline tests, pending cascades, blockers.
+
+    Also evaluates the focus gameplan's declared standing conditions
+    (.clauderizer/conditions.<id>.toml) — a met condition surfaces as
+    "iteration proposed", never auto-runs anything.
+    """
     paths, config = repo_ctx()
-    bundle = status_bundle.compute(paths, config)
+    bundle = status_bundle.compute(paths, config, conditions=True)
     # Long-lived servers only: nudge when the engine source on disk is newer
     # than this process (a fresh CLI/ops process never sees True).
     bundle["engine_stale"] = status_bundle.engine_source_newer_than(
@@ -60,26 +65,59 @@ def cz_status() -> dict:
     return bundle
 
 
-def cz_next_phase_context() -> dict:
-    """Assemble everything the next/current phase session needs in one call (read-only: returns the handoff text without writing a file)."""
+def cz_next_phase_context(audience: str = "") -> dict:
+    """Assemble everything the next/current phase session needs in one call (read-only: returns the handoff text without writing a file).
+
+    Pass audience (e.g. "copywriter") to get that working role's view: lessons
+    tagged for other audiences drop out of the bundle, untagged ones stay. The
+    written handoff file is never filtered — this shapes only the read-only
+    context returned here.
+    """
     paths, config = repo_ctx()
     bundle = status_bundle.compute(paths, config)
     target = bundle.get("current_phase") or bundle.get("next_phase")
     if not target or not config.active_gameplan:
         return {"ok": False, "summary": "no active/next phase", "status": bundle}
-    result = handoff.assemble(paths, config, config.active_gameplan, target["number"], write=False)
+    result = handoff.assemble(paths, config, config.active_gameplan, target["number"],
+                              write=False, audience=audience)
     result["phase"] = target
     result["status_summary"] = bundle.get("summary")
     result["next_action"] = bundle.get("next_action")
     return result
 
 
-def cz_gameplans(include_closed: bool = False) -> dict:
+def cz_gameplans(include_closed: bool = False, gameplan_id: str = "") -> dict:
     """List gameplans as a portfolio — the multi-axis view across concurrent
     gameplans. Open ones by default (include_closed=True adds finished ones); each
     card carries kind, lifecycle, the current/next phase, blockers, pending-cascade
-    count, and whether it is the focus. Read-only (L-03)."""
+    count, and whether it is the focus. Read-only (L-03).
+
+    Pass gameplan_id for that gameplan's DETAIL view: its card plus the
+    deliverables board — entities of type=deliverable carrying gameplan: <id>,
+    laid out against the kind's lifecycle statuses as `matrix_md`. Deliverables
+    are a campaign's execution units (a film, a short, a deck), never the
+    individual rendered files they produce.
+    """
     paths, config = repo_ctx()
+    if gameplan_id:
+        from . import kinds as _kinds
+
+        gdir = paths.gameplan_dir(gameplan_id)
+        if not (gdir / "GAMEPLAN.md").exists():
+            return {"ok": False, "summary": f"unknown gameplan {gameplan_id!r}"}
+        card = status_bundle.gameplan_card(gdir, config.focus, paths.kinds_dir)
+        kind = _kinds.resolve(card["kind"], paths.kinds_dir)
+        delivs = status_bundle.deliverables_for(paths, gameplan_id)
+        return {
+            "ok": True,
+            "gameplan": card,
+            "deliverables": delivs,
+            "lifecycle": kind.lifecycle,
+            "matrix_md": status_bundle.deliverable_matrix_md(delivs, kind.lifecycle),
+            "summary": (f"{gameplan_id}: {len(delivs)} deliverable(s)"
+                        + (f" across {' → '.join(kind.lifecycle)}"
+                           if kind.lifecycle else "")),
+        }
     cards = status_bundle.portfolio(paths, config, include_closed=include_closed)
     open_n = sum(1 for c in cards if c["open"])
     return {
@@ -162,10 +200,10 @@ def cz_analyze(text: str, k: int = 5) -> dict:
     Each ranked decision/invariant hit also carries a one-line `abstract` (a D-013
     pointer); when it is not enough, call cz_get(id) for that entry's full body.
     """
-    paths, _ = repo_ctx()
+    paths, config = repo_ctx()
     from . import analyze as _analyze
 
-    res = _analyze.analyze(paths, text, k=k)
+    res = _analyze.analyze(paths, text, k=k, focus_gameplan=config.active_gameplan or "")
     n = len(res["decisions"]) + len(res["invariants"])
     adj = res.get("adjacent") or []
     edges = res.get("suggested_edges") or []
@@ -481,10 +519,21 @@ def cz_add_decision(title: str, context: str, decision: str, consequences: str,
                                   evidence=evidence or None)
 
 
-def cz_add_invariant(text: str, introduced_by: str = "") -> dict:
-    """Append a project invariant (INVARIANT-NN)."""
+def cz_add_invariant(text: str, introduced_by: str = "", scope: str = "project",
+                     audience: str = "") -> dict:
+    """Append an invariant (INVARIANT-NN) — project-wide by default.
+
+    Pass scope="gameplan:<id>" when the rule belongs to one gameplan (a
+    campaign's brand rules, say) so other gameplans' context stays free of it,
+    and an optional audience label (e.g. "copywriter") when only one working
+    role needs it. If the text strongly overlaps an existing invariant the
+    result carries a `related_invariants` list + an `advisory` suggesting a
+    scoped entry instead of a global re-declaration — advisory only, the entry
+    is still appended.
+    """
     paths, _ = repo_ctx()
-    return mutations.add_invariant(paths, text=text, introduced_by=introduced_by or None)
+    return mutations.add_invariant(paths, text=text, introduced_by=introduced_by or None,
+                                   scope=scope or "project", audience=audience or None)
 
 
 def cz_add_finding(
@@ -530,12 +579,14 @@ def cz_resolve_finding(finding_id: str, status: str = "resolved", note: str = ""
 
 
 def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "",
-                  evidence: str = "") -> dict:
+                  evidence: str = "", audience: str = "") -> dict:
     """Add an accumulated lesson (rolls into every future handoff).
 
     `evidence` optionally cites the concrete provenance that produced the lesson
     (commit, file:line, phase, output id); it renders inline and rides along in
-    every handoff rollup.
+    every handoff rollup. `audience` optionally tags the lesson for one working
+    role (e.g. "copywriter", "art-director", "coder") so audience-filtered
+    handoffs carry only what that role needs; untagged lessons reach everyone.
 
     If the new lesson strongly overlaps an existing PROJECT lesson, the result carries
     a `related_lessons` list + an `advisory` nudging consolidation
@@ -544,7 +595,7 @@ def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "",
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
     return mutations.add_lesson(paths, gameplan_id=gid, text=text, category=category,
-                                evidence=evidence or None)
+                                evidence=evidence or None, audience=audience or None)
 
 
 def cz_consolidate_lessons(numbers: list[int], text: str, category: str = "Process",
@@ -787,6 +838,46 @@ def cz_check_exit_criterion(phase: str, criterion: str, checked: bool = True,
                                           criterion=criterion, checked=checked)
 
 
+def cz_modernize(apply: bool = False) -> dict:
+    """Report — and with apply=true, perform — the corpus-modernization pass.
+
+    The default is a read-only report: the MECHANICAL updates a newer engine
+    would apply (the config's procedure-version stamp and migrations, missing
+    preflight-gate example files, a stale engine-owned copy of the procedure
+    doc) plus ADVISORY proposals for memory-shaped gaps — declared QA gates with
+    no wired command, near-duplicate invariants that look scope-taggable,
+    campaign gameplans without deliverable entities, loop gameplans without
+    standing conditions. apply=true performs only the mechanical tier;
+    decisions, invariants, lessons, findings, and gameplan memory are never
+    auto-edited — each proposal names the normal cz_* write that would act on
+    it, and the choice stays yours.
+    """
+    paths, config = repo_ctx()
+    from . import modernize
+
+    return modernize.apply(paths, config) if apply else modernize.report(paths, config)
+
+
+def cz_approve_gate(phase: str, criterion: str, note: str = "",
+                    gameplan_id: str = "") -> dict:
+    """Record a human approval on an APPROVAL exit criterion, bound to the
+    artifact's content hash.
+
+    An approval criterion reads `APPROVAL: <artifact-path> — <description>` in a
+    phase's exit criteria. Approving computes the artifact's sha256 and stamps it
+    into the criterion; every later read recomputes it, so editing the artifact
+    makes the approval report "stale" (and the criterion unsatisfied) until it is
+    re-approved — surfaced everywhere, enforced nowhere. Re-approving replaces
+    the stamp. `note` optionally records who/what approved.
+    """
+    paths, config = repo_ctx()
+    gid = gameplan_id or config.active_gameplan
+    if not gid:
+        return {"ok": False, "error": "no gameplan specified or active"}
+    return mutations.approve_gate(paths, gameplan_id=gid, phase=phase,
+                                  criterion=criterion, note=note)
+
+
 def _default_transcripts_dir() -> str:
     """Best-effort path to this project's Claude Code transcripts (``*.jsonl``).
 
@@ -914,7 +1005,21 @@ def cz_loop_step() -> dict:
     from . import telemetry
 
     paths, config = repo_ctx()
-    return telemetry.loop_step(paths, config.active_gameplan)
+    result = telemetry.loop_step(paths, config.active_gameplan)
+    # Standing conditions (D3): the loop's threshold triggers, evaluated lazily
+    # right where an iteration would begin. Met -> proposed, never auto-run.
+    from .rituals import conditions as _conditions
+
+    conds = _conditions.evaluate(paths, config.active_gameplan or "")
+    if conds:
+        result["standing_conditions"] = conds
+        met = [c["name"] for c in conds if c["met"]]
+        if met:
+            result["iteration_proposed"] = True
+            result["summary"] = (str(result.get("summary", "")).rstrip(".")
+                                 + f"; standing condition(s) met: {', '.join(met)}"
+                                   " — iteration proposed").lstrip("; ")
+    return result
 
 
 def cz_discover_skills() -> dict:
@@ -980,6 +1085,8 @@ REGISTRY: dict[str, Op] = {
     "cz_resolve_open_item": Op(cz_resolve_open_item, writes=True),
     "cz_set_exit_criteria": Op(cz_set_exit_criteria, writes=True),
     "cz_check_exit_criterion": Op(cz_check_exit_criterion, writes=True),
+    "cz_approve_gate": Op(cz_approve_gate, writes=True),
+    "cz_modernize": Op(cz_modernize, writes=True),
     "cz_analyze": Op(cz_analyze, writes=False),
     "cz_critique": Op(cz_critique, writes=False),
     "cz_mine_failures": Op(cz_mine_failures, writes=False),
