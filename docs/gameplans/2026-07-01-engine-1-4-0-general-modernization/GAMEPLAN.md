@@ -76,10 +76,10 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Project ADRs D-042 (two-tier modernization) and D-043 (scoping is filtering) recorded; gameplan decisions D1-D4 recorded
-- [ ] Five feature entities upserted (feat.scoped-memory, feat.approval-gates, feat.deliverable-matrix, feat.standing-conditions, feat.corpus-modernization) with subsystem depends_on edges
-- [ ] Baseline captured: engine 1.3.1, PROCEDURE_VERSION 1.4.0, tool surface 42, suite count recorded in outputs registry from a green cz_preflight run
-- [ ] Plan committed on a feature branch off main; working tree clean afterward
+- [x] Project ADRs D-042 (two-tier modernization) and D-043 (scoping is filtering) recorded; gameplan decisions D1-D4 recorded
+- [x] Five feature entities upserted (feat.scoped-memory, feat.approval-gates, feat.deliverable-matrix, feat.standing-conditions, feat.corpus-modernization) with subsystem depends_on edges
+- [x] Baseline captured: engine 1.3.1, PROCEDURE_VERSION 1.4.0, tool surface 42, suite count recorded in outputs registry from a green cz_preflight run
+- [x] Plan committed on a feature branch off main; working tree clean afterward
 
 ### Phase 1: Scoped memory — write path & near-dup parity
 
@@ -91,12 +91,12 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_add_invariant accepts scope + audience and writes **Scope**/**Audience** metadata lines (test)
-- [ ] cz_add_lesson accepts audience and writes the *(audience: X)* marker (test)
-- [ ] Invariant write-time near-dup advisory fires on a verbatim duplicate, computed via analyze._tokens and the single-sourced threshold — canonical-tokenizer guard test still passes (INVARIANT-09)
-- [ ] Abstract index parses and round-trips Scope/Audience metadata (test)
-- [ ] clauderize ops --schema shows the new optional args for both tools (CLI parity, L-05)
-- [ ] Untagged writes produce byte-identical entries to 1.3.1 (test); full suite green
+- [x] cz_add_invariant accepts scope + audience and writes **Scope**/**Audience** metadata lines (test)
+- [x] cz_add_lesson accepts audience and writes the *(audience: X)* marker (test)
+- [x] Invariant write-time near-dup advisory fires on a verbatim duplicate, computed via analyze._tokens and the single-sourced threshold — canonical-tokenizer guard test still passes (INVARIANT-09)
+- [x] Abstract index parses and round-trips Scope/Audience metadata (test)
+- [x] clauderize ops --schema shows the new optional args for both tools (CLI parity, L-05)
+- [x] Untagged writes produce byte-identical entries to 1.3.1 (test); full suite green
 
 ### Phase 2: Scoped memory — read path & curator grouping
 
@@ -108,11 +108,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_analyze excludes invariants scoped to a non-focus gameplan and includes focus-scoped + project ones (test)
-- [ ] cz_next_phase_context/cz_write_handoff with audience=X drop other-audience lessons and always keep untagged (test)
-- [ ] Curator/consolidation/corpus-health never propose pairing entries across scope or audience (test)
-- [ ] Digest memory gauge output unchanged for untagged corpora (INVARIANT-07 test)
-- [ ] Full suite green
+- [x] cz_analyze excludes invariants scoped to a non-focus gameplan and includes focus-scoped + project ones (test)
+- [x] cz_next_phase_context with audience=X drops other-audience lessons and always keeps untagged; the WRITTEN handoff file is never filtered (tests; see correction C-01)
+- [x] Curator/consolidation/corpus-health never propose pairing entries across scope or audience (test)
+- [x] Existing digest/status golden tests pass unchanged for untagged corpora (INVARIANT-07)
+- [x] Full suite green
 
 ### Phase 3: Approval gates — hash-bound exit criteria
 

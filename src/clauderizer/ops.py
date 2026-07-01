@@ -60,14 +60,21 @@ def cz_status() -> dict:
     return bundle
 
 
-def cz_next_phase_context() -> dict:
-    """Assemble everything the next/current phase session needs in one call (read-only: returns the handoff text without writing a file)."""
+def cz_next_phase_context(audience: str = "") -> dict:
+    """Assemble everything the next/current phase session needs in one call (read-only: returns the handoff text without writing a file).
+
+    Pass audience (e.g. "copywriter") to get that working role's view: lessons
+    tagged for other audiences drop out of the bundle, untagged ones stay. The
+    written handoff file is never filtered — this shapes only the read-only
+    context returned here.
+    """
     paths, config = repo_ctx()
     bundle = status_bundle.compute(paths, config)
     target = bundle.get("current_phase") or bundle.get("next_phase")
     if not target or not config.active_gameplan:
         return {"ok": False, "summary": "no active/next phase", "status": bundle}
-    result = handoff.assemble(paths, config, config.active_gameplan, target["number"], write=False)
+    result = handoff.assemble(paths, config, config.active_gameplan, target["number"],
+                              write=False, audience=audience)
     result["phase"] = target
     result["status_summary"] = bundle.get("summary")
     result["next_action"] = bundle.get("next_action")
@@ -162,10 +169,10 @@ def cz_analyze(text: str, k: int = 5) -> dict:
     Each ranked decision/invariant hit also carries a one-line `abstract` (a D-013
     pointer); when it is not enough, call cz_get(id) for that entry's full body.
     """
-    paths, _ = repo_ctx()
+    paths, config = repo_ctx()
     from . import analyze as _analyze
 
-    res = _analyze.analyze(paths, text, k=k)
+    res = _analyze.analyze(paths, text, k=k, focus_gameplan=config.active_gameplan or "")
     n = len(res["decisions"]) + len(res["invariants"])
     adj = res.get("adjacent") or []
     edges = res.get("suggested_edges") or []
@@ -481,10 +488,21 @@ def cz_add_decision(title: str, context: str, decision: str, consequences: str,
                                   evidence=evidence or None)
 
 
-def cz_add_invariant(text: str, introduced_by: str = "") -> dict:
-    """Append a project invariant (INVARIANT-NN)."""
+def cz_add_invariant(text: str, introduced_by: str = "", scope: str = "project",
+                     audience: str = "") -> dict:
+    """Append an invariant (INVARIANT-NN) — project-wide by default.
+
+    Pass scope="gameplan:<id>" when the rule belongs to one gameplan (a
+    campaign's brand rules, say) so other gameplans' context stays free of it,
+    and an optional audience label (e.g. "copywriter") when only one working
+    role needs it. If the text strongly overlaps an existing invariant the
+    result carries a `related_invariants` list + an `advisory` suggesting a
+    scoped entry instead of a global re-declaration — advisory only, the entry
+    is still appended.
+    """
     paths, _ = repo_ctx()
-    return mutations.add_invariant(paths, text=text, introduced_by=introduced_by or None)
+    return mutations.add_invariant(paths, text=text, introduced_by=introduced_by or None,
+                                   scope=scope or "project", audience=audience or None)
 
 
 def cz_add_finding(
@@ -530,12 +548,14 @@ def cz_resolve_finding(finding_id: str, status: str = "resolved", note: str = ""
 
 
 def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "",
-                  evidence: str = "") -> dict:
+                  evidence: str = "", audience: str = "") -> dict:
     """Add an accumulated lesson (rolls into every future handoff).
 
     `evidence` optionally cites the concrete provenance that produced the lesson
     (commit, file:line, phase, output id); it renders inline and rides along in
-    every handoff rollup.
+    every handoff rollup. `audience` optionally tags the lesson for one working
+    role (e.g. "copywriter", "art-director", "coder") so audience-filtered
+    handoffs carry only what that role needs; untagged lessons reach everyone.
 
     If the new lesson strongly overlaps an existing PROJECT lesson, the result carries
     a `related_lessons` list + an `advisory` nudging consolidation
@@ -544,7 +564,7 @@ def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "",
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
     return mutations.add_lesson(paths, gameplan_id=gid, text=text, category=category,
-                                evidence=evidence or None)
+                                evidence=evidence or None, audience=audience or None)
 
 
 def cz_consolidate_lessons(numbers: list[int], text: str, category: str = "Process",

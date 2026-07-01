@@ -8,7 +8,8 @@ a whole corpus file. Deterministic, no ML, no new dependency (reuses
 on demand and is always safe to discard (INVARIANT-01).
 
 Each record is ``{id, title, abstract, anchor, token_set, content_hash, status,
-kind}``:
+kind, scope, audience}`` (scope/audience are the D-043 memory-scoping fields —
+``project``/empty for classic untagged entries):
   * ``abstract`` — a bounded one-line summary (O-01: the entry title, or for a
     lesson its first sentence, capped at :data:`ABSTRACT_CAP`).
   * ``anchor``   — ``docs/<FILE>.md:<line>`` of the entry, recomputed every build
@@ -43,7 +44,8 @@ from ..paths import RepoPaths
 
 # Bump when the record shape changes; load_or_rebuild refreshes the cache file on a
 # mismatch even if no markdown changed (D1 — the gate graph/index.py lacks).
-SCHEMA_VERSION = 1
+# v2: records gained scope/audience (D-043).
+SCHEMA_VERSION = 2
 
 # Bound on a surfaced abstract (chars). The payload-budget knob; Phase 3 may tune it.
 ABSTRACT_CAP = 200
@@ -70,6 +72,11 @@ _LESSON_LINE_RE = re.compile(r"^\*\*(L-\d+)\.\*\*\s*(.*)$")
 # Entry lifecycle status, tolerating the decisions form (``**Status**: active``) and
 # the hardening form (``- **Status**: resolved (date)``). First word after the label.
 _STATUS_RE = re.compile(r"^\s*(?:-\s*)?\*\*Status\*\*\s*:\s*([a-z]+)", re.M | re.I)
+# D-043 scoped-memory metadata lines on ### ID — title entries.
+_SCOPE_RE = re.compile(r"^\s*\*\*Scope\*\*\s*:\s*(\S+)", re.M)
+_AUDIENCE_META_RE = re.compile(r"^\s*\*\*Audience\*\*\s*:\s*(.+?)\s*$", re.M)
+# The trailing ``*(audience: X)*`` tag on a single-line lesson (D-043).
+_LESSON_AUDIENCE_RE = re.compile(r"\*\(audience:\s*([^)]+)\)\*")
 
 
 def _corpus_mtime(paths: RepoPaths) -> float:
@@ -93,7 +100,7 @@ def _cap(text: str) -> str:
 
 
 def _record(eid: str, title: str, body: str, line: int, status: str, kind: str,
-            rel_path: str) -> dict:
+            rel_path: str, scope: str = "project", audience: str = "") -> dict:
     from .. import analyze  # lazy: analyze imports graph.index, avoid an import cycle
 
     content = f"{title}\n{body}".strip()
@@ -106,6 +113,8 @@ def _record(eid: str, title: str, body: str, line: int, status: str, kind: str,
         "content_hash": hashlib.sha256(content.encode("utf-8")).hexdigest(),
         "status": status,
         "kind": kind,
+        "scope": scope,
+        "audience": audience,
     }
 
 
@@ -125,7 +134,9 @@ def _emdash_records(text: str, section: str, kind: str, rel_path: str) -> list[d
     def flush() -> None:
         if cur is not None:
             out.append(_record(cur["id"], cur["title"], cur["body"].strip(),
-                               cur["line"], _status(cur["body"]), kind, rel_path))
+                               cur["line"], _status(cur["body"]), kind, rel_path,
+                               scope=parse_scope(cur["body"]),
+                               audience=parse_audience_meta(cur["body"])))
 
     for i, raw in enumerate(text.splitlines(), start=1):
         s = raw.strip()
@@ -165,6 +176,16 @@ def parse_lesson_line(line: str) -> tuple[str, str, str] | None:
     return eid, title, rest.strip()
 
 
+def parse_audience(line: str) -> str:
+    """The lesson line's ``*(audience: X)*`` tag, or ``""`` when untagged (D-043).
+
+    Single-sourced beside the lesson-line grammar so every read path that filters
+    by audience (handoff rollups, context bundles, the curator) shares one
+    definition of what "tagged for an audience" means."""
+    m = _LESSON_AUDIENCE_RE.search(line)
+    return m.group(1).strip() if m else ""
+
+
 def _lesson_records(text: str, rel_path: str) -> list[dict]:
     """Parse single-line ``**L-NN.**`` lessons under ``## Lessons`` (O-03).
 
@@ -186,7 +207,8 @@ def _lesson_records(text: str, rel_path: str) -> list[dict]:
             continue
         eid, title, body = parsed
         status, _detail = lesson_state.parse_state(s)
-        out.append(_record(eid, title, body, i, status, "lesson", rel_path))
+        out.append(_record(eid, title, body, i, status, "lesson", rel_path,
+                           audience=parse_audience(s)))
     return out
 
 
@@ -194,6 +216,21 @@ def _status(body: str) -> str:
     """Lifecycle status from an entry body's ``**Status**`` line; ``active`` default."""
     m = _STATUS_RE.search(body)
     return m.group(1).lower() if m else "active"
+
+
+def parse_scope(body: str) -> str:
+    """D-043 scope from an entry body's ``**Scope**`` line; ``project`` default.
+
+    Public and single-sourced: the analyze gate and the handoff's invariant
+    surfacing filter through this same definition of an entry's scope."""
+    m = _SCOPE_RE.search(body)
+    return m.group(1).strip() if m else "project"
+
+
+def parse_audience_meta(body: str) -> str:
+    """D-043 audience from an entry body's ``**Audience**`` line; ``""`` default."""
+    m = _AUDIENCE_META_RE.search(body)
+    return m.group(1).strip() if m else ""
 
 
 def build(paths: RepoPaths) -> dict:

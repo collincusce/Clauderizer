@@ -118,8 +118,8 @@ def test_mcp_registers_the_registry_functions(temp_repo):
     # Schema spot-check: derived from the same function object the CLI executes.
     add_lesson = next(t for t in tools if t.name == "cz_add_lesson")
     props = add_lesson.inputSchema["properties"]
-    assert set(props) == {"text", "category", "gameplan_id", "evidence"}
-    assert add_lesson.inputSchema.get("required") == ["text"]  # evidence is optional (D-017)
+    assert set(props) == {"text", "category", "gameplan_id", "evidence", "audience"}
+    assert add_lesson.inputSchema.get("required") == ["text"]  # evidence/audience optional (D-017/D-043)
 
 
 def test_ops_write_matches_mcp_write(temp_repo, tmp_path):

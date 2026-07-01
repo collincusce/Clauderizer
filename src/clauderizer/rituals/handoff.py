@@ -21,7 +21,7 @@ from pathlib import Path
 
 from .. import analyze
 from ..config import Config
-from ..graph.abstract_index import parse_lesson_line
+from ..graph.abstract_index import parse_audience, parse_lesson_line
 from ..markdown import lesson_state, sections, skill_state
 from ..paths import RepoPaths
 
@@ -34,25 +34,37 @@ def _gameplan_text(paths: RepoPaths, gid: str, name: str) -> str:
     return p.read_text(encoding="utf-8") if p.exists() else ""
 
 
-def collect_lessons(index_text: str) -> tuple[str, int]:
+def collect_lessons(index_text: str, audience: str = "") -> tuple[str, int]:
     """Return ``(rolled_up_markdown, count)`` of still-relevant lessons.
 
     Preserves the category sub-headings; drops any lesson line marked
     ``(obsolete …)`` (written by ``cz_obsolete_lesson``), ``(promoted …)``
     (written by ``cz_promote_lesson`` — the project section carries it from
-    then on), or wrapped in ``~~strikethrough~~``.
+    then on), or wrapped in ``~~strikethrough~~``. With ``audience`` given,
+    lessons tagged for a DIFFERENT audience drop out too (D-043); untagged
+    lessons always pass.
     """
     return _filter_lessons(sections.get_section(index_text, "Accumulated Lessons"),
-                           _LESSON_LINE)
+                           _LESSON_LINE, audience=audience)
 
 
-def collect_project_lessons(lessons_text: str) -> tuple[str, int]:
+def collect_project_lessons(lessons_text: str, audience: str = "") -> tuple[str, int]:
     """Roll up the active ``L-NN`` entries of ``docs/LESSONS.md``."""
     return _filter_lessons(sections.get_section(lessons_text, "Lessons"),
-                           _PROJECT_LESSON_LINE)
+                           _PROJECT_LESSON_LINE, audience=audience)
 
 
-def _filter_lessons(sec: str | None, line_re: re.Pattern) -> tuple[str, int]:
+def _audience_passes(line: str, audience: str) -> bool:
+    """D-043 audience gate: with no filter everything passes; with one, untagged
+    lines and lines tagged for THIS audience pass, other tags drop."""
+    if not audience:
+        return True
+    tag = parse_audience(line)
+    return tag in ("", audience)
+
+
+def _filter_lessons(sec: str | None, line_re: re.Pattern,
+                    audience: str = "") -> tuple[str, int]:
     if not sec or not sec.strip():
         return "_(no lessons recorded yet)_", 0
     out_lines: list[str] = []
@@ -63,6 +75,8 @@ def _filter_lessons(sec: str | None, line_re: re.Pattern) -> tuple[str, int]:
             # State is the trailing structured marker, never a substring —
             # a lesson whose text mentions "(obsolete" still rolls up (D8).
             if not lesson_state.is_active(stripped):
+                continue
+            if not _audience_passes(stripped, audience):
                 continue
             count += 1
             out_lines.append(line)
@@ -106,13 +120,15 @@ _LESSON_NUM_RE = re.compile(r"^\s*\*\*(\d+)\.\*\*\s*(.*)$")
 RELEVANCE_K = 5
 
 
-def _active_lesson_entries(index_text: str) -> list[dict]:
+def _active_lesson_entries(index_text: str, audience: str = "") -> list[dict]:
     """Active lesson lines parsed as rank_relevant entries (``{id, title, body}``)."""
     sec = sections.get_section(index_text, "Accumulated Lessons") or ""
     entries: list[dict] = []
     for line in sec.splitlines():
         s = line.strip()
         if not _LESSON_LINE.match(s) or not lesson_state.is_active(s):
+            continue
+        if not _audience_passes(s, audience):
             continue
         m = _LESSON_NUM_RE.match(s)
         if m:
@@ -121,7 +137,7 @@ def _active_lesson_entries(index_text: str) -> list[dict]:
 
 
 def relevant_lesson_pointer(index_text: str, query: str,
-                            k: int = RELEVANCE_K) -> str | None:
+                            k: int = RELEVANCE_K, audience: str = "") -> str | None:
     """Ranked pointers to the lessons most relevant to the current phase.
 
     Returns ``None`` when there is nothing to focus — no query, or the active
@@ -130,7 +146,7 @@ def relevant_lesson_pointer(index_text: str, query: str,
     """
     if not query or not query.strip():
         return None
-    entries = _active_lesson_entries(index_text)
+    entries = _active_lesson_entries(index_text, audience=audience)
     if len(entries) <= k:
         return None
     ranked = analyze.rank_relevant(query, entries, k=k)
@@ -153,7 +169,7 @@ def relevant_lesson_pointer(index_text: str, query: str,
 # handoff carries the top-k lessons most relevant to the phase + a pointer to the
 # canonical full set — focus, never a drop from canonical memory (reconciles
 # D-022: this is relevance-ranking + pointer-to-canonical, not tail truncation).
-def _project_lesson_entries(lessons_text: str) -> list[dict]:
+def _project_lesson_entries(lessons_text: str, audience: str = "") -> list[dict]:
     """Active ``L-NN`` lessons parsed for ranking, keeping the original markdown
     line so the focused set re-renders byte-faithfully.
 
@@ -166,6 +182,8 @@ def _project_lesson_entries(lessons_text: str) -> list[dict]:
         s = line.strip()
         if not lesson_state.is_active(s):
             continue
+        if not _audience_passes(s, audience):
+            continue
         parsed = parse_lesson_line(s)
         if parsed:
             eid, title, body = parsed
@@ -174,7 +192,7 @@ def _project_lesson_entries(lessons_text: str) -> list[dict]:
 
 
 def focused_project_lessons(lessons_text: str, query: str,
-                            k: int = RELEVANCE_K) -> tuple[str, int, int] | None:
+                            k: int = RELEVANCE_K, audience: str = "") -> tuple[str, int, int] | None:
     """Top-``k`` project lessons most relevant to the phase, ranked, full text.
 
     Returns ``(markdown, shown, total)`` when focusing applies (a real query AND
@@ -185,7 +203,7 @@ def focused_project_lessons(lessons_text: str, query: str,
     """
     if not query or not query.strip():
         return None
-    entries = _project_lesson_entries(lessons_text)
+    entries = _project_lesson_entries(lessons_text, audience=audience)
     total = len(entries)
     if total <= k:
         return None
@@ -208,19 +226,24 @@ def focused_project_lessons(lessons_text: str, query: str,
 
 
 def relevant_invariant_pointer(paths: RepoPaths, query: str,
-                               k: int = RELEVANCE_K) -> tuple[str, int, int] | None:
+                               k: int = RELEVANCE_K,
+                               gameplan_id: str = "") -> tuple[str, int, int] | None:
     """The phase-relevant governing INVARIANTS, as focused pointers.
 
     Returns ``(markdown, shown, total)`` or ``None`` when there is no query, no
     invariants doc, or no invariant lexically relevant to this phase (an honest
-    negative — irrelevant rules are not injected, per D-027 trim-first).
+    negative — irrelevant rules are not injected, per D-027 trim-first). With a
+    ``gameplan_id``, invariants scoped to a DIFFERENT gameplan are dropped
+    (D-043 filtering — another axis's brand rules are not this one's).
     """
     if not query or not query.strip():
         return None
     doc = paths.doc("INVARIANTS")
     if not doc.exists():
         return None
-    entries = analyze.parse_entries(doc.read_text(encoding="utf-8"), "Invariants")
+    entries = analyze.scope_filter(
+        analyze.parse_entries(doc.read_text(encoding="utf-8"), "Invariants"),
+        gameplan_id)
     if not entries:
         return None
     ranked = analyze.rank_relevant(query, entries, k=k)
@@ -308,7 +331,9 @@ def surfaced_ids(paths: RepoPaths, gid: str, phase_n: str) -> dict:
     inv_doc = paths.doc("INVARIANTS")
     if inv_doc.exists():
         invariants = [r["id"] for r in analyze.rank_relevant(
-            query, analyze.parse_entries(inv_doc.read_text(encoding="utf-8"), "Invariants"),
+            query, analyze.scope_filter(
+                analyze.parse_entries(inv_doc.read_text(encoding="utf-8"), "Invariants"),
+                gid),
             k=RELEVANCE_K)]
     return {"lessons": project_lessons, "gameplan_lessons": gameplan_lessons,
             "invariants": invariants}
@@ -372,7 +397,12 @@ def _consumes_section(paths: RepoPaths, gid: str) -> str:
     return "\n".join(lines)
 
 
-def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write: bool = True) -> dict:
+def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *,
+             write: bool = True, audience: str = "") -> dict:
+    # ``audience`` (D-043) filters the READ-ONLY context bundle only. The written
+    # handoff file is the canonical self-contained artifact — filtering it would
+    # reintroduce the incomplete-lesson-propagation anti-pattern this module
+    # exists to prevent — so cz_write_handoff never passes an audience.
     index_text = _gameplan_text(paths, gid, "CHAT-HANDOFF-INDEX.md")
     gameplan_text = _gameplan_text(paths, gid, "GAMEPLAN.md")
     # Display-only lexicon (D3): the kind's heading word for "phase" (e.g. Stage
@@ -384,14 +414,17 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
 
     P = kinds.resolve(_sb.gameplan_kind(paths.gameplan_dir(gid)),
                       paths.kinds_dir).label("phase").capitalize()
-    lessons_md, lessons_count = collect_lessons(index_text)
+    lessons_md, lessons_count = collect_lessons(index_text, audience=audience)
     phase_body = _phase_section(gameplan_text, phase_n)
     # Idea #2: surface the lessons most relevant to THIS phase as pointers above
     # the (unchanged) cumulative list — focus without dropping anything.
-    pointer = relevant_lesson_pointer(index_text, _phase_query(gameplan_text, phase_n))
+    pointer = relevant_lesson_pointer(index_text, _phase_query(gameplan_text, phase_n),
+                                      audience=audience)
     # Phase 6 (trim-consistent steering): surface the phase-relevant governing
     # invariants — the must-hold rules the handoff never carried before.
-    invariants_focus = relevant_invariant_pointer(paths, _phase_query(gameplan_text, phase_n))
+    # Scope-filtered per D-043: another gameplan's scoped rules stay out.
+    invariants_focus = relevant_invariant_pointer(
+        paths, _phase_query(gameplan_text, phase_n), gameplan_id=gid)
     # Phase 2 (skill-awareness): the registered skills whose trigger overlaps this
     # phase — a focused menu, or nothing when none are relevant (L-35).
     skills_focus = relevant_skill_pointer(paths, _phase_query(gameplan_text, phase_n))
@@ -403,9 +436,10 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *, write:
     lessons_doc = paths.doc("LESSONS")
     if lessons_doc.exists():
         lessons_text = lessons_doc.read_text(encoding="utf-8")
-        project_lessons_md, project_count = collect_project_lessons(lessons_text)
+        project_lessons_md, project_count = collect_project_lessons(
+            lessons_text, audience=audience)
         project_focus = focused_project_lessons(
-            lessons_text, _phase_query(gameplan_text, phase_n))
+            lessons_text, _phase_query(gameplan_text, phase_n), audience=audience)
 
     parts = [
         f"# {P} {phase_n} Handoff",

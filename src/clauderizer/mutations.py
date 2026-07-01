@@ -222,19 +222,60 @@ def _mark_superseded(path: Path, section: str, target_id: str, new_id: str,
 
 @_locked
 def add_invariant(
-    paths: RepoPaths, *, text: str, introduced_by: str | None = None
+    paths: RepoPaths, *, text: str, introduced_by: str | None = None,
+    scope: str = "project", audience: str | None = None,
 ) -> dict:
+    scope = (scope or "project").strip()
+    if scope != "project" and not (scope.startswith("gameplan:")
+                                   and scope.split(":", 1)[1].strip()):
+        return {"ok": False,
+                "summary": "scope must be 'project' or 'gameplan:<id>' (D-043)"}
     path = paths.doc("INVARIANTS")
     _ensure_doc(path, "INVARIANTS")
     doc = writer.full_text(path)
     new_id = next_numbered_id(doc, "INVARIANT", sep="-", width=2)
-    intro = f"\n**Introduced by**: {introduced_by}" if introduced_by else ""
+    meta = []
+    if introduced_by:
+        meta.append(f"**Introduced by**: {introduced_by}")
+    if scope != "project":
+        meta.append(f"**Scope**: {scope}")
+    if audience and audience.strip():
+        meta.append(f"**Audience**: {audience.strip()}")
+    intro = ("\n" + "\n".join(meta)) if meta else ""
     # First line becomes the title; remainder the body.
     title = text.strip().split("\n", 1)[0]
     entry = f"### {new_id} — {title}{intro}\n\n{text.strip()}"
     writer.append_to_section(path, "Invariants", entry)
-    return {"ok": True, "id": new_id, "path": str(path),
-            "files_changed": [str(path)], "summary": f"added {new_id}"}
+    result = {"ok": True, "id": new_id, "path": str(path),
+              "files_changed": [str(path)], "summary": f"added {new_id}"}
+    advisories: list[str] = []
+    if scope.startswith("gameplan:"):
+        gid = scope.split(":", 1)[1].strip()
+        if not (paths.gameplan_dir(gid) / "GAMEPLAN.md").exists():
+            advisories.append(f"scope names gameplan '{gid}' which has no "
+                              "GAMEPLAN.md on disk — check the id")
+    # Write-time near-duplicate advisory, the invariant sibling of add_lesson's
+    # (D-043): a strong overlap with an existing invariant usually means a rule
+    # for one gameplan is being re-declared globally — scope it instead. The new
+    # entry is already appended (INVARIANT-03) and must exclude itself from the
+    # scan (both live in the same file, unlike the lesson advisory's two files).
+    try:
+        from . import analyze as _analyze
+
+        dups = _analyze.near_duplicate_invariants(paths, text, exclude_ids=(new_id,))
+        if dups:
+            result["related_invariants"] = dups
+            advisories.append(
+                "This invariant strongly overlaps existing invariant(s): "
+                + ", ".join(f"{d['id']} (Jaccard {d['jaccard']})" for d in dups)
+                + " — if it restates a rule for one gameplan, record it with "
+                  "scope='gameplan:<id>' instead of re-declaring it globally (D-043)."
+            )
+    except Exception:
+        pass
+    if advisories:
+        result["advisory"] = " ".join(advisories)
+    return result
 
 
 @_locked
@@ -340,7 +381,7 @@ def resolve_finding(paths: RepoPaths, *, finding_id: str, status: str = "resolve
 @_locked
 def add_lesson(
     paths: RepoPaths, *, gameplan_id: str, text: str, category: str = "Process",
-    evidence: str | None = None,
+    evidence: str | None = None, audience: str | None = None,
 ) -> dict:
     path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
     full = writer.full_text(path)
@@ -355,6 +396,10 @@ def add_lesson(
     # (obsolete|promoted …) marker at line end), so state parsing is unaffected.
     if evidence and evidence.strip():
         lesson_line += f" *(evidence: {evidence.strip()})*"
+    if audience and audience.strip():
+        # Audience rides inline like evidence (D-043); read paths filter on it
+        # via abstract_index.parse_audience. Not a lesson-state marker either.
+        lesson_line += f" *(audience: {audience.strip()})*"
     new_section = _insert_under_category(body, category, lesson_line)
     writer.upsert_section(path, "Accumulated Lessons", new_section)
     result = {"ok": True, "number": n, "path": str(path),
