@@ -1,7 +1,7 @@
 # Chat Handoff Index — engine-1.4.0-general-modernization
 
 > Last updated: 2026-07-01
-> Status: Phase 6 ready
+> Status: Phase 7 ready
 
 ## How This Works
 
@@ -35,7 +35,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 3 | Approval gates — hash-bound exit criteria | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Deliverable-matrix campaigns | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Standing conditions + consumes surfacing | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Corpus modernization framework | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | Corpus modernization framework | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Docs & procedure 1.5.0 & version bump | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 | 8 | Dogfood & live verification | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
 | 9 | Ship 1.4.0 — release ritual & close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-9-HANDOFF.md |
@@ -67,6 +67,10 @@ Deliverable-matrix campaigns shipped (D2) with zero new data model: a deliverabl
 ### Phase 5 — completed 2026-07-01
 
 Standing conditions shipped (D3): .clauderizer/conditions.<gid>.toml declares named shell probes (exit 0 = met, 30s timeout) evaluated lazily by cz_status (compute(conditions=True)), cz_preflight (a standing_conditions check appended only when declared), and cz_loop_step (iteration_proposed on the result) — never by the hook path, which keeps calling compute() defaults and is structurally probe-free (tested). One digest line only when a condition is actually met. Consumes surfacing (C-02): the handoff's Consumes section turned out to exist since 1.2.0 — this phase pinned it with an end-to-end test (declare → render with status+version → cross-axis status change → pending cross-ref counted on the portfolio card) and added the version display. Suite 748 (+6).
+
+### Phase 6 — completed 2026-07-01
+
+Corpus modernization shipped (D-042). Config gains procedure_version (stamped by init and upgrade, emitted only once set so legacy rewrites stay byte-identical, preserved by merge_missing). modernize.py: report() = read-only two-tier report; apply() = mechanical tier only — config stamp + [active_gameplan]→[focus] migration via one to_toml rewrite, .clauderizer/kinds/ dir, per-kind preflight.<kind>.toml.example scaffolds (inert, commented — fixing a 1.3.1 defect where the preflight hint referenced an example file nothing shipped), engine-owned GAMEPLAN-PROCEDURE.md refresh; memory docs provably untouched (snapshot test). Tier-2 detectors: unwired gates, near-dup invariant pairs via the canonical tokenizer, campaigns without deliverables, loops without conditions. clauderize upgrade (+ --report/--json) wraps it; cz_status/CLI status digest carries one ⚙ line via a light stamp-compare only (hook-safe); doctor warns advisory. The back-compat golden now models a MODERNIZED corpus (deliberate update; legacy line pinned in test_modernize). temp_repo fixture stamps current. Surface 44. Suite 754 (+7 net). Live-verified on this repo — it correctly diagnosed its own gaps.
 
 ## Accumulated Lessons
 

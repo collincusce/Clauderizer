@@ -172,13 +172,13 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 6.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] clauderize init stamps procedure_version into config.toml; merge_missing preserves it (test)
-- [ ] cz_modernize default returns a read-only report listing tier-1 mechanical items + tier-2 advisory proposals for a stale-corpus fixture (test)
-- [ ] cz_modernize apply=true scaffolds mechanics only and provably never writes DECISIONS.md/INVARIANTS.md/LESSONS.md/HARDENING.md or gameplan memory (test)
-- [ ] Tier-2 detectors fire on fixtures: unwired declared gates, near-dup invariant pair, campaign gameplan without deliverables, loop gameplan without conditions (tests)
-- [ ] clauderize upgrade subcommand wraps report+apply (test); tool surface 44, parity green, read-only behavioral gate passes for default cz_modernize
-- [ ] Status/doctor surface one modernization line only when stale or proposals exist; hook output unchanged (tests)
-- [ ] Full suite green
+- [x] clauderize init stamps procedure_version into config.toml; merge_missing preserves it (test)
+- [x] cz_modernize default returns a read-only report listing tier-1 mechanical items + tier-2 advisory proposals for a stale-corpus fixture (test)
+- [x] cz_modernize apply=true scaffolds mechanics only and provably never writes DECISIONS.md/INVARIANTS.md/LESSONS.md/HARDENING.md or gameplan memory (test)
+- [x] Tier-2 detectors fire on fixtures: unwired declared gates, near-dup invariant pair, campaign gameplan without deliverables, loop gameplan without conditions (tests)
+- [x] clauderize upgrade subcommand wraps report+apply (test); tool surface 44, parity green, read-only behavioral gate passes for default cz_modernize
+- [x] Status/doctor surface one modernization line only when stale or proposals exist; hook output unchanged (tests)
+- [x] Full suite green
 
 ### Phase 7: Docs & procedure 1.5.0 & version bump
 

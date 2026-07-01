@@ -573,6 +573,16 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
     # so a single-gameplan repo renders byte-identically to before (D6 golden gate).
     bundle["focus"] = gid
     bundle["portfolio"] = portfolio(paths, config)
+    # Modernization staleness (D-042): the LIGHT check only — a version-string
+    # compare against the config stamp, read-only and hook-safe. The full
+    # detector suite (probes, pairwise scans) lives in cz_modernize.
+    from .. import PROCEDURE_VERSION as _engine_procedure
+
+    if (config.procedure_version or "") != _engine_procedure:
+        bundle["modernization"] = {
+            "corpus": config.procedure_version or None,
+            "engine": _engine_procedure,
+        }
     if not gid:
         bundle["summary"] = "No active gameplan. Use cz_create_gameplan to start one."
         return bundle
@@ -729,6 +739,12 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
     oi = bundle.get("open_items") or []
     if oi:
         lines.append(f"Open items: {len(oi)} unresolved ({', '.join(oi)}).")
+    mz = bundle.get("modernization")
+    if mz:
+        lines.append(
+            f"⚙ Modernization: corpus procedure {mz.get('corpus') or 'unstamped'} vs "
+            f"engine {mz['engine']} — `clauderize upgrade` applies the mechanical "
+            "updates; cz_modernize lists the advisory proposals.")
     if bundle.get("blockers"):
         lines.append("Blocked: " + ", ".join(bundle["blockers"]))
     for warn in bundle.get("drift") or []:

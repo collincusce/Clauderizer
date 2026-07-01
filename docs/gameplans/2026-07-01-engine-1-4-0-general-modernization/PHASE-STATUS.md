@@ -13,7 +13,7 @@
 | 3 | Approval gates — hash-bound exit criteria | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Deliverable-matrix campaigns | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Standing conditions + consumes surfacing | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Corpus modernization framework | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | Corpus modernization framework | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Docs & procedure 1.5.0 & version bump | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 | 8 | Dogfood & live verification | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
 | 9 | Ship 1.4.0 — release ritual & close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-9-HANDOFF.md |
@@ -56,6 +56,12 @@ phase4_suite: 742 passed, 5 skipped (+5 in tests/test_deliverable_matrix.py); Ki
 
 ```
 phase5_suite: 748 passed, 5 skipped (+6 in tests/test_standing_conditions.py); rituals/conditions.py probes (30s cap, exit 0 = met); compute(conditions=True) only from cz_status/cz_preflight/cz_loop_step — hook path structurally probe-free; consumes rendering verified end-to-end + version display added (C-02)
+```
+
+### Phase 6 Outputs
+
+```
+phase6_suite: 754 passed, 5 skipped (+6 tests/test_modernize.py, +1 golden deliberately updated to model a modernized corpus); surface 44 (cz_modernize); live: fresh init stamps 1.4.0, doctor shows advisory line, upgrade --report on THIS repo correctly finds unstamped config + missing kinds dir + proposes standing conditions for the curator loop; discovered pre-existing defect: the 1.3.1 preflight hint referenced a preflight.<kind>.toml.example nothing ever shipped — modernize now actually scaffolds it
 ```
 
 ## Corrections Log

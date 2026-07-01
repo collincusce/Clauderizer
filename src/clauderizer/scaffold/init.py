@@ -245,6 +245,11 @@ def init(
     config = merge_missing(existing_config, defaults) if existing_config else defaults
     config.session_host = resolved_host
     config.host_target = resolved_target
+    # Init is an upgrade moment (D-042): stamp the corpus with this engine's
+    # procedure version so status can tell a current corpus from a stale one.
+    from .. import PROCEDURE_VERSION as _PROC_V
+
+    config.procedure_version = _PROC_V
     changed = writer.create_if_absent(paths.config_file, config.to_toml()) or _rewrite_if_diff(
         paths.config_file, config.to_toml()
     )

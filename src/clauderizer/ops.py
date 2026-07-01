@@ -838,6 +838,26 @@ def cz_check_exit_criterion(phase: str, criterion: str, checked: bool = True,
                                           criterion=criterion, checked=checked)
 
 
+def cz_modernize(apply: bool = False) -> dict:
+    """Report — and with apply=true, perform — the corpus-modernization pass.
+
+    The default is a read-only report: the MECHANICAL updates a newer engine
+    would apply (the config's procedure-version stamp and migrations, missing
+    preflight-gate example files, a stale engine-owned copy of the procedure
+    doc) plus ADVISORY proposals for memory-shaped gaps — declared QA gates with
+    no wired command, near-duplicate invariants that look scope-taggable,
+    campaign gameplans without deliverable entities, loop gameplans without
+    standing conditions. apply=true performs only the mechanical tier;
+    decisions, invariants, lessons, findings, and gameplan memory are never
+    auto-edited — each proposal names the normal cz_* write that would act on
+    it, and the choice stays yours.
+    """
+    paths, config = repo_ctx()
+    from . import modernize
+
+    return modernize.apply(paths, config) if apply else modernize.report(paths, config)
+
+
 def cz_approve_gate(phase: str, criterion: str, note: str = "",
                     gameplan_id: str = "") -> dict:
     """Record a human approval on an APPROVAL exit criterion, bound to the
@@ -1066,6 +1086,7 @@ REGISTRY: dict[str, Op] = {
     "cz_set_exit_criteria": Op(cz_set_exit_criteria, writes=True),
     "cz_check_exit_criterion": Op(cz_check_exit_criterion, writes=True),
     "cz_approve_gate": Op(cz_approve_gate, writes=True),
+    "cz_modernize": Op(cz_modernize, writes=True),
     "cz_analyze": Op(cz_analyze, writes=False),
     "cz_critique": Op(cz_critique, writes=False),
     "cz_mine_failures": Op(cz_mine_failures, writes=False),
