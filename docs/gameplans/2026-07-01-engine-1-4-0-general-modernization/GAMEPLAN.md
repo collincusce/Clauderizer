@@ -1,7 +1,7 @@
 # engine-1.4.0-general-modernization Gameplan
 
 > Created: 2026-07-01
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -224,8 +224,8 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 9.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] release-check exit 0 (four-registry sweep)
-- [ ] PR opened with PII scrub-verify done; 9-cell CI green BEFORE tag (L-20)
-- [ ] Squash-merged to main; tag v1.4.0 on the full merged SHA; GitHub Release latest + non-prerelease; OIDC publish green
-- [ ] PyPI info.version = 1.4.0 and uvx --refresh resolves 1.4.0
-- [ ] Subsystem/feature entities version-bumped with cascade reports resolved; post-mortem written; gameplan closed
+- [x] release-check exit 0 (four-registry sweep)
+- [x] PR opened with PII scrub-verify done; 9-cell CI green BEFORE tag (L-20)
+- [x] Squash-merged to main; tag v1.4.0 on the full merged SHA; GitHub Release latest + non-prerelease; OIDC publish green
+- [x] PyPI info.version = 1.4.0 and uvx --refresh resolves 1.4.0
+- [x] Subsystem/feature entities version-bumped with cascade reports resolved; post-mortem written; gameplan closed

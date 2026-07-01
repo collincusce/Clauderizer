@@ -1,8 +1,8 @@
 ---
 id: feat.scoped-memory
 type: feature
-version: 0.1.0
-status: planned
+version: 1.0.0
+status: completed
 depends_on:
   - subsys.mutations@^0.6.0
   - subsys.markdown-core@^0.3.0

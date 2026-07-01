@@ -16,7 +16,7 @@
 | 6 | Corpus modernization framework | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Docs & procedure 1.5.0 & version bump | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-7-HANDOFF.md |
 | 8 | Dogfood & live verification | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-8-HANDOFF.md |
-| 9 | Ship 1.4.0 — release ritual & close-out | 🟡 IN PROGRESS | 2026-07-01 | — | handoffs/PHASE-9-HANDOFF.md |
+| 9 | Ship 1.4.0 — release ritual & close-out | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-9-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -74,6 +74,12 @@ phase7_versions: engine 1.4.0 (pyproject + __init__), PROCEDURE_VERSION 1.5.0 wi
 
 ```
 phase8_dogfood: THIS repo: upgrade applied stamp+kinds-dir+procedure-doc-refresh (1.4.0→1.5.0), digest ⚙ 1→0, proposal correctly targets curator-loop conditions. marketing-studio: stamp 1.5.0 + doc refresh applied; portfolio byte-identical before/after; report-after = 0 mechanical + 2 proposals (INVARIANT-03/08 Jaccard 0.467 — the brief's real duplication — and stale_kind_overlay with the exact [lifecycle] TOML); their wired lib.qa gates correctly silent. Dogfood DISCOVERED overlay-shadowing (new detector + test, suite 755) and MEASURED the subset-dup blind spot (O-02 resolved keep-0.40; O-04 filed for overlap coefficient)
+```
+
+### Phase 9 Outputs
+
+```
+phase9_ship: release-check exit 0 (all four registries clear pre-tag); PR #18; 9-cell CI green BEFORE tag (windows 3.11-3.13 incl.); squash-merge main @ 2ecc9c53afe7a36cc5fff60dce1f2d2fe37508a6; tag v1.4.0 on full SHA; GitHub Release latest+non-prerelease (targetCommitish main); OIDC publish run 28549676626 green with attestations (tag==pyproject gate + twine check passed); PyPI info.version=1.4.0; uvx --refresh resolves 1.4.0
 ```
 
 ## Corrections Log

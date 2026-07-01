@@ -1,8 +1,8 @@
 ---
 id: feat.approval-gates
 type: feature
-version: 0.1.0
-status: planned
+version: 1.0.0
+status: completed
 depends_on:
   - subsys.mutations@^0.6.0
   - subsys.rituals@^0.7.0

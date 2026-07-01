@@ -1,7 +1,7 @@
 # Chat Handoff Index — engine-1.4.0-general-modernization
 
 > Last updated: 2026-07-01
-> Status: Phase 9 of 10 in progress
+> Status: All 10 phases complete
 
 ## How This Works
 
@@ -38,7 +38,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 6 | Corpus modernization framework | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Docs & procedure 1.5.0 & version bump | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-7-HANDOFF.md |
 | 8 | Dogfood & live verification | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-8-HANDOFF.md |
-| 9 | Ship 1.4.0 — release ritual & close-out | 🟡 IN PROGRESS | 2026-07-01 | — | handoffs/PHASE-9-HANDOFF.md |
+| 9 | Ship 1.4.0 — release ritual & close-out | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-9-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -80,6 +80,10 @@ Docs and versions shipped. PROCEDURE_VERSION 1.4.0→1.5.0 with a full changelog
 
 Dogfood proved the upgrade story on both real corpora and improved the engine twice in the process. This repo: clauderize upgrade applied the stamp, the kinds overlay dir, and the procedure-doc refresh (1.4.0→1.5.0); the digest's modernization line appeared then cleared; the one advisory proposal (standing conditions for the curator loop) is correct. marketing-studio: stamp + doc refresh applied with the two mid-flight campaigns byte-identical before/after; the report surfaced the brief's REAL invariant duplication (03/08 at Jaccard 0.467) and — after the dogfood exposed that their pre-lifecycle kind overlay shadows the packaged campaign lifecycle — a new stale_kind_overlay detector (with test) that hands them the exact [lifecycle] table to paste. Their same-day-wired lib.qa gates produce honest silence (C-03 records all divergences from the plan's predictions). Measured evidence resolved O-02 (keep 0.40; symmetric Jaccard structurally misses subset-shaped duplicates → O-04 files the overlap-coefficient follow-up). Suite 755.
 
+### Phase 9 — completed 2026-07-01
+
+Shipped 1.4.0 clean through the full ritual: release-check exit 0 (four registries clear, push-ordering verified) → PR #18 → 9-cell CI green before any tag (all three Windows legs included) → squash-merge to main @ 2ecc9c53afe7a36cc5fff60dce1f2d2fe37508a6 → tag v1.4.0 on the full SHA → GitHub Release latest/non-prerelease → OIDC publish run 28549676626 green with attestations → PyPI info.version=1.4.0 → uvx --refresh resolves 1.4.0. Close-out: five feature entities to 1.0.0/completed (zero dependents, cascades vacuous — skipped on the record), six touched subsystems MINOR-bumped, POST-MORTEM.md written with the friction log, two gameplan lessons recorded (script-file-first for Windows→WSL shell payloads; changelog artifact claims need artifact-ships tests). PII sweep of the branch diff: zero hits across 46 files.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -88,3 +92,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Process
 
 _(none yet)_
+
+**1.** For any multi-step shell work across the Windows→WSL boundary (wsl.exe → bash), write a mode-dispatching script file into .git/ FIRST and invoke it by path — do not escalate inline quoting. Command substitution, pipes inside grep patterns, parentheses in messages, and credential-helper strings all get shredded by the double shell transit, and each bite costs a round trip; the script file ended every quoting incident this gameplan. Extends the L-29/L-31 family (--body-file generalized to all shell payloads). Invoke with bash -lc when the script needs PATH tools like uvx/gh. *(evidence: five quoting failures in one session (baseline capture, grep alternation ×2, commit message parens, tag+push chain) vs zero after .git/run14.sh; 2026-07-01-engine-1-4-0-general-modernization phase 0-9)*
+
+**2.** A changelog or hint that claims a shipped ARTIFACT (an example file, a scaffold) needs a test asserting the artifact actually ships — prose claims and code paths drift independently. 1.3.1's preflight hint and changelog both referenced .clauderizer/preflight.<kind>.toml.example, but no code ever scaffolded it; the gap sat invisible until the modernization pass (whose job is closing exactly such gaps) was built against a real corpus and went looking for the file. *(evidence: grep of scaffold/init.py + templates/ found no example-shipping code while preflight.py:398 and CHANGELOG 1.3.1 both referenced it; fixed by modernize.apply scaffold_preflight_example (test_modernize.py))*
