@@ -1101,7 +1101,10 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
                     return f"{t} [measured: baseline {baseline} tests]"
                 return t
 
-            items = [_annot(c["text"]) for c in unchecked]
+            # An approval row carries its computed state (stale/missing/
+            # unapproved) — show that instead of the raw text's old marker.
+            items = [f"{c['text']} [{c['detail']}]" if c.get("detail")
+                     else _annot(c["text"]) for c in unchecked]
             advisories.append({
                 "kind": "exit_criteria",
                 "items": items,
@@ -1365,9 +1368,86 @@ def check_exit_criterion(
                 "summary": f"exit criterion already {'checked' if checked else 'unchecked'}"}
     lines[i] = re.sub(r"\[[ xX]\]", f"[{want}]", lines[i], count=1)  # flip the box only
     writer.upsert_section(path, "Phase Breakdown", "\n".join(lines))
-    return {"ok": True, "phase": str(phase), "criterion": text,
-            "checked": checked, "changed": True, "files_changed": [str(path)],
-            "summary": f"exit criterion {'checked' if checked else 'unchecked'}"}
+    result = {"ok": True, "phase": str(phase), "criterion": text,
+              "checked": checked, "changed": True, "files_changed": [str(path)],
+              "summary": f"exit criterion {'checked' if checked else 'unchecked'}"}
+    from .rituals.status_bundle import split_approval
+    if checked and split_approval(text) is not None:
+        result["advisory"] = (
+            "this is an APPROVAL criterion — satisfaction is computed from the "
+            "recorded content hash, so a hand-checked box does not count as "
+            "approved. Record the approval with cz_approve_gate.")
+    return result
+
+
+@_locked
+def approve_gate(
+    paths: RepoPaths, *, gameplan_id: str, phase: str, criterion: str,
+    note: str = "", today: str | None = None,
+) -> dict:
+    """Record a human approval on an APPROVAL exit criterion, bound to the
+    artifact's content hash (gameplan 2026-07-01, D1).
+
+    Finds the criterion (same exact-or-unique-substring rules as
+    check_exit_criterion), computes the artifact's short sha256, and rewrites the
+    line checked with an ``_(approved <date> sha256:<hash> …)_`` marker —
+    re-approving replaces the marker. Every read path recomputes the hash, so
+    editing the artifact makes this approval report stale until re-approved.
+    """
+    if not gameplan_id:
+        return {"ok": False, "error": "approval gates require a gameplan_id"}
+    from .rituals.status_bundle import (
+        _EC_CHECK_RE, artifact_hash, phase_block, split_approval,
+    )
+
+    path = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
+    body = sections.get_section(writer.full_text(path), "Phase Breakdown")
+    if body is None:
+        return {"ok": False, "summary": "no Phase Breakdown section"}
+    blk = phase_block(body, phase)
+    if blk is None:
+        return {"ok": False, "summary": f"phase {phase} not found in Phase Breakdown"}
+    lines, start, end = blk
+    target = criterion.strip().lower()
+    matches = []
+    for i in range(start, end):
+        m = _EC_CHECK_RE.match(lines[i])
+        if m and target in m.group(2).strip().lower():
+            matches.append((i, m))
+    if not matches:
+        return {"ok": False,
+                "summary": f"no exit criterion matching {criterion!r} in phase {phase}"}
+    exact = [(i, m) for i, m in matches if m.group(2).strip().lower() == target]
+    if exact:
+        i, m = exact[0]
+    elif len(matches) == 1:
+        i, m = matches[0]
+    else:
+        hits = "; ".join(m.group(2).strip() for _, m in matches)
+        return {"ok": False, "summary": f"{criterion!r} matches {len(matches)} criteria "
+                f"in phase {phase} ({hits}) — pass the exact criterion text"}
+    text = m.group(2).strip()
+    parsed = split_approval(text)
+    if parsed is None:
+        return {"ok": False, "summary": (
+            f"criterion is not an APPROVAL row: {text!r} — approval criteria read "
+            "'APPROVAL: <artifact-path> — <description>'")}
+    base, artifact, _prior = parsed
+    h = artifact_hash(paths.root, artifact)
+    if h is None:
+        return {"ok": False, "summary": (
+            f"artifact missing: '{artifact}' is not a file under the repo root — "
+            "fix the path (or produce the artifact) before approving")}
+    # Parens would terminate the marker's own ( ) — map them to brackets.
+    clean_note = (note or "").strip().replace("(", "[").replace(")", "]")
+    marker = (f"_(approved {_today(today)} sha256:{h}"
+              + (f" — {clean_note}" if clean_note else "") + ")_")
+    indent = lines[i][:len(lines[i]) - len(lines[i].lstrip())]
+    lines[i] = f"{indent}- [x] {base} {marker}"
+    writer.upsert_section(path, "Phase Breakdown", "\n".join(lines))
+    return {"ok": True, "phase": str(phase), "criterion": base, "artifact": artifact,
+            "hash": h, "files_changed": [str(path)],
+            "summary": f"approval recorded for '{artifact}' (sha256 {h})"}
 
 
 # --- entities + status --------------------------------------------------------

@@ -124,11 +124,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_approve_gate records sha256+date marker and the criterion reports satisfied (test)
-- [ ] Editing the approved artifact makes the criterion report unsatisfied with 'approval stale' surfaced by cz_check_exit_criterion, cz_transition_phase(complete), and cz_preflight (tests)
-- [ ] Missing artifact surfaces 'artifact missing' gracefully, no exception (test)
-- [ ] Tool surface 43 with REGISTRY/TOOL_NAMES parity test green and cz_approve_gate reachable via clauderize ops (L-05)
-- [ ] Full suite green
+- [x] cz_approve_gate records sha256+date marker and the criterion reports satisfied (test)
+- [x] Editing the approved artifact makes the criterion report unsatisfied with 'approval stale' surfaced by cz_check_exit_criterion, cz_transition_phase(complete), and cz_preflight (tests)
+- [x] Missing artifact surfaces 'artifact missing' gracefully, no exception (test)
+- [x] Tool surface 43 with REGISTRY/TOOL_NAMES parity test green and cz_approve_gate reachable via clauderize ops (L-05)
+- [x] Full suite green
 
 ### Phase 4: Deliverable-matrix campaigns
 

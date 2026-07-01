@@ -807,6 +807,26 @@ def cz_check_exit_criterion(phase: str, criterion: str, checked: bool = True,
                                           criterion=criterion, checked=checked)
 
 
+def cz_approve_gate(phase: str, criterion: str, note: str = "",
+                    gameplan_id: str = "") -> dict:
+    """Record a human approval on an APPROVAL exit criterion, bound to the
+    artifact's content hash.
+
+    An approval criterion reads `APPROVAL: <artifact-path> — <description>` in a
+    phase's exit criteria. Approving computes the artifact's sha256 and stamps it
+    into the criterion; every later read recomputes it, so editing the artifact
+    makes the approval report "stale" (and the criterion unsatisfied) until it is
+    re-approved — surfaced everywhere, enforced nowhere. Re-approving replaces
+    the stamp. `note` optionally records who/what approved.
+    """
+    paths, config = repo_ctx()
+    gid = gameplan_id or config.active_gameplan
+    if not gid:
+        return {"ok": False, "error": "no gameplan specified or active"}
+    return mutations.approve_gate(paths, gameplan_id=gid, phase=phase,
+                                  criterion=criterion, note=note)
+
+
 def _default_transcripts_dir() -> str:
     """Best-effort path to this project's Claude Code transcripts (``*.jsonl``).
 
@@ -1000,6 +1020,7 @@ REGISTRY: dict[str, Op] = {
     "cz_resolve_open_item": Op(cz_resolve_open_item, writes=True),
     "cz_set_exit_criteria": Op(cz_set_exit_criteria, writes=True),
     "cz_check_exit_criterion": Op(cz_check_exit_criterion, writes=True),
+    "cz_approve_gate": Op(cz_approve_gate, writes=True),
     "cz_analyze": Op(cz_analyze, writes=False),
     "cz_critique": Op(cz_critique, writes=False),
     "cz_mine_failures": Op(cz_mine_failures, writes=False),

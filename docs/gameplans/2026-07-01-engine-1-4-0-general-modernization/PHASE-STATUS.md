@@ -10,7 +10,7 @@
 | 0 | Baselines, design decisions & plan commit | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Scoped memory — write path & near-dup parity | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Scoped memory — read path & curator grouping | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Approval gates — hash-bound exit criteria | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Approval gates — hash-bound exit criteria | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Deliverable-matrix campaigns | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Standing conditions + consumes surfacing | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Corpus modernization framework | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
@@ -38,6 +38,12 @@ phase1_suite: 725 passed, 5 skipped (716 baseline + 9 new in tests/test_scoped_m
 
 ```
 phase2_suite: 730 passed, 5 skipped (+5 read-path tests); analyze.scope_filter + handoff audience threading + telemetry same-audience pairing guards; cz_next_phase_context gains audience param (read-only view); written handoff never filtered (C-01)
+```
+
+### Phase 3 Outputs
+
+```
+phase3_suite: 737 passed, 5 skipped (+7 in tests/test_approval_gates.py); surface 43 (cz_approve_gate, CLI parity verified live); approval staleness is COMPUTED at parse time (no auto-write); preflight appends approval_gates check only when the current phase declares approvals
 ```
 
 ## Corrections Log

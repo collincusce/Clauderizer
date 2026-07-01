@@ -215,6 +215,86 @@ def unresolved_open_items(gameplan_dir: Path, phase: str | None = None) -> list[
 
 _EC_CHECK_RE = re.compile(r"^\s*-\s*\[([ xX])\]\s*(.*)$")
 
+# --- approval criteria (gameplan 2026-07-01, decision D1) -------------------------
+# An exit criterion may bind a HUMAN APPROVAL to a content hash:
+#     - [ ] APPROVAL: briefs/shot-spec.md — human signs off the shot spec
+# cz_approve_gate records the artifact's short sha256 in a trailing marker:
+#     _(approved 2026-07-01 sha256:a1b2c3d4e5f6 — note)_
+# Satisfaction is COMPUTED at read time, never enforced: a recorded hash that no
+# longer matches the artifact means the approval is STALE and the criterion
+# reports unsatisfied — surfaced by every reader (check / transition / preflight /
+# status), never blocking anything (INVARIANT-05). Hash-derived authority adapted
+# to a passive ask-time layer: edit the artifact and the old approval stops
+# counting, with no daemon and no lockout.
+_APPROVAL_TEXT_RE = re.compile(r"^APPROVAL:\s*(\S+)(?:\s*—\s*(.*?))?\s*$")
+_APPROVED_MARKER_RE = re.compile(
+    r"_\(approved (\d{4}-\d{2}-\d{2}) sha256:([0-9a-f]{8,64})((?:[^)])*)\)_\s*$")
+APPROVAL_HASH_LEN = 12
+
+
+def artifact_hash(root: Path, rel_path: str) -> str | None:
+    """Short sha256 of a repo file's bytes, or ``None`` when it is not a file
+    (missing artifacts surface as a state, never an exception)."""
+    import hashlib
+
+    try:
+        p = root / rel_path
+        if not p.is_file():
+            return None
+        return hashlib.sha256(p.read_bytes()).hexdigest()[:APPROVAL_HASH_LEN]
+    except OSError:
+        return None
+
+
+def split_approval(text: str) -> tuple[str, str, dict | None] | None:
+    """Parse a criterion text as an approval row.
+
+    Returns ``(base_text, artifact, approval)`` — ``approval`` is
+    ``{date, hash, note}`` from the trailing marker, or ``None`` when not yet
+    approved. Returns ``None`` when the text is not an APPROVAL row at all."""
+    m = _APPROVED_MARKER_RE.search(text)
+    base = text[:m.start()].rstrip() if m else text
+    am = _APPROVAL_TEXT_RE.match(base)
+    if not am:
+        return None
+    approval = None
+    if m:
+        approval = {"date": m.group(1), "hash": m.group(2),
+                    "note": (m.group(3) or "").strip(" —-")}
+    return base, am.group(1), approval
+
+
+def _evaluate_approval(entry: dict, gameplan_dir: Path) -> dict:
+    """Fold computed approval state into an exit-criteria entry (D1).
+
+    For an APPROVAL row, ``checked`` becomes the COMPUTED satisfaction — a
+    checkbox glyph without a current recorded hash does not count. Non-approval
+    rows pass through untouched."""
+    parsed = split_approval(entry["text"])
+    if parsed is None:
+        return entry
+    base, artifact, approval = parsed
+    entry["kind"] = "approval"
+    entry["artifact"] = artifact
+    # gameplan_dir is <root>/docs/gameplans/<gid> (paths.gameplan_dir), so the
+    # repo root — which artifact paths are relative to — is two levels up.
+    current = artifact_hash(gameplan_dir.parents[2], artifact)
+    if approval is None:
+        entry["state"], entry["checked"] = "unapproved", False
+        entry["detail"] = (f"approval for '{artifact}' not recorded — "
+                           "record it with cz_approve_gate")
+    elif current is None:
+        entry["state"], entry["checked"] = "missing", False
+        entry["detail"] = f"approved artifact '{artifact}' is missing on disk"
+    elif current == approval["hash"]:
+        entry["state"], entry["checked"] = "approved", True
+        entry["detail"] = f"approved {approval['date']} (sha256 {approval['hash']})"
+    else:
+        entry["state"], entry["checked"] = "stale", False
+        entry["detail"] = (f"approval stale — '{artifact}' changed since "
+                           f"{approval['date']} (sha256 {approval['hash']} → {current})")
+    return entry
+
 
 def phase_block(breakdown_body: str, phase: str):
     """``(lines, start, end)`` of the ``### Phase N`` block within a Phase
@@ -246,7 +326,8 @@ def exit_criteria(gameplan_dir: Path, phase: str) -> list[dict]:
             text = m.group(2).strip()
             if sections.is_placeholder(text):  # ignore the scaffold "_(verifiable)_"
                 continue
-            out.append({"checked": m.group(1).lower() == "x", "text": text})
+            out.append(_evaluate_approval(
+                {"checked": m.group(1).lower() == "x", "text": text}, gameplan_dir))
     return out
 
 

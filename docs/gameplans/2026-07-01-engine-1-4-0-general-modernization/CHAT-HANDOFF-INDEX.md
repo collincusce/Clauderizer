@@ -1,7 +1,7 @@
 # Chat Handoff Index — engine-1.4.0-general-modernization
 
 > Last updated: 2026-07-01
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Baselines, design decisions & plan commit | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Scoped memory — write path & near-dup parity | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Scoped memory — read path & curator grouping | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Approval gates — hash-bound exit criteria | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Approval gates — hash-bound exit criteria | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Deliverable-matrix campaigns | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Standing conditions + consumes surfacing | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Corpus modernization framework | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
@@ -55,6 +55,10 @@ Scoped-memory write path shipped. cz_add_invariant gained scope (project | gamep
 ### Phase 2 — completed 2026-07-01
 
 Scoped-memory read path shipped as pure filtering. analyze.scope_filter (single-sourced through abstract_index.parse_scope) drops other-gameplan invariants from cz_analyze (ops passes the focus id; no focus → no filtering, surfacing bias), from the handoff's governing-invariant pointer, and from surfaced_ids telemetry. Audience threading: cz_next_phase_context(audience=...) filters gameplan + project lesson rollups, pointers, and focused sets — untagged always passes; the WRITTEN handoff file is never filtered (correction C-01: the propagation rule wins over the plan's original wording, pinned by test). Curator paths (corpus_health + curate_proposals) pair only same-audience lessons. Digest memory gauge untouched. Suite 730 passed (+5).
+
+### Phase 3 — completed 2026-07-01
+
+Hash-bound approval gates shipped (D1). New criterion grammar "APPROVAL: <artifact> — <desc>" inside the existing checkbox model; cz_approve_gate (surface 42→43, writes=True, CLI parity live-verified) stamps _(approved <date> sha256:<12-hex> — note)_ and checks the box; parentheses in notes sanitized to brackets (own test caught the half-done sanitizer). Satisfaction is computed at read time in status_bundle.exit_criteria — unapproved/stale/missing all report unchecked with a reason, so cz_check_exit_criterion, cz_transition_phase(complete) advisories, and status detail get reopening for free; a hand-flipped checkbox never counts and advises cz_approve_gate. Preflight gains an approval_gates check appended ONLY when the current phase declares approvals (byte-identical check list otherwise, INVARIANT-07): stale/missing warn — PASS WITH WARNINGS, never fail (INVARIANT-05). Suite 737 (+7).
 
 ## Accumulated Lessons
 
