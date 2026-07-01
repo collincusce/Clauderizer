@@ -392,7 +392,12 @@ def _consumes_section(paths: RepoPaths, gid: str) -> str:
         if dep is None:
             note = " — _(not found in graph)_"
         else:
-            note = f" (status: {dep.status})" if dep.status else ""
+            bits = []
+            if dep.status:
+                bits.append(f"status: {dep.status}")
+            if getattr(dep, "version", ""):
+                bits.append(f"v{dep.version}")
+            note = f" ({', '.join(bits)})" if bits else ""
         lines.append(f"- **{pin.target}**{note}")
     return "\n".join(lines)
 

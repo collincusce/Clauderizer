@@ -1466,6 +1466,25 @@ def _entity_path(paths: RepoPaths, entity_id: str, type_: str) -> Path:
     return paths.docs / folder / f"{slug}.md"
 
 
+def _deliverable_status_advisory(paths: RepoPaths, gameplan, status) -> str | None:
+    """D2 advisory for a deliverable entity: it should carry its owning gameplan,
+    and its status should be one of that gameplan's kind lifecycle statuses.
+    Advisory only — the write always stands (INVARIANT-05)."""
+    if not gameplan:
+        return ("deliverables usually carry a gameplan field (fields={'gameplan': "
+                "'<id>'}) so they render in that gameplan's deliverable board "
+                "(cz_gameplans gameplan_id=...)")
+    from . import kinds
+    from .rituals.status_bundle import gameplan_kind
+
+    kind = kinds.resolve(gameplan_kind(paths.gameplan_dir(str(gameplan))),
+                         paths.kinds_dir)
+    if kind.lifecycle and status and status not in kind.lifecycle:
+        return (f"status '{status}' is not a '{kind.name}' lifecycle status "
+                f"({' → '.join(kind.lifecycle)}) — kept as written, advisory only")
+    return None
+
+
 @_locked
 def upsert_entity(
     paths: RepoPaths,
@@ -1492,9 +1511,14 @@ def upsert_entity(
     existed = path.exists()
     body = "" if existed else f"\n# {id.split('.', 1)[-1].replace('-', ' ').title()}\n\n_(describe.)_\n"
     writer.write_entity(path, data, body=body, preserve_body=True)
-    return {"ok": True, "id": id, "path": str(path), "created": not existed,
-            "files_changed": [str(path)],
-            "summary": f"{'updated' if existed else 'created'} {id}"}
+    result = {"ok": True, "id": id, "path": str(path), "created": not existed,
+              "files_changed": [str(path)],
+              "summary": f"{'updated' if existed else 'created'} {id}"}
+    if type == "deliverable":
+        adv = _deliverable_status_advisory(paths, (fields or {}).get("gameplan"), status)
+        if adv:
+            result["advisory"] = adv
+    return result
 
 
 @_locked
@@ -1520,6 +1544,16 @@ def transition_status(
         "files_changed": [str(entity.path)],
         "summary": f"{id}: {from_status} -> {to_status}",
     }
+    if getattr(entity, "type", "") == "deliverable":
+        try:
+            from .markdown import frontmatter as _fm
+
+            data, _ = _fm.parse(Path(entity.path).read_text(encoding="utf-8"))
+            adv = _deliverable_status_advisory(paths, data.get("gameplan"), to_status)
+            if adv:
+                result["advisory"] = adv
+        except OSError:
+            pass
     if run_cascade and config.ritual_enabled("cascade") and config.active_gameplan:
         graph = index.load_or_rebuild(paths.docs, paths.index_file)  # refresh
         transition = f"status {from_status} -> {to_status}"

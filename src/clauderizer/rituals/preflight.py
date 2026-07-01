@@ -465,4 +465,25 @@ def run(
             add("approval_gates", "pass", f"all {len(approvals)} approval(s) current")
 
     check_approval_gates()
+
+    def check_standing_conditions() -> None:
+        """Appended only when the focus gameplan declares standing conditions
+        (.clauderizer/conditions.<gid>.toml); absent otherwise so a classic
+        repo's check list is byte-identical (INVARIANT-07). A met condition is
+        information, never a failure — the agent decides what to do with it."""
+        if not gid:
+            return
+        from . import conditions as _cond
+
+        conds = _cond.evaluate(paths, gid)
+        if not conds:
+            return
+        met = [c["name"] for c in conds if c["met"]]
+        if met:
+            add("standing_conditions", "pass",
+                f"met: {', '.join(met)} — iteration proposed (cz_loop_step)")
+        else:
+            add("standing_conditions", "pass", f"{len(conds)} declared, none met")
+
+    check_standing_conditions()
     return result

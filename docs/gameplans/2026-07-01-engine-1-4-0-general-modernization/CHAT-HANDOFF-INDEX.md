@@ -1,7 +1,7 @@
 # Chat Handoff Index — engine-1.4.0-general-modernization
 
 > Last updated: 2026-07-01
-> Status: Phase 4 ready
+> Status: Phase 6 ready
 
 ## How This Works
 
@@ -33,8 +33,8 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Scoped memory — write path & near-dup parity | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Scoped memory — read path & curator grouping | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Approval gates — hash-bound exit criteria | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Deliverable-matrix campaigns | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Standing conditions + consumes surfacing | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 4 | Deliverable-matrix campaigns | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-4-HANDOFF.md |
+| 5 | Standing conditions + consumes surfacing | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Corpus modernization framework | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Docs & procedure 1.5.0 & version bump | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 | 8 | Dogfood & live verification | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
@@ -59,6 +59,14 @@ Scoped-memory read path shipped as pure filtering. analyze.scope_filter (single-
 ### Phase 3 — completed 2026-07-01
 
 Hash-bound approval gates shipped (D1). New criterion grammar "APPROVAL: <artifact> — <desc>" inside the existing checkbox model; cz_approve_gate (surface 42→43, writes=True, CLI parity live-verified) stamps _(approved <date> sha256:<12-hex> — note)_ and checks the box; parentheses in notes sanitized to brackets (own test caught the half-done sanitizer). Satisfaction is computed at read time in status_bundle.exit_criteria — unapproved/stale/missing all report unchecked with a reason, so cz_check_exit_criterion, cz_transition_phase(complete) advisories, and status detail get reopening for free; a hand-flipped checkbox never counts and advises cz_approve_gate. Preflight gains an approval_gates check appended ONLY when the current phase declares approvals (byte-identical check list otherwise, INVARIANT-07): stale/missing warn — PASS WITH WARNINGS, never fail (INVARIANT-05). Suite 737 (+7).
+
+### Phase 4 — completed 2026-07-01
+
+Deliverable-matrix campaigns shipped (D2) with zero new data model: a deliverable is a normal tracked entity (type=deliverable + gameplan field) whose status moves through the kind's new optional [lifecycle] statuses (campaign ships concept→spec-approved→produced→assembled→qa→shipped; driven/loop define none). cz_gameplans gained a gameplan_id detail view returning the card + deliverables + lifecycle + a rendered deliverables×lifecycle markdown board; out-of-lifecycle statuses render annotated, never rejected. cz_upsert_entity/cz_transition_status warn advisory on unknown lifecycle statuses and on missing gameplan fields. The injected digest carries at most one rollup line ("Deliverables: 1/2 shipped.") and only when deliverables exist — untouched repos render byte-identically (tested). Deliverable ≠ rendered file stated in tool descriptions and campaign.toml. Suite 742 (+5).
+
+### Phase 5 — completed 2026-07-01
+
+Standing conditions shipped (D3): .clauderizer/conditions.<gid>.toml declares named shell probes (exit 0 = met, 30s timeout) evaluated lazily by cz_status (compute(conditions=True)), cz_preflight (a standing_conditions check appended only when declared), and cz_loop_step (iteration_proposed on the result) — never by the hook path, which keeps calling compute() defaults and is structurally probe-free (tested). One digest line only when a condition is actually met. Consumes surfacing (C-02): the handoff's Consumes section turned out to exist since 1.2.0 — this phase pinned it with an end-to-end test (declare → render with status+version → cross-axis status change → pending cross-ref counted on the portfolio card) and added the version display. Suite 748 (+6).
 
 ## Accumulated Lessons
 

@@ -50,9 +50,14 @@ def _graph(paths: RepoPaths):
 
 
 def cz_status() -> dict:
-    """Current state: active gameplan, phase table, baseline tests, pending cascades, blockers."""
+    """Current state: active gameplan, phase table, baseline tests, pending cascades, blockers.
+
+    Also evaluates the focus gameplan's declared standing conditions
+    (.clauderizer/conditions.<id>.toml) — a met condition surfaces as
+    "iteration proposed", never auto-runs anything.
+    """
     paths, config = repo_ctx()
-    bundle = status_bundle.compute(paths, config)
+    bundle = status_bundle.compute(paths, config, conditions=True)
     # Long-lived servers only: nudge when the engine source on disk is newer
     # than this process (a fresh CLI/ops process never sees True).
     bundle["engine_stale"] = status_bundle.engine_source_newer_than(
@@ -81,12 +86,38 @@ def cz_next_phase_context(audience: str = "") -> dict:
     return result
 
 
-def cz_gameplans(include_closed: bool = False) -> dict:
+def cz_gameplans(include_closed: bool = False, gameplan_id: str = "") -> dict:
     """List gameplans as a portfolio — the multi-axis view across concurrent
     gameplans. Open ones by default (include_closed=True adds finished ones); each
     card carries kind, lifecycle, the current/next phase, blockers, pending-cascade
-    count, and whether it is the focus. Read-only (L-03)."""
+    count, and whether it is the focus. Read-only (L-03).
+
+    Pass gameplan_id for that gameplan's DETAIL view: its card plus the
+    deliverables board — entities of type=deliverable carrying gameplan: <id>,
+    laid out against the kind's lifecycle statuses as `matrix_md`. Deliverables
+    are a campaign's execution units (a film, a short, a deck), never the
+    individual rendered files they produce.
+    """
     paths, config = repo_ctx()
+    if gameplan_id:
+        from . import kinds as _kinds
+
+        gdir = paths.gameplan_dir(gameplan_id)
+        if not (gdir / "GAMEPLAN.md").exists():
+            return {"ok": False, "summary": f"unknown gameplan {gameplan_id!r}"}
+        card = status_bundle.gameplan_card(gdir, config.focus, paths.kinds_dir)
+        kind = _kinds.resolve(card["kind"], paths.kinds_dir)
+        delivs = status_bundle.deliverables_for(paths, gameplan_id)
+        return {
+            "ok": True,
+            "gameplan": card,
+            "deliverables": delivs,
+            "lifecycle": kind.lifecycle,
+            "matrix_md": status_bundle.deliverable_matrix_md(delivs, kind.lifecycle),
+            "summary": (f"{gameplan_id}: {len(delivs)} deliverable(s)"
+                        + (f" across {' → '.join(kind.lifecycle)}"
+                           if kind.lifecycle else "")),
+        }
     cards = status_bundle.portfolio(paths, config, include_closed=include_closed)
     open_n = sum(1 for c in cards if c["open"])
     return {
@@ -954,7 +985,21 @@ def cz_loop_step() -> dict:
     from . import telemetry
 
     paths, config = repo_ctx()
-    return telemetry.loop_step(paths, config.active_gameplan)
+    result = telemetry.loop_step(paths, config.active_gameplan)
+    # Standing conditions (D3): the loop's threshold triggers, evaluated lazily
+    # right where an iteration would begin. Met -> proposed, never auto-run.
+    from .rituals import conditions as _conditions
+
+    conds = _conditions.evaluate(paths, config.active_gameplan or "")
+    if conds:
+        result["standing_conditions"] = conds
+        met = [c["name"] for c in conds if c["met"]]
+        if met:
+            result["iteration_proposed"] = True
+            result["summary"] = (str(result.get("summary", "")).rstrip(".")
+                                 + f"; standing condition(s) met: {', '.join(met)}"
+                                   " — iteration proposed").lstrip("; ")
+    return result
 
 
 def cz_discover_skills() -> dict:

@@ -11,8 +11,8 @@
 | 1 | Scoped memory — write path & near-dup parity | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Scoped memory — read path & curator grouping | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Approval gates — hash-bound exit criteria | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Deliverable-matrix campaigns | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Standing conditions + consumes surfacing | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 4 | Deliverable-matrix campaigns | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-4-HANDOFF.md |
+| 5 | Standing conditions + consumes surfacing | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Corpus modernization framework | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Docs & procedure 1.5.0 & version bump | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
 | 8 | Dogfood & live verification | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
@@ -46,6 +46,18 @@ phase2_suite: 730 passed, 5 skipped (+5 read-path tests); analyze.scope_filter +
 phase3_suite: 737 passed, 5 skipped (+7 in tests/test_approval_gates.py); surface 43 (cz_approve_gate, CLI parity verified live); approval staleness is COMPUTED at parse time (no auto-write); preflight appends approval_gates check only when the current phase declares approvals
 ```
 
+### Phase 4 Outputs
+
+```
+phase4_suite: 742 passed, 5 skipped (+5 in tests/test_deliverable_matrix.py); Kind.lifecycle from [lifecycle] statuses; campaign = concept/spec-approved/produced/assembled/qa/shipped; cz_gameplans(gameplan_id=...) detail view with matrix_md; digest rollup ≤1 line only when deliverables exist
+```
+
+### Phase 5 Outputs
+
+```
+phase5_suite: 748 passed, 5 skipped (+6 in tests/test_standing_conditions.py); rituals/conditions.py probes (30s cap, exit 0 = met); compute(conditions=True) only from cz_status/cz_preflight/cz_loop_step — hook path structurally probe-free; consumes rendering verified end-to-end + version display added (C-02)
+```
+
 ## Corrections Log
 
 ### C-01 — Phase 2
@@ -54,3 +66,10 @@ phase3_suite: 737 passed, 5 skipped (+7 in tests/test_approval_gates.py); surfac
 **What gameplan said**: Phase 2 applies audience filtering to both cz_next_phase_context and cz_write_handoff ("cz_next_phase_context/cz_write_handoff with audience=X drop other-audience lessons").
 **What was actually correct**: Audience filtering lands on cz_next_phase_context (read-only bundle) only; cz_write_handoff always writes the full unfiltered canonical handoff. handoff.assemble takes the audience param but cz_write_handoff never passes it, and a regression test pins the written file as never-filtered.
 **Why**: The handoff FILE is the self-contained cross-session artifact — the module's founding anti-pattern (#2, incomplete lesson propagation) is precisely "a later session missed a lesson because the carrier dropped it." A role-filtered file would silently become the next session's truncated truth. Read-time filtering gives roles their view without ever thinning the durable record (D-043 is filtering at READ time; D-009 propagation stands).
+
+### C-02 — Phase 5
+
+**Phase**: 5
+**What gameplan said**: Consumes surfacing must be ADDED: "cz_next_phase_context/handoff renders the gameplan's declared consumed entities … so cross-gameplan consequences are visible where work starts."
+**What was actually correct**: handoff.assemble has rendered a "Consumes (Cross-Gameplan)" section with per-entity status since 1.2.0 (_consumes_section), and cz_next_phase_context shares that assembly. Phase 5 verified it end to end with a new test (declare → render → cross-axis transition → pending cross-ref on the portfolio card) and enriched the rendering with the consumed entity's version.
+**Why**: The feature brief (GR-8) claimed the surfacing was absent, and the plan inherited that claim without re-checking the 1.2.0 changelog. The code recon during Phase 2 falsified it — the gap was evidence (no test) and a missing version display, not a missing feature.

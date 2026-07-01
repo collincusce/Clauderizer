@@ -469,6 +469,50 @@ def gameplan_card(gdir: Path, focus_id: str | None,
     }
 
 
+def deliverables_for(paths: RepoPaths, gid: str) -> list[dict]:
+    """Tracked deliverable entities owned by gameplan ``gid`` (D2): docs/entities/
+    docs with ``type: deliverable`` + ``gameplan: <gid>`` frontmatter, as
+    ``{id, status, version}`` sorted by id. Deliverables are a campaign's
+    execution units (a flagship film, a pillar short) — never individual
+    rendered asset files."""
+    from ..markdown import frontmatter
+
+    ent_dir = paths.docs / "entities"
+    out: list[dict] = []
+    if not ent_dir.exists():
+        return out
+    for p in sorted(ent_dir.glob("*.md")):
+        try:
+            data, _body = frontmatter.parse(p.read_text(encoding="utf-8"))
+        except OSError:
+            continue
+        if (str(data.get("type", "")) == "deliverable"
+                and str(data.get("gameplan", "")) == gid):
+            out.append({"id": str(data.get("id", p.stem)),
+                        "status": str(data.get("status", "planned")),
+                        "version": str(data.get("version", ""))})
+    return out
+
+
+def deliverable_matrix_md(delivs: list[dict], lifecycle: list[str]) -> str:
+    """The deliverables×lifecycle board as a markdown table — DETAIL views only,
+    never the injected digest (D-027/INVARIANT-08). Without a kind-defined
+    lifecycle it falls back to a plain status list; a status outside the
+    lifecycle renders beside the id instead of a column (advisory model)."""
+    if not delivs:
+        return "_(no deliverables tracked)_"
+    if not lifecycle:
+        return "\n".join(f"- {d['id']}: {d['status']}" for d in delivs)
+    header = "| deliverable | " + " | ".join(lifecycle) + " |"
+    sep = "|" + "---|" * (len(lifecycle) + 1)
+    rows = []
+    for d in delivs:
+        label = d["id"] if d["status"] in lifecycle else f"{d['id']} ({d['status']})"
+        cells = ["●" if d["status"] == s else "" for s in lifecycle]
+        rows.append("| " + label + " | " + " | ".join(cells) + " |")
+    return "\n".join([header, sep] + rows)
+
+
 def portfolio(paths: RepoPaths, config: Config, *, include_closed: bool = False) -> list[dict]:
     """All gameplans as portfolio cards (open by default), focus first then by id.
     The open set is derived from each gameplan's phase table — only the single
@@ -504,7 +548,10 @@ def _portfolio_lines(cards: list[dict]) -> list[str]:
     return out
 
 
-def compute(paths: RepoPaths, config: Config) -> dict:
+def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> dict:
+    """``conditions=True`` additionally evaluates the focus gameplan's standing
+    conditions (D3) — shell probes, so ONLY tool calls pass it; the default
+    keeps the read-only hook digest free of subprocesses (INVARIANT-06)."""
     gid = config.active_gameplan
     bundle: dict = {
         "ok": True,
@@ -578,6 +625,22 @@ def compute(paths: RepoPaths, config: Config) -> dict:
     _k = kinds.resolve(gameplan_kind(gdir), paths.kinds_dir)
     ph_w, gp_w = _k.label("phase"), _k.label("gameplan")
     bundle["kind"] = _k.name
+    # Deliverable rollup (D2): present ONLY when this gameplan tracks deliverable
+    # entities — a repo without them renders its digest exactly as before.
+    delivs = deliverables_for(paths, gid)
+    if delivs:
+        done_status = _k.lifecycle[-1] if _k.lifecycle else ""
+        bundle["deliverables"] = {
+            "total": len(delivs),
+            "done": sum(1 for d in delivs if d["status"] == done_status),
+            "done_label": done_status,
+        }
+    if conditions:
+        from . import conditions as _cond
+
+        conds = _cond.evaluate(paths, gid)
+        if conds:
+            bundle["standing_conditions"] = conds
     if cur:
         bundle["summary"] = (
             f"Gameplan {gid}: {ph_w} {cur['number']}/{total} IN PROGRESS — \"{cur['name']}\"."
@@ -630,6 +693,20 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         lines += _portfolio_lines(open_cards)
     if bundle.get("baseline_tests"):
         lines.append(f"Baseline: {bundle['baseline_tests']} tests.")
+    dl = bundle.get("deliverables")
+    if dl and dl.get("total"):
+        # One rollup line, focused gameplan only (D2); the full board lives in
+        # cz_gameplans' detail view, never the injected digest (D-027).
+        if dl.get("done_label"):
+            lines.append(f"Deliverables: {dl['done']}/{dl['total']} {dl['done_label']}.")
+        else:
+            lines.append(f"Deliverables: {dl['total']} tracked.")
+    met = [c["name"] for c in (bundle.get("standing_conditions") or []) if c.get("met")]
+    if met:
+        # One line, only when a declared condition is actually met (D3); the
+        # engine proposes, the agent decides — nothing runs by itself.
+        lines.append("⏰ Standing condition met: " + ", ".join(met)
+                     + " — iteration proposed (cz_loop_step).")
     mem = bundle.get("memory")
     if mem:
         tok = mem.get("handoff_est_tokens")

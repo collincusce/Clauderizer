@@ -140,11 +140,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] campaign kind exposes lifecycle statuses from [lifecycle] in TOML; driven/loop expose none (test)
-- [ ] A deliverable entity with a gameplan field renders in the cz_gameplans deliverables×lifecycle matrix (test)
-- [ ] Unknown lifecycle status on a deliverable warns advisory, never blocks (test)
-- [ ] Digest adds at most one deliverables rollup line, only for a focused campaign that has deliverables; single-gameplan no-deliverable digest byte-identical to 1.3.1 (INVARIANT-07 test)
-- [ ] Full suite green
+- [x] campaign kind exposes lifecycle statuses from [lifecycle] in TOML; driven/loop expose none (test)
+- [x] A deliverable entity with a gameplan field renders in the cz_gameplans deliverables×lifecycle matrix (test)
+- [x] Unknown lifecycle status on a deliverable warns advisory, never blocks (test)
+- [x] Digest adds at most one deliverables rollup line, only for a focused campaign that has deliverables; single-gameplan no-deliverable digest byte-identical to 1.3.1 (INVARIANT-07 test)
+- [x] Full suite green
 
 ### Phase 5: Standing conditions + consumes surfacing
 
@@ -156,11 +156,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 5.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] conditions.<gameplan-id>.toml evaluated inside cz_status/cz_preflight/cz_loop_step; met condition surfaces 'iteration proposed' in result + one digest line (test)
-- [ ] Hook digest path performs no condition evaluation — no subprocess from hook (test)
-- [ ] cz_next_phase_context/handoff renders consumed entities with current status/version (test)
-- [ ] Cross-gameplan pending cross-ref visible in portfolio card counts end to end (test)
-- [ ] Full suite green
+- [x] conditions.<gameplan-id>.toml evaluated inside cz_status/cz_preflight/cz_loop_step; met condition surfaces 'iteration proposed' in result + one digest line (test)
+- [x] Hook digest path performs no condition evaluation — no subprocess from hook (test)
+- [x] cz_next_phase_context/handoff renders consumed entities with current status/version (test)
+- [x] Cross-gameplan pending cross-ref visible in portfolio card counts end to end (test)
+- [x] Full suite green
 
 ### Phase 6: Corpus modernization framework
 
