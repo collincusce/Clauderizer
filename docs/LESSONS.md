@@ -63,6 +63,8 @@
 
 **L-46.** An audit finding names a SYMPTOM plus a HYPOTHESIZED cause, and the hypothesis is falsifiable — measure it before fixing (extends L-39/L-40 from eval-gates to audit-remediation). Measured instance: the 1.3.0 audit predicted a fork tokenizer "hides" near-duplicate lesson pairs the canonical one would surface; Phase-0 measurement showed BOTH tokenizers report 0 pairs at every threshold (max real Jaccard 0.19), falsifying the under-count. The real defect was INCOHERENCE — two definitions of "near-duplicate" (fork tokenizer @0.6 vs canonical @0.40) — so the fix was single-sourcing the tokenizer AND threshold (D-041→INVARIANT-09), not lowering a threshold to manufacture pairs. Record the before/after as outputs so the reframed fix is justified by data, not by the audit's prose. *(from 2026-06-28-integrity-patch)*
 
+**L-47.** A changelog line or in-code hint that claims a shipped ARTIFACT (an example file, a scaffold, a template) needs a test asserting the artifact actually ships — prose and code paths drift independently, and the claim reads as true until someone goes looking. Measured instance: 1.3.1's changelog + preflight hint both referenced .clauderizer/preflight.<kind>.toml.example while no code ever scaffolded it; found only when 1.4.0's modernization pass was pointed at a real corpus, and fixed by making modernize.apply ship it (test_modernize.py). *(from 2026-07-01-engine-1-4-0-general-modernization)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)* (obsolete 2026-06-21: consolidated into L-25)
