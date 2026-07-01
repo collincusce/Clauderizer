@@ -34,8 +34,18 @@ clauderizes any repo).
   maintenance loop, and a creative campaign side by side — the engine tracks the
   whole portfolio, focuses one at a time, speaks each kind's own vocabulary (a
   campaign's "stages" and "assets" over the same canonical structure), runs each
-  kind's own quality gates, and propagates a dependency from one axis to another
-  automatically.
+  kind's own quality gates, tracks a campaign's deliverables through their
+  lifecycle, and propagates a dependency from one axis to another automatically.
+- **Memory that knows who it's for.** A rule can belong to one gameplan (a
+  campaign's brand law stays out of every other gameplan's context) or to one
+  working role (the copywriter's context skips the render-engine gotchas) —
+  filtering at read time, never hiding anything from the canonical record. Human
+  sign-offs bind to the approved artifact's content, so an edited artifact
+  visibly re-opens its approval.
+- **Upgrades deliver themselves.** `clauderize upgrade` brings an existing repo
+  up to the engine's current capabilities: mechanical changes apply (config
+  migrations, example files, the procedure document), and anything touching
+  recorded memory is proposed — never auto-edited.
 - **Addressable, summary-first recall.** A compact per-entry index lets the agent
   pull exactly the decision, invariant, or lesson it needs — and see a one-line
   summary inline — instead of loading a whole file; like the graph index it is

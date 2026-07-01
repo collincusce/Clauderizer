@@ -124,6 +124,37 @@ read exactly the entry it needs instead of loading a whole corpus file:
   abstract index, relevance ranking, and the corpus-health redundancy metric, so the
   whole engine shares one definition of "near-duplicate" (D-041).
 
+### Scoped memory, approvals, deliverables, conditions & modernization (1.4.0)
+
+Four additive capabilities over the same canonical structure, plus the upgrade
+path that delivers them to existing repos:
+
+- **Scoped memory** — an invariant may carry a `**Scope**:` line binding it to one
+  gameplan and an `**Audience**:` label for one working role; lessons may carry an
+  audience tag. Reads *filter* (the analyze gate and the handoff's governing
+  invariants skip other gameplans' scoped rules; `cz_next_phase_context(audience=…)`
+  returns one role's view), the canonical files and the written handoff always carry
+  everything, and curation never proposes consolidating across scopes or audiences.
+  The write-time near-duplicate advisory covers invariants too, through the same
+  single tokenizer and threshold.
+- **Approval criteria** — `APPROVAL: <artifact-path> — <description>` exit criteria
+  plus `cz_approve_gate`, which records a sign-off as the artifact's content hash.
+  Satisfaction is computed at read time: an edited artifact makes the approval read
+  stale in check-off, phase completion, and pre-flight until re-approved.
+- **Deliverables** — a kind may define a deliverable lifecycle (`[lifecycle]` in its
+  TOML); each deliverable is a tracked entity with a `gameplan` field, rendered as a
+  board by `cz_gameplans gameplan_id=…` with a one-line digest rollup. A deliverable
+  is an execution unit (a film, a deck), never an individual rendered file.
+- **Standing conditions** — `.clauderizer/conditions.<gameplan-id>.toml` declares
+  shell probes (exit 0 = met) evaluated only when status is explicitly asked for;
+  a met condition surfaces "iteration proposed" and nothing runs by itself. The
+  session-start hook never evaluates probes.
+- **Corpus modernization** — the config carries a procedure-version stamp;
+  `clauderize upgrade` / `cz_modernize` applies the mechanical tier (stamp,
+  migrations, example files, the procedure-doc refresh) and surfaces memory-shaped
+  gaps as advisory proposals only. Detection in the digest is a version-string
+  compare — read-only and hook-safe.
+
 ### Host targeting & the injection-parity ladder
 
 **`host_target`** is a third host axis, orthogonal to `session_host` (where commands

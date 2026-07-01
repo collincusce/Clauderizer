@@ -1,7 +1,7 @@
 # Chat Handoff Index — engine-1.4.0-general-modernization
 
 > Last updated: 2026-07-01
-> Status: Phase 7 ready
+> Status: Phase 8 ready
 
 ## How This Works
 
@@ -36,7 +36,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 4 | Deliverable-matrix campaigns | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Standing conditions + consumes surfacing | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Corpus modernization framework | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-6-HANDOFF.md |
-| 7 | Docs & procedure 1.5.0 & version bump | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 7 | Docs & procedure 1.5.0 & version bump | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-7-HANDOFF.md |
 | 8 | Dogfood & live verification | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
 | 9 | Ship 1.4.0 — release ritual & close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-9-HANDOFF.md |
 
@@ -71,6 +71,10 @@ Standing conditions shipped (D3): .clauderizer/conditions.<gid>.toml declares na
 ### Phase 6 — completed 2026-07-01
 
 Corpus modernization shipped (D-042). Config gains procedure_version (stamped by init and upgrade, emitted only once set so legacy rewrites stay byte-identical, preserved by merge_missing). modernize.py: report() = read-only two-tier report; apply() = mechanical tier only — config stamp + [active_gameplan]→[focus] migration via one to_toml rewrite, .clauderizer/kinds/ dir, per-kind preflight.<kind>.toml.example scaffolds (inert, commented — fixing a 1.3.1 defect where the preflight hint referenced an example file nothing shipped), engine-owned GAMEPLAN-PROCEDURE.md refresh; memory docs provably untouched (snapshot test). Tier-2 detectors: unwired gates, near-dup invariant pairs via the canonical tokenizer, campaigns without deliverables, loops without conditions. clauderize upgrade (+ --report/--json) wraps it; cz_status/CLI status digest carries one ⚙ line via a light stamp-compare only (hook-safe); doctor warns advisory. The back-compat golden now models a MODERNIZED corpus (deliberate update; legacy line pinned in test_modernize). temp_repo fixture stamps current. Surface 44. Suite 754 (+7 net). Live-verified on this repo — it correctly diagnosed its own gaps.
+
+### Phase 7 — completed 2026-07-01
+
+Docs and versions shipped. PROCEDURE_VERSION 1.4.0→1.5.0 with a full changelog entry and five new template sections in human prose (scoped memory: filtering never hiding; standing conditions: probes on ask, cadence belongs to the host; deliverables: execution units never rendered files; approval criteria: hash-bound sign-offs; corpus modernization: two tiers). Engine 1.3.1→1.4.0 in pyproject/__init__ (editable reinstall done per the standing lesson). CHANGELOG 1.4.0 documents all six changes including the honest note that 1.3.1's example-file claim is only now made real. README and docs/UPGRADING.md teach the three-move update (engine → init → upgrade) with the applies-vs-proposes contract spelled out; ARCHITECTURE gains the 1.4.0 section; VISION gains "memory that knows who it's for" and "upgrades deliver themselves". Jargon sweep clean on all new prose. Suite 754 green across both version bumps.
 
 ## Accumulated Lessons
 

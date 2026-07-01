@@ -190,11 +190,11 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 7.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] PROCEDURE_VERSION = 1.5.0 with GAMEPLAN-PROCEDURE.md changelog entry covering scoped memory, approval criteria, deliverables, standing conditions, modernization
-- [ ] pyproject.toml and __init__.py at 1.4.0
-- [ ] README + UPGRADING.md describe 'clauderize upgrade' in human prose; ARCHITECTURE/VISION refreshed (D-038/D-039)
-- [ ] Agent-jargon regex sweep of product docs clean (1.0.5 lesson)
-- [ ] Full suite green
+- [x] PROCEDURE_VERSION = 1.5.0 with GAMEPLAN-PROCEDURE.md changelog entry covering scoped memory, approval criteria, deliverables, standing conditions, modernization
+- [x] pyproject.toml and __init__.py at 1.4.0
+- [x] README + UPGRADING.md describe 'clauderize upgrade' in human prose; ARCHITECTURE/VISION refreshed (D-038/D-039)
+- [x] Agent-jargon regex sweep of product docs clean (1.0.5 lesson)
+- [x] Full suite green
 
 ### Phase 8: Dogfood & live verification
 

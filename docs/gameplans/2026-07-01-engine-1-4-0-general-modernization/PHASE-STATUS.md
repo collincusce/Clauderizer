@@ -14,7 +14,7 @@
 | 4 | Deliverable-matrix campaigns | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Standing conditions + consumes surfacing | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Corpus modernization framework | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-6-HANDOFF.md |
-| 7 | Docs & procedure 1.5.0 & version bump | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 7 | Docs & procedure 1.5.0 & version bump | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-7-HANDOFF.md |
 | 8 | Dogfood & live verification | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
 | 9 | Ship 1.4.0 — release ritual & close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-9-HANDOFF.md |
 
@@ -62,6 +62,12 @@ phase5_suite: 748 passed, 5 skipped (+6 in tests/test_standing_conditions.py); r
 
 ```
 phase6_suite: 754 passed, 5 skipped (+6 tests/test_modernize.py, +1 golden deliberately updated to model a modernized corpus); surface 44 (cz_modernize); live: fresh init stamps 1.4.0, doctor shows advisory line, upgrade --report on THIS repo correctly finds unstamped config + missing kinds dir + proposes standing conditions for the curator loop; discovered pre-existing defect: the 1.3.1 preflight hint referenced a preflight.<kind>.toml.example nothing ever shipped — modernize now actually scaffolds it
+```
+
+### Phase 7 Outputs
+
+```
+phase7_versions: engine 1.4.0 (pyproject + __init__), PROCEDURE_VERSION 1.5.0 with template changelog + 5 new sections (Scoped Memory / Standing Conditions / Deliverables / Approval Criteria / Corpus Modernization); CHANGELOG 1.4.0 entry; README+UPGRADING now teach the three-move update incl. clauderize upgrade; ARCHITECTURE 1.4.0 section; VISION 2 new differentiation bullets; jargon sweep JARGON_CLEAN; .venv reinstalled post-bump; suite 754 green
 ```
 
 ## Corrections Log
