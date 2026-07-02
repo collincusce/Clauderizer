@@ -168,6 +168,24 @@ def report(paths: RepoPaths, config: Config) -> dict:
                 "detail": f"loop gameplan '{gid}' declares no standing conditions — "
                           f"declare threshold probes in .clauderizer/conditions.{gid}.toml "
                           "so status can propose iterations when they trip"})
+    # Onboarding gap (D-044): the repo has real documentation while the
+    # scaffolded Clauderizer docs are still placeholders — every already-
+    # clauderized repo learns about onboarding at its next upgrade.
+    from . import onboard as onboard_mod
+
+    unseeded = onboard_mod.unseeded_docs(paths)
+    if unseeded:
+        cands = onboard_mod.spec_candidates(paths)
+        if cands:
+            shown = ", ".join(unseeded[:4]) + ("…" if len(unseeded) > 4 else "")
+            proposals.append({
+                "kind": "unseeded_docs",
+                "detail": f"{len(unseeded)} Clauderizer doc(s) are still scaffold "
+                          f"placeholders ({shown}) while {len(cands)} existing "
+                          f"doc(s) look like specs (e.g. {cands[0]['path']}) — run "
+                          "cz_onboard (or the clauderizer-onboard skill) to seed "
+                          "memory from them; the engine never seeds for you"})
+
     # A per-repo overlay of a packaged kind pins that kind's capability set to
     # whatever the overlay declares — an overlay written before the packaged
     # kind gained a deliverable lifecycle silently overrides the lifecycle

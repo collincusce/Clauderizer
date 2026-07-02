@@ -1,7 +1,7 @@
 # Chat Handoff Index — engine-1.5.0-onboarding
 
 > Last updated: 2026-07-01
-> Status: Phase 2 ready
+> Status: Phase 4 of 5 in progress
 
 ## How This Works
 
@@ -31,9 +31,9 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Plan, baselines & commit | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Detector + cz_onboard assembly tool | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Surfacing — init advisory + modernize proposal | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Skill + docs + version bumps | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Dogfood & ship 1.5.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 2 | Surfacing — init advisory + modernize proposal | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-2-HANDOFF.md |
+| 3 | Skill + docs + version bumps | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-3-HANDOFF.md |
+| 4 | Dogfood & ship 1.5.0 | 🟡 IN PROGRESS | 2026-07-01 | — | handoffs/PHASE-4-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -46,6 +46,14 @@ Planned the 1.5.0 onboarding release. D-044 project ADR (assembly tool + skill; 
 ### Phase 1 — completed 2026-07-01
 
 Detector + assembly tool shipped. onboard.py: spec_candidates walks well-known root files + docs/**/*.md excluding the engine-owned set (template names single-sourced from assets + owned dirs), returning paths+sizes only, empty/oversized skipped, capped at 25; unseeded_docs tests the ten prose docs (append-only logs excluded by design) with the meaningful-lines ⊆ current-template predicate — drift-proof where byte-identity would false-read; report() bundles unseeded + candidates + seeded_count + the seeding prompt naming the blessed writes and provenance discipline. cz_onboard registered read-only (surface 44→45, registry parity green, behavioral read-only gate covers it automatically, CLI schema verified live). Suite 761 (+6), first run green.
+
+### Phase 2 — completed 2026-07-01
+
+Surfacing shipped on both delivery paths. init: a new step 6b computes the onboarding signal right after doc scaffolding and appends one advisory to the new InitReport.advisories field (printed by the CLI as "→ …run cz_onboard or the clauderizer-onboard skill"), firing only when unseeded docs and spec candidates coexist — a bare repo stays silent (both tested). modernize: tier-2 gains the unseeded_docs proposal with the same predicate so every already-clauderized repo learns about onboarding at its next clauderize upgrade (D-042); seeding a doc clears it (tested). Suite 763 (+2), first run green.
+
+### Phase 3 — completed 2026-07-01
+
+Skill, docs, and versions shipped. clauderizer-onboard becomes the seventh packaged skill (read cz_onboard → read candidates → seed prose docs directly → entities/decisions/invariants with provenance → re-run to confirm → cz_status; distill-don't-transcribe judgment notes), with a test pinning that assets ship it and init drops it. Procedure template 1.5.0→1.6.0 with a changelog entry and an "Onboarding an Existing Project" section in human prose. Engine 1.4.1→1.5.0; CHANGELOG entry opens by keeping the two version lines straight ("engine 1.5.0 carries procedure 1.6.0"); README's init section gains the onboarding pointer. Jargon sweep clean; venv reinstalled; suite 764.
 
 ## Accumulated Lessons
 

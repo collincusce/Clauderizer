@@ -77,9 +77,9 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] init report prints one onboarding advisory when unseeded docs + candidates coexist; silent otherwise (tests both ways)
-- [ ] modernize tier-2 gains unseeded_docs proposal with the same predicate; silent when seeded or no candidates (tests both ways)
-- [ ] Full suite green
+- [x] init report prints one onboarding advisory when unseeded docs + candidates coexist; silent otherwise (tests both ways)
+- [x] modernize tier-2 gains unseeded_docs proposal with the same predicate; silent when seeded or no candidates (tests both ways)
+- [x] Full suite green
 
 ### Phase 3: Skill + docs + version bumps
 
@@ -91,9 +91,9 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] clauderizer-onboard skill ships in the packaged skills and init drops it (test)
-- [ ] Procedure template at 1.6.0 with changelog + Onboarding section; engine 1.5.0 in pyproject + __init__; CHANGELOG names both version lines with the carries phrasing
-- [ ] Jargon sweep clean; venv reinstalled; full suite green
+- [x] clauderizer-onboard skill ships in the packaged skills and init drops it (test)
+- [x] Procedure template at 1.6.0 with changelog + Onboarding section; engine 1.5.0 in pyproject + __init__; CHANGELOG names both version lines with the carries phrasing
+- [x] Jargon sweep clean; venv reinstalled; full suite green
 
 ### Phase 4: Dogfood & ship 1.5.0
 

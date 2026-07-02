@@ -139,6 +139,10 @@ class InitReport:
     actions: list[str] = field(default_factory=list)
     changed: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    # Nudges that aren't problems — e.g. the onboarding advisory (D-044): the
+    # repo has real docs and the scaffolded Clauderizer docs are still
+    # placeholders, so the natural next step is seeding.
+    advisories: list[str] = field(default_factory=list)
 
     def note(self, action: str, path: Path | str, changed: bool) -> None:
         verb = "wrote" if changed else "kept"
@@ -272,6 +276,21 @@ def init(
         path = paths.doc(module)
         changed = writer.create_if_absent(path, tmpl)
         report.note(f"doc:{module}", path, changed)
+
+    # 6b. onboarding advisory (D-044): this repo already has documentation and
+    # the Clauderizer docs are still scaffold placeholders — say so once, with
+    # the next step. Detection is read-only; the engine never seeds anything.
+    from .. import onboard as _onboard
+
+    _unseeded = _onboard.unseeded_docs(paths)
+    if _unseeded:
+        _cands = _onboard.spec_candidates(paths)
+        if _cands:
+            report.advisories.append(
+                f"this repo has {len(_cands)} existing doc(s) that look like specs "
+                f"(e.g. {_cands[0]['path']}) while {len(_unseeded)} scaffolded "
+                f"Clauderizer doc(s) are still placeholders — have your agent run "
+                f"cz_onboard (or the clauderizer-onboard skill) to seed memory from them")
 
     # 7. optional first gameplan
     if gameplan:

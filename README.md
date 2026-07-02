@@ -314,6 +314,10 @@ uv tool upgrade clauderizer     # uv tool installs
 `init` is idempotent: it refreshes only engine-owned files and never touches your `docs/`
 memory, your `CLAUDE.md` text, or your `.clauderizer/profile.lock.toml` edits. Without
 `--refresh`, `uvx` keeps serving its cached version — that one flag is the whole update.
+Initializing a repo that already has real documentation? `init` will say so and point at
+the onboarding flow (`cz_onboard` + the `clauderizer-onboard` skill), which has your agent
+read the existing README/specs and seed VISION, ARCHITECTURE, and the memory graph from
+them — the engine never writes that prose itself.
 
 `upgrade` is how a new engine's improvements actually reach a repo set up under an older
 one. It applies the **mechanical** part for you — the config's version stamp and

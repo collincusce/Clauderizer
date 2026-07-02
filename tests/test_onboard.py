@@ -78,6 +78,55 @@ def test_append_only_logs_are_never_onboarding_targets(temp_repo):
 # --- the bundle -----------------------------------------------------------------
 
 
+def test_init_advisory_fires_only_with_specs_and_placeholders(tmp_path):
+    from clauderizer.scaffold.init import init as run_init
+
+    repo = tmp_path / "specrich"
+    repo.mkdir()
+    (repo / ".git").mkdir()
+    (repo / "README.md").write_text("# Real project\n\nlots of real spec prose\n",
+                                    encoding="utf-8")
+    report = run_init(repo, size="pet", spawn_test=False)
+    assert any("cz_onboard" in a for a in report.advisories)
+    # a bare repo (no specs) gets no advisory
+    bare = tmp_path / "bare"
+    bare.mkdir()
+    (bare / ".git").mkdir()
+    report2 = run_init(bare, size="pet", spawn_test=False)
+    assert not any("cz_onboard" in a for a in report2.advisories)
+
+
+def test_modernize_unseeded_docs_proposal(temp_repo):
+    from clauderizer import assets, modernize
+    from clauderizer import config as cfg
+
+    paths = _paths(temp_repo)
+    config = cfg.Config.load(paths.config_file)
+    (temp_repo / "README.md").write_text("# Proj\n\nreal spec content here\n",
+                                         encoding="utf-8")
+    vision = paths.doc("VISION")
+    vision.parent.mkdir(parents=True, exist_ok=True)
+    vision.write_text(assets.doc_template("VISION"), encoding="utf-8")
+    rep = modernize.report(paths, config)
+    hits = [p for p in rep["proposals"] if p["kind"] == "unseeded_docs"]
+    assert hits and "cz_onboard" in hits[0]["detail"]
+    # seeding the doc clears the proposal
+    vision.write_text("# Vision\n\nA real, human-written vision.\n", encoding="utf-8")
+    rep2 = modernize.report(paths, config)
+    assert not [p for p in rep2["proposals"] if p["kind"] == "unseeded_docs"]
+
+
+def test_onboard_skill_ships_and_init_drops_it(tmp_path):
+    from clauderizer.scaffold.init import init as run_init
+
+    assert any(d.name == "clauderizer-onboard" for d in assets.skill_dirs())
+    repo = tmp_path / "skillcheck"
+    repo.mkdir()
+    (repo / ".git").mkdir()
+    run_init(repo, size="pet", spawn_test=False)
+    assert (repo / ".claude" / "skills" / "clauderizer-onboard" / "SKILL.md").exists()
+
+
 def test_report_shape_and_prompt(temp_repo):
     paths = _paths(temp_repo)
     vision = paths.doc("VISION")
