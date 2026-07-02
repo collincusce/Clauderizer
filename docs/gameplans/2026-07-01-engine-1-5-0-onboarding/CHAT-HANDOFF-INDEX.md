@@ -1,7 +1,7 @@
 # Chat Handoff Index — engine-1.5.0-onboarding
 
 > Last updated: 2026-07-01
-> Status: Phase 4 of 5 in progress
+> Status: All 5 phases complete
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Detector + cz_onboard assembly tool | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Surfacing — init advisory + modernize proposal | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Skill + docs + version bumps | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Dogfood & ship 1.5.0 | 🟡 IN PROGRESS | 2026-07-01 | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Dogfood & ship 1.5.0 | ✅ COMPLETE | 2026-07-01 | 2026-07-01 | handoffs/PHASE-4-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -54,6 +54,10 @@ Surfacing shipped on both delivery paths. init: a new step 6b computes the onboa
 ### Phase 3 — completed 2026-07-01
 
 Skill, docs, and versions shipped. clauderizer-onboard becomes the seventh packaged skill (read cz_onboard → read candidates → seed prose docs directly → entities/decisions/invariants with provenance → re-run to confirm → cz_status; distill-don't-transcribe judgment notes), with a test pinning that assets ship it and init drops it. Procedure template 1.5.0→1.6.0 with a changelog entry and an "Onboarding an Existing Project" section in human prose. Engine 1.4.1→1.5.0; CHANGELOG entry opens by keeping the two version lines straight ("engine 1.5.0 carries procedure 1.6.0"); README's init section gains the onboarding pointer. Jargon sweep clean; venv reinstalled; suite 764.
+
+### Phase 4 — completed 2026-07-01
+
+Dogfooded three ways and shipped. Scratch spec-rich repo: init printed the onboarding advisory and cz_onboard returned exactly unseeded=["docs/VISION.md"] with README.md + docs/design.md as candidates. This repo and marketing-studio: upgraded to procedure stamp 1.6.0 (procedure docs refreshed), zero false onboarding fires (their docs are real), prior proposals stable. Ritual clean end to end: PR #20 → 9-cell CI green before tag → squash-merge @ 6785b9477 → release-check 0 → tag v1.5.0 → Release latest → OIDC publish → PyPI 1.5.0 + uvx --refresh verified. feat.onboarding → 1.0.0/completed; scaffold/mcp-server/rituals MINOR-bumped. Suite 764.
 
 ## Accumulated Lessons
 

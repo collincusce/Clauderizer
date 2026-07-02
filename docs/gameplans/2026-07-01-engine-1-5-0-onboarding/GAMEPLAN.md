@@ -1,7 +1,7 @@
 # engine-1.5.0-onboarding Gameplan
 
 > Created: 2026-07-01
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -105,7 +105,7 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Scratch spec-rich repo: init prints the onboarding advisory and cz_onboard lists README + docs/design.md with unseeded VISION/ARCHITECTURE (live)
-- [ ] This repo and marketing-studio: no false onboarding fire; upgrade stamps procedure 1.6.0 (live)
-- [ ] D-011 ritual complete: PII sweep, PR, 9-cell CI green pre-tag, squash-merge, release-check 0, tag v1.5.0 full SHA, Release latest, OIDC publish green, PyPI 1.5.0 + uvx --refresh verified
-- [ ] Close-out: entities bumped, post-mortem written, focus handed back, gameplan closed
+- [x] Scratch spec-rich repo: init prints the onboarding advisory and cz_onboard lists README + docs/design.md with unseeded VISION/ARCHITECTURE (live)
+- [x] This repo and marketing-studio: no false onboarding fire; upgrade stamps procedure 1.6.0 (live)
+- [x] D-011 ritual complete: PII sweep, PR, 9-cell CI green pre-tag, squash-merge, release-check 0, tag v1.5.0 full SHA, Release latest, OIDC publish green, PyPI 1.5.0 + uvx --refresh verified
+- [x] Close-out: entities bumped, post-mortem written, focus handed back, gameplan closed
