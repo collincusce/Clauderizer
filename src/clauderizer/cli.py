@@ -699,7 +699,10 @@ def build_parser() -> argparse.ArgumentParser:
     pi.add_argument("--profile", default="auto", help="host language profile (default: auto-detect)")
     pi.add_argument("--gameplan", default=None, help="also create a first gameplan with this name")
     pi.add_argument("--run-cmd", default=None,
-                    help="how the repo invokes the engine (default: 'uvx --from clauderizer')")
+                    help="launcher PREFIX the wiring uses to invoke the engine's "
+                         "commands — e.g. 'uvx --from clauderizer' or 'pipx run "
+                         "clauderizer' — not a path to a single binary "
+                         "(default: auto-compose from the install)")
     pi.add_argument("--workflow", choices=["code", "docs", "audit"], default="code",
                     help="docs/audit make clean_tree (and test) checks advisory, not fatal")
     pi.add_argument("--session-host", default=None, dest="session_host",
@@ -777,6 +780,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from ._stdio import harden_stdio
+
+    harden_stdio()  # cp1252 consoles must degrade glyphs, never crash (1.5.2)
     parser = build_parser()
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
     try:

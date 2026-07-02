@@ -86,10 +86,12 @@ def upsert_section(path: Path, heading: str, content: str, level: int = 2) -> bo
     return _write_if_changed(path, frontmatter.serialize(data, new_body))
 
 
-def append_to_section(path: Path, heading: str, entry: str, level: int = 2) -> bool:
+def append_to_section(path: Path, heading: str, entry: str, level: int = 2, *,
+                      fuzzy: bool = False) -> bool:
     text = _read(path)
     data, body = frontmatter.parse(text)
-    new_body = sections.append_to_section(body, heading, entry, level=level)
+    new_body = sections.append_to_section(body, heading, entry, level=level,
+                                          fuzzy=fuzzy)
     return _write_if_changed(path, frontmatter.serialize(data, new_body))
 
 

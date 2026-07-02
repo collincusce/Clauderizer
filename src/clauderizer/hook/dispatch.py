@@ -70,6 +70,9 @@ def read_payload() -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from .._stdio import harden_stdio
+
+    harden_stdio()  # digest glyphs (⚙/⚠/★) must degrade on cp1252, never crash
     args = sys.argv[1:] if argv is None else argv
     # Identity probe path: answer before reading stdin or the repo (L-09/L-10).
     if "--version" in args or "-V" in args:

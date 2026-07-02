@@ -16,33 +16,60 @@ def _heading_level(line: str) -> int | None:
     return len(m.group(1)) if m else None
 
 
-def find_section(text: str, heading: str) -> tuple[int, int, int] | None:
+def find_section(text: str, heading: str, *,
+                 fuzzy: bool = False) -> tuple[int, int, int] | None:
     """Find a heading by its title (any level).
 
     Returns ``(heading_line_idx, content_start_idx, content_end_idx)`` as line
     indices, where content runs from the line after the heading up to (but not
     including) the next heading of the same-or-shallower level. Returns ``None``
     if not found.
+
+    Default matching is EXACT-title only — the behavior every read path was
+    built against (a broad fuzz here changed handoff composition and broke the
+    back-compat golden). ``fuzzy=True`` adds two tolerance tiers for the corpus
+    APPEND paths, where a hand-written document's heading may carry a variant
+    (field report, 2026-07-02: "Decisions (newest first)" got a duplicate
+    ``## Decisions`` appended at end-of-file): case-insensitive exact, then a
+    title that STARTS WITH the target followed by a non-word boundary
+    ("Decisions (newest first)" matches "Decisions"; "Decision Log" does not).
+    Exact always wins.
     """
     target = heading.strip().lstrip("#").strip()
     lines = text.splitlines()
+
+    def _span(i: int, level: int) -> tuple[int, int, int]:
+        end = len(lines)
+        for j in range(i + 1, len(lines)):
+            lvl = _heading_level(lines[j])
+            if lvl is not None and lvl <= level:
+                end = j
+                break
+        return i, i + 1, end
+
+    prefix_re = re.compile(re.escape(target) + r"(?:\W|$)", re.IGNORECASE)
+    exact_ci: tuple[int, int] | None = None
+    prefix: tuple[int, int] | None = None
     for i, line in enumerate(lines):
         m = _HEADING_RE.match(line)
-        if m and m.group(2).strip() == target:
-            level = len(m.group(1))
-            end = len(lines)
-            for j in range(i + 1, len(lines)):
-                lvl = _heading_level(lines[j])
-                if lvl is not None and lvl <= level:
-                    end = j
-                    break
-            return i, i + 1, end
+        if not m:
+            continue
+        title, level = m.group(2).strip(), len(m.group(1))
+        if title == target:
+            return _span(i, level)
+        if fuzzy and exact_ci is None and title.lower() == target.lower():
+            exact_ci = (i, level)
+        if fuzzy and prefix is None and prefix_re.match(title):
+            prefix = (i, level)
+    for hit in (exact_ci, prefix):
+        if hit is not None:
+            return _span(*hit)
     return None
 
 
-def get_section(text: str, heading: str) -> str | None:
+def get_section(text: str, heading: str, *, fuzzy: bool = False) -> str | None:
     """Return the content of a section (excluding the heading line)."""
-    span = find_section(text, heading)
+    span = find_section(text, heading, fuzzy=fuzzy)
     if span is None:
         return None
     _, start, end = span
@@ -50,14 +77,15 @@ def get_section(text: str, heading: str) -> str | None:
     return "\n".join(lines[start:end]).strip("\n")
 
 
-def upsert_section(text: str, heading: str, content: str, level: int = 2) -> str:
+def upsert_section(text: str, heading: str, content: str, level: int = 2, *,
+                   fuzzy: bool = False) -> str:
     """Replace a section's content, or append the section if it doesn't exist.
 
     ``heading`` is the bare title (no leading ``#``). Idempotent: applying the
     same content twice yields the same document.
     """
     content = content.rstrip("\n")
-    span = find_section(text, heading)
+    span = find_section(text, heading, fuzzy=fuzzy)
     lines = text.splitlines()
     if span is None:
         prefix = text.rstrip("\n")
@@ -88,19 +116,21 @@ def _is_placeholder(content: str) -> bool:
 is_placeholder = _is_placeholder
 
 
-def append_to_section(text: str, heading: str, entry: str, level: int = 2) -> str:
+def append_to_section(text: str, heading: str, entry: str, level: int = 2, *,
+                      fuzzy: bool = False) -> str:
     """Append ``entry`` to the end of a section's existing content.
 
     A section whose body is empty or just a scaffold placeholder (``_(...)_``) is
     treated as empty, so the first real entry replaces the placeholder instead of
-    stacking beneath it.
+    stacking beneath it. ``fuzzy=True`` (the corpus-append paths) tolerates a
+    hand-written heading variant instead of creating a duplicate section.
     """
-    existing = get_section(text, heading)
+    existing = get_section(text, heading, fuzzy=fuzzy)
     entry = entry.rstrip("\n")
     if existing is None or not existing.strip() or _is_placeholder(existing):
-        return upsert_section(text, heading, entry, level=level)
+        return upsert_section(text, heading, entry, level=level, fuzzy=fuzzy)
     combined = existing.rstrip("\n") + "\n\n" + entry
-    return upsert_section(text, heading, combined, level=level)
+    return upsert_section(text, heading, combined, level=level, fuzzy=fuzzy)
 
 
 # --- marker blocks ------------------------------------------------------------

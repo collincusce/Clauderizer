@@ -142,7 +142,7 @@ def add_decision(
         f"**Consequences**: {consequences}{sup}{ev}\n"
         f"**Status**: active ({today})"
     )
-    writer.append_to_section(path, "Decisions", entry)
+    writer.append_to_section(path, "Decisions", entry, fuzzy=True)
     result = {"ok": True, "id": new_id, "path": str(path),
               "files_changed": [str(path)], "summary": f"added decision {new_id}"}
     # Bidirectional supersession (INVARIANT-03: memory is never deleted — the
@@ -245,7 +245,7 @@ def add_invariant(
     # First line becomes the title; remainder the body.
     title = text.strip().split("\n", 1)[0]
     entry = f"### {new_id} — {title}{intro}\n\n{text.strip()}"
-    writer.append_to_section(path, "Invariants", entry)
+    writer.append_to_section(path, "Invariants", entry, fuzzy=True)
     result = {"ok": True, "id": new_id, "path": str(path),
               "files_changed": [str(path)], "summary": f"added {new_id}"}
     advisories: list[str] = []
@@ -326,7 +326,7 @@ def add_finding(
         if required or str(value).strip()
     )
     entry = f"### {new_id} — {title.strip()}\n\n{body}"
-    writer.append_to_section(path, "Risks", entry)
+    writer.append_to_section(path, "Risks", entry, fuzzy=True)
     return {"ok": True, "id": new_id, "path": str(path),
             "files_changed": [str(path)], "summary": f"added finding {new_id} ({severity.strip()})"}
 

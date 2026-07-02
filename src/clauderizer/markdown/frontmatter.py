@@ -119,6 +119,15 @@ def serialize_block(data: dict[str, Any]) -> str:
 
 def _scalar(raw: str) -> Any:
     s = raw.strip()
+    # Inline flow list — hand-written frontmatter commonly says `depends_on: []`
+    # or `depends_on: [a, b]`. Without this the raw string leaked through, and a
+    # consumer iterating a "list" got its CHARACTERS — the field-reported
+    # phantom dependencies named "[" and "]" (2026-07-02).
+    if s.startswith("[") and s.endswith("]"):
+        inner = s[1:-1].strip()
+        if not inner:
+            return []
+        return [_scalar(part) for part in inner.split(",")]
     if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
         return s[1:-1]
     low = s.lower()
