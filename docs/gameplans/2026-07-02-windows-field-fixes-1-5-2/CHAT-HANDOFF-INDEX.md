@@ -1,7 +1,7 @@
 # Chat Handoff Index — windows-field-fixes-1.5.2
 
 > Last updated: 2026-07-02
-> Status: Phase 1 ready
+> Status: All 2 phases complete
 
 ## How This Works
 
@@ -30,7 +30,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Repro & fix all four field bugs | ✅ COMPLETE | 2026-07-02 | 2026-07-02 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Ship 1.5.2 | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Ship 1.5.2 | ✅ COMPLETE | 2026-07-02 | 2026-07-02 | handoffs/PHASE-1-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -39,6 +39,10 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 ### Phase 0 — completed 2026-07-02
 
 All four field bugs reproduced and fixed with regression tests (+11, suite 775). (1) cp1252: new _stdio.harden_stdio switches stdout/stderr to errors=replace at the clauderize and clauderizer-hook entry points — glyphs degrade to ? instead of crashing, UTF-8 consoles untouched, MCP protocol channel deliberately left alone; PYTHONIOENCODING workaround obsolete. (2) frontmatter: _scalar parses inline flow lists — depends_on: [] is [] not the string whose characters became phantom deps. (3) heading tolerance: find_section gains fuzzy tiers (case-insensitive exact, word-boundary title-prefix) as OPT-IN, enabled only at the three corpus-append sites — the first global cut was caught by the back-compat golden shifting handoff composition (lesson #1 recorded); newest-first insertion order deliberately out of scope. (4) --run-cmd help now says launcher PREFIX, not binary path.
+
+### Phase 1 — completed 2026-07-02
+
+Shipped 1.5.2 clean: PR #22 → 9-cell CI green before tag (all three Windows legs — the bugs' home turf) → squash-merge @ 81d308798 → release-check 0 → tag v1.5.2 → Release latest → OIDC publish → PyPI 1.5.2 (vocabulary section verified intact in the long-description) → uvx --refresh resolves 1.5.2. Same-day field-report-to-fix loop: reported by a stranger-machine dogfood in the morning, on PyPI by evening.
 
 ## Accumulated Lessons
 

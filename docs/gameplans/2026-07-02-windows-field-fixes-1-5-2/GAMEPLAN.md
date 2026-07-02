@@ -1,7 +1,7 @@
 # windows-field-fixes-1.5.2 Gameplan
 
 > Created: 2026-07-02
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -58,6 +58,6 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] 9-cell CI green before tag; windows cells especially (the bugs are Windows-born)
-- [ ] release-check exit 0; tag v1.5.2; Release latest; OIDC publish green; PyPI 1.5.2 + uvx --refresh verified
-- [ ] Field-report win + bugs recorded in memory; gameplan closed, focus handed back
+- [x] 9-cell CI green before tag; windows cells especially (the bugs are Windows-born)
+- [x] release-check exit 0; tag v1.5.2; Release latest; OIDC publish green; PyPI 1.5.2 + uvx --refresh verified
+- [x] Field-report win + bugs recorded in memory; gameplan closed, focus handed back
