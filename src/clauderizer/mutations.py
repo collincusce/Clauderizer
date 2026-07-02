@@ -66,7 +66,12 @@ def create_gameplan(
     today: str | None = None,
 ) -> dict:
     today = _today(today)
-    gid = f"{today}-{kebab(name)}"
+    slug = kebab(name)
+    # A name already carrying an ISO-date prefix is used as-is — passing a full
+    # gameplan id (or pinning a date) must not double-date the directory (field
+    # bug, 2026-07-02: "2026-07-02-x" became "2026-07-02-2026-07-02-x"). Every
+    # id is dated; undated ids are not supported, standing loops included.
+    gid = slug if re.match(r"\d{4}-\d{2}-\d{2}-", slug) else f"{today}-{slug}"
     gdir = paths.gameplan_dir(gid)
     # kind: "driven" (finite phase DAG, terminal post-mortem) or "loop" (a standing
     # iterative maintenance gameplan — see GAMEPLAN-PROCEDURE.md "Loop Gameplans").
@@ -91,6 +96,30 @@ def create_gameplan(
         "files_changed": files,
         "summary": f"created gameplan {gid}",
     }
+
+
+def _known_gameplan_ids(paths: RepoPaths) -> list[str]:
+    root = paths.gameplans
+    if not root.exists():
+        return []
+    return sorted(d.name for d in root.iterdir()
+                  if d.is_dir() and (d / "GAMEPLAN.md").exists())
+
+
+def _require_gameplan(paths: RepoPaths, gameplan_id: str | None) -> dict | None:
+    """Error dict when ``gameplan_id`` names no gameplan on disk, else ``None``.
+
+    Guards every gameplan-scoped write: without it, a typo'd id silently
+    scaffolded a bare shadow gameplan (a lone GAMEPLAN.md holding one heading)
+    that the portfolio then dutifully tracked — one typo became a sixth
+    directory for three intended plans (field bug, 2026-07-02)."""
+    if gameplan_id and (paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md").exists():
+        return None
+    known = _known_gameplan_ids(paths)
+    return {"ok": False, "summary": (
+        f"unknown gameplan {gameplan_id!r} — nothing written. Known gameplans: "
+        + (", ".join(known) if known else "(none)")
+        + ". Create one with cz_create_gameplan.")}
 
 
 # --- append-only numbered logs ------------------------------------------------
@@ -383,6 +412,9 @@ def add_lesson(
     paths: RepoPaths, *, gameplan_id: str, text: str, category: str = "Process",
     evidence: str | None = None, audience: str | None = None,
 ) -> dict:
+    err = _require_gameplan(paths, gameplan_id)
+    if err:
+        return err
     path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
     full = writer.full_text(path)
     body = sections.get_section(full, "Accumulated Lessons") or ""
@@ -873,6 +905,9 @@ def add_correction(
     lesson: str | None = None,
     category: str = "Process",
 ) -> dict:
+    err = _require_gameplan(paths, gameplan_id)
+    if err:
+        return err
     path = paths.gameplan_dir(gameplan_id) / "PHASE-STATUS.md"
     doc = writer.full_text(path)
     new_id = next_numbered_id(doc, "C", sep="-", width=2)
@@ -904,6 +939,9 @@ def add_phase(
     goal: str,
     depends_on_phases: list[str] | None = None,
 ) -> dict:
+    err = _require_gameplan(paths, gameplan_id)
+    if err:
+        return err
     gp = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
     doc = writer.full_text(gp)
     existing = [int(m.group(1)) for m in re.finditer(r"^###\s+Phase\s+(\d+)", doc, re.M)]
@@ -970,12 +1008,17 @@ def _set_phase_row(path, heading: str, phase_n: str, display: str, norm: str,
         s = line.strip()
         if s.startswith("|"):
             cells = [c.strip() for c in s.strip("|").split("|")]
-            if len(cells) >= 6 and cells[0] == phase_n:
+            # ≥3 columns (number | name | status): hand-authored trackers often
+            # carry fewer than the scaffold's six, and requiring six made every
+            # phase "not found" (field bug, 2026-07-02). Date cells are written
+            # only when the row actually has them.
+            if len(cells) >= 3 and cells[0] == phase_n:
                 found = True
                 cells[2] = display
-                if norm in ("in_progress", "complete") and cells[3] in ("—", ""):
+                if (len(cells) > 3 and norm in ("in_progress", "complete")
+                        and cells[3] in ("—", "")):
                     cells[3] = today
-                if norm == "complete":
+                if len(cells) > 4 and norm == "complete":
                     cells[4] = today
                 line = "| " + " | ".join(cells) + " |"
         out.append(line)
@@ -1047,6 +1090,9 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
     Starting/completing stamps the Started/Completed dates. This is the write
     that keeps ``cz_status`` / ``cz_next_phase_context`` honest.
     """
+    err = _require_gameplan(paths, gameplan_id)
+    if err:
+        return err
     norm = _PHASE_ALIASES.get(to_status.strip().lower(), to_status.strip().lower())
     if norm not in _PHASE_DISPLAY:
         return {"ok": False,
@@ -1061,8 +1107,24 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
         if path.exists() and _set_phase_row(path, heading, str(phase_n), display, norm, today):
             files.append(str(path))
     if not files:
-        return {"ok": False,
-                "summary": f"phase {phase_n} not found (or already {norm}) in trackers"}
+        # Diagnostic failure (field bug, 2026-07-02): say what the trackers DO
+        # hold and which status words are understood, instead of a bare miss.
+        from .rituals import _tables
+        seen: list[str] = []
+        for fname in ("CHAT-HANDOFF-INDEX.md", "PHASE-STATUS.md"):
+            p = paths.gameplan_dir(gameplan_id) / fname
+            if p.exists():
+                for r in _tables.parse_phase_table(writer.full_text(p)):
+                    entry = f"{r.number}: {r.raw_status!r}"
+                    if entry not in seen:
+                        seen.append(entry)
+        found = (("tracker rows found — " + "; ".join(seen[:8])) if seen else
+                 ("no parseable phase rows found in the trackers (rows need at "
+                  "least | number | name | status | columns)"))
+        return {"ok": False, "summary": (
+            f"phase {phase_n} not found (or already {norm}) in trackers. {found}. "
+            "Recognized status words (decorations like emoji/suffixes are "
+            "tolerated): " + ", ".join(sorted(set(_tables._STATUS_WORDS))))}
     files += _refresh_tracker_headers(paths, gameplan_id, today)
     result = {"ok": True, "phase": str(phase_n), "to_status": norm,
               "files_changed": list(dict.fromkeys(files)),
@@ -1145,6 +1207,9 @@ def add_amendment(
     amendments_ritual: bool = False,
     today: str | None = None,
 ) -> dict:
+    err = _require_gameplan(paths, gameplan_id)
+    if err:
+        return err
     today = _today(today)
     # Callers sometimes pass these as lists; render a readable inline list rather
     # than a Python literal like ['Phase Breakdown', 'Subsystems Touched'] (F12).
@@ -1201,11 +1266,10 @@ def add_open_item(
     An optional ``phase`` tags the item to a phase so transition surfacing can
     judge relevance. The first item replaces the section's scaffold placeholder.
     """
-    if not gameplan_id:
-        return {"ok": False, "error": "open items require a gameplan_id"}
+    err = _require_gameplan(paths, gameplan_id)
+    if err:
+        return err
     path = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
-    if not path.exists():
-        return {"ok": False, "summary": f"no GAMEPLAN.md for {gameplan_id}"}
     doc = writer.full_text(path)
     new_id = next_numbered_id(doc, "O", sep="-", width=2)
     p = "" if phase is None or str(phase).strip() == "" else str(phase).strip()
@@ -1274,8 +1338,9 @@ def set_exit_criteria(
     items) with ``criteria``, preserving the checked state of any item whose text
     is unchanged.
     """
-    if not gameplan_id:
-        return {"ok": False, "error": "exit criteria require a gameplan_id"}
+    err = _require_gameplan(paths, gameplan_id)
+    if err:
+        return err
     from .rituals.status_bundle import _EC_CHECK_RE, phase_block
 
     path = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
