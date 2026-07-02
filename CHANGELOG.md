@@ -2,6 +2,10 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.5.1] — 2026-07-02
+
+Docs patch — no behavior change. The README gains **"Speak the language — words that do things"**: the operative vocabulary (gameplan, phase, handoff, ritual, cascade, pre-flight, decision, invariant, lesson, approve, standing condition, onboard, upgrade, append-only, …) with what each word means here and what saying it makes happen. These words are handles bound to specific tools; speaking them steers an agent onto the rails. Cut as a release because PyPI bakes the README per version — this puts the vocabulary on the package page.
+
 ## [1.5.0] — 2026-07-01
 
 Onboarding — a repo that already has real documentation now gets a path from "placeholder scaffolds next to my actual specs" to seeded memory. (Version lines, kept straight: this is **engine 1.5.0**, and it **carries procedure 1.6.0** — the methodology document's own, separate version.)
