@@ -2,6 +2,15 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.5.2] — 2026-07-02
+
+Field patch — four bugs from the first native-Windows (pipx) installation, all reported by an agent dogfooding a real project the same day.
+
+- **Windows console crash (fix).** On cp1252 consoles, printing the CLI's ✓/✗/⚙/⚠ glyphs raised `UnicodeEncodeError` — including inside error handlers, so commands died mid-report. `clauderize` and `clauderizer-hook` now switch their output streams to degrade unencodable characters (`?`) instead of crashing; genuinely UTF-8 consoles are untouched, and the MCP server's protocol channel is deliberately left alone. `PYTHONIOENCODING=utf-8` is no longer needed.
+- **Inline frontmatter lists (fix).** Hand-written `depends_on: []` (or `[a, b]`) parsed as a raw string, and consumers iterating it saw its *characters* — phantom dependencies named `[` and `]` in the graph. Inline flow lists now parse as real lists and round-trip.
+- **Heading-title tolerance (fix).** Appending a decision into a hand-written document whose heading carried a suffix ("Decisions (newest first)") created a duplicate `## Decisions` section at end-of-file. Section lookup now matches exact titles first, then case-insensitive, then a title-prefix with a word boundary — so entries land inside the section you already have. (Ordering within the section still appends; a newest-first insertion preference is a possible future option, deliberately out of scope here.)
+- **`--run-cmd` help (fix).** The text now says what it is: a launcher *prefix* for the engine's commands (like `uvx --from clauderizer`), not a path to a single binary.
+
 ## [1.5.1] — 2026-07-02
 
 Docs patch — no behavior change. The README gains **"Speak the language — words that do things"**: the operative vocabulary (gameplan, phase, handoff, ritual, cascade, pre-flight, decision, invariant, lesson, approve, standing condition, onboard, upgrade, append-only, …) with what each word means here and what saying it makes happen. These words are handles bound to specific tools; speaking them steers an agent onto the rails. Cut as a release because PyPI bakes the README per version — this puts the vocabulary on the package page.
