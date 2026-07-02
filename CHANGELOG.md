@@ -2,6 +2,16 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.5.0] — 2026-07-01
+
+Onboarding — a repo that already has real documentation now gets a path from "placeholder scaffolds next to my actual specs" to seeded memory. (Version lines, kept straight: this is **engine 1.5.0**, and it **carries procedure 1.6.0** — the methodology document's own, separate version.)
+
+- **`cz_onboard`** — a read-only bundle: which Clauderizer docs are still scaffold placeholders (structure-based detection that survives template wording changes; the append-only logs are never targets), which existing files look like specs (README, root design/spec docs, `docs/*.md` the engine doesn't own — paths and sizes only, capped), and a prompt describing how to seed: rewrite the placeholder prose docs directly, record subsystems/features with `cz_upsert_entity`, record decisions and rules already in force with `cz_add_decision`/`cz_add_invariant` citing the source file. The engine detects and prompts; it never seeds anything itself.
+- **`clauderizer-onboard` skill** — ships with the other skills at `init`; walks the agent through the read-and-seed flow with distill-don't-transcribe judgment notes.
+- **Surfaced on both delivery paths** — `clauderize init` prints one advisory when unseeded docs and spec candidates coexist, and already-initialized repos learn about onboarding from `clauderize upgrade` (a new advisory proposal), per the modernization contract: mechanical things apply, memory things are proposed.
+
+New tool: `cz_onboard` (surface 44 → 45).
+
 ## [1.4.1] — 2026-07-01
 
 Wording patch — no behavior change. The engine's **package version** (1.4.x) and the **procedure version** it carries (1.5.x, the methodology document's own line) near-collided numerically in 1.4.0, and the modernization messages phrased the comparison as "corpus procedure 1.4.0 vs engine 1.5.0" — which reads like a version skew or a phantom 1.5.0 release. The status digest, `clauderize doctor`, the modernize report, and the tool description now say the engine **carries** a procedure version and spell out that it is a separate line from the package version. Caught by the project's own maintainer within the hour of 1.4.0 — exactly the confusion decision D4 predicted.

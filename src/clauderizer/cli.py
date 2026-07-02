@@ -80,6 +80,8 @@ def cmd_init(args: argparse.Namespace) -> int:
             print(f"    {a}")
     for w in report.warnings:
         print(f"  ! {w}")
+    for a in report.advisories:
+        print(f"  → {a}")
     if report.host_target_auto:
         print(f"  · host target defaulted to claude-code; pass `--host <name>` to target "
               f"another agent tool ({', '.join(hosttargets.HOST_EMITTERS)})")

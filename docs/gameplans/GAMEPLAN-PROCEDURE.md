@@ -1,11 +1,12 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.5.0
+**Procedure version**: 1.6.0
 **Last updated**: 2026-07-01
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.6.0** (2026-07-01): **Onboarding an existing project.** A repo that already has real documentation deserves seeded memory, not placeholder scaffolds sitting beside it. `cz_onboard` (read-only) lists the Clauderizer docs that are still scaffold placeholders and the repo's existing docs that likely hold project knowledge; the `clauderizer-onboard` skill walks the agent through reading those sources and seeding memory — prose docs rewritten directly, subsystems/features recorded as entities, decisions and rules recorded with provenance naming the source file. `clauderize init` says when onboarding applies, and already-initialized repos learn about it from `clauderize upgrade`. The engine detects and prompts; it never seeds anything itself.
 - **v1.5.0** (2026-07-01): **Scoped memory, approval criteria, deliverables, standing conditions, corpus modernization.** Invariants may carry a **Scope** (project-wide, or one gameplan's) and an **Audience** label, and lessons an audience tag — reads *filter* (a gameplan's context carries the shared rules plus its own; untagged entries reach everyone), and nothing is ever hidden from the canonical files or the written handoff. An exit criterion may be an **approval** (`APPROVAL: <artifact-path> — <description>`): recording the sign-off binds it to the artifact's content hash, so editing the artifact makes the approval read as stale everywhere until it is re-approved. Campaign-style kinds define a **deliverable lifecycle**; each deliverable is a tracked entity moving through it, with a board in the gameplan's detail view. Loop and campaign gameplans may declare **standing conditions** (`.clauderizer/conditions.<gameplan-id>.toml`) — probes evaluated whenever status is asked for, proposing an iteration when one trips. **`clauderize upgrade`** modernizes an older corpus: mechanical updates apply automatically (the config's procedure stamp and migrations, missing gate-example files, refreshing this document); memory-shaped improvements only ever surface as proposals. All additive; a repo using none of it behaves exactly as before.
 - **v1.4.0** (2026-06-27): **Concurrent multi-axis gameplans.** A repo can run several gameplans at once with an ergonomic **focus** (the default target; `cz_focus` / `cz_gameplans` + a portfolio in the status digest). Gameplan **kinds** become data (`kinds/*.toml`: vocabulary + first-phase template + preflight set; `driven` / `loop` / `campaign` + custom overlays in `.clauderizer/kinds/`; the lexicon is display-only — on-disk structure is identical across kinds). **Per-kind preflight** runs the kind's checks via a command-gate primitive wired in `.clauderizer/preflight.<kind>.toml`. **Cross-gameplan dependencies** (`cz_consumes`) let a cascade fan out across axes. Back-compatible: a single-gameplan repo behaves exactly as before.
 - **v1.3.0** (2026-06-21): Added the **Loop Gameplan** (`kind: loop`) as a first-class type — a standing, iterative maintenance initiative (trigger / iteration body / per-iteration exit / convergence metric / spawn-driven escape hatch), complementing the finite driven gameplan. Realized by `cz_loop_step` over the curator (`cz_curate`); autonomous in cadence, supervised in mutation (INVARIANT-05).
@@ -82,6 +83,26 @@ The highest-leverage human control — "someone signs off on this artifact befor
 ```
 
 Recording the sign-off (`cz_approve_gate`) stamps the criterion with the artifact's content hash and the date. Every later read recomputes the hash: **edit the artifact and the approval reads as stale everywhere** — check-off, phase completion, pre-flight — until it is re-approved. A hand-ticked checkbox never counts as an approval. Like every gate, this surfaces and never blocks.
+
+## Onboarding an Existing Project
+
+A project that predates Clauderizer already knows what it is — the knowledge
+just lives in a README, design docs, or specs instead of in memory. Onboarding
+moves the *judgment-bearing distillate* over without moving the files:
+
+1. `cz_onboard` (read-only) reports which Clauderizer docs are still scaffold
+   placeholders and which existing files look like specs (paths only — the
+   agent reads them itself).
+2. The agent reads the sources and seeds: prose docs (VISION, ARCHITECTURE,
+   and their siblings) are rewritten directly — they are living documents, not
+   append-only logs; subsystems and features become tracked entities; decisions
+   and standing rules already in force are recorded with provenance naming the
+   source file.
+3. Re-running `cz_onboard` shows seeded docs dropping out.
+
+The engine never synthesizes prose or seeds a doc itself — detection and
+prompting only. `clauderize init` surfaces the advisory when it applies, and
+already-initialized repos are pointed at it by `clauderize upgrade`.
 
 ## Corpus Modernization (upgrading delivers improvements)
 

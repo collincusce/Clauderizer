@@ -3,7 +3,7 @@ version = "1"
 size = "standard"
 preflight_checks = ["branch_base", "clean_tree", "tests", "build", "deps_spotcheck", "branch_creation", "cascade_hygiene", "handoff_presence"]
 preflight_advisory = []
-procedure_version = "1.5.0"
+procedure_version = "1.6.0"
 
 [host]
 profile = "python"
@@ -27,4 +27,4 @@ cascade = true
 amendments = false
 
 [focus]
-id = "2026-06-21-standing-curator-loop-memory-maintenance"
+id = "2026-07-01-engine-1-5-0-onboarding"
