@@ -103,8 +103,9 @@ def report(paths: RepoPaths, config: Config) -> dict:
     if stamp != PROCEDURE_VERSION:
         mechanical.append({
             "action": "stamp_procedure_version",
-            "detail": f"config stamp {stamp or '(unstamped legacy corpus)'} "
-                      f"→ {PROCEDURE_VERSION}"})
+            "detail": f"procedure stamp {stamp or '(unstamped legacy corpus)'} "
+                      f"→ {PROCEDURE_VERSION} (the methodology version this "
+                      "engine carries — not the engine's package version)"})
     try:
         raw_cfg = paths.config_file.read_text(encoding="utf-8")
     except OSError:

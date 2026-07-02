@@ -122,7 +122,8 @@ def test_digest_modernization_line_stale_vs_current(temp_repo):
     _unstamp(temp_repo)
     config2 = cfg.Config.load(paths.config_file)
     d2 = status_bundle.render_digest(status_bundle.compute(paths, config2))
-    assert "⚙ Modernization: corpus procedure unstamped vs engine" in d2
+    assert ("⚙ Modernization: corpus has no procedure stamp yet; "
+            "this engine carries procedure") in d2
     assert "clauderize upgrade" in d2
 
 

@@ -841,10 +841,12 @@ def cz_check_exit_criterion(phase: str, criterion: str, checked: bool = True,
 def cz_modernize(apply: bool = False) -> dict:
     """Report — and with apply=true, perform — the corpus-modernization pass.
 
-    The default is a read-only report: the MECHANICAL updates a newer engine
-    would apply (the config's procedure-version stamp and migrations, missing
-    preflight-gate example files, a stale engine-owned copy of the procedure
-    doc) plus ADVISORY proposals for memory-shaped gaps — declared QA gates with
+    The procedure version is the methodology document's own version line —
+    separate from the engine's package version (engine 1.4.x carries
+    procedure 1.5.x). The default is a read-only report: the MECHANICAL
+    updates a newer engine would apply (the config's procedure-version stamp
+    and migrations, missing preflight-gate example files, a stale engine-owned
+    copy of the procedure doc) plus ADVISORY proposals for memory-shaped gaps — declared QA gates with
     no wired command, near-duplicate invariants that look scope-taggable,
     campaign gameplans without deliverable entities, loop gameplans without
     standing conditions. apply=true performs only the mechanical tier;
