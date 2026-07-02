@@ -48,9 +48,9 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] D-044 project ADR + D1 gameplan decision recorded; feat.onboarding entity upserted
-- [ ] Baselines: engine 1.4.1 @ main 27df365, procedure 1.5.0, surface 44, suite 755 confirmed by green preflight
-- [ ] Plan committed on a feature branch; tree clean
+- [x] D-044 project ADR + D1 gameplan decision recorded; feat.onboarding entity upserted
+- [x] Baselines: engine 1.4.1 @ main 27df365, procedure 1.5.0, surface 44, suite 755 confirmed by green preflight
+- [x] Plan committed on a feature branch; tree clean
 
 ### Phase 1: Detector + cz_onboard assembly tool
 
@@ -62,10 +62,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] spec_candidates excludes every Clauderizer-owned doc/dir, caps at 25, skips >2MB, returns paths+sizes only (tests)
-- [ ] unseeded_docs flags placeholder-only docs and clears once a doc has real prose; robust to template text drift (structure test, not byte-identity) (tests)
-- [ ] cz_onboard read-only with {unseeded, candidates, seeded_count, prompt}; surface 45, registry parity green, clauderize ops --schema shows it (L-05)
-- [ ] Full suite green
+- [x] spec_candidates excludes every Clauderizer-owned doc/dir, caps at 25, skips >2MB, returns paths+sizes only (tests)
+- [x] unseeded_docs flags placeholder-only docs and clears once a doc has real prose; robust to template text drift (structure test, not byte-identity) (tests)
+- [x] cz_onboard read-only with {unseeded, candidates, seeded_count, prompt}; surface 45, registry parity green, clauderize ops --schema shows it (L-05)
+- [x] Full suite green
 
 ### Phase 2: Surfacing — init advisory + modernize proposal
 

@@ -860,6 +860,25 @@ def cz_modernize(apply: bool = False) -> dict:
     return modernize.apply(paths, config) if apply else modernize.report(paths, config)
 
 
+def cz_onboard() -> dict:
+    """Assemble the onboarding bundle for an existing project — read-only.
+
+    Returns the Clauderizer docs that are still scaffold placeholders
+    (`unseeded`), the repo's existing documentation that likely holds project
+    knowledge (`candidates` — README, root design/spec files, and docs/*.md the
+    engine doesn't own; paths and sizes only), and a `prompt` describing how to
+    seed memory from them: rewrite the placeholder prose docs directly, record
+    real subsystems/features with cz_upsert_entity, and record decisions/rules
+    already in force with cz_add_decision/cz_add_invariant citing the source
+    file. The engine detects and prompts; it never seeds anything itself. Run
+    it again after seeding — seeded docs drop out.
+    """
+    paths, _ = repo_ctx()
+    from . import onboard
+
+    return onboard.report(paths)
+
+
 def cz_approve_gate(phase: str, criterion: str, note: str = "",
                     gameplan_id: str = "") -> dict:
     """Record a human approval on an APPROVAL exit criterion, bound to the
@@ -1089,6 +1108,7 @@ REGISTRY: dict[str, Op] = {
     "cz_check_exit_criterion": Op(cz_check_exit_criterion, writes=True),
     "cz_approve_gate": Op(cz_approve_gate, writes=True),
     "cz_modernize": Op(cz_modernize, writes=True),
+    "cz_onboard": Op(cz_onboard, writes=False),
     "cz_analyze": Op(cz_analyze, writes=False),
     "cz_critique": Op(cz_critique, writes=False),
     "cz_mine_failures": Op(cz_mine_failures, writes=False),

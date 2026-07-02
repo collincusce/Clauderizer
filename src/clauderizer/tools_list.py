@@ -41,6 +41,7 @@ TOOL_NAMES = [
     "cz_check_exit_criterion",
     "cz_approve_gate",
     "cz_modernize",
+    "cz_onboard",
     "cz_analyze",
     "cz_critique",
     "cz_mine_failures",
