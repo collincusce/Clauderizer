@@ -2,6 +2,14 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.5.3] — 2026-07-02
+
+Field patch — three gameplan-machinery bugs found while authoring a multi-gameplan portfolio through `clauderize ops` on a hand-written corpus.
+
+- **No more double-dated ids (fix).** `cz_create_gameplan` prefixes names with today's date; a name that already starts with an ISO date ("2026-07-02-x") produced "2026-07-02-2026-07-02-x". A pre-dated name is now used as-is — which also lets you pin a date. Every id remains dated, standing loop gameplans included; undated ids aren't supported.
+- **A typo can no longer mint a shadow gameplan (fix).** `cz_add_phase` with an unknown `gameplan_id` silently scaffolded a bare `GAMEPLAN.md` the portfolio then tracked. All gameplan-scoped writes (`cz_add_phase`, `cz_add_lesson`, `cz_add_open_item`, `cz_set_exit_criteria`, `cz_add_correction`, `cz_add_amendment`, `cz_transition_phase`) now hard-error on an unknown id and list the known gameplans; creation stays exclusively `cz_create_gameplan`'s job.
+- **Decorated phase statuses parse; misses explain themselves (fix).** Hand-written tracker rows like "🟡 READY — kickoff" or "⬜ GATED (deps)" made phases invisible. Status words now match on word boundaries with synonyms (DONE/COMPLETED → complete, GATED/WAITING/PAUSED → blocked, PENDING/TODO → not started), tracker rows need only three columns (`| number | name | status |` — dates are written only when the row has those columns), and a failed transition now reports what the trackers actually contain plus the accepted vocabulary instead of a bare "not found".
+
 ## [1.5.2] — 2026-07-02
 
 Field patch — four bugs from the first native-Windows (pipx) installation, all reported by an agent dogfooding a real project the same day.

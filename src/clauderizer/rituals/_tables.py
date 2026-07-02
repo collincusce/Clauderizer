@@ -7,11 +7,23 @@ from dataclasses import dataclass
 
 from ..markdown import sections
 
+# Recognized status vocabulary, matched on WORD BOUNDARIES inside the cell so
+# decorated rows ("🟡 READY — kickoff", "⬜ GATED (deps)") normalize instead of
+# vanishing (field bug, 2026-07-02). Dict order is match priority. Synonyms map
+# to the canonical six; anything else normalizes to "unknown" and the
+# transition error names both what was found and this vocabulary.
 _STATUS_WORDS = {
-    "COMPLETE": "complete",
-    "IN PROGRESS": "in_progress",
     "NOT STARTED": "not_started",
+    "IN PROGRESS": "in_progress",
+    "COMPLETED": "complete",
+    "COMPLETE": "complete",
+    "DONE": "complete",
     "READY": "ready",
+    "PENDING": "not_started",
+    "TODO": "not_started",
+    "GATED": "blocked",
+    "WAITING": "blocked",
+    "PAUSED": "blocked",
     "BLOCKED": "blocked",
     "FAILED": "failed",
 }
@@ -69,6 +81,7 @@ def _rows_from_table(text: str) -> list[PhaseRow]:
 def _normalize_status(raw: str) -> str:
     up = raw.upper()
     for word, norm in _STATUS_WORDS.items():
-        if word in up:
+        # Word-boundary match: "INCOMPLETE" must not read as COMPLETE.
+        if re.search(rf"(?<![A-Z]){re.escape(word)}(?![A-Z])", up):
             return norm
     return "unknown"
