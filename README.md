@@ -92,6 +92,77 @@ the agent never hand-mangles your docs.
 
 ---
 
+## Speak the language — words that do things
+
+Clauderizer gives a handful of ordinary words precise, operational meanings. They aren't
+jargon — they're handles: each one is bound to a specific tool or discipline, so using it
+steers the agent onto the rails instead of leaving it to improvise. Talking in these terms is
+the difference between "the agent did something plausible" and "the agent did the thing the
+system guarantees."
+
+### The structures
+
+| Say | What it means here | What happens when you say it |
+|---|---|---|
+| **gameplan** | A whole initiative: phases, decisions, exit criteria, a post-mortem. Comes in **kinds** — `driven` (build something), `loop` (standing maintenance), `campaign` (creative work with deliverables). | "Create a gameplan for X" triggers real planning: perspective interrogation, recorded decisions, phases with verifiable exit criteria — not a bullet list. |
+| **phase** | One session-sized chunk of a gameplan. | "Do the next phase" runs the full discipline: pre-flight, the work, then the ending protocol (record outputs, update statuses, write the next handoff). |
+| **handoff** | The self-contained context bundle the next session reads — cumulative, carries every still-relevant lesson. | "Write the handoff" assembles it as an operation. If a session dies, the next one loses nothing. |
+| **focus / portfolio** | Which gameplan is the current default target; the set of all open ones. | "Switch focus to the campaign" / "show me the portfolio" — several initiatives coexist without stepping on each other. |
+| **entity** | A tracked subsystem, feature, or deliverable with a version, a status, and dependency edges in the project graph. | "Track the billing worker as an entity" puts it in the graph — which is what makes *cascade* possible. |
+| **deliverable** | A campaign's execution unit — a film, a deck — moving through a lifecycle (concept → … → shipped). Never an individual rendered file. | "Add the flagship film as a deliverable" gets you a board you can actually read the campaign from. |
+
+### The rituals
+
+**ritual** is the umbrella word, and it's the most important one: a ritual is a discipline
+that *executes* instead of a convention someone has to remember. Cascade, pre-flight, and
+handoff assembly are tool calls, not reminders.
+
+| Say | What it means here | What happens |
+|---|---|---|
+| **cascade** | Nothing changes in isolation: after editing something tracked, walk everything that depends on it and reconcile. | "Cascade that change" walks the real dependency graph and writes a report; each flagged dependent gets an explicit verdict, never a shrug. |
+| **pre-flight** | Run the project's *actual* checks — tests, build, a campaign's QA gates — before starting work. | "Pre-flight it" runs the commands for real and reports measured results. Kills the "session claims tests pass" failure mode. |
+| **baseline** | The measured number pre-flight tracks (test count, or campaign gates). | "What's the baseline?" gets the tracked, auto-refreshed figure — not a stale note. |
+
+### The memory words
+
+These route what you say into the right append-only record, each with a stable ID you can
+cite later.
+
+| Say | Routes to | The nuance that matters |
+|---|---|---|
+| **decision** ("we decided X because Y") | A numbered, append-only decision record | Supersede a decision with a new one; never rewrite history. |
+| **invariant** ("that must always hold") | The rules file every session honors | An invariant can be **scoped** to one gameplan or tagged for one **audience** (a role like copywriter) so it stays out of everyone else's context. |
+| **lesson** ("lesson learned: …") | The lessons that ride in every future handoff | Curate with three verbs: **consolidate** overlapping ones, **promote** the enduring ones project-wide, **obsolete** the stale ones. |
+| **correction** ("the plan said X, actually Y") | The divergence log | Keeps the plan honest without rewriting it. |
+| **open item** ("unknown: …") | A tracked blocker with an ID | Unknowns get tracked, never silently dropped; resolve them, don't delete them. |
+| **output** ("record that value") | The outputs registry | Real captured values — IDs, counts, paths — so later phases read instead of guessing. |
+| **amend** | A tracked mid-flight change to a gameplan | Scope changes go on the record instead of drifting. |
+
+### The gates
+
+Everything here is **advisory** — the second-most important word in the system. Gates
+*surface*; they never block. The engine proposes, you (or your agent) decide.
+
+| Say | What happens |
+|---|---|
+| **exit criteria** | Each phase carries verifiable done-conditions; "check off the criterion" marks them, and completing a phase surfaces any left unchecked. |
+| **approve** | "Approve the shot spec" records a sign-off bound to the file's *content hash* — edit the artifact afterward and the approval visibly goes stale everywhere until re-approved. |
+| **analyze** | "Run the analyze gate" before a decision surfaces the existing decisions and invariants it might contradict — judgment support, not a veto. |
+| **critique** | At a phase or gameplan close, a self-grading rubric of the gaps the engine can detect. |
+| **standing condition** | A declared threshold probe ("backlog below 3") checked whenever anyone asks for status; when it trips, an iteration is *proposed* — nothing runs by itself. |
+
+### The lifecycle words
+
+| Say | What happens |
+|---|---|
+| **status / digest** | "Where do we stand?" — the compact block every session opens with; also on demand. |
+| **onboard / seed** | "Onboard this repo" reads your existing README and specs and seeds VISION, ARCHITECTURE, and the memory graph from them — the agent does the distilling, the engine never writes that prose. |
+| **upgrade / modernize** | "Upgrade the repo" delivers a newer engine's improvements: mechanical changes applied, memory-shaped changes proposed. |
+| **close out / post-mortem** | "Close out the gameplan" runs the ending: lesson curation, the post-mortem, final statuses. |
+| **append-only** | The house physics: nothing in memory is ever deleted. Say "obsolete it," "supersede it," or "resolve it" — never "delete it." |
+
+---
+
 ## How it works
 
 <p align="center">
