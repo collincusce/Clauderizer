@@ -1,7 +1,7 @@
 # godwound-field-fixes-1-5-3 Gameplan
 
 > Created: 2026-07-02
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -57,5 +57,5 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] 9-cell CI green before tag; release-check exit 0; tag v1.5.3; Release latest; OIDC publish green; PyPI 1.5.3 + uvx --refresh verified
-- [ ] Gameplan closed, focus handed back, memory updated
+- [x] 9-cell CI green before tag; release-check exit 0; tag v1.5.3; Release latest; OIDC publish green; PyPI 1.5.3 + uvx --refresh verified
+- [x] Gameplan closed, focus handed back, memory updated

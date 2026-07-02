@@ -1,7 +1,7 @@
 # Chat Handoff Index — godwound-field-fixes-1-5-3
 
 > Last updated: 2026-07-02
-> Status: Phase 1 ready
+> Status: All 2 phases complete
 
 ## How This Works
 
@@ -30,7 +30,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Repro & fix the three gameplan-machinery bugs | ✅ COMPLETE | 2026-07-02 | 2026-07-02 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Ship 1.5.3 | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Ship 1.5.3 | ✅ COMPLETE | 2026-07-02 | 2026-07-02 | handoffs/PHASE-1-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -39,6 +39,10 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 ### Phase 0 — completed 2026-07-02
 
 All three portfolio-authoring bugs fixed with regression tests (+7, suite 782). (1) create_gameplan uses a pre-dated name as-is — no more double-dated directories — and the always-dated behavior is documented. (2) The real repro of the shadow-gameplan bug was writer.full_text returning "" for missing files + section-writes happily creating them: a new _require_gameplan guard (error lists known ids) now fronts all seven gameplan-scoped writes; creating gameplans remains exclusively cz_create_gameplan's job. (3) Status parsing matches on word boundaries with a synonym vocabulary (GATED→blocked etc., INCOMPLETE stays unknown), _set_phase_row accepts hand-authored ≥3-column trackers instead of demanding the scaffold's six, and a failed transition reports the rows it actually found plus the accepted vocabulary.
+
+### Phase 1 — completed 2026-07-02
+
+Shipped 1.5.3 clean: PR #23 → 9-cell CI green pre-tag → squash-merge @ 326211163 → release-check 0 → tag v1.5.3 → Release latest → OIDC publish → PyPI 1.5.3 + uvx verified in a single pass (45s propagation wait now standard). Second same-day field-report-to-PyPI loop of 2026-07-02.
 
 ## Accumulated Lessons
 

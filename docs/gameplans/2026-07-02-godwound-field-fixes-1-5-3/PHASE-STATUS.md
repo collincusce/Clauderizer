@@ -8,7 +8,7 @@
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Repro & fix the three gameplan-machinery bugs | ✅ COMPLETE | 2026-07-02 | 2026-07-02 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Ship 1.5.3 | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Ship 1.5.3 | ✅ COMPLETE | 2026-07-02 | 2026-07-02 | handoffs/PHASE-1-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -16,6 +16,12 @@
 
 ```
 phase0_fixes: 782 passed, 5 skipped (+7 tests/test_field_fixes_153.py). create_gameplan: pre-dated names used as-is (regex guard), dating behavior documented; _require_gameplan guard on 7 gameplan-scoped writes (add_phase/add_lesson/add_open_item/set_exit_criteria/add_correction/add_amendment/transition_phase) listing known ids — creation stays cz_create_gameplan-only; _tables: word-boundary status matching + synonyms (DONE/COMPLETED/GATED/WAITING/PAUSED/PENDING/TODO), _set_phase_row accepts ≥3-column trackers (dates written only when columns exist), transition miss reports found rows + accepted vocabulary
+```
+
+### Phase 1 Outputs
+
+```
+phase1_ship: PR #23; 9-cell CI green pre-tag; squash-merge main @ 326211163; release-check 0; tag v1.5.3; Release latest; OIDC publish green; PyPI info.version=1.5.3 + uvx --refresh→1.5.3 (single-pass verify with the 45s propagation wait)
 ```
 
 ## Corrections Log
