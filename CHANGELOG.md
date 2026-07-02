@@ -2,6 +2,10 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.4.1] — 2026-07-01
+
+Wording patch — no behavior change. The engine's **package version** (1.4.x) and the **procedure version** it carries (1.5.x, the methodology document's own line) near-collided numerically in 1.4.0, and the modernization messages phrased the comparison as "corpus procedure 1.4.0 vs engine 1.5.0" — which reads like a version skew or a phantom 1.5.0 release. The status digest, `clauderize doctor`, the modernize report, and the tool description now say the engine **carries** a procedure version and spell out that it is a separate line from the package version. Caught by the project's own maintainer within the hour of 1.4.0 — exactly the confusion decision D4 predicted.
+
 ## [1.4.0] — 2026-07-01
 
 General modernization — the release where **upgrading the engine delivers its improvements to your repo**, plus four additive memory/gameplan capabilities distilled from the heaviest multi-campaign deployment. Everything is opt-in by shape: a repo that uses none of it behaves exactly as 1.3.1 (procedure 1.4.0 → 1.5.0, MINOR).

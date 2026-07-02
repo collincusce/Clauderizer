@@ -421,9 +421,11 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         print(f"✓ corpus modernized to procedure v{PROCEDURE_VERSION}")
     else:
         warn("corpus modernization available",
-             f"corpus stamp {stamp or '(unstamped)'} vs engine v{PROCEDURE_VERSION} — "
-             "run `clauderize upgrade` to apply mechanical updates and review "
-             "the advisory proposals")
+             f"corpus procedure stamp is {stamp or 'missing'}; this engine "
+             f"carries procedure v{PROCEDURE_VERSION} (the methodology "
+             f"document's version line — separate from the engine's own "
+             f"v{__version__}) — run `clauderize upgrade` to apply mechanical "
+             "updates and review the advisory proposals")
     if config.active_gameplan:
         gp = paths.gameplan_dir(config.active_gameplan) / "GAMEPLAN.md"
         check(f"active gameplan {config.active_gameplan} on disk", gp.exists())

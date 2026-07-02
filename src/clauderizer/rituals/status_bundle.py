@@ -741,9 +741,15 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         lines.append(f"Open items: {len(oi)} unresolved ({', '.join(oi)}).")
     mz = bundle.get("modernization")
     if mz:
+        # "carries" on purpose: the PROCEDURE version is the methodology
+        # document's own line, not the engine's package version — the two
+        # near-collide numerically (engine 1.4.x carries procedure 1.5.x) and
+        # the earlier "vs engine" phrasing read as a version skew.
+        where = (f"corpus is at procedure {mz['corpus']}" if mz.get("corpus")
+                 else "corpus has no procedure stamp yet")
         lines.append(
-            f"⚙ Modernization: corpus procedure {mz.get('corpus') or 'unstamped'} vs "
-            f"engine {mz['engine']} — `clauderize upgrade` applies the mechanical "
+            f"⚙ Modernization: {where}; this engine carries procedure "
+            f"{mz['engine']} — `clauderize upgrade` applies the mechanical "
             "updates; cz_modernize lists the advisory proposals.")
     if bundle.get("blockers"):
         lines.append("Blocked: " + ", ".join(bundle["blockers"]))
