@@ -2,7 +2,9 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [Unreleased]
+## [1.6.0] — 2026-07-09
+
+Multi-host default + Grok Build TUI — one `init` for every supported agent.
 
 ### Multi-host default wiring (gameplan `2026-07-09-multi-host-default-wiring`)
 

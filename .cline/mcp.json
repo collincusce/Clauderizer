@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "clauderizer": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "clauderizer[mcp]",
+        "clauderizer-mcp"
+      ]
+    }
+  }
+}
