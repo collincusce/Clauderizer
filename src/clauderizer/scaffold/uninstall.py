@@ -130,6 +130,8 @@ def _uninstall_host(root: Path, host: str, report: UninstallReport) -> None:
     """The per-host footprint: MCP registration, native floor block, guides."""
     if hosttargets.remove_mcp(host, root):
         report.note(f"{host} MCP registration ({hosttargets.HOST_EMITTERS[host].config_path})")
+    if host == "grok" and hosttargets.remove_grok_hooks(root):
+        report.note(hosttargets.GROK_HOOKS_REL)
     rel = hosttargets.NATIVE_INSTRUCTIONS.get(host)
     if rel and writer.remove_marker_block(root / rel, "clauderizer"):
         report.note(f"{rel} floor block")
@@ -176,6 +178,8 @@ def uninstall(root: Path, *, host: str | None = None) -> UninstallReport:
     for host_id in hosttargets.HOST_EMITTERS:
         if hosttargets.remove_mcp(host_id, root):
             report.note(f"{host_id} MCP registration")
+    if hosttargets.remove_grok_hooks(root):
+        report.note(hosttargets.GROK_HOOKS_REL)
     for host_id, rel in hosttargets.NATIVE_INSTRUCTIONS.items():
         if writer.remove_marker_block(root / rel, "clauderizer"):
             report.note(f"{rel} floor block")

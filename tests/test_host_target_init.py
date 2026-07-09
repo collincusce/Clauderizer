@@ -31,6 +31,7 @@ def test_parse_host_target_accepts_known():
     assert ht.parse_host_target("claude-code") == "claude-code"
     assert ht.parse_host_target("cursor") == "cursor"
     assert ht.parse_host_target("codex") == "codex"          # guide-only counts
+    assert ht.parse_host_target("grok") == "grok"            # Grok Build TUI
 
 
 def test_parse_host_target_rejects_unknown_listing_valid():
@@ -97,13 +98,15 @@ def test_init_claude_code_writes_no_foreign_host_files(empty_python_repo):
     init(empty_python_repo, spawn_test=False)
     r = empty_python_repo
     # the default path writes the Claude Code wiring and NOTHING host-specific
+    # (skip paths shared with claude-code itself, e.g. .mcp.json for grok)
     for em in ht.HOST_EMITTERS.values():
-        if em.auto_write:
+        if em.auto_write and em.config_path not in ht._SHARED_WITH_CLAUDE_CODE:
             assert not (r / em.config_path).exists(), em.config_path
     for rel in ht.NATIVE_INSTRUCTIONS.values():
         assert not (r / rel).exists(), rel
     assert not list((r / ".clauderizer").glob("*-hook-setup.md"))
     assert not list((r / ".clauderizer").glob("*-mcp-setup.md"))
+    assert not (r / ht.GROK_HOOKS_REL).exists()               # grok hooks are foreign
     # the claude-code wiring is intact
     assert "clauderizer" in _read(r / ".mcp.json")["mcpServers"]
     assert (r / ".claude" / "settings.json").exists()
@@ -186,6 +189,96 @@ def test_detect_host_target_adopts_existing_registration(empty_python_repo):
 
 def test_detect_host_target_defaults_claude_code(empty_python_repo):
     assert ht.detect_host_target(empty_python_repo) == "claude-code"
+
+
+def test_detect_host_target_mcp_json_alone_is_not_grok(empty_python_repo):
+    # dogfood-style .mcp.json must not flip auto-detect to grok
+    ht.emit_mcp("grok", empty_python_repo)
+    assert ht.detect_host_target(empty_python_repo) == "claude-code"
+
+
+def test_detect_host_target_grok_hooks(empty_python_repo):
+    ht.emit_grok_hooks(empty_python_repo)
+    assert ht.detect_host_target(empty_python_repo) == "grok"
+
+
+# --- init --host grok: portable MCP + governance hooks (INVARIANT-07) ------------
+
+def test_init_grok_accepts_and_emits_portable_mcp_and_hooks(empty_python_repo):
+    report = init(empty_python_repo, host_target="grok", spawn_test=False)
+    assert report.host_target == "grok"
+    r = empty_python_repo
+    entry = _read(r / ".mcp.json")["mcpServers"]["clauderizer"]
+    argv = [entry["command"], *entry["args"]]
+    assert entry["command"] == "uvx"
+    assert ht.is_path_safe(argv)
+    assert any("clauderizer-mcp" in t for t in argv)
+    hooks = _read(r / ht.GROK_HOOKS_REL)
+    assert "SessionStart" in hooks["hooks"]
+    assert "UserPromptSubmit" in hooks["hooks"]
+    cmd = hooks["hooks"]["SessionStart"][0]["hooks"][0]["command"]
+    assert "wsl.exe" not in cmd and "wsl" != cmd.split()[0].lower()
+    assert "clauderizer-hook" in cmd
+    assert "GROK_WORKSPACE_ROOT" in cmd
+    # honesty guide present; Tier-1 guide must not claim digest injection
+    guide = (r / ".clauderizer" / "grok-mcp-setup.md").read_text(encoding="utf-8")
+    assert "Hook→ctx" in guide or "NOT" in guide
+    assert "Tier-1" in guide or "best_tier" in guide or "floor" in guide.lower()
+    agents = (r / "AGENTS.md").read_text(encoding="utf-8")
+    assert "cz_status" in agents
+
+
+def test_init_grok_does_not_rewrite_claude_settings_hooks(empty_python_repo):
+    r = empty_python_repo
+    (r / ".claude").mkdir()
+    foreign = {
+        "hooks": {
+            "PreToolUse": [{
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": "echo foreign"}],
+            }]
+        }
+    }
+    (r / ".claude" / "settings.json").write_text(
+        json.dumps(foreign, indent=2) + "\n", encoding="utf-8")
+    init(r, host_target="grok", spawn_test=False)
+    settings = _read(r / ".claude" / "settings.json")
+    # foreign hooks preserved; no clauderizer SessionStart wired into Claude settings
+    assert settings["hooks"]["PreToolUse"][0]["hooks"][0]["command"] == "echo foreign"
+    assert "SessionStart" not in settings.get("hooks", {})
+    dumped = json.dumps(settings)
+    assert "clauderizer-hook" not in dumped
+    assert ".clauderizer/hook." not in dumped
+
+
+def test_init_grok_passes_wiring_contract(empty_python_repo):
+    init(empty_python_repo, host_target="grok", spawn_test=False)
+    ok, detail = ht.verify_emitted_wiring("grok", empty_python_repo)
+    assert ok, f"grok wiring contract failed: {detail}"
+
+
+def test_init_grok_idempotent(empty_python_repo):
+    init(empty_python_repo, host_target="grok", spawn_test=False)
+    report2 = init(empty_python_repo, host_target="grok", spawn_test=False)
+    assert report2.changed == [], f"second grok init changed: {report2.changed}"
+
+
+def test_uninstall_grok_removes_hooks_preserves_claude(empty_python_repo):
+    r = empty_python_repo
+    (r / ".claude").mkdir()
+    (r / ".claude" / "settings.json").write_text(
+        json.dumps({"hooks": {"PreToolUse": [{"hooks": [
+            {"type": "command", "command": "echo keep"}]}]}}),
+        encoding="utf-8")
+    init(r, host_target="grok", spawn_test=False)
+    assert (r / ht.GROK_HOOKS_REL).exists()
+    uninstall(r, host="grok")
+    assert not (r / ht.GROK_HOOKS_REL).exists()
+    assert not (r / ".mcp.json").exists() or "clauderizer" not in _read(
+        r / ".mcp.json").get("mcpServers", {})
+    # Claude foreign content intact
+    assert _read(r / ".claude" / "settings.json")["hooks"]["PreToolUse"][0]["hooks"][0][
+        "command"] == "echo keep"
 
 
 # --- writer.remove_marker_block (the P4-noted extension) -------------------------

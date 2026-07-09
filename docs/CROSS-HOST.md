@@ -55,8 +55,17 @@ T=tools, R=resources, P=prompts. "Hook→ctx" = hook can inject into model conte
 | **Cursor** | T,R,P + roots/elicit | no (model-init) | beforeSubmitPrompt, beforeMCPExecution, stop | governance *(ctx-inject unverified)* | yes | `.cursor/mcp.json` (project) | **3**/1? | auto |
 | **Continue.dev** | T,R,P | no (manual @) | none | n/a | **no** (uses `.continue/rules/`) | `.continue/mcpServers/` (project) | **3** | auto (native rules) |
 | **Zed** | T,P (**no R**) | n/a | none | n/a | yes (priority #7) | `.zed/settings.json` `context_servers` (project) | **3** | auto |
+| **Grok Build TUI** | T (R/P server-side; not slash-surfaced) | no | SessionStart, UserPromptSubmit, Pre/PostCompact, Pre/PostToolUse, … | **no** (passive stdout ignored) | yes (AGENTS.md + CLAUDE.md) | `.mcp.json` (project) + optional `.grok/config.toml` (TOML) | **4** (+P7 bootstrap) | auto JSON (`.mcp.json`, `.grok/hooks`); guide TOML |
 | **Roo Code** | T,R | *(n/a)* | none | n/a | no | `.roo/mcp.json` (project) | — | **DROP — archived 2026-05-15** |
 | **Aider** | **none** (unimpl.) | n/a | none | n/a | no (must `read:` it) | n/a | — | **DEFER — no native MCP** |
+
+> **Grok notes** (gameplan `2026-07-09-grok-build-tui-host-support`, verified 2026-07-09 against Grok 0.2.93
+> user-guide): `10-hooks.md` Passive Hooks ignore SessionStart stdout (Hook→ctx=**no**);
+> `07-mcp-servers.md` loads project `.mcp.json` + `.grok/config.toml` (tools via `search_tool`/`use_tool`);
+> `12-project-rules.md` AGENTS.md native; `04-slash-commands.md` slash sources = builtins + SKILL.md only
+> (**no** MCP prompts as `/cz-status` → best_tier **4**, not 3). Project hooks/MCP require folder-trust
+> (`/hooks-trust` or `--trust`). **Never** put `grok` in `session._HOOK_HOSTS` — that suppresses P7
+> bootstrap and leaves cold sessions dark. Init: `clauderize init --host grok`.
 
 \* Codex/kimi MCP registration is TOML → see §6 (zero-dep) → guide-only or append-only stanza.
 
@@ -116,4 +125,4 @@ So the floor emitter writes AGENTS.md **plus** a per-host native-instructions sh
 
 - **Drop Roo Code** — repo archived read-only 2026-05-15; not a live target.
 - **Defer Aider** — no native MCP client (open feature request); revisit if/when it ships. The floor would also need explicit `read:` config, so there is no zero-touch path today.
-- **Net in-scope first-class hosts:** Claude Code, kimi (done) + Copilot, Codex, Gemini, Windsurf, Cline, Amp (Tier-1 candidates) + Cursor, Continue, Zed (Tier-3/floor + bootstrap). **11 hosts**, down from 13.
+- **Net in-scope first-class hosts:** Claude Code, kimi (done) + Copilot, Codex, Gemini, Windsurf, Cline, Amp (Tier-1 candidates) + Cursor, Continue, Zed (Tier-3/floor + bootstrap) + **Grok Build TUI** (Tier-4/floor + P7 bootstrap; governance hooks). **12 hosts** (was 11 after dropping Roo/deferring Aider; Grok added 2026-07-09).

@@ -36,8 +36,9 @@ class HostEmitter:
     note: str = ""
 
 
-# Verified against each host's own docs 2026-06-21 (docs/CROSS-HOST.md §3). Exact
-# key/path is locked by the golden tests; confirm live when each host is
+# Verified against each host's own docs 2026-06-21 (docs/CROSS-HOST.md §3);
+# grok row verified 2026-07-09 (gameplan 2026-07-09-grok-build-tui-host-support).
+# Exact key/path is locked by the golden tests; confirm live when each host is
 # integration-tested (O-02 residual).
 HOST_EMITTERS: dict[str, HostEmitter] = {
     "cursor":     HostEmitter("cursor", ".cursor/mcp.json", "mcpServers", True),
@@ -52,6 +53,13 @@ HOST_EMITTERS: dict[str, HostEmitter] = {
                               "Cline CLI; the VS Code extension is global-UI only"),
     "amp":        HostEmitter("amp", ".amp/settings.json", "amp.mcpServers", True,
                               "run `amp mcp approve clauderizer` afterwards"),
+    # Grok Build TUI: loads project .mcp.json (portable auto-write) + optional
+    # .grok/config.toml (TOML guide-only). Governance hooks under .grok/hooks/
+    # (Hook→ctx=no — never claim Tier-1). Shares .mcp.json path with claude-code
+    # wiring; detect_host_target must not treat .mcp.json alone as grok.
+    "grok":       HostEmitter("grok", ".mcp.json", "mcpServers", True,
+                              "Grok loads project .mcp.json; hooks under .grok/hooks/; "
+                              "optional .grok/config.toml is guide-only TOML"),
     # guide-only — TOML (no stdlib writer, O-04) or global config (D-031):
     "codex":      HostEmitter("codex", ".codex/config.toml", "", False,
                               "TOML config -> guide-only (O-04)"),
@@ -66,6 +74,20 @@ HOST_EMITTERS: dict[str, HostEmitter] = {
 # hook wiring (INVARIANT-07). Every other id routes through the per-host
 # emitters below — reachable through `clauderize init --host` since P8 (A-001).
 CLAUDE_CODE = "claude-code"
+
+# Paths that claude-code init also writes — auto-detect must not treat these
+# alone as evidence of a non-claude host (dogfood .mcp.json is claude-code).
+_SHARED_WITH_CLAUDE_CODE = frozenset({".mcp.json"})
+
+# Grok governance hooks (D1): SessionStart/UserPromptSubmit fire for scrollback
+# side-effects; stdout is NOT model context (best_tier=4 + P7 bootstrap).
+GROK_HOOKS_REL = ".grok/hooks/clauderizer.json"
+GROK_HOOK_EVENTS = ("SessionStart", "UserPromptSubmit")
+# Portable, native-safe hook command — no wsl.exe, no absolute repo path (D3).
+# Grok expands env vars in command strings; GROK_WORKSPACE_ROOT is runner-injected.
+PORTABLE_HOOK_COMMAND = (
+    'cd "${GROK_WORKSPACE_ROOT}" && uvx --from clauderizer clauderizer-hook'
+)
 
 
 class HostTargetError(ValueError):
@@ -105,11 +127,25 @@ def detect_host_target(repo_root: Path) -> str:
     ``claude-code`` otherwise. Deliberately conservative: it keys on an existing
     clauderizer entry, never on an unrelated ``.vscode/`` dir, and refuses to
     guess when two hosts are wired (returns the default so init nudges).
+
+    Grok is detected via its unique ``.grok/hooks/clauderizer.json`` (not
+    ``.mcp.json`` alone — that path is shared with claude-code dogfood wiring).
     """
+    grok_hooks = repo_root / GROK_HOOKS_REL
+    if grok_hooks.is_file():
+        try:
+            data = json.loads(grok_hooks.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            data = {}
+        if isinstance(data.get("hooks"), dict):
+            return "grok"
+
     found: list[str] = []
     for host_id, em in HOST_EMITTERS.items():
         if not em.auto_write:
             continue
+        if em.config_path in _SHARED_WITH_CLAUDE_CODE:
+            continue  # .mcp.json alone is not evidence of a non-claude host
         path = repo_root / em.config_path
         if not path.exists():
             continue
@@ -242,6 +278,8 @@ def emit_instructions(host_id: str, repo_root: Path) -> Path | None:
 # format; rather than emit an unverified schema we ship a setup guide (the kimi
 # pattern, D-031). Event names verified 2026-06-21 (docs/CROSS-HOST.md §3); the exact
 # config shape is confirmed at integration (O-02 residual).
+# Grok is intentionally ABSENT: its hooks are auto-written as governance-only
+# JSON under .grok/hooks/ (Hook→ctx=no); a Tier-1 guide would be dishonest (D1).
 HOOK_GUIDE_HOSTS: dict[str, tuple[str, list[str]]] = {
     "copilot":    (".github/hooks/*.json", ["SessionStart", "UserPromptSubmit"]),
     "codex":      ("~/.codex/config.toml or .codex/hooks.json",
@@ -251,6 +289,106 @@ HOOK_GUIDE_HOSTS: dict[str, tuple[str, list[str]]] = {
     "cline":      (".clinerules/hooks/ (POSIX only)", ["TaskStart", "UserPromptSubmit"]),
     "amp":        (".amp/plugins/*.ts", ["session.start", "agent.start"]),
 }
+
+
+def grok_hooks_payload(hook_command: str | None = None) -> dict:
+    """Native Grok hook JSON (``.grok/hooks/*.json`` format). Governance only —
+    passive events ignore stdout, so this never claims digest→context (D1)."""
+    cmd = hook_command or PORTABLE_HOOK_COMMAND
+    entry = {"hooks": [{"type": "command", "command": cmd, "timeout": 30}]}
+    return {"hooks": {event: [entry] for event in GROK_HOOK_EVENTS}}
+
+
+def emit_grok_hooks(repo_root: Path, hook_command: str | None = None) -> Path:
+    """Auto-write ``.grok/hooks/clauderizer.json`` with a native-safe command (D2/D3).
+    Idempotent: only rewrites when content differs. Never touches ``.claude/``."""
+    path = repo_root / GROK_HOOKS_REL
+    refuse_if_symlink(path)
+    text = json.dumps(grok_hooks_payload(hook_command), indent=2) + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists() and path.read_text(encoding="utf-8") == text:
+        return path
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def remove_grok_hooks(repo_root: Path) -> bool:
+    """Uninstall: remove Clauderizer's Grok hook file only. Returns True if removed."""
+    path = repo_root / GROK_HOOKS_REL
+    if not path.exists():
+        return False
+    path.unlink()
+    # Best-effort empty-dir cleanup (.grok/hooks then .grok)
+    for parent in (path.parent, path.parent.parent):
+        try:
+            if parent.is_dir() and not any(parent.iterdir()):
+                parent.rmdir()
+        except OSError:
+            break
+    return True
+
+
+def grok_setup_guide() -> str:
+    """Honest setup notes for Grok: portable MCP, governance hooks, folder-trust,
+    and NO Tier-1 SessionStart claim (best_tier=4 + P7 bootstrap)."""
+    mcp = " ".join(PORTABLE_COMMAND)
+    return f"""# Clauderizer × Grok Build TUI setup
+
+Generated by `clauderize init --host grok`. Safe to delete; re-created on re-init.
+
+## What is auto-written
+
+1. **Portable `.mcp.json`** — `clauderizer` server via `{mcp}` (path-safe; no
+   `wsl.exe`, no absolute venv path). Grok merges project `.mcp.json` natively.
+2. **Governance hooks** — `.grok/hooks/clauderizer.json` on SessionStart +
+   UserPromptSubmit. Grok **ignores passive-hook stdout** (Hook→ctx = no), so
+   these do **not** inject the status digest into model context. They still run
+   for scrollback annotations / side-effects.
+3. **AGENTS.md floor** — already written host-agnostically; Grok loads it natively.
+
+## What is NOT automatic (best_tier = 4 + P7)
+
+- **No Tier-1 SessionStart digest.** Cold orientation is: AGENTS.md floor
+  ("call `cz_status` first") + MCP tools + server-side bootstrap on the first
+  non-status tool result.
+- **MCP prompts are not slash commands** on Grok (builtins + skills only). The
+  server still exposes `cz-status` for hosts that surface prompts; do not expect
+  `/cz-status` here.
+
+## Folder trust (required for project hooks + project MCP)
+
+The first time you open this repo in Grok, grant trust:
+
+```
+/hooks-trust
+```
+
+or launch with `--trust`. Trust is stored in `~/.grok/trusted_folders.toml` and
+gates project hooks, project MCP, and LSP together. Global `~/.grok/hooks/` needs
+no trust.
+
+## Optional: project `.grok/config.toml` (guide-only)
+
+Grok also reads TOML MCP config. Clauderizer does not rewrite TOML (no stdlib
+writer). If you prefer TOML over `.mcp.json`, add:
+
+```toml
+[mcp_servers.clauderizer]
+command = "uvx"
+args = ["--from", "clauderizer", "clauderizer-mcp"]
+enabled = true
+```
+
+`.mcp.json` alone is enough for most installs.
+
+## Dual Claude Code + Grok machines
+
+- Claude keeps `.claude/settings.json` + its session_host composition (may use
+  `wsl.exe` on Windows→WSL).
+- Grok uses `.grok/hooks/` with a **native-safe** command (no `wsl.exe`).
+- Do **not** commit machine-specific `wsl.exe` MCP args (D-031). Prefer the
+  portable uvx form Clauderizer emits for `init --host grok`.
+"""
 
 
 def hook_setup_guide(host_id: str, hook_argv: list[str] | None = None) -> str | None:
@@ -417,7 +555,8 @@ def emit_host_wiring(host_id: str, repo_root: Path) -> list[EmitResult]:
        the floor in their own rules file (``emit_instructions``); the rest already
        have it via the AGENTS.md stanza init writes host-agnostically.
     3. **Hook setup guide** — hosts with a lifecycle hook system get the Tier-1
-       guided-wiring guide (``hook_setup_guide``).
+       guided-wiring guide (``hook_setup_guide``). Grok instead gets auto-written
+       governance hooks + an honesty guide (never a Tier-1 claim).
 
     The AGENTS.md floor, skills, and docs are host-agnostic and written by init
     itself — this is strictly the per-host last mile.
@@ -441,10 +580,20 @@ def emit_host_wiring(host_id: str, repo_root: Path) -> list[EmitResult]:
             "instructions", path,
             _emit_idempotent(path, lambda: emit_instructions(host_id, repo_root))))
 
-    guide = hook_setup_guide(host_id)
-    if guide is not None:
-        path = repo_root / ".clauderizer" / f"{host_id}-hook-setup.md"
+    if host_id == "grok":
+        hooks_path = repo_root / GROK_HOOKS_REL
         results.append(EmitResult(
-            "hook-guide", path, _write_text_if_changed(path, guide)))
+            "hooks", hooks_path,
+            _emit_idempotent(hooks_path, lambda: emit_grok_hooks(repo_root))))
+        guide_path = repo_root / ".clauderizer" / "grok-mcp-setup.md"
+        results.append(EmitResult(
+            "mcp-guide", guide_path,
+            _write_text_if_changed(guide_path, grok_setup_guide())))
+    else:
+        guide = hook_setup_guide(host_id)
+        if guide is not None:
+            path = repo_root / ".clauderizer" / f"{host_id}-hook-setup.md"
+            results.append(EmitResult(
+                "hook-guide", path, _write_text_if_changed(path, guide)))
 
     return results

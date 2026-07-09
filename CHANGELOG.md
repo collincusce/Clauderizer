@@ -2,6 +2,21 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [Unreleased]
+
+### Grok Build TUI host-target (gameplan `2026-07-09-grok-build-tui-host-support`)
+
+- **`clauderize init --host grok`** — first-class host-target: portable path-safe
+  `.mcp.json`, governance hooks under `.grok/hooks/clauderizer.json` (native-safe
+  command; no `wsl.exe`), honesty setup guide, AGENTS.md floor. Claude Code wiring
+  is never rewritten (INVARIANT-07).
+- **Honest injection tier** — Grok SessionStart **stdout is not model context**
+  (Hook→ctx=no). `grok` is **not** in `session._HOOK_HOSTS`, so P7 server bootstrap
+  still fires; `best_tier("grok") == 4`. Docs never claim Tier-1 digest injection.
+- **Doctor** — grok branch checks AGENTS.md floor, MCP registration, optional
+  governance hooks, path-safety advisory; no false Claude `.claude/settings.json` drift.
+- **Matrix** — `docs/CROSS-HOST.md` + README host list: **12** supported hosts.
+
 ## [1.5.3] — 2026-07-02
 
 Field patch — three gameplan-machinery bugs found while authoring a multi-gameplan portfolio through `clauderize ops` on a hand-written corpus.

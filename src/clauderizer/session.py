@@ -24,6 +24,10 @@ from __future__ import annotations
 # (at most once) and D-027 (trim-first). This is the code form of the
 # docs/CROSS-HOST.md capability matrix; per-host hook *context-injection* semantics
 # are confirmed when each emitter is built (Phase 4/5, open item O-02 residual).
+#
+# Grok Build TUI is intentionally ABSENT: it has lifecycle hooks, but passive
+# SessionStart stdout is ignored (Hook→ctx=no). Putting "grok" here would
+# suppress P7 server bootstrap and leave cold sessions dark (D1 / D-045).
 _HOOK_HOSTS = frozenset(
     {
         "claude-code",
@@ -42,6 +46,8 @@ DEFAULT_HOST_TARGET = "claude-code"
 # Hosts that surface MCP prompts as slash commands (Tier 3) but have no
 # status-delivering hook — the prompt is a user-invoked convenience above the floor.
 # (Cursor's hooks are governance-only, so it routes here.) docs/CROSS-HOST.md §4.
+# Grok is ABSENT: slash sources are builtins + SKILL.md only (no MCP prompts →
+# best_tier 4, not 3).
 _PROMPT_HOSTS = frozenset({"cursor", "continue", "zed"})
 
 # Module-global: has the status digest reached the model this server session?

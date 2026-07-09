@@ -53,7 +53,7 @@ hope:
 | 🎛️ **Configurable** | A real `pet` / `standard` / `saas` size dial and host-language profiles — *data*, not prose advice. |
 | 🤖 **Agentic** | Cascade, pre-flight, and handoff assembly are real tool calls — not instructions the agent has to remember to run. |
 | 📦 **Drop-in** | One command clauderizes any repo, in any language. |
-| 🧩 **Host-portable** | One install targets your agent — Claude Code, Cursor, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp, Continue, Zed, or kimi. Host-neutral MCP + an injection-parity ladder, not a Claude-only bet. |
+| 🧩 **Host-portable** | One install targets your agent — Claude Code, Cursor, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp, Continue, Zed, kimi, or Grok Build TUI. Host-neutral MCP + an injection-parity ladder, not a Claude-only bet. |
 
 > **Markdown is the source of truth.** The graph index is a disposable cache rebuilt from the
 > markdown on demand — if they ever disagree, markdown wins. No database, no lock-in: your
@@ -440,8 +440,8 @@ path), so one install targets whichever agent you drive. `init` reads the **host
 config (`[host] target`, default `claude-code`) and writes that host's MCP config in its own
 place — non-destructively, preserving any other servers:
 
-**11 supported hosts** — Claude Code · Cursor · GitHub Copilot / VS Code · OpenAI Codex CLI ·
-Google Gemini CLI · Windsurf · Cline · Amp · Continue.dev · Zed · kimi.
+**12 supported hosts** — Claude Code · Cursor · GitHub Copilot / VS Code · OpenAI Codex CLI ·
+Google Gemini CLI · Windsurf · Cline · Amp · Continue.dev · Zed · kimi · **Grok Build TUI**.
 
 How a session learns where things stand degrades gracefully — best reachable tier wins, and
 status is delivered at most once per session:
@@ -449,9 +449,12 @@ status is delivered at most once per session:
 - **Hook hosts** get it **automatically** — the lifecycle hook injects the status digest at
   session start (Claude Code, kimi, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp).
 - **Prompt hosts** get a **`/cz-status`** slash command (Cursor, Copilot, Continue, Gemini, Zed).
+- **Grok Build TUI** has lifecycle hooks, but passive SessionStart stdout is **not** model
+  context — use `clauderize init --host grok` for portable `.mcp.json` + governance
+  `.grok/hooks/`; cold orientation is the AGENTS.md floor + P7 server bootstrap (not Tier-1).
 - **Everyone** gets the floor: `AGENTS.md` (or a native rules file for the few hosts that don't
   read it) tells the agent to call `cz_status` first — and the MCP server attaches a status note
-  to the first tool call as an automatic fallback for hook-less hosts.
+  to the first tool call as an automatic fallback for hook-less / governance-hook hosts.
 
 See **[docs/CROSS-HOST.md](https://github.com/collincusce/Clauderizer/blob/main/docs/CROSS-HOST.md)**
 for the full per-host capability matrix. Switching hosts later is `clauderize init --host <name>` (or a `[host] target`

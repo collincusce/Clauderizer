@@ -318,8 +318,10 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 hosts.verify_hook_wiring(hook_argv, session_host))
     else:
         # Non-claude host: verify ITS config (init does not write .mcp.json /
-        # .claude hooks for these). Presence + floor only here; launchability is
-        # P13 (O-09). hook_argv left None so the wrapper block below self-skips.
+        # .claude hooks for these — except grok, which reuses portable .mcp.json
+        # without Claude SessionStart wiring). Presence + floor only here;
+        # launchability is P13 (O-09). hook_argv left None so the wrapper block
+        # below self-skips (Grok governance hooks are not the Claude wrapper path).
         hook_argv = None
         em = hosttargets.HOST_EMITTERS.get(host_target)
         if em is None:
@@ -329,6 +331,21 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                   _host_mcp_registered(paths.root / em.config_path, em.servers_key),
                   f"{em.config_path} missing or lacks the clauderizer entry — "
                   f"re-run `clauderize init --host {host_target}`")
+            # Path-safety on auto-written MCP (D-031): machine-specific wsl.exe /
+            # absolute paths are not committable. Surface as advisory for grok
+            # dogfood that still carries a local shim.
+            if host_target == "grok" and (paths.root / em.config_path).exists():
+                try:
+                    data = json.loads((paths.root / em.config_path).read_text(encoding="utf-8"))
+                    entry = (data.get(em.servers_key) or {}).get("clauderizer") or {}
+                    argv = [entry.get("command", ""), *entry.get("args", [])]
+                    if argv[0] and not hosttargets.is_path_safe(argv):
+                        warn(f"{host_target} MCP path-safety",
+                             f"{em.config_path} carries a machine-specific command "
+                             f"{argv!r} — re-run `clauderize init --host grok` for the "
+                             f"portable uvx form (D-031)")
+                except (json.JSONDecodeError, OSError, TypeError):
+                    pass
         else:
             print(f"✓ host target '{host_target}': guide-only — register MCP by hand "
                   f"(see .clauderizer/{host_target}-mcp-setup.md)")
@@ -340,6 +357,15 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                   _has_marker(paths.root / rel, "clauderizer"))
         else:
             check("AGENTS.md floor present", _has_marker(paths.agents_md, "clauderizer"))
+        if host_target == "grok":
+            hooks_path = paths.root / hosttargets.GROK_HOOKS_REL
+            check(f"grok governance hooks present ({hosttargets.GROK_HOOKS_REL})",
+                  hooks_path.is_file(),
+                  f"missing — re-run `clauderize init --host grok`")
+            # Honesty: never treat missing .claude/settings.json as drift for grok.
+            print("✓ grok injection tier: 4 (AGENTS.md floor + MCP tools + P7 bootstrap; "
+                  "SessionStart stdout is NOT model context — Hook→ctx=no)")
+            print("  note: project hooks/MCP need folder trust (`/hooks-trust` or --trust)")
     # D4 breadcrumb wrapper: when the registered command is the wrapper, its
     # file must exist and its baked engine command should match what a fresh
     # init would compose (staleness = the engine moved since the last init).

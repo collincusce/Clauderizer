@@ -170,6 +170,7 @@ reachable tier** (delivered at most once per session):
 
 - **Tier 1 — hook (automatic):** the lifecycle hook injects the status digest at
   session start (Claude Code, kimi, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp).
+  Grok Build TUI has hooks but **Hook→ctx=no** (passive stdout ignored) — not Tier-1.
 - **Tier 3 — prompt:** a user-invoked `/cz-status` slash command (Cursor, Copilot,
   Continue, Gemini, Zed).
 - **Tier 4 — floor (always present):** the instructions file (`AGENTS.md`, or a native

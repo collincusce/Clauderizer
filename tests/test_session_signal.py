@@ -229,6 +229,20 @@ def test_best_tier_per_host():
     assert session.best_tier("zed") == 3
     assert session.best_tier("totally-unknown") == 4  # safe downgrade to the floor
     assert session.best_tier(None) == 1               # unset -> default claude-code
+    # Grok: governance hooks only (Hook→ctx=no) and no MCP-prompt slash → tier 4
+    assert session.best_tier("grok") == 4
+    assert session.delivers_status_via_hook("grok") is False
+    assert "grok" not in session._HOOK_HOSTS
+    assert "claude-code" in session._HOOK_HOSTS      # INVARIANT-07
+
+
+def test_grok_should_inject_when_undelivered(temp_repo, monkeypatch):
+    """P7 bootstrap must fire for grok cold sessions (not suppressed as a hook host)."""
+    monkeypatch.chdir(temp_repo)
+    session.reset()
+    assert session.should_inject("grok") is True
+    session.mark_status_delivered()
+    assert session.should_inject("grok") is False
 
 
 def test_prompt_cz_status_returns_digest_and_marks(temp_repo, monkeypatch):

@@ -51,8 +51,8 @@ clauderizes any repo).
   summary inline — instead of loading a whole file; like the graph index it is
   disposable and always rebuilt from the markdown.
 - **Host- and model-portable, not a Claude-only bet.** A host-neutral MCP server plus an
-  `AGENTS.md` floor reach 11 agents (Claude Code, Cursor, Copilot, Codex, Gemini CLI,
-  Windsurf, Cline, Amp, Continue, Zed, kimi); an injection-parity ladder delivers status by
+  `AGENTS.md` floor reach 12 agents (Claude Code, Cursor, Copilot, Codex, Gemini CLI,
+  Windsurf, Cline, Amp, Continue, Zed, kimi, Grok Build TUI); an injection-parity ladder delivers status by
   the best tier each host supports (hook → `/cz-status` prompt → instructions floor).
 - **Zero runtime dependencies**; works on native Linux/macOS and Windows→WSL alike.
 

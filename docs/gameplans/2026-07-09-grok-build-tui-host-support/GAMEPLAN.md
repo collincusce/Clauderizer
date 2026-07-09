@@ -1,7 +1,7 @@
 # grok-build-tui-host-support Gameplan
 
 > Created: 2026-07-09
-> Status: Planning
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -77,13 +77,13 @@ floor**, not the Claude Code digest path. Work is strictly additive
 
 ## Open Items
 
-**O-01.** _(phase 0)_ Confirm live whether Grok surfaces MCP prompts as slash commands (/cz-status). That decides best_tier 3 vs 4 in the matrix (tools alone do not make Tier 3).
+**O-01.** _(phase 0)_ Confirm live whether Grok surfaces MCP prompts as slash commands (/cz-status). That decides best_tier 3 vs 4 in the matrix (tools alone do not make Tier 3). _(resolved 2026-07-09: best_tier=4. Grok 0.2.93 user-guide 04-slash-commands.md: slash sources are shell builtins + pager builtins + SKILL.md skills only — no MCP prompts. 07-mcp-servers.md: model tool discovery is search_tool/use_tool only. Clauderizer still exposes MCP prompt cz-status for hosts that surface it, but Grok does not — do not claim Tier 3. Re-spot-check in Phase 4 consumption proof with /cz-status attempt.)_
 
-**O-02.** _(phase 0)_ Confirm whether folder-trust is required for project .grok/hooks and project .mcp.json on Grok; document trust step in doctor/setup guide.
+**O-02.** _(phase 0)_ Confirm whether folder-trust is required for project .grok/hooks and project .mcp.json on Grok; document trust step in doctor/setup guide. _(resolved 2026-07-09: Folder-trust IS required for project .grok/hooks and project-local MCP/LSP. Grok 10-hooks.md: first open needs /hooks-trust or --trust; decision in ~/.grok/trusted_folders.toml; same gate for repo-local MCP. Document in doctor/setup guide for host_target=grok. Global ~/.grok/hooks always trusted.)_
 
-**O-03.** _(phase 2)_ Dual-entry layout: when repo session_host=windows-wsl for Claude, what exact command string should .grok/hooks use for Grok-in-WSL? Measure with a real /hooks annotation + exit code.
+**O-03.** _(phase 2)_ Dual-entry layout: when repo session_host=windows-wsl for Claude, what exact command string should .grok/hooks use for Grok-in-WSL? Measure with a real /hooks annotation + exit code. _(resolved 2026-07-09: Measured command for .grok/hooks: `cd "${GROK_WORKSPACE_ROOT}" && uvx --from clauderizer clauderizer-hook`. Always native-safe (no wsl.exe) regardless of repo session_host=windows-wsl used for Claude. Dual-entry: Claude keeps .claude/settings.json with session_host composition; Grok uses portable uvx + GROK_WORKSPACE_ROOT anchor. Evidence: temp-repo init + unit tests.)_
 
-**O-04.** _(phase 4)_ Ship version: patch 1.5.4 vs next minor — decide from CHANGELOG cadence and whether matrix/docs alone warrant minor.
+**O-04.** _(phase 4)_ Ship version: patch 1.5.4 vs next minor — decide from CHANGELOG cadence and whether matrix/docs alone warrant minor. _(resolved 2026-07-09: Recommend patch 1.5.4 (matches 1.5.x field-train cadence; additive host-target, no API break). Publish deferred pending user OK — code + CHANGELOG Unreleased ready; do not tag/PyPI without explicit go-ahead.)_
 
 **O-05.** _(phase 4)_ xAI feature ask: SessionStart stdout (or additionalContext JSON) into model context — track as external dependency for future Tier-1 promotion; not blocking this gameplan.
 
@@ -101,10 +101,10 @@ floor**, not the Claude Code digest path. Work is strictly additive
 | 0.3 | Confirm D1–D3 still match measured facts; open amendments if not | S |
 
 **Exit criteria**:
-- [ ] CROSS-HOST §3 has a draft grok row with Hook→ctx=no and best_tier ∈ {3,4} justified by O-01
-- [ ] Source-of-Truth Captures table has no placeholders
-- [ ] O-01 and O-02 resolved or explicitly deferred with owner note
-- [ ] No production code change claims Tier-1 for grok
+- [x] CROSS-HOST §3 has a draft grok row with Hook→ctx=no and best_tier ∈ {3,4} justified by O-01
+- [x] Source-of-Truth Captures table has no placeholders
+- [x] O-01 and O-02 resolved or explicitly deferred with owner note
+- [x] No production code change claims Tier-1 for grok
 
 ### Phase 1: Registry + session routing
 
@@ -118,10 +118,10 @@ floor**, not the Claude Code digest path. Work is strictly additive
 | 1.3 | Commit CROSS-HOST matrix row + D-045 already recorded | S |
 
 **Exit criteria**:
-- [ ] clauderize init --host grok accepts the id (no unknown-host error)
-- [ ] delivers_status_via_hook("grok") is False and should_inject("grok") is True when undelivered (tests)
-- [ ] best_tier("grok") matches the Phase-0 matrix decision (tests)
-- [ ] INVARIANT-07 regression: claude-code still in _HOOK_HOSTS with best_tier 1
+- [x] clauderize init --host grok accepts the id (no unknown-host error)
+- [x] delivers_status_via_hook("grok") is False and should_inject("grok") is True when undelivered (tests)
+- [x] best_tier("grok") matches the Phase-0 matrix decision (tests)
+- [x] INVARIANT-07 regression: claude-code still in _HOOK_HOSTS with best_tier 1
 
 ### Phase 2: Emitters — `.grok/hooks` + portable MCP path
 
@@ -136,10 +136,10 @@ floor**, not the Claude Code digest path. Work is strictly additive
 | 2.4 | Golden tests: init on temp repo does not rewrite `.claude/settings.json` when target is grok | M |
 
 **Exit criteria**:
-- [ ] Temp-repo init --host grok produces .grok/hooks SessionStart (+ UserPromptSubmit if retained) and path-safe MCP registration
-- [ ] is_path_safe true on all auto-written commands
-- [ ] Claude Code files unchanged on grok-target init (or only dual-written if explicitly designed and tested)
-- [ ] O-03 resolved with the measured command string in Outputs Registry
+- [x] Temp-repo init --host grok produces .grok/hooks SessionStart (+ UserPromptSubmit if retained) and path-safe MCP registration
+- [x] is_path_safe true on all auto-written commands
+- [x] Claude Code files unchanged on grok-target init (or only dual-written if explicitly designed and tested)
+- [x] O-03 resolved with the measured command string in Outputs Registry
 
 ### Phase 3: Doctor, tests, docs truth-up
 
@@ -154,10 +154,10 @@ floor**, not the Claude Code digest path. Work is strictly additive
 | 3.4 | CHANGELOG unreleased notes for the patch train | S |
 
 **Exit criteria**:
-- [ ] Doctor green on a grok-wired temp repo; no exit-2 false drift for missing .claude/settings.json
-- [ ] Full unit suite green on the branch
-- [ ] Docs never claim Grok SessionStart injects the digest
-- [ ] Website or README host list includes Grok with accurate tier wording
+- [x] Doctor green on a grok-wired temp repo; no exit-2 false drift for missing .claude/settings.json
+- [x] Full unit suite green on the branch
+- [x] Docs never claim Grok SessionStart injects the digest
+- [x] Website or README host list includes Grok with accurate tier wording
 
 ### Phase 4: Live consumption proof + ship patch
 
@@ -171,7 +171,7 @@ floor**, not the Claude Code digest path. Work is strictly additive
 | 4.3 | Close gameplan; hand focus back (curator loop or as directed) | S |
 
 **Exit criteria**:
-- [ ] Consumption proof notes in Outputs Registry (what fired, what did not inject)
-- [ ] Published version on PyPI/uvx verified OR explicit defer of publish with user OK
-- [ ] O-04 resolved; O-05 left open or filed externally
-- [ ] Gameplan status Complete; focus handed back
+- [x] Consumption proof notes in Outputs Registry (what fired, what did not inject)
+- [x] Published version on PyPI/uvx verified OR explicit defer of publish with user OK
+- [x] O-04 resolved; O-05 left open or filed externally
+- [x] Gameplan status Complete; focus handed back
