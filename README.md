@@ -403,35 +403,38 @@ the status line just keeps reminding you it's available. Full detail, including 
 
 ## What `init` drops in
 
+Bare `init` wires **every** supported agent (D-046). `--host <name>` scopes to one host's
+files only. Typical multi-host footprint:
+
 ```
 your-repo/
-├── CLAUDE.md                    # a Clauderizer stanza (between markers — your text is preserved)
-├── AGENTS.md                    # a byte-identical copy of the CLAUDE.md stanza (hosts read whichever they support)
-├── <host MCP config>            # registers the clauderizer MCP server — path is host-specific:
-│                                #   .mcp.json (Claude Code), .cursor/mcp.json, .vscode/mcp.json,
-│                                #   .zed/settings.json, … (auto-written for hosts with a JSON config;
-│                                #   TOML/global hosts get a setup guide instead — see docs/CROSS-HOST.md)
+├── CLAUDE.md                    # Clauderizer stanza (markers — your text is preserved)
+├── AGENTS.md                    # same stanza (hosts read whichever they support)
+├── .mcp.json                    # portable multi-host MCP (uvx --from "clauderizer[mcp]" …)
+├── .cursor/mcp.json             # + .vscode/ .continue/ .zed/ .gemini/ .cline/ .amp/ …
+├── .grok/hooks/clauderizer.json # Grok governance hooks (stdout ≠ model context)
+├── GEMINI.md                    # native floor for hosts that don't read AGENTS.md
 ├── .claude/
-│   ├── settings.json            # SessionStart + UserPromptSubmit hooks (fire every prompt; the digest injects once/session)
-│   └── skills/clauderizer-*/    # six workflow skills (/do-phase, /cascade, /record, …)
+│   ├── settings.json            # SessionStart + UserPromptSubmit (Claude Code digest path)
+│   └── skills/clauderizer-*/    # workflow skills
 ├── .clauderizer/
-│   ├── config.toml              # size dial + host profile + session host + host target + active gameplan
-│   ├── hook.sh                  # breadcrumb hook wrapper (hook.cmd on native Windows)
-│   ├── <host>-setup.md          # non-destructive wiring guide for guide-only hosts (kimi, Codex, Windsurf)
-│   ├── profile.lock.toml        # per-project test/build/lint commands (editable override)
+│   ├── config.toml              # size + profile + session_host + target + enabled=["*"]
+│   ├── hook.sh                  # breadcrumb wrapper (hook.cmd on native Windows)
+│   ├── <host>-mcp-setup.md      # guide-only hosts (kimi, Codex, Windsurf, …)
+│   ├── <host>-hook-setup.md     # optional hook guides where schemas aren't auto-written
+│   ├── profile.lock.toml        # per-project test/build/lint (editable override)
 │   └── index.json               # disposable graph cache (gitignored)
-└── docs/                        # the canonical markdown memory
-    ├── VISION.md, ARCHITECTURE.md, DECISIONS.md, INVARIANTS.md, HARDENING.md, …
-    └── gameplans/
-        ├── GAMEPLAN-PROCEDURE.md
-        └── <date>-<name>/       # GAMEPLAN, handoffs, cascade reports, status
+└── docs/                        # canonical markdown memory
+    ├── VISION.md, ARCHITECTURE.md, DECISIONS.md, …
+    └── gameplans/…
 ```
 
 `init` is **idempotent**: re-running fills gaps and refreshes engine-owned files but never
 clobbers your content (marker blocks, key-scoped JSON merges, exists-checks). Run
 `clauderize doctor` any time to verify the install is not just *present* but actually
-*runnable by the host that spawns your sessions* — and that the engine it reaches is the
-version answering the doctor (a green check on a broken setup is worse than no check).
+*runnable* — and that the engine it reaches is the version answering the doctor. Doctor
+lists per-host readiness and configure steps (folder trust, Amp approve, TOML paste);
+it does **not** rewrite wiring — re-run `init` to repair.
 
 ## Works with your agent(s)
 
