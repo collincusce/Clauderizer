@@ -319,3 +319,11 @@ _(Add entries with `cz_add_decision`.)_
 **Consequences**: A fresh init on an existing project now ends with a concrete next step instead of silent placeholder docs, and every already-clauderized repo learns about it at its next upgrade. Placeholder detection becomes a small shared helper others can reuse. The engine's no-synthesis boundary stays intact.
 **Evidence**: scaffold/init.py doc step is assets.doc_template + create_if_absent with no ingestion path (verified 2026-07-01); D-016/D-017/D-019/D-042 pattern precedents
 **Status**: active (2026-07-01)
+
+### D-045 — Grok Build TUI is an in-scope host-target (additive; no Claude regression)
+
+**Context**: Cross-host gameplan 2026-06-21 closed with 11 hosts; Grok Build TUI now exposes SessionStart hooks, AGENTS.md, and MCP (.mcp.json + project config). Field need: dogfooding Clauderizer from Grok while developing Clauderizer and consumer projects (viderizer).
+**Decision**: Add `grok` to the supported host-target vocabulary (init --host grok, CROSS-HOST matrix, session.py routing). Cross-host generalization remains strictly additive per INVARIANT-07. Marketing/docs must not claim Tier-1 digest injection until Hook→ctx is proven live.
+**Consequences**: Website host list, README, valid_host_targets, doctor, and emitters gain a grok path. Release as a field/patch train after suite green (likely 1.5.4 or next minor — decide at ship phase from CHANGELOG cadence).
+**Evidence**: Live MCP+AGENTS on Grok 2026-07-09; CROSS-HOST.md §3/§9; INVARIANT-07
+**Status**: active (2026-07-09)
