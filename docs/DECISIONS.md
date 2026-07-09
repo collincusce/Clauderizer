@@ -327,3 +327,27 @@ _(Add entries with `cz_add_decision`.)_
 **Consequences**: Website host list, README, valid_host_targets, doctor, and emitters gain a grok path. Release as a field/patch train after suite green (likely 1.5.4 or next minor — decide at ship phase from CHANGELOG cadence).
 **Evidence**: Live MCP+AGENTS on Grok 2026-07-09; CROSS-HOST.md §3/§9; INVARIANT-07
 **Status**: active (2026-07-09)
+
+### D-046 — Multi-host wiring is the default; exclusive single-host init is opt-in scope
+
+**Context**: Multi-AI users (Claude Code + Cursor + Grok + Copilot on one repo) hit a friction wall: clauderize init --host picks ONE agent and historically skipped the others. That forces re-init per tool and feels like picking a team. The real need is: write every project-level host config once, non-destructively, so any agent that opens the repo already has MCP + floor.
+**Decision**: Default init emits wiring for the FULL project-level host set (claude-code hooks+mcp + every auto-write HOST_EMITTER + guide-only setup docs for TOML/global hosts). --host <name> becomes an optional SCOPE FILTER (only touch that host's files), not the exclusive identity of the install. Config records enabled_hosts (list or *), not a single exclusive host_target for wiring. Uninstall --host stays scoped; bare uninstall still removes the full footprint.
+**Consequences**: One init serves multi-AI repos. Repo gets more small config files (.cursor/mcp.json, .vscode/mcp.json, .grok/hooks/, …) — all non-destructive merges, path-safe portable commands only. Users who want a minimal footprint pass --host claude-code (or a single name). Docs/README stop teaching exclusive host choice as the primary path.
+**Evidence**: User request 2026-07-09; D-031 non-destructive merge; dual-entry Claude+Grok field need
+**Status**: active (2026-07-09)
+
+### D-047 — Session routing is runtime-detected (or multi-safe), not a permanent exclusive host_target
+
+**Context**: session.delivers_status_via_hook / best_tier / P7 bootstrap need to know which agent is driving THIS process — so status injects at most once (INVARIANT-08) and hook hosts do not double-inject. That is a different question from 'which hosts should this repo be wired for'. Conflating them is why --host felt exclusive.
+**Decision**: Split axes in config/code: (1) enabled_hosts = which hosts are wired (default *). (2) session_agent (optional) = override for bootstrap routing when auto-detect is wrong. Auto-detect order: env/process signals (CLAUDECODE, CURSOR_*, GROK_*, etc.) > presence of host-native markers in the running tree > safe multi-host default: treat as hook-less so P7 bootstrap fires (prefer dark-session avoidance over double-injection; double-injection is mitigated by INVARIANT-08 mark_status_delivered). Never suppress P7 solely because claude-code wiring exists on disk.
+**Consequences**: A Grok session in a multi-wired repo gets bootstrap; a Claude Code session still gets SessionStart digest and server stays silent when detection says claude-code. Legacy config host_target= maps to enabled_hosts singleton + session preference for one release (modernize advisory).
+**Evidence**: session.py _HOOK_HOSTS/_PROMPT_HOSTS; INVARIANT-08; Grok Hook→ctx=no
+**Status**: active (2026-07-09)
+
+### D-048 — Missing host access is configure-on-demand advisory, never a hard block
+
+**Context**: Some hosts need human steps after wiring: Grok folder-trust, Amp mcp approve, guide-only TOML paste, trust prompts. User asked: if interfaces aren't available when someone tries to use them, ask to configure access.
+**Decision**: Doctor and (when detectable) first-use paths surface a configure checklist per host that is enabled but incomplete — e.g. 'Grok: run /hooks-trust', 'Amp: amp mcp approve clauderizer', 'Codex: see .clauderizer/codex-mcp-setup.md'. Advisory only (INVARIANT-05): never block init, never block phase transitions, never refuse tools. Prefer 'how to finish wiring this host' over silent green when a known gate is unmet.
+**Consequences**: Multi-host default can ship incomplete-but-honest installs. Agents/users see named next steps. No interactive CLI prompt required in headless/CI (print + doctor exit advisory / exit 3 style).
+**Evidence**: INVARIANT-05; doctor three-state launchability; Grok O-02 folder-trust
+**Status**: active (2026-07-09)
