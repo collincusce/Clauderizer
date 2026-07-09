@@ -63,4 +63,4 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Cross-host
 
-**1.** Exclusive --host is the wrong default for multi-AI repos: wire all project-level hosts by default (enabled=["*"]), keep --host as a scope filter, detect the running agent for bootstrap, and surface configure-on-demand steps in doctor — never hard-block. Multi-host .mcp.json must be portable (clauderizer[mcp]); session_host-composed wsl.exe wiring stays Claude-only scoped dogfood. *(evidence: gameplan 2026-07-09-multi-host-default-wiring; D-046/D-047/D-048)*
+**1.** Exclusive --host is the wrong default for multi-AI repos: wire all project-level hosts by default (enabled=["*"]), keep --host as a scope filter, detect the running agent for bootstrap, and surface configure-on-demand steps in doctor — never hard-block. Multi-host .mcp.json must be portable (clauderizer[mcp]); session_host-composed wsl.exe wiring stays Claude-only scoped dogfood. *(evidence: gameplan 2026-07-09-multi-host-default-wiring; D-046/D-047/D-048)* (promoted 2026-07-09: L-48)

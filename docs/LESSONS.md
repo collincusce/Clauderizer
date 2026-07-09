@@ -114,3 +114,7 @@
 ### Category: Release
 
 **L-42.** release-check's clean_tree counts UNTRACKED files (foreign tool artifacts, regenerable caches) as a dirty tree and blocks the ritual, even though the published artifact builds from origin/main + the tag (which never contain them). The surgical, honest fix is .git/info/exclude (local-only, non-committed, deletes nothing) for files that aren't this repo's content — not deleting another tool's files and not committing junk. Verify `git status --untracked-files=no` is empty first to prove no real source change is uncommitted. *(evidence: 1.2.0 release: 8 untracked (.agents/, higgsfield skills, skills-lock.json, abstract_index.json, fixture index.json) -> .git/info/exclude -> release-check exit 0)* *(from 2026-06-27-concurrent-multi-axis-gameplans)*
+
+### Category: Cross-host
+
+**L-48.** Exclusive --host is the wrong default for multi-AI repos: wire all project-level hosts by default (enabled=["*"]), keep --host as a scope filter, detect the running agent for bootstrap, and surface configure-on-demand steps in doctor — never hard-block. Multi-host .mcp.json must be portable (clauderizer[mcp]); session_host-composed wsl.exe wiring stays Claude-only scoped dogfood. *(from 2026-07-09-multi-host-default-wiring)*

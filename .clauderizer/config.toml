@@ -8,8 +8,8 @@ procedure_version = "1.6.0"
 [host]
 profile = "python"
 target = "claude-code"
-enabled = ["*"]
 session_host = "windows-wsl:ubuntu"
+enabled = ["*"]
 
 [paths]
 docs = "docs"
@@ -28,4 +28,4 @@ cascade = true
 amendments = false
 
 [focus]
-id = "2026-07-09-multi-host-default-wiring"
+id = "2026-06-21-standing-curator-loop-memory-maintenance"
