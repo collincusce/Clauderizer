@@ -52,8 +52,9 @@ clauderizes any repo).
   disposable and always rebuilt from the markdown.
 - **Host- and model-portable, not a Claude-only bet.** A host-neutral MCP server plus an
   `AGENTS.md` floor reach 12 agents (Claude Code, Cursor, Copilot, Codex, Gemini CLI,
-  Windsurf, Cline, Amp, Continue, Zed, kimi, Grok Build TUI); an injection-parity ladder delivers status by
-  the best tier each host supports (hook → `/cz-status` prompt → instructions floor).
+  Windsurf, Cline, Amp, Continue, Zed, kimi, Grok Build TUI). Bare `init` wires **all** of
+  them by default (multi-host; `--host` only scopes); an injection-parity ladder delivers
+  status by the best tier each host supports (hook → `/cz-status` prompt → instructions floor).
 - **Zero runtime dependencies**; works on native Linux/macOS and Windows→WSL alike.
 
 ## Scope Boundaries

@@ -218,9 +218,9 @@ session.
 ## Quickstart: into an existing project
 
 Already have a codebase? Clauderizer drops in without disturbing it — `init` is idempotent and
-never clobbers your files: it adds a marker stanza to an existing `CLAUDE.md`, key-merges your
-host's MCP config (`.mcp.json` for Claude Code; see [Works with your agent](#works-with-your-agent)),
-and skips any doc that already exists.
+never clobbers your files: it adds a marker stanza to an existing `CLAUDE.md`/`AGENTS.md`,
+wires **every** supported agent's MCP config by default (see
+[Works with your agent(s)](#works-with-your-agents)), and skips any doc that already exists.
 
 **1. Clauderize the repo.** Run it on a clean working tree (or a fresh branch) so the change is
 easy to review:

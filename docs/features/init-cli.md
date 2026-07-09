@@ -21,7 +21,7 @@ spawn-tests, the breadcrumb wrapper, split-host shapes).
 clauderize init [path] [--size pet|standard|saas] [--profile auto|node|python|go|ruby]
                 [--gameplan "Name"] [--run-cmd "uvx --from clauderizer"]
                 [--workflow code|docs|audit] [--session-host native|windows-wsl:<distro>]
-                [--no-spawn-test] [-v]
+                [--host <name>] [--list-hosts] [--no-spawn-test] [-v]
 ```
 
 - **`path`** — repo to clauderize (default: cwd).
@@ -37,20 +37,30 @@ clauderize init [path] [--size pet|standard|saas] [--profile auto|node|python|go
   every resume.
 - **`--session-host`** — which host spawns sessions: `native` (default, auto-detected from
   existing wiring) or `windows-wsl:<distro>` for a WSL-installed engine driven from Windows.
+- **`--host <name>`** — optional **scope filter** (D-046): only touch that agent tool's
+  files. Omit to wire **every** supported host (multi-host default: `enabled = ["*"]`).
+- **`--list-hosts`** — print valid host ids, write mode (auto-write vs guide-only), and
+  config path; exit without writing.
 - **`--no-spawn-test`** — skip the pre-write launch probes (an escape hatch for sandboxes
   that cannot spawn; the probes are the mis-wiring guard, so use sparingly).
 
 ## Behavior
 
+**Multi-host by default (D-046).** Bare `init` wires Claude Code hooks + every auto-write
+MCP config + guide-only setup docs for TOML/global hosts. Multi-host `.mcp.json` uses the
+portable `uvx --from "clauderizer[mcp]" clauderizer-mcp` form. Runtime session-agent
+detection (D-047) steers bootstrap; `clauderize doctor` surfaces configure-on-demand steps
+(D-048) without hard-blocking.
+
 **Idempotent.** Re-running fills gaps and refreshes engine-owned files but never clobbers
-your content — marker blocks in `CLAUDE.md`/`AGENTS.md`, key-scoped `.mcp.json` merges,
-exists-checks for `docs/`, and `profile.lock.toml` edits all survive. It prints a summary
-(size, host profile, session host, files written vs. kept) plus any warnings; `-v` lists
+your content — marker blocks in `CLAUDE.md`/`AGENTS.md`, key-scoped MCP merges, exists-checks
+for `docs/`, and `profile.lock.toml` edits all survive. It prints a summary (size, host
+profile, session host, hosts wired, files written vs. kept) plus any warnings; `-v` lists
 every action. Before writing wiring it spawn-tests each command and refuses anything that
 won't launch and identify itself (`WiringRefused`).
 
 ## Exit codes
 
 `0` — clauderized (or refreshed). `1` — init refused: a `WiringRefused` (a command failed
-its `--version` probe) or an invalid `--session-host`, with nothing written. Verify the
-result with `clauderize doctor`.
+its `--version` probe), an invalid `--session-host`, or an unknown `--host`, with nothing
+written. Verify the result with `clauderize doctor`.
