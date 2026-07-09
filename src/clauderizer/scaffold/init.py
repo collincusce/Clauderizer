@@ -135,7 +135,8 @@ class InitReport:
     size: str = ""
     session_host: str = ""
     host_target: str = ""
-    host_target_auto: bool = False  # defaulted to claude-code with no choice made
+    host_target_auto: bool = False  # defaulted to multi (*) with no --host flag
+    hosts_wired: list[str] = field(default_factory=list)
     actions: list[str] = field(default_factory=list)
     changed: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
@@ -188,24 +189,33 @@ def init(
     hosts.parse(resolved_host)  # invalid values fail loudly before anything composes
     report.session_host = resolved_host
 
-    # 0a. host target (D-028, the THIRD host axis): explicit flag > what config
-    # already records > cheap auto-detection > claude-code. Validated up front so
-    # an unknown name fails friendly (listing valid hosts) before anything writes
-    # — never a KeyError deep in the emitter table (P8 exit criterion).
-    resolved_target = (
-        host_target
-        or (existing_config.host_target if existing_config else None)
-        or hosttargets.detect_host_target(root)
+    # 0a. Host wiring set (D-046 multi-host default): --host is a SCOPE FILTER,
+    # not exclusive identity. Bare init expands enabled_hosts (default ["*"] =
+    # every project-level host). Session preference (host_target) stays for
+    # doctor primary / display — runtime routing uses session.detect (D-047).
+    prior_enabled = (
+        list(existing_config.enabled_hosts)
+        if existing_config is not None else ["*"]
     )
-    resolved_target = hosttargets.parse_host_target(resolved_target)
+    try:
+        wired = hosttargets.hosts_to_wire(
+            host_flag=host_target, enabled_hosts=prior_enabled)
+    except hosttargets.HostTargetError:
+        raise
+    report.hosts_wired = list(wired)
+    # Session preference: scoped --host wins; else keep prior; else claude-code.
+    if host_target is not None and str(host_target).strip():
+        resolved_target = hosttargets.parse_host_target(host_target)
+    else:
+        resolved_target = hosttargets.parse_host_target(
+            (existing_config.host_target if existing_config else None)
+            or hosttargets.detect_host_target(root)
+            or hosttargets.CLAUDE_CODE
+        )
     report.host_target = resolved_target
-    # Flag the default-with-no-choice case so the CLI can nudge that other hosts
-    # exist — a presentation hint, NOT a wiring warning (report.warnings stays
-    # reserved for the spawn-probe verdicts existing callers assert on).
-    report.host_target_auto = (
-        host_target is None and existing_config is None
-        and resolved_target == hosttargets.CLAUDE_CODE
-    )
+    # First bare init only: presentation hint that multi-host is the default
+    # (not a wiring warning — report.warnings stays for spawn probes).
+    report.host_target_auto = host_target is None and existing_config is None
 
     engine_mcp, engine_hook = _resolve_invocation(run_cmd)
     mcp_cmd = hosts.compose(engine_mcp, resolved_host)
@@ -249,6 +259,19 @@ def init(
     config = merge_missing(existing_config, defaults) if existing_config else defaults
     config.session_host = resolved_host
     config.host_target = resolved_target
+    # Persist multi default unless this run was a scoped --host install.
+    if host_target is not None and str(host_target).strip():
+        # Scope filter for this run: if config was multi, keep multi enabled so
+        # a later bare init re-expands; only record singleton when the prior
+        # config was already a singleton or first-time scoped install.
+        if existing_config is None or hosttargets.ALL_HOSTS not in (
+            existing_config.enabled_hosts or []
+        ):
+            config.enabled_hosts = [resolved_target]
+        else:
+            config.enabled_hosts = ["*"]
+    else:
+        config.enabled_hosts = ["*"]
     # Init is an upgrade moment (D-042): stamp the corpus with this engine's
     # procedure version so status can tell a current corpus from a stale one.
     from .. import PROCEDURE_VERSION as _PROC_V
@@ -320,21 +343,17 @@ def init(
                 changed = _rewrite_if_diff(dest_dir / src.name, src.read_text(encoding="utf-8"))
                 report.note(f"skill:{skill_dir.name}", dest_dir / src.name, changed)
 
-    # 10–11b. Host-target wiring (P8, A-001). claude-code keeps the original
-    # .mcp.json + SessionStart-hook + kimi-setup wiring byte-for-byte
-    # (INVARIANT-07); every other host routes to its per-host emitters (P4/P5),
-    # finally reachable through init. The AGENTS.md floor, skills, and docs above
-    # are host-agnostic and already written, so a non-claude host gets BOTH the
-    # floor and its tools (no floor-but-no-tools).
-    if resolved_target == hosttargets.CLAUDE_CODE:
-        # 10. register MCP server (key-scoped merge)
-        changed = _register_mcp(paths.mcp_json, mcp_cmd)
-        report.note(".mcp.json", paths.mcp_json, changed)
+    # 10–11b. Multi-host wiring (D-046). Wire every host in `wired` (default: all).
+    # Claude Code keeps SessionStart hooks + kimi-setup (INVARIANT-07). Other hosts
+    # get emit_host_wiring. When multi-host includes non-claude auto-write emitters,
+    # .mcp.json is finished with the PORTABLE command so the repo is committable
+    # across machines (D-031); pure claude-code-only still prefers local mcp_cmd.
+    wire_claude = hosttargets.CLAUDE_CODE in wired
+    wire_others = [h for h in wired if h != hosttargets.CLAUDE_CODE]
+    multi = len(wired) > 1 or hosttargets.ALL_HOSTS in (config.enabled_hosts or [])
 
-        # 11. SessionStart hook: write the breadcrumb wrapper, prove the registered
-        # command spawns, then register it (D4). The engine hook itself was already
-        # probed in step 0b, so a failure here is wrapper-specific. The wrapper
-        # always bakes the UNSHIMMED engine argv — it executes on the engine host.
+    if wire_claude:
+        # 11. SessionStart hook wrapper + registration (D4).
         wrapper_name = hosts.wrapper_filename(resolved_host)
         wrapper_path = root / ".clauderizer" / wrapper_name
         changed = _rewrite_if_diff(
@@ -344,17 +363,13 @@ def init(
             exact_newlines=True,
         )
         if changed and not wrapper_name.endswith(".cmd"):
-            try:  # courtesy for direct execution; /bin/sh invocation needs no x-bit
+            try:
                 wrapper_path.chmod(wrapper_path.stat().st_mode | 0o755)
             except OSError:
                 pass
         report.note("hook wrapper", wrapper_path, changed)
         registered_hook = hosts.hook_wrapper_invocation(root, resolved_host)
         if spawn_test:
-            # No-arg digest probe from a NON-repo cwd (D-010/H-09): --version
-            # answers before repo discovery, so only the digest path proves the
-            # wrapper's anchor — an un-anchored wrapper is silent (exit 0) exactly
-            # like the real executor chain made it, and must not register.
             probe = hosts.hook_digest_probe(registered_hook, cwd=hosts.non_repo_cwd())
             if probe.status == "fail":
                 raise WiringRefused(
@@ -372,34 +387,37 @@ def init(
         changed = _register_hook(root / ".claude" / "settings.json", registered_hook)
         report.note("hook", root / ".claude" / "settings.json", changed)
 
-        # 11b. kimi-code setup snippet (D2): the [[hooks]] entries + MCP guidance the
-        # user merges into their kimi config. Non-destructive — a project file under
-        # .clauderizer/, never the global ~/.kimi/config.toml. kimi injects EVERY
-        # hook's stdout, so all four events are wired here (vs Claude Code's two — D1).
         changed = _rewrite_if_diff(paths.kimi_setup,
                                    _render_kimi_setup(registered_hook, mcp_cmd))
         report.note("kimi-setup", paths.kimi_setup, changed)
 
-        # 11c. Path-safety for the local wiring (O-06/D-031, security review HIGH).
-        # claude-code's .mcp.json prefers your LOCAL install for launch reliability,
-        # so it can carry a machine-specific command (a venv path, or a wsl.exe shim
-        # for a split host) — dead on any other machine and a path leak if committed.
-        # The cross-host emitters REFUSE such commands (their configs are meant to be
-        # shared); .mcp.json is your local wiring, so we keep it but gitignore it when
-        # it is not portable — the same protection the dogfood repo uses. (A portable
-        # uvx command stays committable. .claude/settings.json may also hold your own
-        # settings, so it is left for you to gitignore — see docs/TRUST.md.)
-        if not hosttargets.is_path_safe(mcp_cmd):
-            gi = _ensure_gitignore(root / ".gitignore", paths.mcp_json.name)
-            report.note(".gitignore (.mcp.json — local wiring, not committable)",
-                        root / ".gitignore", gi)
-    else:
-        # A non-claude host: emit its MCP registration (or setup guide for a
-        # guide-only host), the native floor where it does not read AGENTS.md, and
-        # its hook setup guide. The Claude-Code-only .mcp.json key and
-        # .claude/settings.json hooks are NOT written — that wiring is dead here.
-        for res in hosttargets.emit_host_wiring(resolved_target, root):
-            report.note(f"{res.label}:{resolved_target}", res.path, res.changed)
+        # .mcp.json: local (possibly machine-specific) only when Claude-only.
+        # Multi-host repos get the portable command below after other emitters.
+        if not multi:
+            changed = _register_mcp(paths.mcp_json, mcp_cmd)
+            report.note(".mcp.json", paths.mcp_json, changed)
+            if not hosttargets.is_path_safe(mcp_cmd):
+                gi = _ensure_gitignore(root / ".gitignore", paths.mcp_json.name)
+                report.note(".gitignore (.mcp.json — local wiring, not committable)",
+                            root / ".gitignore", gi)
+
+    for hid in wire_others:
+        for res in hosttargets.emit_host_wiring(hid, root):
+            report.note(f"{res.label}:{hid}", res.path, res.changed)
+
+    # Multi-host (or any non-claude that shares .mcp.json): ensure portable .mcp.json.
+    if multi or (not wire_claude and any(
+        hosttargets.HOST_EMITTERS.get(h)
+        and hosttargets.HOST_EMITTERS[h].auto_write
+        and hosttargets.HOST_EMITTERS[h].config_path == ".mcp.json"
+        for h in wire_others
+    )):
+        # Prefer portable so dual Claude+Grok/Cursor machines share one committable file.
+        port = hosttargets.PORTABLE_COMMAND
+        # Use [mcp] extra form for the server when possible — match engine_mcp shape
+        # if it is already portable; otherwise stick to PORTABLE_COMMAND.
+        changed = _register_mcp(paths.mcp_json, list(port))
+        report.note(".mcp.json (portable multi-host)", paths.mcp_json, changed)
 
     # 12. gitignore the disposable caches; build the graph + abstract indexes
     gi = root / ".gitignore"

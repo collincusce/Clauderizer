@@ -40,14 +40,16 @@ def _print_host_list() -> None:
     accepts, each with where its MCP registration lands and whether it's
     auto-written or guide-only."""
     from . import hosttargets
-    print("Host targets for `clauderize init --host <name>`:\n")
+    print("Host targets for `clauderize init` (multi-host default — D-046):\n")
     print(f"  {'host':<12} {'mode':<11} MCP config")
-    print(f"  {'claude-code':<12} {'auto-write':<11} .mcp.json + .claude/settings.json hooks (default)")
+    print(f"  {'claude-code':<12} {'auto-write':<11} .mcp.json + .claude/settings.json hooks")
     for hid, em in hosttargets.HOST_EMITTERS.items():
         mode = "auto-write" if em.auto_write else "guide-only"
         print(f"  {hid:<12} {mode:<11} {em.config_path}")
-    print("\n  Omit --host to default to claude-code. Other hosts also get the "
-          "AGENTS.md floor;\n  guide-only hosts get a .clauderizer/<host>-mcp-setup.md guide.")
+    print("\n  Bare `init` wires ALL of the above (non-destructive, path-safe).")
+    print("  `--host <name>` is an optional SCOPE filter (only touch that host).")
+    print("  Guide-only hosts get a .clauderizer/<host>-mcp-setup.md instead of")
+    print("  rewriting global/TOML config (D-031).")
 
 
 def cmd_init(args: argparse.Namespace) -> int:
@@ -71,8 +73,10 @@ def cmd_init(args: argparse.Namespace) -> int:
         print(f"✗ init refused: {exc}")
         return 1
     print(f"Clauderized {report.repo}")
+    wired = report.hosts_wired or [report.host_target]
     print(f"  size={report.size}  host profile={report.host_profile}"
-          f"  host target={report.host_target}  session host={report.session_host}")
+          f"  session host={report.session_host}")
+    print(f"  hosts wired ({len(wired)}): {', '.join(wired)}")
     n_changed = len(report.changed)
     print(f"  {n_changed} file(s) written/updated, {len(report.actions) - n_changed} kept as-is")
     if args.verbose:
@@ -82,17 +86,14 @@ def cmd_init(args: argparse.Namespace) -> int:
         print(f"  ! {w}")
     for a in report.advisories:
         print(f"  → {a}")
-    if report.host_target_auto:
-        print(f"  · host target defaulted to claude-code; pass `--host <name>` to target "
-              f"another agent tool ({', '.join(hosttargets.HOST_EMITTERS)})")
-    if report.host_target == hosttargets.CLAUDE_CODE:
-        print("\nNext: open a Claude Code session here — the SessionStart hook will show status.")
-        print("Or run `clauderize status`.")
-    else:
-        print(f"\nNext: open {report.host_target} on this repo — it loads the emitted MCP "
-              f"config and the AGENTS.md floor tells the agent to call cz_status first.")
-        print("See the .clauderizer/*-setup.md guide(s) for any manual hook wiring, "
-              "or run `clauderize status`.")
+    if report.host_target_auto and len(wired) > 1:
+        print("  · multi-host default: every supported agent is wired; pass "
+              "`--host <name>` to touch only one host's files")
+    print("\nNext: open any wired agent on this repo. AGENTS.md tells it to call "
+          "cz_status first; Claude Code also gets a SessionStart digest.")
+    print("If a host needs a human step (folder trust, TOML paste, amp approve), "
+          "run `clauderize doctor` for the configure checklist.")
+    print("Or run `clauderize status`.")
     return 0
 
 
@@ -251,35 +252,27 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     check("config.toml present", paths.config_file.exists())
     check("procedure shipped", paths.procedure_file.exists())
     check("CLAUDE.md stanza", _has_marker(paths.claude_md, "clauderizer"))
-    # The MCP + SessionStart-hook wiring is host_target-specific: init writes the
-    # Claude Code files (.mcp.json + .claude/settings.json) ONLY for claude-code,
-    # so checking them for a cursor/continue/… repo would false-fail a healthy
-    # install (O-09). Branch on the recorded host_target; full per-host
-    # launchability probing is Phase 13.
-    host_target = config.host_target
-    if host_target == hosttargets.CLAUDE_CODE:
+    # Multi-host doctor (D-046/D-048): check every enabled host's readiness and
+    # surface configure-on-demand steps — never hard-block (INVARIANT-05).
+    # Claude launchability probes still run when claude-code is in the set.
+    enabled = hosttargets.expand_enabled_hosts(getattr(config, "enabled_hosts", None))
+    multi = len(enabled) > 1
+    print(f"✓ enabled hosts ({len(enabled)}): {', '.join(enabled)}"
+          + ("  [multi-host default]" if multi else ""))
+    detected = __import__("clauderizer.session", fromlist=["detect_session_agent"]).detect_session_agent()
+    if detected:
+        print(f"✓ session agent detected this process: {detected}")
+    else:
+        print("? session agent: not detected (P7 bootstrap will fire if status undelivered)")
+
+    wire_claude = hosttargets.CLAUDE_CODE in enabled
+    hook_argv = None
+    session_host = config.session_host
+
+    if wire_claude or _mcp_registered(paths.mcp_json):
         mcp_ok = _mcp_registered(paths.mcp_json)
-        # Stripped-host_target guard: if the Claude Code wiring is absent but a
-        # per-host config still registers clauderizer, host_target was likely
-        # stripped — an older pre-host_target engine, or a config hand-edit,
-        # rewrote config.toml without [host] target, so it defaulted back to
-        # claude-code. Bare `init` would then write Claude Code wiring (the WRONG
-        # repair); name the right one. (Observed live in P9 cross-version testing.)
-        if not mcp_ok:
-            stray = next((h for h, em in hosttargets.HOST_EMITTERS.items()
-                          if em.auto_write
-                          and _host_mcp_registered(paths.root / em.config_path, em.servers_key)),
-                         None)
-            if stray:
-                warn("host target",
-                     f"Claude Code wiring is absent but {stray}'s config registers "
-                     f"clauderizer — host_target was likely stripped by an older engine "
-                     f"or a config hand-edit. Re-run `clauderize init --host {stray}` "
-                     f"(NOT bare `init`, which would wire Claude Code)")
-        check(".mcp.json registers clauderizer", mcp_ok)
-        # Session host of record (D3): launchability is only meaningful relative to
-        # the host that spawns sessions, so surface — and validate — the record.
-        session_host = config.session_host
+        check(".mcp.json registers clauderizer", mcp_ok,
+              "missing — re-run `clauderize init`")
         wiring = hosts.read_wiring(paths.mcp_json)
         if session_host:
             try:
@@ -294,78 +287,84 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                   "(a Windows session host); re-run `clauderize init` to record it")
         else:
             print("✓ session host of record: native (default — not recorded)")
-        # Fidelity: registration present is not enough — the command must be
-        # launchable BY THE SESSION HOST OF RECORD, or doctor must say it cannot tell.
-        verdict("MCP server launchable for session host",
-                hosts.verify_wiring(wiring, session_host))
-        # H-15: the launchability verdict above probes presence/identity (--version),
-        # which the MCP entry answers WITHOUT importing the mcp SDK — so it stayed
-        # green even when the wired command lacked the [mcp] extra and could never
-        # serve. Statically catch that exact misconfiguration on the uvx path.
-        if _mcp_wiring_missing_extra(wiring):
-            check("MCP server wiring includes the [mcp] extra", False,
-                  "wired via `--from clauderizer` WITHOUT the [mcp] extra, so the server "
-                  "cannot import the mcp SDK and refuses to serve; re-run `clauderize init` "
-                  "(1.0.3+) to rewire it as `--from clauderizer[mcp]`")
+        if mcp_ok:
+            # Multi-host portable .mcp.json is engine-native (uvx), not session_host-
+            # composed. Verify it as native so windows-wsl session_host (which still
+            # composes Claude hooks) does not false-fail a correct multi install.
+            mcp_probe_host = session_host
+            if wiring and hosttargets.is_path_safe(list(wiring)):
+                mcp_probe_host = None  # portable → native launchability
+                if session_host and str(session_host).startswith("windows-wsl"):
+                    print("✓ MCP config is portable (multi-host); session_host "
+                          f"{session_host} still composes Claude hooks")
+            verdict("MCP server launchable for session host",
+                    hosts.verify_wiring(wiring, mcp_probe_host))
+            if _mcp_wiring_missing_extra(wiring):
+                check("MCP server wiring includes the [mcp] extra", False,
+                      "wired via `--from clauderizer` WITHOUT the [mcp] extra; re-run "
+                      "`clauderize init` (1.0.3+) for `--from clauderizer[mcp]`")
+            if wiring and not hosttargets.is_path_safe(list(wiring)):
+                # Intentional for scoped Claude-only + windows-wsl dogfood — not
+                # drift and not "unverifiable from this host" (exit 3). Info only.
+                print("· MCP path-safety: .mcp.json is machine-specific (local Claude "
+                      "dogfood); bare `clauderize init` writes portable multi-host")
+                if not session_host and hosts.is_wsl_shim(list(wiring)):
+                    unverified += 1
+                    print("? session host of record — not recorded, but the wiring is "
+                          "wsl.exe-shimmed (a Windows session host); re-run "
+                          "`clauderize init` to record it")
+
+    if wire_claude:
         settings = paths.root / ".claude" / "settings.json"
-        check("SessionStart hook registered", _hook_registered(settings))
+        check("SessionStart hook registered", _hook_registered(settings),
+              "missing — re-run `clauderize init` (or `init --host claude-code`)")
         hook_argv = _hook_command(settings)
-        # D-010: the hook is executed as a STRING through the harness's executor
-        # shell from an arbitrary cwd — the verdict must traverse that leg (Git
-        # Bash + non-repo cwd) or say honestly that it cannot. The direct argv
-        # probe alone stayed green through the entire H-08 outage.
-        verdict("SessionStart hook launchable for session host",
-                hosts.verify_hook_wiring(hook_argv, session_host))
-    else:
-        # Non-claude host: verify ITS config (init does not write .mcp.json /
-        # .claude hooks for these — except grok, which reuses portable .mcp.json
-        # without Claude SessionStart wiring). Presence + floor only here;
-        # launchability is P13 (O-09). hook_argv left None so the wrapper block
-        # below self-skips (Grok governance hooks are not the Claude wrapper path).
-        hook_argv = None
-        em = hosttargets.HOST_EMITTERS.get(host_target)
+        if hook_argv:
+            verdict("SessionStart hook launchable for session host",
+                    hosts.verify_hook_wiring(hook_argv, session_host))
+
+    check("AGENTS.md floor present", _has_marker(paths.agents_md, "clauderizer"))
+
+    # Per-host readiness + configure-on-demand (D-048)
+    for hid in enabled:
+        if hid == hosttargets.CLAUDE_CODE:
+            continue
+        em = hosttargets.HOST_EMITTERS.get(hid)
         if em is None:
-            check(f"host target '{host_target}' known", False, "unknown host")
-        elif em.auto_write:
-            check(f"{host_target} MCP config registers clauderizer",
-                  _host_mcp_registered(paths.root / em.config_path, em.servers_key),
-                  f"{em.config_path} missing or lacks the clauderizer entry — "
-                  f"re-run `clauderize init --host {host_target}`")
-            # Path-safety on auto-written MCP (D-031): machine-specific wsl.exe /
-            # absolute paths are not committable. Surface as advisory for grok
-            # dogfood that still carries a local shim.
-            if host_target == "grok" and (paths.root / em.config_path).exists():
-                try:
-                    data = json.loads((paths.root / em.config_path).read_text(encoding="utf-8"))
-                    entry = (data.get(em.servers_key) or {}).get("clauderizer") or {}
-                    argv = [entry.get("command", ""), *entry.get("args", [])]
-                    if argv[0] and not hosttargets.is_path_safe(argv):
-                        warn(f"{host_target} MCP path-safety",
-                             f"{em.config_path} carries a machine-specific command "
-                             f"{argv!r} — re-run `clauderize init --host grok` for the "
-                             f"portable uvx form (D-031)")
-                except (json.JSONDecodeError, OSError, TypeError):
-                    pass
+            warn(f"host {hid}", "unknown — not in HOST_EMITTERS")
+            continue
+        if em.auto_write:
+            present = _host_mcp_registered(paths.root / em.config_path, em.servers_key)
+            if present:
+                print(f"✓ {hid}: MCP config present ({em.config_path})")
+            else:
+                warn(f"{hid} MCP",
+                     f"{em.config_path} missing clauderizer — re-run `clauderize init` "
+                     f"or `init --host {hid}`")
+                for hint in hosttargets.configure_hints(hid):
+                    print(f"    configure: {hint}")
         else:
-            print(f"✓ host target '{host_target}': guide-only — register MCP by hand "
-                  f"(see .clauderizer/{host_target}-mcp-setup.md)")
-        # the floor reaches the agent via AGENTS.md, or a native rules file for
-        # the hosts that do not read AGENTS.md (Continue, Gemini)
-        rel = hosttargets.NATIVE_INSTRUCTIONS.get(host_target)
-        if rel is not None:
-            check(f"{host_target} native floor present",
-                  _has_marker(paths.root / rel, "clauderizer"))
-        else:
-            check("AGENTS.md floor present", _has_marker(paths.agents_md, "clauderizer"))
-        if host_target == "grok":
+            guide = paths.root / ".clauderizer" / f"{hid}-mcp-setup.md"
+            if guide.is_file():
+                print(f"✓ {hid}: guide-only setup present ({guide.name})")
+            else:
+                warn(f"{hid} guide",
+                     f"missing {guide.name} — re-run `clauderize init`")
+            for hint in hosttargets.configure_hints(hid):
+                print(f"    configure: {hint}")
+        if hid == "grok":
             hooks_path = paths.root / hosttargets.GROK_HOOKS_REL
-            check(f"grok governance hooks present ({hosttargets.GROK_HOOKS_REL})",
-                  hooks_path.is_file(),
-                  f"missing — re-run `clauderize init --host grok`")
-            # Honesty: never treat missing .claude/settings.json as drift for grok.
-            print("✓ grok injection tier: 4 (AGENTS.md floor + MCP tools + P7 bootstrap; "
-                  "SessionStart stdout is NOT model context — Hook→ctx=no)")
-            print("  note: project hooks/MCP need folder trust (`/hooks-trust` or --trust)")
+            if hooks_path.is_file():
+                print(f"✓ grok: governance hooks present ({hosttargets.GROK_HOOKS_REL})")
+            else:
+                warn("grok hooks",
+                     f"{hosttargets.GROK_HOOKS_REL} missing — re-run `clauderize init`")
+            print("  note: grok Hook→ctx=no — floor + P7 bootstrap; needs /hooks-trust")
+        rel = hosttargets.NATIVE_INSTRUCTIONS.get(hid)
+        if rel is not None:
+            check(f"{hid} native floor present",
+                  _has_marker(paths.root / rel, "clauderizer"),
+                  f"missing {rel} — re-run `clauderize init --host {hid}`")
     # D4 breadcrumb wrapper: when the registered command is the wrapper, its
     # file must exist and its baked engine command should match what a fresh
     # init would compose (staleness = the engine moved since the last init).

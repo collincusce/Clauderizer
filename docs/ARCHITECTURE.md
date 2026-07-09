@@ -157,13 +157,13 @@ path that delivers them to existing repos:
 
 ### Host targeting & the injection-parity ladder
 
-**`host_target`** is a third host axis, orthogonal to `session_host` (where commands
-run) and `host_profile` (the repo's language): the `[host] target` line in
-`.clauderizer/config.toml` (default `claude-code`) selects which agent `init` wires.
-The MCP command it emits is machine-independent (`uvx --from clauderizer
-clauderizer-mcp`); the registration is written into that host's own config file —
-auto-merged for hosts with a JSON config, emitted as a `.clauderizer/<host>-setup.md`
-guide for TOML/global hosts.
+**`enabled_hosts` + `host_target`** are the third host axis (D-028 / D-046), orthogonal
+to `session_host` (where commands run) and `host_profile` (the repo's language).
+`[host] enabled = ["*"]` (default) means bare `init` wires **every** project-level
+agent; `[host] target` is a session preference for display. Runtime injection routing
+uses env-detected session agent (D-047). The multi-host MCP command is
+machine-independent (`uvx --from "clauderizer[mcp]" clauderizer-mcp`); registrations
+are auto-merged into each host's config (or a guide for TOML/global hosts).
 
 Because hosts vary in what they can auto-load, status reaches the agent by the **best
 reachable tier** (delivered at most once per session):

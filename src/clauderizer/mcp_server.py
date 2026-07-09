@@ -45,10 +45,12 @@ def _status_summary() -> str:
 
 
 def _host_target() -> str | None:
+    """Effective agent for THIS process (D-047) — runtime detect, multi-safe."""
     try:
-        return repo_ctx()[1].host_target
+        cfg = repo_ctx()[1]
+        return session.effective_host_target(cfg.host_target)
     except Exception:
-        return None
+        return session.effective_host_target(None)
 
 
 def _deliver_aware(name: str, spec):

@@ -65,7 +65,8 @@ T=tools, R=resources, P=prompts. "Hook→ctx" = hook can inject into model conte
 > `12-project-rules.md` AGENTS.md native; `04-slash-commands.md` slash sources = builtins + SKILL.md only
 > (**no** MCP prompts as `/cz-status` → best_tier **4**, not 3). Project hooks/MCP require folder-trust
 > (`/hooks-trust` or `--trust`). **Never** put `grok` in `session._HOOK_HOSTS` — that suppresses P7
-> bootstrap and leaves cold sessions dark. Init: `clauderize init --host grok`.
+> bootstrap and leaves cold sessions dark. Wired by bare `clauderize init` (multi-host
+> default, D-046) or scoped `init --host grok`.
 
 \* Codex/kimi MCP registration is TOML → see §6 (zero-dep) → guide-only or append-only stanza.
 
@@ -126,3 +127,4 @@ So the floor emitter writes AGENTS.md **plus** a per-host native-instructions sh
 - **Drop Roo Code** — repo archived read-only 2026-05-15; not a live target.
 - **Defer Aider** — no native MCP client (open feature request); revisit if/when it ships. The floor would also need explicit `read:` config, so there is no zero-touch path today.
 - **Net in-scope first-class hosts:** Claude Code, kimi (done) + Copilot, Codex, Gemini, Windsurf, Cline, Amp (Tier-1 candidates) + Cursor, Continue, Zed (Tier-3/floor + bootstrap) + **Grok Build TUI** (Tier-4/floor + P7 bootstrap; governance hooks). **12 hosts** (was 11 after dropping Roo/deferring Aider; Grok added 2026-07-09).
+- **Multi-host default (D-046, 2026-07-09):** bare `clauderize init` wires all project-level hosts; `--host` scopes one run. Session routing is runtime-detected (D-047); missing access is configure-on-demand advisory (D-048).

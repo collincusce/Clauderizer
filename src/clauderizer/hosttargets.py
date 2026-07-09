@@ -22,9 +22,10 @@ from pathlib import Path
 from .markdown.writer import refuse_if_symlink
 
 # The portable launch command for a COMMITTABLE config — no absolute path, no shim.
-# Matches the project's drop-in identity ("uvx --from clauderizer … needs nothing
-# else"). The local .mcp.json may use an absolute path; an emitted one may not.
-PORTABLE_COMMAND = ["uvx", "--from", "clauderizer", "clauderizer-mcp"]
+# The MCP server needs the optional `mcp` extra (H-14/H-15); without [mcp] the
+# process exits with a missing-package notice and never serves. The local
+# dogfood .mcp.json may use an absolute path; an emitted one may not.
+PORTABLE_COMMAND = ["uvx", "--from", "clauderizer[mcp]", "clauderizer-mcp"]
 
 
 @dataclass(frozen=True)
@@ -74,6 +75,76 @@ HOST_EMITTERS: dict[str, HostEmitter] = {
 # hook wiring (INVARIANT-07). Every other id routes through the per-host
 # emitters below — reachable through `clauderize init --host` since P8 (A-001).
 CLAUDE_CODE = "claude-code"
+
+# Multi-host default (D-046): enabled_hosts = ["*"] means every known project-
+# level host. Concrete lists scope the footprint; --host is a one-shot filter.
+ALL_HOSTS = "*"
+
+
+def all_host_ids() -> list[str]:
+    """Concrete host ids wired by the multi-host default (claude-code + emitters)."""
+    return [CLAUDE_CODE, *HOST_EMITTERS]
+
+
+def expand_enabled_hosts(enabled: list[str] | None) -> list[str]:
+    """Resolve config enabled_hosts → concrete host ids (order stable)."""
+    if not enabled or ALL_HOSTS in enabled:
+        return all_host_ids()
+    out: list[str] = []
+    for h in enabled:
+        hid = parse_host_target(h)
+        if hid not in out:
+            out.append(hid)
+    return out
+
+
+def hosts_to_wire(
+    *,
+    host_flag: str | None,
+    enabled_hosts: list[str] | None,
+) -> list[str]:
+    """Which hosts this init run should touch (D-046).
+
+    - ``--host X`` → scope filter: only X (regardless of enabled_hosts).
+    - bare init → expand enabled_hosts (default ``["*"]`` = all).
+    """
+    if host_flag is not None and str(host_flag).strip():
+        return [parse_host_target(host_flag)]
+    return expand_enabled_hosts(enabled_hosts)
+
+
+def configure_hints(host_id: str) -> list[str]:
+    """Configure-on-demand steps when a host is enabled but incomplete (D-048).
+    Advisory only — never hard-blocks (INVARIANT-05)."""
+    hints: dict[str, list[str]] = {
+        "grok": [
+            "Grant folder trust: `/hooks-trust` or launch with `--trust` "
+            "(gates project MCP + .grok/hooks).",
+            "SessionStart stdout is NOT model context — call cz_status "
+            "(AGENTS.md floor + P7 bootstrap).",
+        ],
+        "amp": [
+            "After wiring, run `amp mcp approve clauderizer` so Amp loads the server.",
+        ],
+        "codex": [
+            "TOML is guide-only — merge the portable command from "
+            "`.clauderizer/codex-mcp-setup.md` into `.codex/config.toml`.",
+        ],
+        "kimi": [
+            "Global TOML is guide-only — merge hooks/MCP from "
+            "`.clauderizer/kimi-setup.md` or `kimi-mcp-setup.md` into `~/.kimi/config.toml`.",
+        ],
+        "windsurf": [
+            "MCP config is global — see `.clauderizer/windsurf-mcp-setup.md` "
+            "(never auto-edited, D-031).",
+        ],
+        "claude-code": [
+            "Open a Claude Code session in this repo — SessionStart injects the digest.",
+        ],
+    }
+    return list(hints.get(host_id, [
+        f"Open {host_id} on this repo; AGENTS.md floor tells the agent to call cz_status first.",
+    ]))
 
 # Paths that claude-code init also writes — auto-detect must not treat these
 # alone as evidence of a non-claude host (dogfood .mcp.json is claude-code).

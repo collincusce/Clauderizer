@@ -221,7 +221,9 @@ def test_init_adopts_existing_wsl_wiring(empty_python_repo):
     mcp.write_text(json.dumps({"mcpServers": {"clauderizer": {
         "command": "wsl.exe", "args": ["-d", "ubuntu", "/old/clauderizer-mcp"]}}}),
         encoding="utf-8")
-    report = init(empty_python_repo, spawn_test=False)
+    # Scoped Claude-only keeps session_host-composed .mcp.json (wsl.exe).
+    # Bare multi-host init would write portable uvx instead (D-046).
+    report = init(empty_python_repo, spawn_test=False, host_target="claude-code")
     assert report.session_host == "windows-wsl:ubuntu"
     entry = json.loads(mcp.read_text(encoding="utf-8"))["mcpServers"]["clauderizer"]
     assert entry["command"] == "wsl.exe"
@@ -255,10 +257,11 @@ def test_init_explicit_flag_wins_and_persists(empty_python_repo):
 
 
 def test_init_shimmed_rerun_is_idempotent(empty_python_repo):
-    init(empty_python_repo, session_host="windows-wsl:ubuntu", spawn_test=False)
+    init(empty_python_repo, session_host="windows-wsl:ubuntu", spawn_test=False,
+         host_target="claude-code")
     snap = {p: p.read_text(encoding="utf-8")
             for p in sorted(empty_python_repo.rglob("*")) if p.is_file()}
-    report2 = init(empty_python_repo, spawn_test=False)
+    report2 = init(empty_python_repo, spawn_test=False, host_target="claude-code")
     assert report2.changed == []
     for p, before in snap.items():
         assert p.read_text(encoding="utf-8") == before, p
@@ -294,7 +297,10 @@ def test_init_spawn_test_passes_on_real_console_scripts(empty_python_repo):
 def test_init_unverifiable_warns_but_writes(empty_python_repo, monkeypatch):
     monkeypatch.setattr(hosts.shutil, "which", lambda n: None)
     monkeypatch.setattr(hosts.sys, "platform", "linux")
-    report = init(empty_python_repo, session_host="windows-wsl:ubuntu")
+    # Scoped Claude-only keeps session_host composition (wsl.exe); multi default
+    # uses portable .mcp.json (D-046).
+    report = init(empty_python_repo, session_host="windows-wsl:ubuntu",
+                  host_target="claude-code")
     assert report.warnings and "unverifiable" in report.warnings[0]
     entry = json.loads((empty_python_repo / ".mcp.json").read_text(
         encoding="utf-8"))["mcpServers"]["clauderizer"]
@@ -319,7 +325,8 @@ def test_doctor_native_repo_stays_green(empty_python_repo, monkeypatch, capsys):
 
 
 def test_doctor_reports_unverifiable_never_green(empty_python_repo, monkeypatch, capsys):
-    init(empty_python_repo, session_host="windows-wsl:ubuntu", spawn_test=False)
+    init(empty_python_repo, session_host="windows-wsl:ubuntu", spawn_test=False,
+         host_target="claude-code")
     monkeypatch.setattr(hosts.shutil, "which", lambda n: None)  # no interop round-trip
     monkeypatch.setattr(hosts.sys, "platform", "linux")
     # a host with no interop has no /mnt/c Git Bash either (D-010 executor leg)
@@ -336,7 +343,8 @@ def test_doctor_reports_unverifiable_never_green(empty_python_repo, monkeypatch,
 
 
 def test_doctor_nudges_unrecorded_shimmed_wiring(empty_python_repo, monkeypatch, capsys):
-    init(empty_python_repo, session_host="windows-wsl:ubuntu", spawn_test=False)
+    init(empty_python_repo, session_host="windows-wsl:ubuntu", spawn_test=False,
+         host_target="claude-code")
     cfg_file = empty_python_repo / ".clauderizer" / "config.toml"
     cfg = Config.load(cfg_file)
     cfg.session_host = None  # simulate a pre-phase-2 config

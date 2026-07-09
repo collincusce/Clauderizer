@@ -53,7 +53,7 @@ hope:
 | 🎛️ **Configurable** | A real `pet` / `standard` / `saas` size dial and host-language profiles — *data*, not prose advice. |
 | 🤖 **Agentic** | Cascade, pre-flight, and handoff assembly are real tool calls — not instructions the agent has to remember to run. |
 | 📦 **Drop-in** | One command clauderizes any repo, in any language. |
-| 🧩 **Host-portable** | One install targets your agent — Claude Code, Cursor, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp, Continue, Zed, kimi, or Grok Build TUI. Host-neutral MCP + an injection-parity ladder, not a Claude-only bet. |
+| 🧩 **Host-portable** | One install wires **every** supported agent by default (Claude Code, Cursor, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp, Continue, Zed, kimi, Grok Build TUI). `--host` is an optional scope filter — multi-AI repos need no re-init per tool. |
 
 > **Markdown is the source of truth.** The graph index is a disposable cache rebuilt from the
 > markdown on demand — if they ever disagree, markdown wins. No database, no lock-in: your
@@ -433,33 +433,35 @@ clobbers your content (marker blocks, key-scoped JSON merges, exists-checks). Ru
 *runnable by the host that spawns your sessions* — and that the engine it reaches is the
 version answering the doctor (a green check on a broken setup is worse than no check).
 
-## Works with your agent
+## Works with your agent(s)
 
-The MCP server is host-neutral (`uvx --from clauderizer clauderizer-mcp` — never a machine
-path), so one install targets whichever agent you drive. `init` reads the **host target** from
-config (`[host] target`, default `claude-code`) and writes that host's MCP config in its own
-place — non-destructively, preserving any other servers:
+The MCP server is host-neutral (`uvx --from "clauderizer[mcp]" clauderizer-mcp` — never a
+machine path). **Bare `clauderize init` wires every supported agent at once** (D-046) —
+non-destructive merges, path-safe portable commands — so a multi-AI team does not re-init
+per tool. `--host <name>` is an optional **scope filter** (only touch that host's files).
 
 **12 supported hosts** — Claude Code · Cursor · GitHub Copilot / VS Code · OpenAI Codex CLI ·
 Google Gemini CLI · Windsurf · Cline · Amp · Continue.dev · Zed · kimi · **Grok Build TUI**.
 
 How a session learns where things stand degrades gracefully — best reachable tier wins, and
-status is delivered at most once per session:
+status is delivered at most once per session (runtime-detected agent, D-047):
 
 - **Hook hosts** get it **automatically** — the lifecycle hook injects the status digest at
   session start (Claude Code, kimi, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp).
 - **Prompt hosts** get a **`/cz-status`** slash command (Cursor, Copilot, Continue, Gemini, Zed).
 - **Grok Build TUI** has lifecycle hooks, but passive SessionStart stdout is **not** model
-  context — use `clauderize init --host grok` for portable `.mcp.json` + governance
-  `.grok/hooks/`; cold orientation is the AGENTS.md floor + P7 server bootstrap (not Tier-1).
+  context (Hook→ctx=no). Cold orientation is the AGENTS.md floor + P7 server bootstrap.
 - **Everyone** gets the floor: `AGENTS.md` (or a native rules file for the few hosts that don't
   read it) tells the agent to call `cz_status` first — and the MCP server attaches a status note
   to the first tool call as an automatic fallback for hook-less / governance-hook hosts.
 
+If a host still needs a human step (Grok `/hooks-trust`, Amp `mcp approve`, TOML paste for
+Codex/kimi), `clauderize doctor` prints a **configure checklist** — advisory only, never a
+hard block (D-048).
+
 See **[docs/CROSS-HOST.md](https://github.com/collincusce/Clauderizer/blob/main/docs/CROSS-HOST.md)**
-for the full per-host capability matrix. Switching hosts later is `clauderize init --host <name>` (or a `[host] target`
-config edit + re-`init`); `clauderize uninstall` cleanly reverses the wiring,
-keeping your `docs/` memory.
+for the full per-host capability matrix. `clauderize uninstall` reverses the wiring footprint
+(`--host` scopes to one host); your `docs/` memory is always kept.
 
 ## The model
 
@@ -486,7 +488,7 @@ keeping your `docs/` memory.
 ```bash
 clauderize init [--size pet|standard|saas] [--profile auto|node|python|go|ruby]
                 [--gameplan "Name"] [--run-cmd "uvx --from clauderizer"]
-                [--host <name>] [--list-hosts]   # which agent tool drives this repo (default claude-code)
+                [--host <name>] [--list-hosts]   # multi-host default; --host scopes to one agent
                 [--session-host native|windows-wsl:<distro>] [--no-spawn-test]
 clauderize status [--json]   # the current digest
 clauderize gameplans [--all] [--json]   # list open gameplans (the portfolio); --all includes finished

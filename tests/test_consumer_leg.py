@@ -287,7 +287,10 @@ def test_live_unanchored_wrapper_fails_digest_probe(empty_python_repo):
 @live
 def test_live_doctor_green_through_executor_leg(empty_python_repo, monkeypatch, capsys):
     host = f"windows-wsl:{_DISTRO}"
-    init(empty_python_repo, session_host=host, spawn_test=False)
+    # Scoped Claude-only: session_host-composed MCP + hooks (multi default uses
+    # portable .mcp.json which is correct for multi-AI, not this executor-leg claim).
+    init(empty_python_repo, session_host=host, spawn_test=False,
+         host_target="claude-code")
     monkeypatch.chdir(empty_python_repo)
     rc = cli.main(["doctor"])
     out = capsys.readouterr().out

@@ -20,7 +20,7 @@ def test_emit_writes_portable_config(tmp_path):
     entry = data["mcpServers"]["clauderizer"]
     # machine-independent uvx form — no absolute path, no wsl.exe shim (D-031)
     assert entry["command"] == "uvx"
-    assert "clauderizer" in entry["args"]
+    assert any("clauderizer" in a for a in entry["args"])  # package or clauderizer[mcp]
     assert ht.is_path_safe([entry["command"], *entry["args"]])
 
 

@@ -245,6 +245,25 @@ def test_grok_should_inject_when_undelivered(temp_repo, monkeypatch):
     assert session.should_inject("grok") is False
 
 
+def test_detect_session_agent_markers():
+    assert session.detect_session_agent({"GROK_AGENT": "1"}) == "grok"
+    assert session.detect_session_agent({"CURSOR_TRACE_ID": "x"}) == "cursor"
+    assert session.detect_session_agent({"CLAUDECODE": "1"}) == "claude-code"
+    assert session.detect_session_agent({}) is None
+    # Grok wins over Claude-compat CLAUDE_PROJECT_DIR
+    assert session.detect_session_agent({
+        "GROK_AGENT": "1", "CLAUDE_PROJECT_DIR": "/tmp/x",
+    }) == "grok"
+
+
+def test_effective_host_target_multi_safe_when_unknown():
+    # Never assume claude-code just because config says so — P7 must fire (D-047)
+    assert session.effective_host_target("claude-code", env={}) == "unknown"
+    assert session.delivers_status_via_hook("unknown") is False
+    assert session.should_inject("unknown") is True
+    assert session.effective_host_target("claude-code", env={"GROK_AGENT": "1"}) == "grok"
+
+
 def test_prompt_cz_status_returns_digest_and_marks(temp_repo, monkeypatch):
     monkeypatch.chdir(temp_repo)
     assert session.status_delivered() is False

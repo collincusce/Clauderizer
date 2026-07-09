@@ -32,7 +32,7 @@ class ConfigError(ValueError):
 _MODELED_KEYS: dict[str, set[str]] = {
     "clauderizer": {"version", "size", "preflight_checks", "preflight_advisory",
                     "procedure_version"},
-    "host": {"profile", "session_host", "target"},
+    "host": {"profile", "session_host", "target", "enabled"},
     "paths": {"docs", "gameplans"},
     "memory": {"active_lessons_warn", "project_lessons_warn"},
     "modules": {"enabled"},
@@ -111,12 +111,14 @@ class Config:
     # (D3, agent-autonomy). None = recorded by no init yet — treated as native,
     # but doctor can tell the difference and nudge a re-init.
     session_host: str | None = None
-    # Which agent tool drives the session: "claude-code" (default), "cursor",
-    # "copilot", "continue", "zed", ... — the THIRD host axis (D-028), orthogonal
-    # to host_profile (language) and session_host (where commands run). Gates the
-    # cross-host injection ladder (session.py). Default keeps exact Claude Code
-    # behaviour (INVARIANT-07).
+    # Session-agent preference (D-028 / D-047): which agent tool is assumed when
+    # runtime detection cannot tell. NOT the exclusive wiring identity — see
+    # enabled_hosts. Default keeps Claude Code doctor/hook primary (INVARIANT-07).
     host_target: str = "claude-code"
+    # Which hosts this repo is WIRED for (D-046). ["*"] = all project-level hosts
+    # (the multi-AI default). A concrete list scopes the footprint; legacy configs
+    # without this key load as ["*"] so the next bare init expands (O-03).
+    enabled_hosts: list[str] = field(default_factory=lambda: ["*"])
     docs: str = "docs"
     gameplans: str = "docs/gameplans"
     modules: list[str] = field(default_factory=list)
@@ -216,6 +218,9 @@ class Config:
                 host_profile=str(host.get("profile", "generic")),
                 session_host=(str(host["session_host"]) if host.get("session_host") else None),
                 host_target=str(host.get("target", "claude-code")),
+                # Missing `enabled` → multi default (D-046); bare re-init expands.
+                enabled_hosts=list(host["enabled"]) if host.get("enabled") is not None
+                else ["*"],
                 docs=str(paths.get("docs", "docs")),
                 gameplans=str(paths.get("gameplans", "docs/gameplans")),
                 modules=list(modules.get("enabled", [])),
@@ -257,6 +262,7 @@ class Config:
             "[host]",
             f'profile = "{self.host_profile}"',
             f'target = "{self.host_target}"',
+            _toml_kv("enabled", self.enabled_hosts or ["*"]),
             *([f'session_host = "{self.session_host}"'] if self.session_host else []),
             *ex("host"),
             "",
@@ -320,6 +326,8 @@ def merge_missing(existing: Config, defaults: Config) -> Config:
         host_profile=existing.host_profile or defaults.host_profile,
         session_host=existing.session_host or defaults.session_host,
         host_target=existing.host_target or defaults.host_target,
+        enabled_hosts=list(existing.enabled_hosts)
+        if existing.enabled_hosts else list(defaults.enabled_hosts or ["*"]),
         docs=existing.docs or defaults.docs,
         gameplans=existing.gameplans or defaults.gameplans,
         modules=existing.modules or defaults.modules,

@@ -21,9 +21,11 @@ harness, under *your* trust settings, chooses to run it.
 All writes happen in `clauderizer.scaffold.init.init()` — read it; it's one
 function.
 
-The exact paths depend on the configured **host target** (`[host] target` in
-`.clauderizer/config.toml`, default `claude-code`). The MCP-config surface and
-the hook surface are written per host; everything else is the same across hosts.
+Bare `init` wires **all** project-level hosts by default (`[host] enabled = ["*"]`,
+D-046). `--host <name>` scopes a run to one host. Session preference is still
+`[host] target` (display / doctor primary); runtime bootstrap uses env detection
+(D-047). The MCP-config surface and hook surface are written per host; everything
+else is the same across hosts.
 
 | Surface | What | Contract |
 |---|---|---|
@@ -39,9 +41,11 @@ the hook surface are written per host; everything else is the same across hosts.
 ### Per-host MCP config — where the entry lands
 
 For every **non-`claude-code`** host the emitted command is machine-INDEPENDENT
-(`uvx --from clauderizer clauderizer-mcp`; absolute venv paths and `wsl.exe`
-shims are refused at write time — `hosttargets.is_path_safe`), because
-those configs are the ones most likely to be committed and shared. The
+(`uvx --from "clauderizer[mcp]" clauderizer-mcp`; absolute venv paths and `wsl.exe`
+shims are refused at write time for multi-host / auto-write emitters —
+`hosttargets.is_path_safe`), because those configs are the ones most likely to be
+committed and shared. Scoped Claude-only init may still use a local/shimmed
+`.mcp.json` for dogfood reliability (gitignored when not portable). The
 `claude-code` `.mcp.json` is composed by `_resolve_invocation` and prefers your
 LOCAL install (a venv/console-script path, or a `wsl.exe` shim for a
 Windows→WSL session host) for launch reliability — so it can be machine-specific

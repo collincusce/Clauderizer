@@ -19,6 +19,8 @@ the server (mcp_server.py) supplies the live status string and applies the resul
 
 from __future__ import annotations
 
+import os
+
 # Host targets whose own lifecycle hook already delivers the status digest. On
 # these the server MUST stay silent — a second delivery would violate INVARIANT-08
 # (at most once) and D-027 (trim-first). This is the code form of the
@@ -70,6 +72,66 @@ def reset() -> None:
     the flag's whole point is to persist for the life of the server process."""
     global _delivered
     _delivered = False
+
+
+# --- runtime session-agent detection (D-047) ------------------------------------
+# Wiring (which configs exist on disk) is multi-host. Bootstrap routing needs the
+# agent driving THIS process. Prefer env markers; when unsure, return None so
+# callers use multi-safe hook-less behavior (P7 on) rather than assuming Claude.
+
+def detect_session_agent(env: dict[str, str] | None = None) -> str | None:
+    """Best-effort id of the agent tool running this process, or None if unknown.
+
+    Order is specific → general so Claude-compat env vars set by other hosts
+    (e.g. Grok's CLAUDE_PROJECT_DIR for hooks) do not mis-route to claude-code.
+    """
+    e = env if env is not None else os.environ
+    # Grok Build TUI
+    if e.get("GROK_AGENT") or e.get("GROK_SESSION_ID") or e.get("GROK_WORKSPACE_ROOT"):
+        return "grok"
+    # Cursor
+    if e.get("CURSOR_TRACE_ID") or e.get("CURSOR_AGENT") or e.get("CURSOR_SESSION_ID"):
+        return "cursor"
+    # OpenAI Codex CLI
+    if e.get("CODEX_CI") or e.get("CODEX_THREAD_ID") or (e.get("TERM_PROGRAM") or "") == "codex":
+        return "codex"
+    # GitHub Copilot / VS Code agent (weak — only when agent-ish markers present)
+    if e.get("COPILOT_AGENT") or e.get("GITHUB_COPILOT_TOKEN"):
+        return "copilot"
+    # Gemini CLI
+    if e.get("GEMINI_CLI") or e.get("GEMINI_CLI_SESSION"):
+        return "gemini-cli"
+    # Claude Code (after Grok — Grok also sets CLAUDE_PROJECT_DIR for hook compat)
+    if e.get("CLAUDECODE") or e.get("CLAUDE_CODE_ENTRYPOINT") or e.get("CLAUDE_CODE_SESSION"):
+        return "claude-code"
+    if e.get("CLAUDE_PROJECT_DIR") and not e.get("GROK_AGENT"):
+        # Ambiguous alone (Grok sets it too) — only trust with other Claude signals
+        if e.get("ANTHROPIC_API_KEY") or e.get("CLAUDE_CODE"):
+            return "claude-code"
+    return None
+
+
+def effective_host_target(
+    config_target: str | None = None,
+    *,
+    env: dict[str, str] | None = None,
+) -> str:
+    """Host id for injection routing this process (D-047).
+
+    1. Runtime detection wins when confident.
+    2. If detection is unknown, return a synthetic multi-safe id that is NOT in
+       ``_HOOK_HOSTS`` so P7 bootstrap still fires — never suppress bootstrap
+       solely because config.target is claude-code or Claude files exist on disk.
+    3. Config target is only used when detection agrees or when an explicit
+       non-default override is needed; unknown stays multi-safe.
+    """
+    detected = detect_session_agent(env)
+    if detected:
+        return detected
+    # Multi-safe default: treat as hook-less (best_tier 4 path).
+    # Callers that need the config preference for *display* still read config.
+    _ = config_target  # reserved for future explicit session_agent override
+    return "unknown"
 
 
 def delivers_status_via_hook(host_target: str | None) -> bool:

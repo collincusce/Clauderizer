@@ -4,18 +4,24 @@ All notable changes to Clauderizer are documented here.
 
 ## [Unreleased]
 
+### Multi-host default wiring (gameplan `2026-07-09-multi-host-default-wiring`)
+
+- **Bare `clauderize init` wires every supported agent** (D-046) — Claude Code hooks
+  + all auto-write MCP configs + guide-only setup docs. Non-destructive, path-safe
+  (`uvx --from "clauderizer[mcp]" clauderizer-mcp`). Multi-AI repos need no per-tool re-init.
+- **`--host <name>` is a scope filter**, not exclusive identity. Config records
+  `enabled = ["*"]` (or a concrete list); legacy configs without `enabled` load as multi.
+- **Runtime session-agent detection** (D-047) — env markers (`GROK_AGENT`, `CLAUDECODE`,
+  Cursor/Codex signals, …). When unknown, multi-safe hook-less default so P7 bootstrap
+  still fires; never suppress bootstrap solely because Claude files exist on disk.
+- **Doctor configure-on-demand** (D-048) — per-host readiness + human steps
+  (Grok `/hooks-trust`, Amp approve, TOML guides); advisory only (INVARIANT-05).
+- Decisions **D-046**, **D-047**, **D-048**.
+
 ### Grok Build TUI host-target (gameplan `2026-07-09-grok-build-tui-host-support`)
 
-- **`clauderize init --host grok`** — first-class host-target: portable path-safe
-  `.mcp.json`, governance hooks under `.grok/hooks/clauderizer.json` (native-safe
-  command; no `wsl.exe`), honesty setup guide, AGENTS.md floor. Claude Code wiring
-  is never rewritten (INVARIANT-07).
-- **Honest injection tier** — Grok SessionStart **stdout is not model context**
-  (Hook→ctx=no). `grok` is **not** in `session._HOOK_HOSTS`, so P7 server bootstrap
-  still fires; `best_tier("grok") == 4`. Docs never claim Tier-1 digest injection.
-- **Doctor** — grok branch checks AGENTS.md floor, MCP registration, optional
-  governance hooks, path-safety advisory; no false Claude `.claude/settings.json` drift.
-- **Matrix** — `docs/CROSS-HOST.md` + README host list: **12** supported hosts.
+- **`grok` first-class host** — portable `.mcp.json`, governance `.grok/hooks/`, honesty
+  guide. Hook→ctx=**no** (`best_tier` 4 + P7). Never in `_HOOK_HOSTS`. **12** hosts in matrix.
 
 ## [1.5.3] — 2026-07-02
 
