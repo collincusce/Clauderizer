@@ -2,10 +2,13 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [1.8.0] — 2026-07-16
+## [1.7.0] — 2026-07-16
 
-Self-audit after every gameplan — Clauderizer audits its own work (gameplan
-`2026-07-16-self-audit-ritual-after-every-gameplan`, D-051). Stacks on 1.7.0.
+Two things: **Kimi Code CLI becomes a first-class auto-write host** (out-of-the-box
+MCP for the **Kimi K3** model), and **Clauderizer now audits its own work after every
+gameplan** (`cz_audit`).
+
+### Self-audit after every gameplan (gameplan `2026-07-16-self-audit-ritual-after-every-gameplan`, D-051)
 
 - **New `cz_audit` gate** — an advisory (INVARIANT-05) work/release self-audit,
   distinct from `cz_critique` (which audits memory coherence). Mechanical signals:
@@ -19,14 +22,12 @@ Self-audit after every gameplan — Clauderizer audits its own work (gameplan
 - **Runs at every gameplan close** — the shipped `clauderizer-close-gameplan`
   skill and `GAMEPLAN-PROCEDURE.md` (bumped to procedure **v1.7.0**) invoke
   `cz_audit` before the post-mortem, so every install audits its own work.
-- Born from a real miss in 1.7.0's own release: a version bumped in `pyproject.toml`
-  but left stale in `__init__.py`, green locally on a stale editable venv, caught
-  only by a clean CI install. `cz_audit`'s headline check now catches exactly that.
+- Born from a real miss caught during this very release: a version bumped in
+  `pyproject.toml` but left stale in `__init__.py`, green locally on a stale
+  editable venv, exposed only by a clean CI install. `cz_audit`'s headline check
+  (plus an install-independent guard test) now catches exactly that.
 
-## [1.7.0] — 2026-07-16
-
-Kimi Code CLI is now a first-class auto-write host — out-of-the-box MCP for the
-Kimi K3 model (gameplan `2026-07-16-kimi-code-truth-up-k3-mcp-autowrite`).
+### Kimi Code CLI host (gameplan `2026-07-16-kimi-code-truth-up-k3-mcp-autowrite`)
 
 - **`kimi` host repointed to Kimi Code CLI** (D-049) — the successor to the legacy
   Kimi CLI, and the host that serves **Kimi K3**. Its MCP is now **auto-written** to

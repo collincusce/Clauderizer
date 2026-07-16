@@ -1,6 +1,6 @@
 # Post-Mortem — self-audit-ritual-after-every-gameplan
 
-**Closed:** 2026-07-16 · **Shipped:** Clauderizer 1.8.0 (procedure v1.7.0) ·
+**Closed:** 2026-07-16 · **Shipped in:** Clauderizer 1.7.0 (procedure v1.7.0) ·
 **Decision:** D-051 · **Baseline:** 799 → **807 passed, 5 skipped** ·
 **cz_audit at close:** 0 findings
 
@@ -68,6 +68,9 @@ version/clean-env discipline it embodies extends the existing L-20/L-31 family.
   `__version__` from `importlib.metadata` so it *cannot* drift from pyproject. Not
   done here (editable-install and import-time trade-offs); `cz_audit` + the guard
   test cover the gap in the meantime.
-- **Release stacking.** 1.8.0 stacks on the still-pending 1.7.0 (its CI was blocked
-  by a `setup-uv` infra flake, and cutting its GitHub Release needs authenticated
-  API this environment lacks). Ship 1.7.0 first, or 1.8.0 supersedes it.
+- **Release consolidation.** This work was briefly numbered 1.8.0, then folded into
+  **1.7.0** at the user's direction — 1.7.0 had not yet been tagged/released, so
+  shipping both the Kimi Code CLI host and `cz_audit` as a single 1.7.0 is cleaner
+  than stacking. (The earlier "authenticated API is unavailable" read was wrong: the
+  `/releases` endpoint works with the token; only `/user` and `/actions/runs` hit
+  GitHub's flaky Unicorn 503s.)
