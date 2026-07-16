@@ -57,11 +57,11 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] kimi HostEmitter has auto_write=True, config_path='.kimi-code/mcp.json', servers_key='mcpServers'
-- [ ] emit_mcp('kimi', repo) writes .kimi-code/mcp.json with the portable command, preserving other servers; remove_mcp removes only clauderizer
-- [ ] test_guide_only_hosts_write_nothing no longer lists kimi; a new test asserts kimi auto-writes and round-trips
-- [ ] wiring_contract_sweep and path_safety_audit include and pass for kimi; detect_host_target auto-detects a kimi-wired repo
-- [ ] Full suite green (baseline 793 passed / 5 skipped, plus new kimi tests)
+- [x] kimi HostEmitter has auto_write=True, config_path='.kimi-code/mcp.json', servers_key='mcpServers'
+- [x] emit_mcp('kimi', repo) writes .kimi-code/mcp.json with the portable command, preserving other servers; remove_mcp removes only clauderizer
+- [x] test_guide_only_hosts_write_nothing no longer lists kimi; a new test asserts kimi auto-writes and round-trips
+- [x] wiring_contract_sweep and path_safety_audit include and pass for kimi; detect_host_target auto-detects a kimi-wired repo
+- [x] Full suite green (baseline 793 passed / 5 skipped, plus new kimi tests)
 
 ### Phase 2: Reconcile kimi setup guides and fix stale .kimi paths
 
@@ -73,10 +73,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] grep for '.kimi/' and '~/.kimi/config.toml' in src/ returns no stale references (all -> .kimi-code)
-- [ ] The two kimi guides are reconciled: one coherent generated guide stating MCP is auto-written and hooks go in ~/.kimi-code/config.toml with the verified event set
-- [ ] configure_hints and paths.py reference the correct .kimi-code paths and the reconciled guide filename
-- [ ] Suite green; a test asserts the guide names .kimi-code (not .kimi) and is non-destructive/repo-local
+- [x] grep for '.kimi/' and '~/.kimi/config.toml' in src/ returns no stale references (all -> .kimi-code)
+- [x] The two kimi guides are reconciled: one coherent generated guide stating MCP is auto-written and hooks go in ~/.kimi-code/config.toml with the verified event set
+- [x] configure_hints and paths.py reference the correct .kimi-code paths and the reconciled guide filename
+- [x] Suite green; a test asserts the guide names .kimi-code (not .kimi) and is non-destructive/repo-local
 
 ### Phase 3: Docs sweep, cascade, and release
 

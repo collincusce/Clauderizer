@@ -76,9 +76,50 @@ def test_emit_refuses_machine_specific_command(tmp_path):
 
 
 def test_guide_only_hosts_write_nothing(tmp_path):
-    for host in ("codex", "windsurf", "kimi"):       # TOML / global -> guide-only
+    for host in ("codex", "windsurf"):               # TOML / global -> guide-only
         assert ht.emit_mcp(host, tmp_path) is None
     assert not any(tmp_path.rglob("*.json"))         # nothing auto-written
+
+
+def test_kimi_code_auto_writes_project_mcp_json(tmp_path):
+    # D-049: Kimi Code CLI (serves Kimi K3) registers MCP in a project-level
+    # .kimi-code/mcp.json with the same {"mcpServers": {command,args}} shape as
+    # Cursor — so kimi is a first-class auto-write host, not guide-only.
+    path = ht.emit_mcp("kimi", tmp_path)
+    assert path == tmp_path / ".kimi-code" / "mcp.json"
+    entry = _read(path)["mcpServers"]["clauderizer"]
+    assert entry["command"] == "uvx"
+    assert ht.is_path_safe([entry["command"], *entry["args"]])
+
+
+def test_kimi_code_emit_is_non_destructive(tmp_path):
+    # a user's own kimi-code server must survive the clauderizer emit
+    cfg = tmp_path / ".kimi-code" / "mcp.json"
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text(json.dumps({"mcpServers": {"linear": {"url": "https://x"}}}),
+                   encoding="utf-8")
+    ht.emit_mcp("kimi", tmp_path)
+    servers = _read(cfg)["mcpServers"]
+    assert servers["linear"] == {"url": "https://x"}   # untouched
+    assert "clauderizer" in servers                     # added alongside
+
+
+def test_kimi_code_uninstall_removes_only_clauderizer(tmp_path):
+    ht.emit_mcp("kimi", tmp_path)
+    cfg = tmp_path / ".kimi-code" / "mcp.json"
+    data = _read(cfg)
+    data["mcpServers"]["other"] = {"command": "x"}
+    cfg.write_text(json.dumps(data), encoding="utf-8")
+    assert ht.remove_mcp("kimi", tmp_path) is True
+    servers = _read(cfg)["mcpServers"]
+    assert "clauderizer" not in servers
+    assert servers["other"] == {"command": "x"}
+
+
+def test_detect_host_target_finds_kimi_code(tmp_path):
+    # a repo whose .kimi-code/mcp.json carries a clauderizer entry auto-detects kimi
+    ht.emit_mcp("kimi", tmp_path)
+    assert ht.detect_host_target(tmp_path) == "kimi"
 
 
 def test_uninstall_removes_only_clauderizer(tmp_path):

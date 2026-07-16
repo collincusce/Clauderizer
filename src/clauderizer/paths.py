@@ -92,9 +92,11 @@ class RepoPaths:
 
     @property
     def kimi_setup(self) -> Path:
-        """The generated, non-destructive kimi-code wiring guide (D2): the
-        [[hooks]] snippet + MCP guidance the user merges into their own kimi
-        config. init never edits the global ~/.kimi/config.toml itself."""
+        """The generated Kimi Code CLI setup guide (D-049): MCP is auto-written to
+        .kimi-code/mcp.json; this guide carries the guide-only pieces — the
+        [[hooks]] snippet the user merges into ~/.kimi-code/config.toml and how to
+        expose skills (Kimi Code CLI does not read .claude/skills). init never
+        edits the global ~/.kimi-code/config.toml itself."""
         return self.clauderizer_dir / "kimi-setup.md"
 
     @property

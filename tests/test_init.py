@@ -244,26 +244,30 @@ def test_init_writes_kimi_setup_with_all_four_events(empty_python_repo):
     init(empty_python_repo, spawn_test=False)
     setup = empty_python_repo / ".clauderizer" / "kimi-setup.md"
     text = setup.read_text(encoding="utf-8")
-    # kimi injects ALL hook stdout, so the snippet wires every event (D1)
+    # Kimi Code CLI injects hook stdout on exit 0; the guide wires the four
+    # digest-relevant events (D-049) with the portable engine hook command
     for ev in ("SessionStart", "PreCompact", "PostCompact", "UserPromptSubmit"):
         assert f'event = "{ev}"' in text, ev
     assert "[[hooks]]" in text
-    # the real wrapper command — hook.sh (posix/wsl) or hook.cmd (native win32);
-    # the path separator differs per platform, so match the file, not the slash
-    assert "hook.sh" in text or "hook.cmd" in text
-    assert "clauderizer-mcp" in text or "clauderizer.hook" in text or ".mcp.json" in text
+    assert "clauderizer-hook" in text                 # portable engine hook command
+    assert "~/.kimi-code/config.toml" in text         # correct successor config path
 
 
-def test_kimi_setup_is_non_destructive_and_repo_local(empty_python_repo):
+def test_kimi_setup_targets_kimi_code_and_notes_skills(empty_python_repo):
     from clauderizer.paths import resolve
     init(empty_python_repo, spawn_test=False)
     setup = resolve(empty_python_repo).kimi_setup
     # the artifact lives under the repo's .clauderizer/, never the global config
     assert setup.parent.name == ".clauderizer"
     assert empty_python_repo in setup.parents
-    # the non-destructive promise (robust to line-wrapping in the prose)
     text = " ".join(setup.read_text(encoding="utf-8").split())
-    assert "NOT applied automatically" in text
-    assert "never edits your global `~/.kimi/config.toml`" in text
-    # init created no kimi config anywhere in the repo tree
+    # hooks stay guide-only — the global config is never auto-edited (D-049)
+    assert "does NOT edit your global `~/.kimi-code/config.toml`" in text \
+        or "not edit your global `~/.kimi-code/config.toml`" in text \
+        or "NOT edit your global `~/.kimi-code/config.toml`" in text
+    # skills need explicit exposure (Kimi Code CLI ignores .claude/skills)
+    assert ".agents/skills" in text or ".kimi-code/skills" in text
+    # MCP is auto-written to the project config (the out-of-the-box win)
+    assert (empty_python_repo / ".kimi-code" / "mcp.json").exists()
+    # the legacy Kimi CLI dir (~/.kimi) is never created in the repo tree
     assert not (empty_python_repo / ".kimi").exists()
