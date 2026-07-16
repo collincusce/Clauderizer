@@ -2,10 +2,11 @@
 
 The cross-host injection-parity ladder (D-034, docs/CROSS-HOST.md) must deliver the
 Clauderizer status to the model **at most once per session**, across all active
-tiers. On hook hosts (Claude Code, kimi, Copilot, Codex, ...) the host's own
+tiers. On hook hosts (Claude Code, Copilot, Codex, ...) the host's own
 lifecycle hook delivers it; on hook-less hosts (Cursor-if-governance, Continue,
-Zed) the MCP server is the only automatic path — via the write-first
-self-correction here and the Phase-7 bootstrap.
+Zed, kimi — whose injecting hooks are guide-only, not auto-wired, D-050) the MCP
+server is the only automatic path — via the write-first self-correction here and
+the Phase-7 bootstrap.
 
 This module holds that signal: a process-global flag, **in memory only** — never
 persisted, never a config/enable flag (INVARIANT-05/08). It is meaningful only
@@ -30,10 +31,18 @@ import os
 # Grok Build TUI is intentionally ABSENT: it has lifecycle hooks, but passive
 # SessionStart stdout is ignored (Hook→ctx=no). Putting "grok" here would
 # suppress P7 server bootstrap and leave cold sessions dark (D1 / D-045).
+#
+# kimi (Kimi Code CLI) is ALSO absent (D-050): its hooks DO inject on exit 0, but
+# Clauderizer cannot auto-wire them — its MCP is auto-written to .kimi-code/mcp.json
+# while the hooks stay a guide (TOML in ~/.kimi-code/config.toml, zero-dep invariant).
+# A default `clauderize init` kimi repo therefore has NO status-delivering hook, so
+# the automatic path is the P7 server bootstrap; claiming auto hook-delivery here
+# would risk the same dark-session trap as grok if kimi runtime detection is added.
+# (Behaviorally inert today: a kimi session sets no marker → effective_host_target →
+# "unknown" → bootstrap already fires. This keeps best_tier/delivers_status honest.)
 _HOOK_HOSTS = frozenset(
     {
         "claude-code",
-        "kimi",
         "copilot",
         "codex",
         "gemini-cli",

@@ -57,6 +57,33 @@ at the correct `~/.kimi-code/config.toml`, with the skills-exposure gap document
   whose exit criteria include *product identity*, not just config schema — this one
   earned its place.
 
+## Follow-up review ("go max, check your work")
+
+A post-close adversarial pass — real CLI end-to-end runs plus a read of the adjacent
+injection subsystem — found three issues the phase tests missed, all now fixed:
+
+1. **Uninstall orphaned the guide.** `uninstall --host kimi` removed the MCP
+   registration but left `.clauderizer/kimi-setup.md` behind — the remover only knew
+   the `<host>-{hook,mcp}-setup.md` convention, and kimi's guide is bespoke-named.
+   Fixed + regression test (`test_uninstall_kimi_removes_mcp_and_setup_guide`).
+2. **Honesty regression on AGENTS.md.** The repoint inherited a guide line asserting
+   the AGENTS.md floor loads on kimi — but Kimi Code CLI's AGENTS.md read-status is
+   unverified (conflicting upstream signals). Reworded to lean on the **P7 server
+   bootstrap** as the reliable automatic orientation; CROSS-HOST matrix marked
+   AGENTS.md `unverified`.
+3. **`_HOOK_HOSTS` classification was dishonest (D-050).** kimi was listed as a
+   status-delivering hook host, but Clauderizer can't auto-wire its hooks (guide-only
+   TOML). Removed it — the bootstrap is its automatic path. Behaviorally inert (a real
+   kimi session resolves to `unknown` and already gets the bootstrap), but it makes
+   `best_tier`/`delivers_status_via_hook` honest and closes a dark-session footgun.
+
+Root cause across all three: the repoint changed *which product* the `kimi` host
+targets, and a successor can differ from its predecessor in more than paths (no
+auto-wired hook, uncertain AGENTS.md) — the same shape as L-49. Lesson reinforced:
+after repointing a host, re-audit every consumer that branched on the old host's
+assumed capabilities (uninstall naming, injection tier, floor delivery), not just the
+MCP path. Suite 797 → **798 passed, 5 skipped**.
+
 ## Open threads
 
 - **AGENTS.md read-status on Kimi Code CLI is likely-but-unconfirmed.** The

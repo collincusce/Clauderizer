@@ -22,6 +22,17 @@ Kimi K3 model (gameplan `2026-07-16-kimi-code-truth-up-k3-mcp-autowrite`).
   `PostCompact` — verified to inject stdout on exit 0) and documents **skills
   exposure**: Kimi Code CLI reads `.kimi-code/skills`/`.agents/skills`, **not**
   `.claude/skills`.
+- **Orientation is honest about kimi** (D-050). Clauderizer auto-wires kimi's MCP but
+  not its hooks, and Kimi Code CLI's AGENTS.md read-status is unverified — so `kimi`
+  is treated as **hook-less** for injection routing: the **P7 server bootstrap** (a
+  one-line status note on the first tool call) is its automatic orientation, exactly
+  like Grok. Removing `kimi` from the hook-host set is behaviorally inert today (a kimi
+  session sets no marker → resolves to `unknown` → the bootstrap already fires) but
+  makes `best_tier`/`delivers_status_via_hook` honest and prevents a dark-session
+  footgun if kimi runtime detection is ever added.
+- **Uninstall fix:** `clauderize uninstall --host kimi` now also removes the bespoke
+  `.clauderizer/kimi-setup.md` guide (it is specially named, not the
+  `<host>-mcp-setup.md` convention, so it was previously orphaned).
 - **Note on the split:** the legacy **Kimi CLI** (`~/.kimi/`, pip) and its successor
   **Kimi Code CLI** (`.kimi-code/`, npm) are distinct products; the `kimi` host id now
   targets the successor.

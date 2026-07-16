@@ -169,8 +169,10 @@ Because hosts vary in what they can auto-load, status reaches the agent by the *
 reachable tier** (delivered at most once per session):
 
 - **Tier 1 — hook (automatic):** the lifecycle hook injects the status digest at
-  session start (Claude Code, kimi, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp).
+  session start (Claude Code, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp).
   Grok Build TUI has hooks but **Hook→ctx=no** (passive stdout ignored) — not Tier-1.
+  kimi (Kimi Code CLI) has injecting hooks but Clauderizer can't auto-wire them
+  (guide-only TOML), so its automatic path is the P7 bootstrap until they're pasted (D-050).
 - **Tier 3 — prompt:** a user-invoked `/cz-status` slash command (Cursor, Copilot,
   Continue, Gemini, Zed).
 - **Tier 4 — floor (always present):** the instructions file (`AGENTS.md`, or a native

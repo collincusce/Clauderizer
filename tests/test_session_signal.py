@@ -32,10 +32,13 @@ def test_signal_starts_clear_and_marks():
 
 
 def test_hook_host_classification():
-    for hooked in ("claude-code", "kimi", "copilot", "codex", "gemini-cli",
+    for hooked in ("claude-code", "copilot", "codex", "gemini-cli",
                    "windsurf", "cline", "amp"):
         assert session.delivers_status_via_hook(hooked) is True
-    for hookless in ("continue", "zed", "cursor-gov", "totally-unknown"):
+    # kimi (Kimi Code CLI) is hook-CAPABLE but its hook is guide-only (not
+    # auto-wired), so a default install has no status-delivering hook → the P7
+    # bootstrap is its automatic path (D-050), same routing intent as grok.
+    for hookless in ("kimi", "grok", "continue", "zed", "cursor-gov", "totally-unknown"):
         assert session.delivers_status_via_hook(hookless) is False
     # unset -> default claude-code -> hook host (Claude Code parity, INVARIANT-07)
     assert session.delivers_status_via_hook(None) is True

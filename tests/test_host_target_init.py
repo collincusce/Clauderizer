@@ -288,6 +288,19 @@ def test_uninstall_grok_removes_hooks_preserves_claude(empty_python_repo):
         "command"] == "echo keep"
 
 
+def test_uninstall_kimi_removes_mcp_and_setup_guide(empty_python_repo):
+    # D-049: kimi auto-writes .kimi-code/mcp.json + the bespoke kimi-setup.md guide;
+    # host-scoped uninstall must remove BOTH (the guide is specially named, not the
+    # <host>-mcp-setup.md convention — regression for the orphaned-guide bug).
+    r = empty_python_repo
+    init(r, host_target="kimi", spawn_test=False)
+    assert (r / ".kimi-code" / "mcp.json").exists()
+    assert (r / ".clauderizer" / "kimi-setup.md").exists()
+    uninstall(r, host="kimi")
+    assert "clauderizer" not in _read(r / ".kimi-code" / "mcp.json").get("mcpServers", {})
+    assert not (r / ".clauderizer" / "kimi-setup.md").exists()   # not orphaned
+
+
 # --- writer.remove_marker_block (the P4-noted extension) -------------------------
 
 def test_remove_marker_block_preserves_user_content(tmp_path):

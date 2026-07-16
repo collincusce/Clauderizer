@@ -135,7 +135,12 @@ def _uninstall_host(root: Path, host: str, report: UninstallReport) -> None:
     rel = hosttargets.NATIVE_INSTRUCTIONS.get(host)
     if rel and writer.remove_marker_block(root / rel, "clauderizer"):
         report.note(f"{rel} floor block")
-    for name in (f"{host}-hook-setup.md", f"{host}-mcp-setup.md"):
+    # kimi uses a bespoke, single-sourced guide name (kimi-setup.md, D-049); the
+    # rest follow the <host>-{hook,mcp}-setup.md convention.
+    guide_names = (f"{host}-hook-setup.md", f"{host}-mcp-setup.md")
+    if host == "kimi":
+        guide_names = ("kimi-setup.md", *guide_names)
+    for name in guide_names:
         p = root / ".clauderizer" / name
         if p.exists():
             p.unlink()

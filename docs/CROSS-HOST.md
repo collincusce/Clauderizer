@@ -45,7 +45,7 @@ T=tools, R=resources, P=prompts. "Hook→ctx" = hook can inject into model conte
 | Host | MCP prims | Resource autoload | Hooks (events) | Hook→ctx | AGENTS.md native | MCP reg (scope) | Best tier | Write |
 |------|-----------|-------------------|----------------|----------|------------------|-----------------|-----------|-------|
 | **Claude Code** | T,R | no | SessionStart, UserPromptSubmit | **yes** | no (CLAUDE.md imports it) | `.mcp.json` (project) | **1** | auto |
-| **kimi (Kimi Code CLI)** | T,R | no | 13 events (4 inject) | **yes** | yes (AGENTS.md) | `.kimi-code/mcp.json` (project) | **1** | auto (MCP); guide (hooks TOML) |
+| **kimi (Kimi Code CLI)** | T,R | no | 13 events (4 inject) | **yes** (manual) | likely *(unverified)* | `.kimi-code/mcp.json` (project) | **1** if hooks wired, else P7 bootstrap | auto (MCP); guide (hooks TOML) |
 | **GitHub Copilot / VS Code** | T,R,P + sampling/elicit | no (manual @) | SessionStart, UserPromptSubmit, PreToolUse, PreCompact, Stop | **yes** | yes | `.vscode/mcp.json` (project) | **1** | auto |
 | **Codex CLI** | T (+server-instructions) | no | SessionStart, UserPromptSubmit, PreToolUse, PreCompact, Stop | **yes** | yes | `.codex/config.toml` (project) | **1** | guide* (TOML) |
 | **Gemini CLI** | T,R,P | no (manual @) | SessionStart, SessionEnd, BeforeAgent, AfterAgent | likely *(unverified)* | configurable (GEMINI.md default) | `.gemini/settings.json` (project) | **1** | auto |
@@ -83,17 +83,17 @@ Revised ladder (highest reachable wins; deliver **once per session** — INVARIA
 
 | Tier | Mechanism | Automatic? | Reachable on |
 |------|-----------|-----------|--------------|
-| **1** | Lifecycle hook injects status (host-native hook config) | **yes** | Claude Code, kimi, Copilot, Codex, Gemini, Windsurf, Cline (POSIX), Amp, (Cursor?) |
+| **1** | Lifecycle hook injects status (host-native hook config) | **yes** | Claude Code, Copilot, Codex, Gemini, Windsurf, Cline (POSIX), Amp, kimi *(manual wiring — hook is guide-only, D-050)*, (Cursor?) |
 | ~~2~~ | ~~Auto-loaded MCP resource~~ | — | **RETIRED — no host supports it** |
 | **3** | MCP prompt as `/cz-status` slash command | no (user-invoked) | Cursor, Copilot, Continue, Gemini, Zed |
 | **4** | Instructions-file "call `cz_status` first" floor | no (suggestion) | every host that reads an instructions file |
-| **(P7)** | Server-side bootstrap: status on first read-like tool result | **yes** | any MCP host — the automatic fallback where hooks are absent/governance-only (Cursor, Continue, Zed) |
+| **(P7)** | Server-side bootstrap: status on first read-like tool result | **yes** | any MCP host — the automatic fallback where hooks are absent/governance-only/not-auto-wired (Cursor, Continue, Zed, **kimi**) |
 
-**Consequence:** P7 (server-side bootstrap) is now *more* valuable, not less — it is the **only automatic** path for the hook-less Tier-3/4 hosts (Continue, Zed, and Cursor if its hooks prove governance-only).
+**Consequence:** P7 (server-side bootstrap) is now *more* valuable, not less — it is the **only automatic** path for the hook-less Tier-3/4 hosts (Continue, Zed, Cursor if its hooks prove governance-only) **and for kimi**, whose hook injects but is guide-only (not auto-wired), so a default `init` repo relies on the bootstrap until the user pastes the hook (D-050).
 
 ## 5. The AGENTS.md floor is the majority — not universal — substrate (refines D-029)
 
-AGENTS.md-native hosts (floor for free): Claude Code (via import), kimi, Copilot, Codex, Windsurf, Amp, Zed, Cursor. **Exceptions needing their native file written instead:**
+AGENTS.md-native hosts (floor for free): Claude Code (via import), Copilot, Codex, Windsurf, Amp, Zed, Cursor. (**kimi / Kimi Code CLI**: AGENTS.md read-status is *unverified* — the legacy Kimi CLI read it via `KIMI_AGENTS_MD`, but Kimi Code CLI's docs don't confirm it; orientation there does not depend on it — the P7 bootstrap covers it, D-050.) **Exceptions needing their native file written instead:**
 
 - **Continue.dev** → `.continue/rules/` (no AGENTS.md)
 - **Gemini CLI** → `GEMINI.md` (AGENTS.md only if configured)

@@ -451,10 +451,13 @@ How a session learns where things stand degrades gracefully — best reachable t
 status is delivered at most once per session (runtime-detected agent, D-047):
 
 - **Hook hosts** get it **automatically** — the lifecycle hook injects the status digest at
-  session start (Claude Code, kimi, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp).
+  session start (Claude Code, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp).
 - **Prompt hosts** get a **`/cz-status`** slash command (Cursor, Copilot, Continue, Gemini, Zed).
 - **Grok Build TUI** has lifecycle hooks, but passive SessionStart stdout is **not** model
   context (Hook→ctx=no). Cold orientation is the AGENTS.md floor + P7 server bootstrap.
+- **kimi (Kimi Code CLI)** has injecting hooks, but Clauderizer auto-wires only its MCP
+  (`.kimi-code/mcp.json`) — the hooks are guide-only, so orientation comes from the P7
+  bootstrap until you paste them into `~/.kimi-code/config.toml` (D-050).
 - **Everyone** gets the floor: `AGENTS.md` (or a native rules file for the few hosts that don't
   read it) tells the agent to call `cz_status` first — and the MCP server attaches a status note
   to the first tool call as an automatic fallback for hook-less / governance-hook hosts.

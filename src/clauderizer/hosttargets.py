@@ -515,11 +515,15 @@ The portable command it registers is:
 {mcp_cmd}
 ```
 
-## 2. AGENTS.md — already written
+## 2. Orientation — automatic via the MCP server
 
-`clauderize init` injects the Clauderizer stanza into `AGENTS.md` (inside a
-`<!-- clauderizer -->` marker block). Kimi Code CLI ships an AGENTS.md convention,
-so the "call `cz_status` first" floor is loaded from there.
+`clauderize init` writes the Clauderizer stanza into `AGENTS.md` (a
+`<!-- clauderizer -->` marker block). If your Kimi Code CLI reads `AGENTS.md`, the
+"call `cz_status` first" floor is loaded from there. **Either way**, the Clauderizer
+MCP server attaches a one-line status note to the **first tool call** of a session
+(server bootstrap), so the agent is oriented even without `AGENTS.md` or hooks —
+this is the reliable automatic path on Kimi Code CLI. Wiring the hooks below just
+makes it arrive at session start instead.
 
 ## 3. Session-start hooks — add to `~/.kimi-code/config.toml`
 
