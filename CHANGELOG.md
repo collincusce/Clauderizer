@@ -2,6 +2,30 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.7.0] — 2026-07-16
+
+Kimi Code CLI is now a first-class auto-write host — out-of-the-box MCP for the
+Kimi K3 model (gameplan `2026-07-16-kimi-code-truth-up-k3-mcp-autowrite`).
+
+- **`kimi` host repointed to Kimi Code CLI** (D-049) — the successor to the legacy
+  Kimi CLI, and the host that serves **Kimi K3**. Its MCP is now **auto-written** to
+  the project-level `.kimi-code/mcp.json` (`mcpServers` key, non-destructive, the
+  same shape as Cursor) instead of being guide-only. Bare `clauderize init` registers
+  the `clauderizer` server with zero manual steps; `detect_host_target`, the
+  wiring-contract sweep, and the path-safety audit all cover it. This applies D-031's
+  project-config branch — the earlier guide-only status was only because Kimi CLI had
+  no project MCP config; Kimi Code CLI now ships one.
+- **Session-start hooks stay guide-only** (TOML in `~/.kimi-code/config.toml`, the
+  zero-runtime-dep invariant forbids a stdlib TOML rewrite). The single-sourced
+  `.clauderizer/kimi-setup.md` carries the `[[hooks]]` snippet for the four
+  digest-relevant events (`SessionStart`, `UserPromptSubmit`, `PreCompact`,
+  `PostCompact` — verified to inject stdout on exit 0) and documents **skills
+  exposure**: Kimi Code CLI reads `.kimi-code/skills`/`.agents/skills`, **not**
+  `.claude/skills`.
+- **Note on the split:** the legacy **Kimi CLI** (`~/.kimi/`, pip) and its successor
+  **Kimi Code CLI** (`.kimi-code/`, npm) are distinct products; the `kimi` host id now
+  targets the successor.
+
 ## [1.6.0] — 2026-07-09
 
 Multi-host default + Grok Build TUI — one `init` for every supported agent.

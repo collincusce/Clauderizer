@@ -420,7 +420,8 @@ your-repo/
 ├── .clauderizer/
 │   ├── config.toml              # size + profile + session_host + target + enabled=["*"]
 │   ├── hook.sh                  # breadcrumb wrapper (hook.cmd on native Windows)
-│   ├── <host>-mcp-setup.md      # guide-only hosts (kimi, Codex, Windsurf, …)
+│   ├── <host>-mcp-setup.md      # guide-only MCP hosts (Codex, Windsurf, …)
+│   ├── kimi-setup.md            # Kimi Code CLI: hooks (TOML) + skills exposure
 │   ├── <host>-hook-setup.md     # optional hook guides where schemas aren't auto-written
 │   ├── profile.lock.toml        # per-project test/build/lint (editable override)
 │   └── index.json               # disposable graph cache (gitignored)
@@ -459,8 +460,8 @@ status is delivered at most once per session (runtime-detected agent, D-047):
   to the first tool call as an automatic fallback for hook-less / governance-hook hosts.
 
 If a host still needs a human step (Grok `/hooks-trust`, Amp `mcp approve`, TOML paste for
-Codex/kimi), `clauderize doctor` prints a **configure checklist** — advisory only, never a
-hard block (D-048).
+Codex or Kimi Code CLI's session-start hooks), `clauderize doctor` prints a **configure
+checklist** — advisory only, never a hard block (D-048).
 
 See **[docs/CROSS-HOST.md](https://github.com/collincusce/Clauderizer/blob/main/docs/CROSS-HOST.md)**
 for the full per-host capability matrix. `clauderize uninstall` reverses the wiring footprint

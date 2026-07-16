@@ -10,7 +10,7 @@
 | 0 | Confirm current Kimi Code CLI contract | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Flip kimi MCP to auto-write .kimi-code/mcp.json | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Reconcile kimi setup guides and fix stale .kimi paths | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Docs sweep, cascade, and release | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Docs sweep, cascade, and release | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -31,6 +31,12 @@ kimi-emitter-autowrite: hosttargets.HOST_EMITTERS['kimi'] now = HostEmitter('kim
 
 ```
 kimi-guide-single-sourced: Single-sourced the kimi guide in hosttargets.kimi_setup_guide() (portable KIMI_HOOK_COMMAND, KIMI_HOOK_EVENTS = SessionStart/UserPromptSubmit/PreCompact/PostCompact). emit_host_wiring('kimi') now emits .clauderizer/kimi-setup.md (label 'hook-guide') alongside the auto-written mcp. Removed dead init.py _render_kimi_setup + _KIMI_HOOK_EVENTS (claude-leg special case); guide now rides the per-host wiring, produced by the multi-host default. Fixed configure_hints['kimi'] and paths.kimi_setup docstring to .kimi-code. Guide §3 targets ~/.kimi-code/config.toml; §4 documents skills exposure (.agents/skills / .kimi-code/skills, not .claude/skills). Only stale .kimi ref left in src is the deliberate 'legacy Kimi CLI used ~/.kimi/' mention.
+```
+
+### Phase 3 Outputs
+
+```
+docs-cascade-release: Docs swept (present-tense only; append-only history untouched per L-21): CROSS-HOST.md kimi row -> auto (MCP) / guide (hooks TOML), .kimi-code/mcp.json (project), footnote + §6 TOML table corrected; TRUST.md MCP-locations table kimi -> .kimi-code/mcp.json/mcpServers/auto-write; README init-footprint tree + configure-checklist wording. CHANGELOG 1.7.0 entry added; pyproject 1.6.0 -> 1.7.0. subsys.scaffold 0.10.0 -> 0.11.0; cascade over 3 dependents (feat.init-cli/corpus-modernization/onboarding) resolved — all additive, ^ pins satisfied. Only residual ~/.kimi/ ref is D-031's append-only ADR context (superseded by D-049). Full suite 797 passed, 5 skipped.
 ```
 
 ## Corrections Log

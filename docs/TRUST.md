@@ -69,7 +69,7 @@ setup guide in `.clauderizer/<host>-mcp-setup.md` instead.
 | Amp | `.amp/settings.json` | `amp.mcpServers` | auto-write (then run `amp mcp approve clauderizer`) |
 | OpenAI Codex CLI | `.codex/config.toml` | — | guide-only (TOML) |
 | Windsurf | `~/.codeium/windsurf/mcp_config.json` | — | guide-only (global) |
-| kimi | `~/.kimi/config.toml` | — | guide-only (global) |
+| kimi (Kimi Code CLI) | `.kimi-code/mcp.json` | `mcpServers` | auto-write (hooks guide-only, TOML) |
 
 Before writing anything, `init` **spawn-tests** every command it is about to
 register and refuses to write wiring that does not launch and identify

@@ -45,7 +45,7 @@ T=tools, R=resources, P=prompts. "Hook→ctx" = hook can inject into model conte
 | Host | MCP prims | Resource autoload | Hooks (events) | Hook→ctx | AGENTS.md native | MCP reg (scope) | Best tier | Write |
 |------|-----------|-------------------|----------------|----------|------------------|-----------------|-----------|-------|
 | **Claude Code** | T,R | no | SessionStart, UserPromptSubmit | **yes** | no (CLAUDE.md imports it) | `.mcp.json` (project) | **1** | auto |
-| **kimi** | T,R | no | all 4 | **yes** | yes (`KIMI_AGENTS_MD`) | `~/.kimi/config.toml` (global) | **1** | guide |
+| **kimi (Kimi Code CLI)** | T,R | no | 13 events (4 inject) | **yes** | yes (AGENTS.md) | `.kimi-code/mcp.json` (project) | **1** | auto (MCP); guide (hooks TOML) |
 | **GitHub Copilot / VS Code** | T,R,P + sampling/elicit | no (manual @) | SessionStart, UserPromptSubmit, PreToolUse, PreCompact, Stop | **yes** | yes | `.vscode/mcp.json` (project) | **1** | auto |
 | **Codex CLI** | T (+server-instructions) | no | SessionStart, UserPromptSubmit, PreToolUse, PreCompact, Stop | **yes** | yes | `.codex/config.toml` (project) | **1** | guide* (TOML) |
 | **Gemini CLI** | T,R,P | no (manual @) | SessionStart, SessionEnd, BeforeAgent, AfterAgent | likely *(unverified)* | configurable (GEMINI.md default) | `.gemini/settings.json` (project) | **1** | auto |
@@ -68,7 +68,9 @@ T=tools, R=resources, P=prompts. "Hook→ctx" = hook can inject into model conte
 > bootstrap and leaves cold sessions dark. Wired by bare `clauderize init` (multi-host
 > default, D-046) or scoped `init --host grok`.
 
-\* Codex/kimi MCP registration is TOML → see §6 (zero-dep) → guide-only or append-only stanza.
+\* Codex MCP registration is TOML → see §6 (zero-dep) → guide-only or append-only stanza.
+Kimi Code CLI's MCP is a project **JSON** config (`.kimi-code/mcp.json`) → auto-write; only
+its session-start hooks are TOML (`~/.kimi-code/config.toml`) → guide-only.
 
 ## 4. The revised injection-parity ladder (corrects D-029/D-030)
 
@@ -105,10 +107,10 @@ So the floor emitter writes AGENTS.md **plus** a per-host native-instructions sh
 |--------|-------|------------------|--------|
 | **JSON** | Copilot, Cursor, Cline, Zed, Gemini, Amp, Continue* | yes (`json`) | **auto-write** (comments/key-order not preserved — documented, acceptable) |
 | **YAML** | Continue (`.yaml` option) | no (needs PyYAML) | **avoid** — Continue also accepts **JSON** in `.continue/mcpServers/` → write JSON |
-| **TOML** | Codex, kimi | read-only (`tomllib`); no stdlib writer | **guide-only OR append-only marker stanza** — never a structured rewrite |
+| **TOML** | Codex, kimi (hooks only) | read-only (`tomllib`); no stdlib writer | **guide-only OR append-only marker stanza** — never a structured rewrite |
 | **Markdown** | all instructions files | yes (marker-block upsert) | **auto-write** (existing `writer.upsert_marker_block`) |
 
-**Result:** the zero-runtime-dep invariant is preserved with no new dependency. The only friction is TOML (Codex/kimi) → those stay guide-only, consistent with kimi today.
+**Result:** the zero-runtime-dep invariant is preserved with no new dependency. The only friction is TOML (Codex, and Kimi Code CLI's *hooks*) → those stay guide-only. Kimi Code CLI's **MCP** is project JSON (`.kimi-code/mcp.json`) → auto-write (D-049).
 
 ## 7. Verification strategy (D-032)
 

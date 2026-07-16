@@ -1,7 +1,7 @@
 # kimi-code-truth-up-k3-mcp-autowrite Gameplan
 
 > Created: 2026-07-16
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -88,8 +88,8 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] CROSS-HOST.md kimi row shows MCP=auto-write and the .kimi-code path; TRUST.md/VISION.md/README host+MCP-surface updated; CHANGELOG entry added
-- [ ] Open item O-01 resolved via cz_resolve_open_item
-- [ ] subsys.scaffold version bumped; cz_cascade run over its dependents and all verdicts resolved via cz_resolve_cascade
-- [ ] Version bumped (pyproject.toml) and full suite green
-- [ ] No stale '.kimi/' reference remains anywhere in docs (except append-only history)
+- [x] CROSS-HOST.md kimi row shows MCP=auto-write and the .kimi-code path; TRUST.md/VISION.md/README host+MCP-surface updated; CHANGELOG entry added
+- [x] Open item O-01 resolved via cz_resolve_open_item
+- [x] subsys.scaffold version bumped; cz_cascade run over its dependents and all verdicts resolved via cz_resolve_cascade
+- [x] Version bumped (pyproject.toml) and full suite green
+- [x] No stale '.kimi/' reference remains anywhere in docs (except append-only history)
