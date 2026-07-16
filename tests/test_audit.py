@@ -82,3 +82,21 @@ def test_cz_audit_is_registered_and_readonly():
     assert "cz_audit" in TOOL_NAMES
     assert "cz_audit" in ops.REGISTRY
     assert ops.REGISTRY["cz_audit"].writes is False   # read-only gate
+
+
+def test_shipped_close_skill_invokes_cz_audit():
+    # the ritual reaches ALL installs via the close-gameplan skill (D-051): the
+    # SHIPPED skill (source of truth for what init copies) must invoke cz_audit.
+    from clauderizer import assets
+    skill = assets.SKILLS / "clauderizer-close-gameplan" / "SKILL.md"
+    text = skill.read_text(encoding="utf-8")
+    assert "cz_audit" in text, "close-gameplan skill must invoke the self-audit gate"
+
+
+def test_procedure_template_documents_self_audit_at_current_version():
+    # GAMEPLAN-PROCEDURE ships the close procedure; the self-audit step must be
+    # present and the stamped version must equal PROCEDURE_VERSION (single-sourced).
+    from clauderizer import PROCEDURE_VERSION, assets
+    proc = (assets.TEMPLATES / "GAMEPLAN-PROCEDURE.md").read_text(encoding="utf-8")
+    assert "cz_audit" in proc and "self-audit" in proc.lower()
+    assert f"**Procedure version**: {PROCEDURE_VERSION}" in proc

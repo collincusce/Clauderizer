@@ -71,10 +71,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] The shipped clauderizer-close-gameplan skill (src/clauderizer/skills/) has a cz_audit self-audit step; a test asserts the shipped skill text references cz_audit
-- [ ] GAMEPLAN-PROCEDURE.md Ending Protocol + Close procedure include the self-audit step; PROCEDURE_VERSION and the template's version/changelog are bumped in lockstep
-- [ ] README + ARCHITECTURE MCP tool-surface lists include cz_audit (L-21 sweep)
-- [ ] Suite green in a fresh venv
+- [x] The shipped clauderizer-close-gameplan skill (src/clauderizer/skills/) has a cz_audit self-audit step; a test asserts the shipped skill text references cz_audit
+- [x] GAMEPLAN-PROCEDURE.md Ending Protocol + Close procedure include the self-audit step; PROCEDURE_VERSION and the template's version/changelog are bumped in lockstep
+- [x] README + ARCHITECTURE MCP tool-surface lists include cz_audit (L-21 sweep)
+- [x] Suite green in a fresh venv
 
 ### Phase 3: Dogfood, ship 1.8.0, close
 

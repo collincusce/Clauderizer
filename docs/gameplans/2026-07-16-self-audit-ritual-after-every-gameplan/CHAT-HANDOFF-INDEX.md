@@ -1,7 +1,7 @@
 # Chat Handoff Index — self-audit-ritual-after-every-gameplan
 
 > Last updated: 2026-07-16
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Design the cz_audit work/release self-audit gate | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Implement rituals/audit.py + register cz_audit | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Wire cz_audit into the shipped close skill + procedure | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Wire cz_audit into the shipped close skill + procedure | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Dogfood, ship 1.8.0, close | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -45,6 +45,10 @@ Designed cz_audit as a new advisory work/release gate distinct from cz_critique 
 ### Phase 1 — completed 2026-07-16
 
 Implemented rituals/audit.py (read-only, stdlib-only, advisory) and registered cz_audit via ops.cz_audit()/REGISTRY(writes=False)/tools_list — auto-exposed to the MCP server and CLI. Added tests/test_audit.py (6 tests) proving the version-drift signal fires on the exact pyproject-vs-__version__ 1.7.0/1.6.0 bug and on changelog drift, and stays quiet when consistent or when sides are missing (L-25 both-directions). Suite 799->805 passed, green in a fresh venv; live smoke confirmed no false positive on the consistent repo.
+
+### Phase 2 — completed 2026-07-16
+
+Wired cz_audit into every install's close path. The shipped clauderizer-close-gameplan skill gained a self-audit step before the post-mortem (source + synced repo copy). GAMEPLAN-PROCEDURE.md's Ending Protocol and Close procedure now include the self-audit and a clean-environment verification note; the procedure version was bumped 1.6.0 -> 1.7.0 in lockstep across the template header, its changelog, and PROCEDURE_VERSION (enforced by test_modernize). README and ARCHITECTURE tool-surface lists gained cz_audit. Two tests assert the shipped skill invokes cz_audit and the template documents the self-audit at the current PROCEDURE_VERSION. Suite 807 passed, green in a fresh venv.
 
 ## Accumulated Lessons
 

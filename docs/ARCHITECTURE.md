@@ -33,10 +33,17 @@ that surface findings in the tool result for the agent to rule on — modeled on
   Grounding**, composed from the signals above plus lessons-without-provenance,
   for the agent to grade. STORM's reference-free LLM-judge rubric, adapted to
   surface-don't-decide.
+- **Self-audit** — `cz_audit` (D-051): audits the WORK PRODUCT and
+  release-readiness (as opposed to `cz_critique`'s memory coherence), run at
+  gameplan close. Mechanical signals — version single-sourcing (pyproject vs the
+  package `__version__` vs the top CHANGELOG entry), an uncommitted tree,
+  unresolved cascades/open items — plus a judgment checklist for what a green
+  suite can't prove (verify in a clean environment; re-audit every consumer of a
+  changed entity; claim only what you verified). Born from a real miss.
 
 Clarify, exit-criteria, and analyze surface through the shared
 `result["advisories"]` shape on `cz_transition_phase` plus their dedicated tools;
-`cz_critique` is run on demand. None ever blocks a write.
+`cz_critique` and `cz_audit` are run on demand. None ever blocks a write.
 
 ### Provenance / citations (D-017)
 
