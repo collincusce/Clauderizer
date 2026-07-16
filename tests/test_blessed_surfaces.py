@@ -134,6 +134,29 @@ def test_metadata_version_is_string_or_none():
     assert v is None or isinstance(v, str)
 
 
+def test_version_is_single_sourced_with_pyproject():
+    # Release guard (the 1.7.0 near-miss): bumping pyproject.toml without bumping
+    # clauderizer.__version__ (hardcoded in __init__.py) makes doctor's own
+    # version-consistency check fail on every CLEAN install (dist metadata and
+    # repo pyproject both disagree with __version__), while a STALE editable venv
+    # — whose metadata still equals the old __version__ — stays green and masks it.
+    from clauderizer import __version__
+    repo_root = Path(__file__).resolve().parents[1]
+    # Install-independent: reads the repo's own pyproject directly, so this catches
+    # the drift even from a stale venv (the case the doctor tests missed).
+    assert _engine_repo_version(repo_root) == __version__, (
+        f"pyproject.toml disagrees with clauderizer.__version__ ({__version__}) — "
+        f"bump src/clauderizer/__init__.py to match pyproject.toml"
+    )
+    # Install-consistency: a fresh/CI install's dist metadata must match too.
+    meta = _metadata_version()
+    if meta is not None:
+        assert meta == __version__, (
+            f"packaging metadata {meta} != clauderizer.__version__ {__version__} "
+            f"— reinstall the editable package, or bump __init__.py to match pyproject"
+        )
+
+
 # --- memory gauge close-out note (task 2.5, H-03) --------------------------------
 
 
