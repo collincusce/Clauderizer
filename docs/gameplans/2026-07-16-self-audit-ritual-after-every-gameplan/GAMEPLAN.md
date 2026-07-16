@@ -1,7 +1,7 @@
 # self-audit-ritual-after-every-gameplan Gameplan
 
 > Created: 2026-07-16
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -86,8 +86,8 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_audit was run on this gameplan and its findings addressed (dogfood evidence recorded)
-- [ ] CHANGELOG 1.8.0 entry added; pyproject AND __version__ bumped to 1.8.0 in lockstep (guard test green)
-- [ ] subsys.rituals (+ subsys.scaffold if touched) bumped; cz_cascade run and resolved
-- [ ] FULL suite verified green in a FRESH venv; count recorded
-- [ ] Gameplan closed: post-mortem written, focus handed back
+- [x] cz_audit was run on this gameplan and its findings addressed (dogfood evidence recorded)
+- [x] CHANGELOG 1.8.0 entry added; pyproject AND __version__ bumped to 1.8.0 in lockstep (guard test green)
+- [x] subsys.rituals (+ subsys.scaffold if touched) bumped; cz_cascade run and resolved
+- [x] FULL suite verified green in a FRESH venv; count recorded
+- [x] Gameplan closed: post-mortem written, focus handed back
