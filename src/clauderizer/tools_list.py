@@ -44,6 +44,7 @@ TOOL_NAMES = [
     "cz_onboard",
     "cz_analyze",
     "cz_critique",
+    "cz_audit",
     "cz_mine_failures",
     "cz_corpus_health",
     "cz_lesson_health",

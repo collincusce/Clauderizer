@@ -250,6 +250,26 @@ def cz_critique(target: str = "") -> dict:
     return _critique.critique(paths, config, target=target or None)
 
 
+def cz_audit() -> dict:
+    """Work/release self-audit gate: after a gameplan, audit the WORK PRODUCT and
+    release-readiness — distinct from cz_critique, which audits memory coherence.
+
+    Read-only and advisory like cz_analyze/cz_critique (INVARIANT-05): the engine
+    ASSEMBLES the deterministic signals it can compute — version single-sourcing
+    (pyproject vs the package __version__ vs the top CHANGELOG entry), an
+    uncommitted working tree, and unresolved cascades/open items — and prompts a
+    judgment checklist for the failure modes a green suite cannot catch: verify in
+    a CLEAN environment (not a stale editable install), re-audit every CONSUMER of
+    a changed entity (incl. untracked ones), and claim only what you verified. It
+    never scores or blocks. Grounded in real misses (D-051); stdlib-only. Run it at
+    gameplan close (the shipped clauderizer-close-gameplan skill invokes it).
+    """
+    paths, config = repo_ctx()
+    from .rituals import audit as _audit
+
+    return _audit.audit(paths, config)
+
+
 # --- ritual ops ------------------------------------------------------------------
 
 
@@ -1111,6 +1131,7 @@ REGISTRY: dict[str, Op] = {
     "cz_onboard": Op(cz_onboard, writes=False),
     "cz_analyze": Op(cz_analyze, writes=False),
     "cz_critique": Op(cz_critique, writes=False),
+    "cz_audit": Op(cz_audit, writes=False),
     "cz_mine_failures": Op(cz_mine_failures, writes=False),
     "cz_corpus_health": Op(cz_corpus_health, writes=False),
     "cz_lesson_health": Op(cz_lesson_health, writes=False),

@@ -1,7 +1,7 @@
 # self-audit-ritual-after-every-gameplan Gameplan
 
 > Created: 2026-07-16
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -42,9 +42,9 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] The mechanical vs judgment split is decided and written: which signals are deterministic (version single-sourcing, dirty tree, unresolved cascades/open-items, artifact-claim reality, changed-entities-missing-cascade) vs prompted checklist (clean-env, consumer re-audit, claim honesty)
-- [ ] cz_audit output shape is specified, mirroring cz_critique/cz_analyze (assemble signals + prompt; read-only; advisory; stdlib-only; INVARIANT-05)
-- [ ] Confirmed cz_audit is a NEW tool distinct from cz_critique (memory) and does not duplicate preflight's git checks beyond what's needed
+- [x] The mechanical vs judgment split is decided and written: which signals are deterministic (version single-sourcing, dirty tree, unresolved cascades/open-items, artifact-claim reality, changed-entities-missing-cascade) vs prompted checklist (clean-env, consumer re-audit, claim honesty)
+- [x] cz_audit output shape is specified, mirroring cz_critique/cz_analyze (assemble signals + prompt; read-only; advisory; stdlib-only; INVARIANT-05)
+- [x] Confirmed cz_audit is a NEW tool distinct from cz_critique (memory) and does not duplicate preflight's git checks beyond what's needed
 
 ### Phase 1: Implement rituals/audit.py + register cz_audit
 
@@ -56,10 +56,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] rituals/audit.py implements the gate: read-only, stdlib-only, returns assembled signals + judgment checklist (no scoring/blocking, INVARIANT-05)
-- [ ] The version-single-sourcing signal detects pyproject != __version__ (a regression test reproduces the exact 1.7.0-vs-1.6.0 drift and asserts cz_audit flags it)
-- [ ] cz_audit is registered in tools_list, mcp_server, and cli and is callable end-to-end
-- [ ] Full suite green in a fresh venv (not just the working .venv)
+- [x] rituals/audit.py implements the gate: read-only, stdlib-only, returns assembled signals + judgment checklist (no scoring/blocking, INVARIANT-05)
+- [x] The version-single-sourcing signal detects pyproject != __version__ (a regression test reproduces the exact 1.7.0-vs-1.6.0 drift and asserts cz_audit flags it)
+- [x] cz_audit is registered in tools_list, mcp_server, and cli and is callable end-to-end
+- [x] Full suite green in a fresh venv (not just the working .venv)
 
 ### Phase 2: Wire cz_audit into the shipped close skill + procedure
 
