@@ -1,7 +1,7 @@
 # kimi-code-truth-up-k3-mcp-autowrite Gameplan
 
 > Created: 2026-07-16
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -28,7 +28,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 ## Open Items
 
-**O-01.** _(phase 0)_ Verify current Kimi Code CLI session-start hook contract before finalizing the setup guide: the legacy kimi-setup guide claims SessionStart/PreCompact/PostCompact/UserPromptSubmit all inject stdout on exit 0, but the 2026-07-16 docs excerpt only confirmed a PreToolUse example and did not state the exit-0 stdout->context injection rule. Confirm the real supported event names and injection semantics for the current Kimi Code CLI; correct the guide's 4-event claim if wrong.
+**O-01.** _(phase 0)_ Verify current Kimi Code CLI session-start hook contract before finalizing the setup guide: the legacy kimi-setup guide claims SessionStart/PreCompact/PostCompact/UserPromptSubmit all inject stdout on exit 0, but the 2026-07-16 docs excerpt only confirmed a PreToolUse example and did not state the exit-0 stdout->context injection rule. Confirm the real supported event names and injection semantics for the current Kimi Code CLI; correct the guide's 4-event claim if wrong. _(resolved 2026-07-16: Verified from Kimi Code CLI hooks docs (moonshotai.github.io/kimi-code customization/hooks): 13 hook events exist incl SessionStart, UserPromptSubmit, PreCompact, PostCompact; a hook's stdout is injected into context iff it exits 0 (exit 2 => stderr fed back as correction). The digest-relevant 4-event set the guide wires is therefore correct. Hooks live in ~/.kimi-code/config.toml [[hooks]] (event/command/matcher/timeout) — TOML, so session-start stays guide-only.)_
 
 ## Phase Breakdown
 
@@ -42,10 +42,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Project MCP config path + top-level key confirmed from Kimi Code CLI docs: .kimi-code/mcp.json, key = mcpServers, entry = {command,args}
-- [ ] Global vs project config paths confirmed: ~/.kimi-code/config.toml (global) and .kimi-code/local.toml (project)
-- [ ] Session-start hook event names verified: whether SessionStart/PreCompact/PostCompact/UserPromptSubmit are all supported and whether their stdout injects on exit 0 (correct the guide if the 4-event claim is wrong)
-- [ ] O-01's blocking unknown (undocumented MCP schema) is confirmed resolved, or a residual open item captures whatever is still unknown
+- [x] Project MCP config path + top-level key confirmed from Kimi Code CLI docs: .kimi-code/mcp.json, key = mcpServers, entry = {command,args}
+- [x] Global vs project config paths confirmed: ~/.kimi-code/config.toml (global) and .kimi-code/local.toml (project)
+- [x] Session-start hook event names verified: whether SessionStart/PreCompact/PostCompact/UserPromptSubmit are all supported and whether their stdout injects on exit 0 (correct the guide if the 4-event claim is wrong)
+- [x] O-01's blocking unknown (undocumented MCP schema) is confirmed resolved, or a residual open item captures whatever is still unknown
 
 ### Phase 1: Flip kimi MCP to auto-write .kimi-code/mcp.json
 
