@@ -65,6 +65,8 @@
 
 **L-47.** A changelog line or in-code hint that claims a shipped ARTIFACT (an example file, a scaffold, a template) needs a test asserting the artifact actually ships — prose and code paths drift independently, and the claim reads as true until someone goes looking. Measured instance: 1.3.1's changelog + preflight hint both referenced .clauderizer/preflight.<kind>.toml.example while no code ever scaffolded it; found only when 1.4.0's modernization pass was pointed at a real corpus, and fixed by making modernize.apply ship it (test_modernize.py). *(from 2026-07-01-engine-1-4-0-general-modernization)*
 
+**L-49.** When a host's config paths look "stale," first confirm whether it is ONE product that moved or TWO products (predecessor/successor) before repointing — the "stale" path is often correct for a still-shipping legacy tool. Evidence: Moonshot's Kimi CLI (`~/.kimi/`, pip) and Kimi Code CLI (`.kimi-code/`, npm) are distinct tools; Clauderizer's `kimi` wiring was correct for the legacy one, and Kimi K3 is served by the successor. Verify the product split from upstream docs, then decide repoint-vs-add-host; a successor may also drop conventions the predecessor had (Kimi Code CLI does not read `.claude/skills`). *(from 2026-07-16-kimi-code-truth-up-k3-mcp-autowrite)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)* (obsolete 2026-06-21: consolidated into L-25)

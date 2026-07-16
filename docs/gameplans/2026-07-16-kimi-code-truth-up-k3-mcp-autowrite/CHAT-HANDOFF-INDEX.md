@@ -63,4 +63,4 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 _(none yet)_
 
-**1.** When a host's config paths look 'stale', confirm whether the host is one product that moved or two products (predecessor/successor) before renaming — Moonshot's kimi-cli (~/.kimi) and kimi-code (.kimi-code) are distinct tools, and the 'stale' path was correct for the legacy one.
+**1.** When a host's config paths look 'stale', confirm whether the host is one product that moved or two products (predecessor/successor) before renaming — Moonshot's kimi-cli (~/.kimi) and kimi-code (.kimi-code) are distinct tools, and the 'stale' path was correct for the legacy one. (promoted 2026-07-16: L-49)
