@@ -2,6 +2,27 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.8.0] — 2026-07-16
+
+Self-audit after every gameplan — Clauderizer audits its own work (gameplan
+`2026-07-16-self-audit-ritual-after-every-gameplan`, D-051). Stacks on 1.7.0.
+
+- **New `cz_audit` gate** — an advisory (INVARIANT-05) work/release self-audit,
+  distinct from `cz_critique` (which audits memory coherence). Mechanical signals:
+  **version single-sourcing** (pyproject vs the package `__version__` vs the top
+  CHANGELOG entry — a mismatch a stale editable install hides), an uncommitted
+  working tree, and unresolved cascades/open items. Judgment checklist for what a
+  green suite can't prove: verify in a **clean environment** (not a stale editable
+  install), re-audit every **consumer** of a changed entity (including untracked
+  ones — uninstall, CLI, docs claims), and claim only what you **verified**.
+  Read-only, stdlib-only, never blocks.
+- **Runs at every gameplan close** — the shipped `clauderizer-close-gameplan`
+  skill and `GAMEPLAN-PROCEDURE.md` (bumped to procedure **v1.7.0**) invoke
+  `cz_audit` before the post-mortem, so every install audits its own work.
+- Born from a real miss in 1.7.0's own release: a version bumped in `pyproject.toml`
+  but left stale in `__init__.py`, green locally on a stale editable venv, caught
+  only by a clean CI install. `cz_audit`'s headline check now catches exactly that.
+
 ## [1.7.0] — 2026-07-16
 
 Kimi Code CLI is now a first-class auto-write host — out-of-the-box MCP for the
