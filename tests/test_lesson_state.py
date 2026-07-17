@@ -42,6 +42,19 @@ def test_mid_text_mentions_are_inert():
     assert LS.is_active(line2 + " so read carefully")
 
 
+def test_marker_reason_with_parentheses_parses():
+    # H-18: a reason containing '()' must not make the line read as active
+    # (else the "obsoleted" lesson silently keeps riding every handoff).
+    assert LS.parse_state("**8.** t (obsolete 2026-07-16: superseded (see L-50))") == (
+        "obsolete", "2026-07-16: superseded (see L-50)")
+    assert LS.parse_state(
+        "**9.** t (obsolete 2026-07-16: a (x) then (y) done)") == (
+        "obsolete", "2026-07-16: a (x) then (y) done")
+    # a mid-text balanced-paren mention, not at end, is still inert
+    assert LS.is_active(
+        "**10.** discusses (obsolete (foo) bar) markers then keeps going as prose")
+
+
 def test_mark_produces_documented_forms():
     assert LS.mark("**7.** t", "obsolete", "2026-06-09") == "**7.** t (obsolete 2026-06-09)"
     assert LS.mark("**7.** t", "obsolete", "2026-06-09", "why") == (

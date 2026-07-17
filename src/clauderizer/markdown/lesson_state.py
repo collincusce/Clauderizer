@@ -23,7 +23,13 @@ LESSON_LINE_RE = re.compile(r"\*\*\d+\.\*\*")
 
 # The trailing structured marker: "(obsolete 2026-06-09: reason)",
 # "(promoted 2026-06-09: L-04)". Anchored to end of line — that is the grammar.
-_STATE_RE = re.compile(r"\((obsolete|promoted)\b([^()]*)\)\s*$", re.IGNORECASE)
+# The payload tolerates one level of nested parentheses so a reason like
+# "(obsolete 2026-06-09: superseded (see L-50))" still parses as the marker
+# instead of reading the line as active (H-18); the end-anchor + "\b" after the
+# keyword keep mid-text mentions inert.
+_STATE_RE = re.compile(
+    r"\((obsolete|promoted)\b([^()]*(?:\([^()]*\)[^()]*)*)\)\s*$", re.IGNORECASE
+)
 
 
 def parse_state(line: str) -> tuple[str, str]:

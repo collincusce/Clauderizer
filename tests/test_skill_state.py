@@ -23,6 +23,16 @@ def test_mid_text_mentions_are_inert():
     assert SS.is_active(line)
 
 
+def test_marker_reason_with_parentheses_parses():
+    # H-18 (same defect class as lesson_state): a reason containing '()' must
+    # not make the skill line read as active.
+    assert SS.parse_state(
+        f"**S-06.** n {EM} d (superseded 2026-06-22: replaced by S-09 (mcp))") == (
+        "superseded", "2026-06-22: replaced by S-09 (mcp)")
+    assert SS.is_active(
+        f"**S-08.** n {EM} discusses (obsolete (foo) bar) markers then more prose")
+
+
 def test_mark_produces_documented_forms():
     base = f"**S-07.** n {EM} d"
     assert SS.mark(base, "obsolete", "2026-06-22") == base + " (obsolete 2026-06-22)"

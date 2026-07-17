@@ -226,10 +226,11 @@ resolved with a date instead. This is a permanent audit trail. Numbered `H-NN`.
 ### H-18 — Obsolete-lesson marker parser miscounts a lesson as active when its reason contains a ')'
 
 - **Severity**: low
-- **Status**: open (2026-07-16)
+- **Status**: resolved (2026-07-16)
 - **Affected**: the obsolete-marker detection used by cz_corpus_health / cz_status project-lesson counting and the handoff roll-up prune (marker regex for `(obsolete <date>: <reason>)`)
 - **Impact**: A lesson obsoleted with a reason string containing a close-paren ')' (e.g. a nested parenthetical) is not recognized as obsolete by the corpus-health / status lesson counter, so it is counted active AND keeps rolling into every future handoff — silently defeating the obsoletion and re-inflating handoff size. Memory-correctness bug, not a security issue.
 - **Root cause**: The marker matcher appears to require no ')' between '(obsolete' and the closing paren (e.g. an anchored `\(obsolete[^)]*\)` or line-suffix match). Reasons with an internal ')' — from nested parentheticals — break the match, so the line is read as non-obsolete.
 - **Reproduction**: cz_obsolete_lesson(number='L-43', reason='situation-specific (parked-branch resume); ...') on docs/LESSONS.md; then cz_corpus_health reports active_project_lessons one higher than the true active count and lists L-43 in never_surfaced_ids despite the '(obsolete ...)' marker being present. Removing the inner parens from the reason and reindexing drops the count to the correct value.
 - **Recommended fix**: Make obsolete-marker detection tolerant of ')' inside the reason: anchor on the '(obsolete ' prefix (presence-based) rather than requiring a paren-free reason, or balance-match to the final ')'. Add a regression test with an obsolete reason containing nested parentheses.
 - **Regression tests**: Add a test: obsolete a project lesson with a reason containing '()' and assert corpus-health active count decrements and the handoff roll-up prunes it.
+- **Resolution**: Fixed in lesson_state.py _STATE_RE: payload now tolerates one level of nested parentheses while keeping the end-anchor and post-keyword word boundary, so an obsolete/promoted reason containing parens parses as the marker instead of reading the line as active. Regression test added in tests/test_lesson_state.py::test_marker_reason_with_parentheses_parses. Suite 821 to 822 green. Ships in 1.8.1.

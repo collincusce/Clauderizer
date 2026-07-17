@@ -2,6 +2,29 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.8.1] — 2026-07-16
+
+Memory-maintenance hotpatch (gameplan
+`2026-07-16-hotpatch-lesson-redistill-and-proposal-triage`).
+
+- **Fix (H-18): obsoleted lessons with parentheses in their reason silently kept
+  riding every handoff.** The lesson-state marker parser
+  (`markdown/lesson_state.py`) required a paren-free payload, so a reason like
+  `(obsolete 2026-06-09: superseded (see L-50))` failed to match and the line
+  read as **active** — inflating the memory gauge and re-surfacing a pruned
+  lesson in every roll-up. The payload now tolerates one level of nested
+  parentheses while keeping the end-anchor and post-keyword word boundary, so
+  mid-text mentions stay inert (regression test in `tests/test_lesson_state.py`).
+- **Project-lesson corpus re-distilled 34 → 19** (`docs/LESSONS.md`), back under
+  the 20-lesson handoff threshold: seven thematic syntheses (L-50–L-56) absorb
+  clusters of one-principle-across-war-stories lessons; sources marked obsolete,
+  never deleted (INVARIANT-03). This is dogfood memory for the Clauderizer repo
+  itself, not shipped package content.
+- **Curator loop self-arms.** The standing-curator loop gameplan now declares a
+  standing condition (`conditions.<gid>.toml`) that proposes an iteration when
+  active lessons drift back over 20 — resolving the `no_standing_conditions`
+  advisory. Advisory-only; nothing auto-runs (INVARIANT-05/06).
+
 ## [1.8.0] — 2026-07-16
 
 Advisory upgrade proposals are now **triageable** — they no longer pile up or

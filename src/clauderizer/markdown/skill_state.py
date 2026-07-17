@@ -31,7 +31,13 @@ SKILL_LINE_RE = re.compile(r"\*\*S-\d+\.\*\*")
 
 # The trailing structured marker: "(obsolete 2026-06-22: reason)",
 # "(superseded 2026-06-22: S-04)". Anchored to end of line -- that is the grammar.
-_STATE_RE = re.compile(r"\((obsolete|superseded)\b([^()]*)\)\s*$", re.IGNORECASE)
+# The payload tolerates one level of nested parentheses so a reason containing
+# "(...)" still parses as the marker instead of reading the line as active
+# (H-18, same defect class as lesson_state); the end-anchor + "\b" keep mid-text
+# mentions inert.
+_STATE_RE = re.compile(
+    r"\((obsolete|superseded)\b([^()]*(?:\([^()]*\)[^()]*)*)\)\s*$", re.IGNORECASE
+)
 
 # A full entry: "**S-NN.** name -- description *(source: ...)*". Name is
 # non-greedy up to the first " -- "; the remainder is the description (plus an
