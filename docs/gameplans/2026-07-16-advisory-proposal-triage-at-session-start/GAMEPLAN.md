@@ -87,10 +87,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Shipped skill src/clauderizer/skills/clauderizer-modernize/SKILL.md exists (ask-first; per-proposal handle/dismiss/defer; handle executes gates/onboarding/deliverables)
-- [ ] The digest + terse upgrade nudges point at the clauderizer-modernize skill
-- [ ] A test asserts the shipped skill references the triage tools and cz_modernize; skill installs via init (assets)
-- [ ] Full suite green in a fresh venv
+- [x] Shipped skill src/clauderizer/skills/clauderizer-modernize/SKILL.md exists (ask-first; per-proposal handle/dismiss/defer; handle executes gates/onboarding/deliverables)
+- [x] The digest + terse upgrade nudges point at the clauderizer-modernize skill
+- [x] A test asserts the shipped skill references the triage tools and cz_modernize; skill installs via init (assets)
+- [x] Full suite green in a fresh venv
 
 ### Phase 4: Docs, dogfood 1.7.0 blind, ship 1.8.0, close
 

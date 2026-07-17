@@ -134,3 +134,22 @@ def test_upgrade_cli_is_terse(temp_repo, monkeypatch, capsys):
     assert "advisory proposal(s) awaiting triage" in out         # count + pointer
     assert "clauderizer-modernize skill" in out
     assert "record each execution unit" not in out              # NOT the full proposal wall
+
+
+# --- Phase 3: the shipped triage skill -------------------------------------------
+
+def test_clauderizer_modernize_skill_ships_and_wires_triage():
+    from clauderizer import assets
+    skill = assets.SKILLS / "clauderizer-modernize" / "SKILL.md"
+    assert skill.is_file()
+    text = skill.read_text(encoding="utf-8")
+    for ref in ("cz_modernize", "cz_dismiss_proposal", "cz_defer_proposal"):
+        assert ref in text, ref                                  # the skill drives the triage tools
+    assert "clauderizer-modernize" in [d.name for d in assets.skill_dirs()]
+
+
+def test_modernize_skill_installed_by_init(empty_python_repo):
+    from clauderizer.scaffold.init import init
+    init(empty_python_repo, spawn_test=False)
+    assert (empty_python_repo / ".claude" / "skills" / "clauderizer-modernize"
+            / "SKILL.md").is_file()

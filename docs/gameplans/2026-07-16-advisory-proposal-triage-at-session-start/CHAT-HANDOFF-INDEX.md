@@ -1,7 +1,7 @@
 # Chat Handoff Index — advisory-proposal-triage-at-session-start
 
 > Last updated: 2026-07-16
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Design the proposal-triage primitive | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Proposal identity + triage ledger + cz_modernize filtering + tools | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | SessionStart digest surfacing + terse upgrade CLI output | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Ship the clauderizer-modernize triage skill | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Ship the clauderizer-modernize triage skill | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Docs, dogfood 1.7.0 blind, ship 1.8.0, close | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -50,6 +50,10 @@ Built the triage core: proposals.py (ids + ledger + dismiss/defer/is_suppressed/
 ### Phase 2 — completed 2026-07-16
 
 Surfaced the pending count without noise. The session digest now carries a single 'N upgrade proposals awaiting triage' line (cheap report + ledger filter, best-effort so the hook never breaks), shown only when pending>0 and independent of the version-drift nudge — riding the existing digest, so no second injection (INVARIANT-08). clauderize upgrade went terse: mechanical work in full, proposals as a count + clauderizer-modernize pointer, with --json/cz_modernize for the full list. Live smoke confirmed both surfaces; 4 tests (both directions + single-injection + terse CLI). Suite 819 passed, fresh venv.
+
+### Phase 3 — completed 2026-07-16
+
+Shipped the clauderizer-modernize skill — the agent-driven flow the digest and terse upgrade now point at. It asks first, pulls the pending list from cz_modernize, and walks each proposal handle/dismiss/defer, with a per-kind handle playbook (scaffold gates without guessing real commands, propose deliverables from the specs then cz_upsert_entity on confirm, invoke clauderizer-onboard for unseeded docs) and dismiss/defer via the new tools. It states the propose-confirm constitution (INVARIANT-05). Auto-discovered and init-installed; 2 tests. Suite 821 passed, fresh venv.
 
 ## Accumulated Lessons
 
