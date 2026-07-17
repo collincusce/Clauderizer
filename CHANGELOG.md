@@ -2,6 +2,24 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.9.1] — 2026-07-17
+
+A **read-your-way-out playbook** for Kimi Work desktop sessions on a WSL repo, plus
+a `doctor` warning (gameplan `2026-07-17-kimi-desktop-unc-recovery-playbook`, D-054).
+
+- A WSL-hosted repo opened in the **Windows** desktop app can't run the shell **or**
+  launch the MCP server — Windows cannot spawn a process with a `\\wsl.localhost`
+  (UNC) working directory (`cmd.exe` literally says *"UNC paths are not supported"*).
+  The bundled bash is fine; only process *spawning* is blocked. Since **file** tools
+  still work over UNC, `clauderize init` now drops an **agent playbook** into
+  `.clauderizer/kimi-desktop-mcp-setup.md` for that combo — why it fails, how to keep
+  working (read `docs/` directly with your file tools), and the two real fixes:
+  **put the repo on the Windows filesystem**, or **use Kimi Code CLI inside WSL**
+  (where K3 is available). `clauderize doctor` warns loudly for the combo.
+- No `wsl.exe`-wrapper MCP command is shipped — verified it can't help (it dies on
+  the same UNC cwd; the fix belongs in the desktop app, which should execute via
+  `wsl.exe` inside the distro).
+
 ## [1.9.0] — 2026-07-17
 
 The **Kimi Work desktop app** (daimon runtime) is now a first-class host — the
