@@ -222,3 +222,14 @@ resolved with a date instead. This is a permanent audit trail. Numbered `H-NN`.
 - **Recommended fix**: _command_env(root) now also detects project-local virtualenv bin dirs (.venv/venv x bin/Scripts) and leads PATH with them BEFORE the engine bin; _default_runner passes cwd. Cross-platform, no template hardcode, and only prepends a detected venv so users who already have the runner on PATH are unaffected.
 - **Regression tests**: tests/test_structural_writes.py::test_command_env_prepends_project_venv_bin, ::test_command_env_finds_project_venv_when_engine_is_elsewhere (monkeypatches sys.executable to a non-venv path), ::test_command_env_without_project_venv_keeps_engine_bin_first
 - **Resolution**: Fixed on branch fix/preflight-venv-detection: _command_env(root) prepends project-local venv bin dirs (.venv/venv x bin/Scripts) ahead of the engine bin; _default_runner passes cwd. Regression tests green (suite 626 -> 629), incl. the monkeypatch test reproducing the uvx case (engine elsewhere, project .venv leads PATH).
+
+### H-18 — Obsolete-lesson marker parser miscounts a lesson as active when its reason contains a ')'
+
+- **Severity**: low
+- **Status**: open (2026-07-16)
+- **Affected**: the obsolete-marker detection used by cz_corpus_health / cz_status project-lesson counting and the handoff roll-up prune (marker regex for `(obsolete <date>: <reason>)`)
+- **Impact**: A lesson obsoleted with a reason string containing a close-paren ')' (e.g. a nested parenthetical) is not recognized as obsolete by the corpus-health / status lesson counter, so it is counted active AND keeps rolling into every future handoff — silently defeating the obsoletion and re-inflating handoff size. Memory-correctness bug, not a security issue.
+- **Root cause**: The marker matcher appears to require no ')' between '(obsolete' and the closing paren (e.g. an anchored `\(obsolete[^)]*\)` or line-suffix match). Reasons with an internal ')' — from nested parentheticals — break the match, so the line is read as non-obsolete.
+- **Reproduction**: cz_obsolete_lesson(number='L-43', reason='situation-specific (parked-branch resume); ...') on docs/LESSONS.md; then cz_corpus_health reports active_project_lessons one higher than the true active count and lists L-43 in never_surfaced_ids despite the '(obsolete ...)' marker being present. Removing the inner parens from the reason and reindexing drops the count to the correct value.
+- **Recommended fix**: Make obsolete-marker detection tolerant of ')' inside the reason: anchor on the '(obsolete ' prefix (presence-based) rather than requiring a paren-free reason, or balance-match to the final ')'. Add a regression test with an obsolete reason containing nested parentheses.
+- **Regression tests**: Add a test: obsolete a project lesson with a reason containing '()' and assert corpus-health active count decrements and the handoff roll-up prunes it.

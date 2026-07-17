@@ -59,9 +59,9 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_status reports active project lessons < 20 (memory.project_lessons)
-- [ ] L-07, L-21, L-42 promoted to docs/LESSONS.md (cz_lesson_health promotion candidates actioned)
-- [ ] No active lesson hand-deleted — obsoleted entries remain in the append-only record (INVARIANT-03)
+- [x] cz_status reports active project lessons < 20 (memory.project_lessons)
+- [x] L-07, L-21, L-42 promoted to docs/LESSONS.md (cz_lesson_health promotion candidates actioned)
+- [x] No active lesson hand-deleted — obsoleted entries remain in the append-only record (INVARIANT-03)
 
 ### Phase 2: Triage the no_standing_conditions proposal
 
