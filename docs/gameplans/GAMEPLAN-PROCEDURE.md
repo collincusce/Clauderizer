@@ -1,11 +1,12 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.6.0
-**Last updated**: 2026-07-01
+**Procedure version**: 1.7.0
+**Last updated**: 2026-07-16
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.7.0** (2026-07-16): **Self-audit after every gameplan.** Closing a gameplan now runs a work/release self-audit (`cz_audit`) before the post-mortem — an advisory gate (INVARIANT-05) for the failure modes a green test suite does not catch. Mechanical signals: version single-sourcing (pyproject vs the package `__version__` vs the top CHANGELOG entry — a mismatch a stale editable install hides), an uncommitted working tree, unresolved cascades/open items. Judgment checklist: verify in a **clean environment** (not a stale editable install), re-audit every **consumer** of a changed entity (including untracked ones — uninstall, CLI, docs claims), and claim only what you **verified**. Distinct from `cz_critique` (which audits memory coherence); its findings feed the post-mortem's procedure-improvements. Born from a real miss: a version bumped in one place but not another, green locally on a stale venv, caught only by a clean install.
 - **v1.6.0** (2026-07-01): **Onboarding an existing project.** A repo that already has real documentation deserves seeded memory, not placeholder scaffolds sitting beside it. `cz_onboard` (read-only) lists the Clauderizer docs that are still scaffold placeholders and the repo's existing docs that likely hold project knowledge; the `clauderizer-onboard` skill walks the agent through reading those sources and seeding memory — prose docs rewritten directly, subsystems/features recorded as entities, decisions and rules recorded with provenance naming the source file. `clauderize init` says when onboarding applies, and already-initialized repos learn about it from `clauderize upgrade`. The engine detects and prompts; it never seeds anything itself.
 - **v1.5.0** (2026-07-01): **Scoped memory, approval criteria, deliverables, standing conditions, corpus modernization.** Invariants may carry a **Scope** (project-wide, or one gameplan's) and an **Audience** label, and lessons an audience tag — reads *filter* (a gameplan's context carries the shared rules plus its own; untagged entries reach everyone), and nothing is ever hidden from the canonical files or the written handoff. An exit criterion may be an **approval** (`APPROVAL: <artifact-path> — <description>`): recording the sign-off binds it to the artifact's content hash, so editing the artifact makes the approval read as stale everywhere until it is re-approved. Campaign-style kinds define a **deliverable lifecycle**; each deliverable is a tracked entity moving through it, with a board in the gameplan's detail view. Loop and campaign gameplans may declare **standing conditions** (`.clauderizer/conditions.<gameplan-id>.toml`) — probes evaluated whenever status is asked for, proposing an iteration when one trips. **`clauderize upgrade`** modernizes an older corpus: mechanical updates apply automatically (the config's procedure stamp and migrations, missing gate-example files, refreshing this document); memory-shaped improvements only ever surface as proposals. All additive; a repo using none of it behaves exactly as before.
 - **v1.4.0** (2026-06-27): **Concurrent multi-axis gameplans.** A repo can run several gameplans at once with an ergonomic **focus** (the default target; `cz_focus` / `cz_gameplans` + a portfolio in the status digest). Gameplan **kinds** become data (`kinds/*.toml`: vocabulary + first-phase template + preflight set; `driven` / `loop` / `campaign` + custom overlays in `.clauderizer/kinds/`; the lexicon is display-only — on-disk structure is identical across kinds). **Per-kind preflight** runs the kind's checks via a command-gate primitive wired in `.clauderizer/preflight.<kind>.toml`. **Cross-gameplan dependencies** (`cz_consumes`) let a cascade fan out across axes. Back-compatible: a single-gameplan repo behaves exactly as before.
@@ -531,7 +532,7 @@ If any check fails: STOP. Report to user. Do not proceed.
 2. Update PHASE-STATUS.md (status + outputs + corrections)
 3. Run cascade for any tracked-graph edits (decisions, status transitions, entity definitions)
 4. Update CLAUDE.md if any critical-rule context changed
-5. Run exit verification (full test suite + build/validate)
+5. Run exit verification (full test suite + build/validate) — in a **clean environment** for release-bearing work, not just your working install (a stale editable install can hide a real defect)
 6. Report final test count and any new corrections
 
 ## Phase Status Table
@@ -1098,9 +1099,10 @@ Coordinator session does between phases:
 3. Update `PHASE-STATUS.md` with final outputs and corrections.
 4. Run gameplan-wide cascade (full graph traversal).
 5. Update project-level docs (CHANGELOG, ARCHITECTURE, REQUIREMENTS) with final state.
-6. Write `POST-MORTEM.md` covering: what worked, what didn't, procedure improvements (which feed back into the next version of this very document).
-7. Move the gameplan directory to "completed" status (the dir stays on disk for reference; nothing is deleted).
-8. Commit the closure.
+6. Run the work/release **self-audit** (`cz_audit`) — resolve its mechanical findings (version single-sourcing, uncommitted tree, unresolved cascades/open items) and affirm its judgment checklist (verify in a clean environment; re-audit every consumer of a changed entity; claim only what you verified). Advisory (INVARIANT-05); its findings feed the post-mortem.
+7. Write `POST-MORTEM.md` covering: what worked, what didn't, procedure improvements (which feed back into the next version of this very document).
+8. Move the gameplan directory to "completed" status (the dir stays on disk for reference; nothing is deleted).
+9. Commit the closure.
 
 ### Procedure: Amend a Gameplan
 

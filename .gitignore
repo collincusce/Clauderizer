@@ -36,3 +36,4 @@ env/
 
 # OS
 .DS_Store
+.clauderizer/proposals.local.toml
