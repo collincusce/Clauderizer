@@ -55,6 +55,10 @@ Surfaced the pending count without noise. The session digest now carries a singl
 
 Shipped the clauderizer-modernize skill — the agent-driven flow the digest and terse upgrade now point at. It asks first, pulls the pending list from cz_modernize, and walks each proposal handle/dismiss/defer, with a per-kind handle playbook (scaffold gates without guessing real commands, propose deliverables from the specs then cz_upsert_entity on confirm, invoke clauderizer-onboard for unseeded docs) and dismiss/defer via the new tools. It states the propose-confirm constitution (INVARIANT-05). Auto-discovered and init-installed; 2 tests. Suite 821 passed, fresh venv.
 
+### Phase 4 — completed 2026-07-16
+
+Shipped 1.8.0 and closed via the shipped 1.7.0 flow (blind dogfood). CHANGELOG 1.8.0, pyproject+__version__ lockstep, README/ARCHITECTURE swept; subsys.mcp-server 0.12/scaffold 0.13/rituals 0.11 bumped and all cascades resolved (additive; feat.corpus-modernization the extended consumer). Ran cz_audit via the shipped engine: 0 mechanical findings (release single-sourced, tree clean, no pending cascades), then affirmed the 4 judgment checks (fresh-venv verified, consumers re-audited incl. CLI/uninstall, claims test-backed). Dogfood note: the running MCP server predated cz_audit (added this session), so it ran via clauderize ops — inherent MCP-load behavior, worth a docs note. Fresh-venv suite 821 passed.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of

@@ -106,4 +106,4 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 - [x] pyproject AND __version__ bumped to 1.8.0 in lockstep (cz_audit + guard test green)
 - [x] Touched subsystems bumped; cz_cascade run and resolved
 - [x] Full suite verified green in a FRESH venv; count recorded
-- [ ] Gameplan closed via the clauderizer-close-gameplan SKILL with cz_audit run blind; its findings reported and addressed; post-mortem written; focus handed back
+- [x] Gameplan closed via the clauderizer-close-gameplan SKILL with cz_audit run blind; its findings reported and addressed; post-mortem written; focus handed back
