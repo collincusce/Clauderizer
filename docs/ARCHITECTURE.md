@@ -160,7 +160,10 @@ path that delivers them to existing repos:
   `clauderize upgrade` / `cz_modernize` applies the mechanical tier (stamp,
   migrations, example files, the procedure-doc refresh) and surfaces memory-shaped
   gaps as advisory proposals only. Detection in the digest is a version-string
-  compare — read-only and hook-safe.
+  compare — read-only and hook-safe. Proposals are **triageable** (D-052): a stable
+  id + a per-user gitignored ledger (`proposals.local.toml`) record dismiss/defer, the
+  digest surfaces a pending count, and the `clauderizer-modernize` skill walks the
+  agent through handle/dismiss/defer (`cz_dismiss_proposal` / `cz_defer_proposal`).
 
 ### Host targeting & the injection-parity ladder
 

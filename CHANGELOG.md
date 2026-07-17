@@ -2,6 +2,28 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.8.0] — 2026-07-16
+
+Advisory upgrade proposals are now **triageable** — they no longer pile up or
+vanish into terminal scrollback (gameplan
+`2026-07-16-advisory-proposal-triage-at-session-start`, D-052).
+
+- **Persistent triage — handle / dismiss / defer.** Each `cz_modernize` proposal
+  now carries a stable id, and a per-user, gitignored ledger
+  (`.clauderizer/proposals.local.toml`) records **dismissals** (hidden until the
+  proposal materially changes → a new id) and **deferrals** (snoozed to a date).
+  New tools **`cz_dismiss_proposal`** and **`cz_defer_proposal`**.
+- **Surfaced at session start; terse at upgrade.** The session digest shows a
+  one-line *"N upgrade proposals awaiting triage"* — only when some are pending, and
+  riding the single digest (no second injection, INVARIANT-08). `clauderize upgrade`
+  is now **terse**: the mechanical work in full, the advisory proposals as a count +
+  a pointer, not a wall of suggestions (`--json`/`cz_modernize` still list them).
+- **A `clauderizer-modernize` skill** walks you through them one at a time — ask-first,
+  then handle (do the work) / dismiss / defer per proposal. It's the agent-driven
+  answer to "upgrade should finish the job," while the engine still never invents your
+  project's content (D-042 / INVARIANT-05): the mechanical tier auto-applies, the
+  memory tier is proposed for you to action.
+
 ## [1.7.0] — 2026-07-16
 
 Two things: **Kimi Code CLI becomes a first-class auto-write host** (out-of-the-box

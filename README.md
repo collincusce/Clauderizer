@@ -396,8 +396,12 @@ migrations, missing example files, the refresh of the procedure document — all
 `git diff`. Anything touching your recorded *memory* it only **proposes** (for example:
 "these two invariants look like duplicates — consider scoping one to its campaign"), and
 each proposal names the ordinary recording tool that would act on it. Your decisions,
-invariants, and lessons are never edited by a version bump. Skip it and nothing breaks —
-the status line just keeps reminding you it's available. Full detail, including what
+invariants, and lessons are never edited by a version bump. **The proposals are
+triageable** (D-052): `upgrade` prints just a count, the session digest reminds you
+*"N upgrade proposals awaiting triage"*, and the **`clauderizer-modernize` skill** walks
+you through them — **handle** (do the work), **dismiss** (`cz_dismiss_proposal` — gone
+until it materially changes), or **defer** (`cz_defer_proposal` — snoozed). Skip it and
+nothing breaks. Full detail, including what
 `doctor` reports after an update, is in
 [UPGRADING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/UPGRADING.md).
 
