@@ -103,4 +103,4 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 - [x] pyproject.toml version == 1.8.1
 - [x] Changelog/release notes updated for 1.8.1
 - [x] cz_preflight passes and cz_audit run at close
-- [ ] Release committed and tagged
+- [x] Release committed and tagged
