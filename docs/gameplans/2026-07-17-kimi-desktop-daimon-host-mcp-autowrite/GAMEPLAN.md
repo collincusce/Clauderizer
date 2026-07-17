@@ -1,7 +1,7 @@
 # kimi-desktop-daimon-host-mcp-autowrite Gameplan
 
 > Created: 2026-07-17
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -42,10 +42,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Daimon runtime-home mcp.json path confirmed for Windows; macOS/Linux candidate paths chosen (best-effort, marked to confirm)
-- [ ] The WSL->Windows-desktop case is designed: detect via /mnt/c/Users/<user>/AppData, and emit a wsl.exe -d <distro> wrapped command (reuses session.running_inside_wsl/current_distro)
-- [ ] The D-031 exception is recorded (D-053) with its safety mitigations: detected-only, non-destructive/atomic, robust command
-- [ ] Command-robustness design decided: portable uvx + uvx-absolute resolution + when-to-wsl-wrap
+- [x] Daimon runtime-home mcp.json path confirmed for Windows; macOS/Linux candidate paths chosen (best-effort, marked to confirm)
+- [x] The WSL->Windows-desktop case is designed: detect via /mnt/c/Users/<user>/AppData, and emit a wsl.exe -d <distro> wrapped command (reuses session.running_inside_wsl/current_distro)
+- [x] The D-031 exception is recorded (D-053) with its safety mitigations: detected-only, non-destructive/atomic, robust command
+- [x] Command-robustness design decided: portable uvx + uvx-absolute resolution + when-to-wsl-wrap
 
 ### Phase 1: Bespoke kimi-desktop detection + auto-write emitter
 
@@ -57,11 +57,11 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] A resolver returns the daimon runtime-home mcp.json path per platform (Windows/macOS/Linux) and for the WSL->Windows case; returns None when no runtime home exists
-- [ ] emit auto-writes clauderizer into that mcp.json non-destructively + atomically (temp-write+rename), preserving other servers; detected-only (never creates the dir)
-- [ ] The written command is portable and robust: uvx --from clauderizer[mcp] clauderizer-mcp, absolute-uvx when resolvable, wsl.exe-wrapped when running inside WSL against a Windows-side config
-- [ ] Tests cover each platform (mocked home), the WSL case, non-destructive merge, and detected-only (both directions, L-25)
-- [ ] Full suite green in a fresh venv
+- [x] A resolver returns the daimon runtime-home mcp.json path per platform (Windows/macOS/Linux) and for the WSL->Windows case; returns None when no runtime home exists
+- [x] emit auto-writes clauderizer into that mcp.json non-destructively + atomically (temp-write+rename), preserving other servers; detected-only (never creates the dir)
+- [x] The written command is portable and robust: uvx --from clauderizer[mcp] clauderizer-mcp, absolute-uvx when resolvable, wsl.exe-wrapped when running inside WSL against a Windows-side config
+- [x] Tests cover each platform (mocked home), the WSL case, non-destructive merge, and detected-only (both directions, L-25)
+- [x] Full suite green in a fresh venv
 
 ### Phase 2: Wire kimi-desktop into init, doctor, uninstall
 
