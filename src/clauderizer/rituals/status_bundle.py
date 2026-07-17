@@ -583,6 +583,20 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
             "corpus": config.procedure_version or None,
             "engine": _engine_procedure,
         }
+    # Standing advisory-proposal count (D-052): unlike the version nudge above,
+    # this fires even when the corpus is version-current, so proposals a user has
+    # not yet triaged don't vanish once they upgrade. CHEAP mode skips the only
+    # expensive detector (the near-dup abstract-index scan), and the whole thing
+    # is best-effort — any failure just means no nudge (the digest never breaks).
+    try:
+        from .. import modernize
+        from .. import proposals as _proposals
+        _rep = modernize.report(paths, config, cheap=True)
+        _pending = _proposals.filter_pending(_rep["proposals"], _proposals.load_ledger(paths))
+        if _pending:
+            bundle["pending_proposals"] = len(_pending)
+    except Exception:
+        pass
     if not gid:
         bundle["summary"] = "No active gameplan. Use cz_create_gameplan to start one."
         return bundle
@@ -751,6 +765,11 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
             f"⚙ Modernization: {where}; this engine carries procedure "
             f"{mz['engine']} — `clauderize upgrade` applies the mechanical "
             "updates; cz_modernize lists the advisory proposals.")
+    pp = bundle.get("pending_proposals")
+    if pp:
+        lines.append(
+            f"⚙ {pp} upgrade proposal(s) awaiting triage — invoke the "
+            "clauderizer-modernize skill to handle/dismiss/defer them (cz_modernize).")
     if bundle.get("blockers"):
         lines.append("Blocked: " + ", ".join(bundle["blockers"]))
     for warn in bundle.get("drift") or []:

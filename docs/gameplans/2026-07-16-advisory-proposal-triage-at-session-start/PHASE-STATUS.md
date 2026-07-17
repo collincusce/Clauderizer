@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Design the proposal-triage primitive | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Proposal identity + triage ledger + cz_modernize filtering + tools | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | SessionStart digest surfacing + terse upgrade CLI output | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | SessionStart digest surfacing + terse upgrade CLI output | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Ship the clauderizer-modernize triage skill | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Docs, dogfood 1.7.0 blind, ship 1.8.0, close | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
@@ -25,6 +25,12 @@ triage-design: Stable ids: proposals.proposal_id(kind, *parts) = '<kind>:<12-hex
 
 ```
 triage-impl: src/clauderizer/proposals.py (id + ledger + dismiss/defer/is_suppressed/filter_pending). modernize.report() attaches a stable id to all 6 proposal kinds and gained cheap=True (skips near_dup). ops.cz_modernize filters via the ledger and reports pending_count/suppressed_count; new tools cz_dismiss_proposal / cz_defer_proposal (writes=True) registered in ops REGISTRY + tools_list. init gitignores .clauderizer/proposals.local.toml. tests/test_proposals.py (8): stable+content-sensitive ids, dismiss-hides / fresh-shows / materially-changed-reappears (L-25), defer snoozes-until-date-then-returns, dismiss<->defer move, all report proposals carry ids, cheap omits near_dup, tools registered as writers, init gitignores ledger. Suite 807->815, green fresh venv. E2E smoke: dismiss hides via cz_modernize; ledger file written.
+```
+
+### Phase 2 Outputs
+
+```
+digest-and-terse-cli: status_bundle.compute() computes a cheap pending-proposal count (modernize.report(cheap=True) + ledger filter, best-effort/try-except so the hook never breaks) into bundle['pending_proposals'], set BEFORE the no-active-gameplan early return; render_digest appends one line ('N upgrade proposal(s) awaiting triage — invoke the clauderizer-modernize skill') only when pending>0, independent of the version-drift modernization line. cli.cmd_upgrade is now terse: mechanical shown in full, proposals summarized as a count + skill pointer (not the wall); --json still lists them. Live smoke confirmed both. INVARIANT-08 preserved (line rides the single digest — test asserts <=1 [Clauderizer] header). golden digest (test_back_compat_focus) unaffected (sample_repo has no proposals). Suite 815->819, fresh venv green.
 ```
 
 ## Corrections Log

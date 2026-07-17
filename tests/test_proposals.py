@@ -87,3 +87,50 @@ def test_init_gitignores_the_per_user_ledger(empty_python_repo):
     init(empty_python_repo, spawn_test=False)
     assert ".clauderizer/proposals.local.toml" in \
         (empty_python_repo / ".gitignore").read_text(encoding="utf-8")
+
+
+# --- Phase 2: digest surfacing + terse upgrade CLI -------------------------------
+
+def _fresh_campaign(repo):
+    paths = P.resolve(repo)
+    gid = M.create_gameplan(paths, "Ad Push", kind="campaign", today="2026-07-01")["gameplan_id"]
+    config = cfg.Config.load(paths.config_file)
+    config.active_gameplan = gid
+    return paths, config
+
+
+def test_digest_surfaces_pending_proposal_count(temp_repo):
+    from clauderizer.rituals import status_bundle as S
+    paths, config = _fresh_campaign(temp_repo)
+    bundle = S.compute(paths, config)
+    assert bundle.get("pending_proposals", 0) >= 1
+    assert "awaiting triage" in S.render_digest(bundle)          # surfaced (D-052)
+
+
+def test_digest_goes_quiet_once_all_proposals_triaged(temp_repo):
+    from clauderizer.rituals import status_bundle as S
+    paths, config = _fresh_campaign(temp_repo)
+    for p in modernize.report(paths, config, cheap=True)["proposals"]:
+        proposals.dismiss(paths, p["id"])                        # triage them all
+    bundle = S.compute(paths, config)
+    assert not bundle.get("pending_proposals")                   # other direction (L-25)
+    assert "awaiting triage" not in S.render_digest(bundle)
+
+
+def test_digest_pending_line_rides_the_single_digest(temp_repo):
+    # INVARIANT-08: the nudge is part of the one digest string, not a 2nd injection
+    from clauderizer.rituals import status_bundle as S
+    paths, config = _fresh_campaign(temp_repo)
+    digest = S.render_digest(S.compute(paths, config))
+    assert digest.count("[Clauderizer]") <= 1                    # one header, one injection
+
+
+def test_upgrade_cli_is_terse(temp_repo, monkeypatch, capsys):
+    from clauderizer import cli
+    _fresh_campaign(temp_repo)
+    monkeypatch.chdir(temp_repo)
+    assert cli.main(["upgrade"]) == 0
+    out = capsys.readouterr().out
+    assert "advisory proposal(s) awaiting triage" in out         # count + pointer
+    assert "clauderizer-modernize skill" in out
+    assert "record each execution unit" not in out              # NOT the full proposal wall

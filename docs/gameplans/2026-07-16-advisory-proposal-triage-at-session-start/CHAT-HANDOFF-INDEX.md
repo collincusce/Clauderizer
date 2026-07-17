@@ -1,7 +1,7 @@
 # Chat Handoff Index — advisory-proposal-triage-at-session-start
 
 > Last updated: 2026-07-16
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Design the proposal-triage primitive | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Proposal identity + triage ledger + cz_modernize filtering + tools | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | SessionStart digest surfacing + terse upgrade CLI output | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | SessionStart digest surfacing + terse upgrade CLI output | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Ship the clauderizer-modernize triage skill | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Docs, dogfood 1.7.0 blind, ship 1.8.0, close | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
@@ -46,6 +46,10 @@ Locked the triage primitive: content-derived stable proposal ids (kind:hash over
 ### Phase 1 — completed 2026-07-16
 
 Built the triage core: proposals.py (ids + ledger + dismiss/defer/is_suppressed/filter_pending), modernize.report() now stamps every proposal with a stable id and supports cheap=True, ops.cz_modernize filters the ledger and reports pending/suppressed counts, and cz_dismiss_proposal/cz_defer_proposal (writes) are registered in ops + tools_list. init gitignores the ledger. 8 tests prove stable+content-sensitive ids, dismiss-hides while fresh/materially-changed still show (L-25 both directions), defer snoozes-until-date-then-returns, and registration. Suite 807->815, green in a fresh venv; E2E smoke confirmed cz_modernize hides a dismissed proposal.
+
+### Phase 2 — completed 2026-07-16
+
+Surfaced the pending count without noise. The session digest now carries a single 'N upgrade proposals awaiting triage' line (cheap report + ledger filter, best-effort so the hook never breaks), shown only when pending>0 and independent of the version-drift nudge — riding the existing digest, so no second injection (INVARIANT-08). clauderize upgrade went terse: mechanical work in full, proposals as a count + clauderizer-modernize pointer, with --json/cz_modernize for the full list. Live smoke confirmed both surfaces; 4 tests (both directions + single-injection + terse CLI). Suite 819 passed, fresh venv.
 
 ## Accumulated Lessons
 

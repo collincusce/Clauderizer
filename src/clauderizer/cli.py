@@ -196,20 +196,29 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
         print("Not a clauderized repo. Run `clauderize init`.")
         return 1
     from . import modernize
+    from . import proposals as _proposals
 
     res = (modernize.report(paths, config) if args.report
            else modernize.apply(paths, config))
     if args.json:
         print(json.dumps(res, indent=2))
         return 0
-    print(res["summary"])
+    # Terse by default (D-052): show the mechanical work in full, but summarize the
+    # advisory proposals as a COUNT + a pointer instead of a wall of suggestions —
+    # the next session's digest and the clauderizer-modernize skill triage them.
+    pending = _proposals.filter_pending(res.get("proposals", []),
+                                        _proposals.load_ledger(paths))
+    mech = res.get("applied") or res.get("mechanical") or []
+    verb = "applied" if res.get("applied") else "available"
+    print(f"{len(mech)} mechanical update(s) {verb}; {len(pending)} advisory proposal(s) awaiting triage")
     for item in res.get("mechanical", []):
         print(f"  would apply: {item['action']} — {item['detail']}")
     for act in res.get("applied", []):
         print(f"  applied: {act}")
-    for p in res.get("proposals", []):
-        tag = f" [{p['gameplan']}]" if p.get("gameplan") else ""
-        print(f"  proposal{tag}: {p['detail']}")
+    if pending:
+        print(f"  {len(pending)} proposal(s) await your triage — invoke the "
+              f"clauderizer-modernize skill to handle / dismiss / defer them")
+        print("  (your next session will remind you; `cz_modernize` or `--json` lists them in full)")
     return 0
 
 

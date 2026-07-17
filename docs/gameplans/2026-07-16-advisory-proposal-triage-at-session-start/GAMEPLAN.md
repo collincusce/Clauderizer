@@ -72,10 +72,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] status_bundle/digest surfaces a one-line pending-proposal nudge only when pending>0, independent of the version-drift nudge, read-only and exit-0
-- [ ] No second status injection introduced (INVARIANT-08 preserved) — a test covers the dedup
-- [ ] clauderize upgrade prints a terse summary (mechanical count + pending-proposal count + skill pointer), not the full proposal list; a test asserts the terse shape
-- [ ] Full suite green in a fresh venv
+- [x] status_bundle/digest surfaces a one-line pending-proposal nudge only when pending>0, independent of the version-drift nudge, read-only and exit-0
+- [x] No second status injection introduced (INVARIANT-08 preserved) — a test covers the dedup
+- [x] clauderize upgrade prints a terse summary (mechanical count + pending-proposal count + skill pointer), not the full proposal list; a test asserts the terse shape
+- [x] Full suite green in a fresh venv
 
 ### Phase 3: Ship the clauderizer-modernize triage skill
 
