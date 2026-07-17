@@ -61,4 +61,4 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 - [x] CHANGELOG 1.9.1; pyproject AND __version__ bumped to 1.9.1 in lockstep (cz_audit clean)
 - [x] subsys.scaffold bumped; cascade resolved
 - [x] Gameplan closed via the close skill with cz_audit run; post-mortem written
-- [ ] Released: tag v1.9.1, CI green, GitHub Release, clauderizer 1.9.1 verified live on PyPI
+- [x] Released: tag v1.9.1, CI green, GitHub Release, clauderizer 1.9.1 verified live on PyPI
