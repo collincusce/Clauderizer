@@ -416,6 +416,19 @@ def init(
         report.note("kimi-desktop MCP", desk["path"], desk.get("changed", True))
         for w in desk["warnings"]:
             report.warnings.append(f"kimi-desktop: {w}")
+        # WSL repo + Windows desktop: the app can't spawn with a UNC cwd, so the
+        # shell AND the MCP server will fail to launch here. Drop the guide into the
+        # repo so a spawn-broken agent can READ its way out (file tools still work) —
+        # D-054. Also warn loudly.
+        if desk.get("windows_side"):
+            guide = root / ".clauderizer" / "kimi-desktop-mcp-setup.md"
+            report.note("kimi-desktop guide",
+                        guide, _rewrite_if_diff(guide, kimidesktop.setup_guide()))
+            report.warnings.append(
+                "kimi-desktop: this repo is in WSL but the desktop app runs on Windows — "
+                "it cannot spawn the MCP server or shell with a UNC (\\\\wsl.localhost) cwd. "
+                "Put the repo on the Windows filesystem, or use Kimi Code CLI in WSL. "
+                "See .clauderizer/kimi-desktop-mcp-setup.md")
     elif desk["status"] == "failed":
         guide = root / ".clauderizer" / "kimi-desktop-mcp-setup.md"
         report.note("kimi-desktop guide",

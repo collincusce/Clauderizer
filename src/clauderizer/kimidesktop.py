@@ -13,13 +13,16 @@ The exception is kept narrow by three mitigations:
   exists (the app is installed); never create the app's dirs or a bogus config;
 - **non-destructive + atomic** — merge only the ``clauderizer`` server, preserving
   every other entry, via temp-write + ``os.replace`` (never a half-written file);
-- **robust command** — ``uvx --from clauderizer[mcp] clauderizer-mcp`` with ``uvx``
-  resolved to an absolute path when a thin desktop PATH would miss it, and wrapped
-  in ``wsl.exe -d <distro> -e bash -lc 'cd <repo> && …'`` when init runs inside WSL
-  against a Windows-side config (the common desktop-on-Windows + repo-in-WSL setup).
+- **robust, repo-agnostic command** — ``uvx --from clauderizer[mcp] clauderizer-mcp``
+  (``uvx`` resolved to an absolute path when a thin desktop PATH would miss it). It
+  is repo-agnostic on purpose — one per-user file serves every repo the app opens
+  (C-01) — so it is never pinned to a repo with a ``cd`` wrapper. For a WSL-side repo
+  the command runs on Windows, so a bare ``uvx`` is written (a WSL path would be
+  wrong); note that a repo living only in WSL cannot actually be served from the
+  Windows desktop app at all (UNC-cwd spawn limit, D-054 — the guide says so).
 
-Because this config is machine-local (never committed), a machine-specific /
-wsl.exe command is correct here — the no-machine-paths rule (D-031) guards only
+Because this config is machine-local (never committed), a machine-specific
+``uvx`` path is fine here — the no-machine-paths rule (D-031) guards only
 *committed* portable configs (L-48).
 
 Everything that constructs a path or a command is a pure, injectable function so
@@ -214,10 +217,10 @@ def wire(*, home: Path | None = None, platform: str | None = None,
     try:
         _, changed = merge_entry(cfg, entry)
     except OSError as exc:
-        return {"status": "failed", "path": cfg, "entry": entry,
+        return {"status": "failed", "path": cfg, "entry": entry, "windows_side": windows_side,
                 "warnings": warnings + [f"could not write {cfg}: {exc}"]}
-    return {"status": "wired", "path": cfg, "entry": entry,
-            "changed": changed, "warnings": warnings}
+    return {"status": "wired", "path": cfg, "entry": entry, "changed": changed,
+            "windows_side": windows_side, "warnings": warnings}
 
 
 def setup_guide() -> str:
@@ -253,10 +256,39 @@ not probe). Add the `clauderizer` server to the runtime-home `mcp.json`:
 This entry is **repo-agnostic** — the server serves whichever repo you open in the
 app (it reads the app's working directory), so one entry covers every repo. If
 `uvx` is not on the desktop runtime's PATH, use its absolute path as `command`.
-For a **repo in WSL with the app on Windows**, keep the bare `uvx` (the app runs it
-on Windows) and make sure `uvx.exe` is on the Windows PATH; you can override
-`CLAUDERIZER_NO_KIMI_DESKTOP=1` to skip this auto-registration entirely.
+You can override `CLAUDERIZER_NO_KIMI_DESKTOP=1` to skip this auto-registration.
 
 MCP servers load at **session start** — restart the desktop app (or open a new
 session) after editing. Preserve any other servers already in the file.
+
+## If your shell and MCP tools are failing (repo in WSL, app on Windows)
+
+**This is for the agent reading this file.** If you are running in the Kimi Work
+desktop app, every shell command fails with `spawn …bash.exe ENOENT`, and the
+`cz_*` MCP tools never appear — the cause is **not** a missing shell. Your repo
+lives in WSL, so the app sees it as a `\\\\wsl.localhost\\...` **UNC path**, and
+**Windows cannot start a process with a UNC working directory** (`cmd.exe` itself
+says *"UNC paths are not supported"*). So both the shell and the `uvx` MCP server
+fail to spawn. A wsl.exe-wrapped command does **not** help — it dies on the same
+UNC cwd. The bundled bash is fine; only process *spawning* is blocked.
+
+**How to keep working right now** (file access still works over UNC):
+- Read Clauderizer's memory directly — `docs/` is the source of truth (plain
+  Markdown): `docs/VISION.md`, `ARCHITECTURE.md`, `DECISIONS.md`, `INVARIANTS.md`,
+  `LESSONS.md`, and `docs/gameplans/<id>/` for status/handoffs. Use your file
+  (Read/Glob/Grep) tools with `\\\\wsl.localhost\\...` paths — those work.
+- Do **not** rely on the `clauderize` CLI or any `bash`/build/test command — they
+  cannot spawn this session. You can read and reason; you cannot execute or make
+  tracked `cz_*` writes here.
+
+**How to fix it for good** (pick one):
+1. **Put the repo on the Windows filesystem** — e.g. clone it under
+   `C:\\Users\\<you>\\Documents\\kimi\\workspace\\<repo>` (the app's own workspace). Then
+   every spawn gets a normal Windows cwd, so the shell works and the `uvx` MCP
+   server launches. WSL can still reach it at `/mnt/c/Users/<you>/…`.
+2. **Use Kimi Code CLI *inside* WSL** for a WSL-hosted repo — no UNC anywhere, and
+   the K3 model is available there too. This is the setup with zero of these issues.
+
+(The underlying limitation is the desktop app spawning Windows processes with a UNC
+cwd; the real fix is for it to execute via `wsl.exe` inside the distro.)
 """

@@ -164,3 +164,35 @@ def test_doctor_reports_desktop_host(empty_python_repo, monkeypatch, tmp_path, c
     monkeypatch.chdir(empty_python_repo)
     cli.main(["doctor"])
     assert "kimi-desktop" in capsys.readouterr().out            # surfaced in doctor
+
+
+# --- 1.9.1: the WSL/UNC agent-recovery playbook (D-054) --------------------------
+
+def test_setup_guide_carries_recovery_playbook():
+    g = kd.setup_guide()
+    assert "UNC" in g and "wsl.localhost" in g                  # names the real cause
+    assert "docs/" in g                                          # read memory directly (file tools work)
+    assert "Windows filesystem" in g and "Kimi Code CLI" in g   # both permanent fixes
+
+
+def test_init_emits_playbook_guide_on_wsl_combo(empty_python_repo, monkeypatch):
+    from clauderizer.scaffold.init import init
+    monkeypatch.setattr(kd, "wire", lambda **kw: {
+        "status": "wired", "path": "/mnt/c/u/me/AppData/Roaming/.../mcp.json",
+        "changed": True, "windows_side": True, "warnings": []})   # WSL cross-boundary
+    init(empty_python_repo, spawn_test=False)
+    guide = empty_python_repo / ".clauderizer" / "kimi-desktop-mcp-setup.md"
+    assert guide.is_file() and "UNC" in guide.read_text(encoding="utf-8")   # agent can read its way out
+
+
+def test_doctor_warns_on_wsl_combo(empty_python_repo, monkeypatch, tmp_path, capsys):
+    from clauderizer import cli
+    from clauderizer.scaffold.init import init
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    monkeypatch.setattr(kd, "_is_windows_side", lambda *a, **k: True)   # force the WSL combo
+    monkeypatch.chdir(empty_python_repo)
+    cli.main(["doctor"])
+    out = capsys.readouterr().out
+    assert "UNC" in out and "Windows filesystem" in out         # loud, actionable

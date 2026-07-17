@@ -1,7 +1,7 @@
 # Chat Handoff Index — kimi-desktop-unc-recovery-playbook
 
 > Last updated: 2026-07-17
-> Status: Phase 0 ready
+> Status: Phase 1 ready
 
 ## How This Works
 
@@ -29,14 +29,16 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Agent-recovery guide + doctor warning for the WSL/UNC combo | ⬜ READY | — | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Agent-recovery guide + doctor warning for the WSL/UNC combo | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Ship 1.9.1, dogfood close, release | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
 ## Per-Phase Completion Summaries
 
-_(None yet.)_
+### Phase 0 — completed 2026-07-17
+
+Shipped the agent-recovery playbook (D-054). Expanded the kimi-desktop setup guide with a 'shell/tools failing' section — the UNC-cwd cause, how to keep working via file tools + docs/, and the two real fixes (repo on Windows / Kimi Code CLI in WSL). init now emits that guide into .clauderizer/ whenever it detects the WSL-repo + Windows-desktop combo (so a spawn-broken agent can read its way out), plus a loud warning; doctor warns for the same combo. Fixed a stale module-docstring claim and f-string backslash escaping. Live-verified on this WSL+desktop machine: doctor printed the UNC warning, init emitted the 9-keyword playbook. Suite 837->840, fresh venv.
 
 ## Accumulated Lessons
 

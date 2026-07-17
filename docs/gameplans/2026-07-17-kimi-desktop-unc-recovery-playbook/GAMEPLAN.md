@@ -1,7 +1,7 @@
 # kimi-desktop-unc-recovery-playbook Gameplan
 
 > Created: 2026-07-17
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -42,11 +42,11 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] setup_guide() expanded into an agent playbook: MCP entry + a 'shell/tools failing' section (why=UNC cwd; work-now=file tools + UNC paths + read docs/, avoid CLI/bash; fix=repo on Windows OR Kimi Code CLI in WSL)
-- [ ] init emits the guide into .clauderizer/ when it detects the WSL-repo + Windows-side daimon combo (not only on write-failure), so a spawn-broken agent can read it
-- [ ] doctor warns loudly for the WSL+Windows-desktop combo and points at the guide
-- [ ] Tests: guide contains the recovery playbook; init emits it on the WSL combo; doctor warns
-- [ ] Full suite green in a fresh venv
+- [x] setup_guide() expanded into an agent playbook: MCP entry + a 'shell/tools failing' section (why=UNC cwd; work-now=file tools + UNC paths + read docs/, avoid CLI/bash; fix=repo on Windows OR Kimi Code CLI in WSL)
+- [x] init emits the guide into .clauderizer/ when it detects the WSL-repo + Windows-side daimon combo (not only on write-failure), so a spawn-broken agent can read it
+- [x] doctor warns loudly for the WSL+Windows-desktop combo and points at the guide
+- [x] Tests: guide contains the recovery playbook; init emits it on the WSL combo; doctor warns
+- [x] Full suite green in a fresh venv
 
 ### Phase 1: Ship 1.9.1, dogfood close, release
 

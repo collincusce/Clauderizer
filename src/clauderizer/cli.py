@@ -384,13 +384,21 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     desk_cfg = kimidesktop.detect_config()
     if desk_cfg is None:
         print("· kimi-desktop: app not detected (no daimon runtime home) — nothing to wire")
-    elif _host_mcp_registered(desk_cfg, "mcpServers"):
-        print(f"✓ kimi-desktop: MCP registered ({desk_cfg})")
-        if _shutil.which("uvx") is None:
-            warn("kimi-desktop", "uvx not on PATH — the desktop server may not launch; install uv")
     else:
-        warn("kimi-desktop",
-             f"app detected but clauderizer not in {desk_cfg} — re-run `clauderize init`")
+        if _host_mcp_registered(desk_cfg, "mcpServers"):
+            print(f"✓ kimi-desktop: MCP registered ({desk_cfg})")
+            if _shutil.which("uvx") is None:
+                warn("kimi-desktop", "uvx not on PATH — the desktop server may not launch; install uv")
+        else:
+            warn("kimi-desktop",
+                 f"app detected but clauderizer not in {desk_cfg} — re-run `clauderize init`")
+        # WSL repo + Windows desktop config → the app can't spawn with a UNC cwd (D-054)
+        if kimidesktop._is_windows_side(desk_cfg, kimidesktop.WSL_USERS_DIR):
+            warn("kimi-desktop",
+                 "this repo is in WSL but the desktop app is on Windows — it cannot spawn "
+                 "the MCP server or shell with a UNC (\\\\wsl.localhost) cwd, so tools/shell "
+                 "will fail. Put the repo on the Windows filesystem, or use Kimi Code CLI in "
+                 "WSL. See .clauderizer/kimi-desktop-mcp-setup.md")
 
     # D4 breadcrumb wrapper: when the registered command is the wrapper, its
     # file must exist and its baked engine command should match what a fresh
