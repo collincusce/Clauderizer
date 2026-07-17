@@ -40,7 +40,7 @@ def test_wire_autowrites_non_destructively(tmp_path):
     cfg = (home / ".config").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
     cfg.parent.mkdir(parents=True)
     cfg.write_text(json.dumps({"mcpServers": {"other": {"command": "x"}}}), encoding="utf-8")
-    res = kd.wire(tmp_path / "repo", home=home, platform="linux", environ={},
+    res = kd.wire(home=home, platform="linux", environ={},
                   in_wsl=False, which=lambda n: "/usr/bin/uvx")
     assert res["status"] == "wired" and res["path"] == cfg
     servers = json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]
@@ -50,30 +50,31 @@ def test_wire_autowrites_non_destructively(tmp_path):
 
 
 def test_wire_not_detected_when_app_absent(tmp_path):
-    res = kd.wire(tmp_path / "repo", home=tmp_path / "home", platform="linux",
+    res = kd.wire(home=tmp_path / "home", platform="linux",
                   environ={}, in_wsl=False)
     assert res["status"] == "not_detected" and res["path"] is None
 
 
-def test_wsl_windows_side_emits_wslexe_wrapper(tmp_path):
+def test_wsl_windows_side_writes_bare_uvx_repo_agnostic(tmp_path):
+    # repo in WSL, app on Windows: the command runs on Windows, so a WSL-absolute
+    # path would be wrong — write a bare 'uvx' (repo-agnostic, no cd) + a loud warning.
     users = tmp_path / "mnt-c-Users"
     cfg = (users / "me" / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
     _make_home(users, cfg)
-    res = kd.wire(tmp_path / "repo", home=tmp_path / "linuxhome", platform="linux",
-                  environ={"WSL_DISTRO_NAME": "Ubuntu"}, in_wsl=True, distro="Ubuntu",
-                  users_dir=users)
+    res = kd.wire(home=tmp_path / "linuxhome", platform="linux",
+                  environ={"WSL_DISTRO_NAME": "Ubuntu"}, in_wsl=True, users_dir=users,
+                  which=lambda n: "/home/me/.local/bin/uvx")   # WSL uvx — must NOT be used
     assert res["status"] == "wired" and res["path"] == cfg      # picked the Windows-side config
     entry = json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]["clauderizer"]
-    assert entry["command"] == "wsl.exe"
-    assert entry["args"][:3] == ["-d", "Ubuntu", "-e"]
-    assert "clauderizer[mcp]" in entry["args"][-1] and "/repo" in entry["args"][-1]
+    assert entry == {"command": "uvx", "args": ["--from", "clauderizer[mcp]", "clauderizer-mcp"]}
+    assert any("Windows PATH" in w for w in res["warnings"])
 
 
 def test_wire_warns_when_uvx_missing(tmp_path):
     home = tmp_path / "home"
     cfg = (home / ".config").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
     _make_home(home, cfg)
-    res = kd.wire(tmp_path / "repo", home=home, platform="linux", environ={},
+    res = kd.wire(home=home, platform="linux", environ={},
                   in_wsl=False, which=lambda n: None)            # uvx not on PATH
     assert res["status"] == "wired"
     assert any("uvx is not on PATH" in w for w in res["warnings"])   # loud, not silent
@@ -83,7 +84,7 @@ def test_remove_entry_is_surgical(tmp_path):
     home = tmp_path / "home"
     cfg = (home / ".config").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
     _make_home(home, cfg)
-    kd.wire(tmp_path / "repo", home=home, platform="linux", environ={}, in_wsl=False)
+    kd.wire(home=home, platform="linux", environ={}, in_wsl=False)
     data = json.loads(cfg.read_text(encoding="utf-8")); data["mcpServers"]["keep"] = {"command": "y"}
     cfg.write_text(json.dumps(data), encoding="utf-8")
     assert kd.remove_entry(cfg) is True
@@ -96,5 +97,70 @@ def test_atomic_write_leaves_no_tmp(tmp_path):
     home = tmp_path / "home"
     cfg = (home / ".config").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
     _make_home(home, cfg)
-    kd.wire(tmp_path / "repo", home=home, platform="linux", environ={}, in_wsl=False)
+    kd.wire(home=home, platform="linux", environ={}, in_wsl=False)
     assert not (cfg.parent / (cfg.name + ".tmp")).exists()       # temp file renamed away
+
+
+def test_merge_is_idempotent(tmp_path):
+    home = tmp_path / "home"
+    cfg = (home / ".config").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    _make_home(home, cfg)
+    entry, _ = kd.server_entry(cfg, in_wsl=False, which=lambda n: "/usr/bin/uvx")
+    _, first = kd.merge_entry(cfg, entry)
+    _, second = kd.merge_entry(cfg, entry)
+    assert first is True and second is False                     # second run = no write
+
+
+def test_disable_env_guard_skips_detection(tmp_path):
+    home = tmp_path / "home"
+    cfg = (home / ".config").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    _make_home(home, cfg)
+    # present, but the opt-out env var makes it invisible (also the test-suite guard, L-29)
+    assert kd.detect_config(home=home, platform="linux",
+                            environ={kd.DISABLE_ENV: "1"}, in_wsl=False) is None
+
+
+# --- Phase 2: init / doctor / uninstall integration -----------------------------
+
+def _detected(monkeypatch, cfg):
+    cfg.parent.mkdir(parents=True, exist_ok=True)
+    cfg.write_text('{"mcpServers": {}}', encoding="utf-8")
+    monkeypatch.setattr(kd, "detect_config", lambda **kw: cfg)
+
+
+def test_init_autowrites_desktop_when_detected(empty_python_repo, monkeypatch, tmp_path):
+    from clauderizer.scaffold.init import init
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    assert "clauderizer" in json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]
+
+
+def test_init_is_silent_noop_when_desktop_absent(empty_python_repo, monkeypatch):
+    from clauderizer.scaffold.init import init
+    monkeypatch.setattr(kd, "detect_config", lambda **kw: None)
+    init(empty_python_repo, spawn_test=False)                    # no crash
+    # no guide littered into a repo whose user doesn't have the app
+    assert not (empty_python_repo / ".clauderizer" / "kimi-desktop-mcp-setup.md").exists()
+
+
+def test_uninstall_removes_desktop_registration(empty_python_repo, monkeypatch, tmp_path):
+    from clauderizer.scaffold.init import init
+    from clauderizer.scaffold.uninstall import uninstall
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    assert "clauderizer" in json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]
+    uninstall(empty_python_repo)
+    assert "clauderizer" not in json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]
+
+
+def test_doctor_reports_desktop_host(empty_python_repo, monkeypatch, tmp_path, capsys):
+    from clauderizer import cli
+    from clauderizer.scaffold.init import init
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    monkeypatch.chdir(empty_python_repo)
+    cli.main(["doctor"])
+    assert "kimi-desktop" in capsys.readouterr().out            # surfaced in doctor

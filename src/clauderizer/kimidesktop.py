@@ -31,7 +31,6 @@ from __future__ import annotations
 
 import json
 import os
-import shlex
 import shutil
 import sys
 from pathlib import Path
@@ -81,14 +80,23 @@ def candidate_configs(*, home: Path, platform: str, environ: dict, in_wsl: bool,
     return [r.joinpath(*DAIMON_SUFFIX, MCP_JSON) for r in roots]
 
 
+# Opt-out env var: skip desktop detection/auto-write entirely. A real escape hatch
+# for the one D-031 exception, and the guard the test suite sets so no test ever
+# writes a real per-user daimon config (L-29).
+DISABLE_ENV = "CLAUDERIZER_NO_KIMI_DESKTOP"
+
+
 def detect_config(*, home: Path | None = None, platform: str | None = None,
                   environ: dict | None = None, in_wsl: bool | None = None,
                   users_dir: Path = WSL_USERS_DIR) -> Path | None:
     """The daimon runtime-home ``mcp.json`` if the app is installed (its ``home/``
-    dir already exists), else ``None`` — detected-only, never creating anything."""
+    dir already exists), else ``None`` — detected-only, never creating anything.
+    Returns ``None`` when ``CLAUDERIZER_NO_KIMI_DESKTOP`` is set in ``environ``."""
     home = home or Path.home()
     platform = platform or sys.platform
     environ = environ if environ is not None else os.environ
+    if environ.get(DISABLE_ENV):
+        return None
     if in_wsl is None:
         in_wsl = bool(environ.get("WSL_DISTRO_NAME"))
     for cfg in candidate_configs(home=home, platform=platform, environ=environ,
@@ -106,28 +114,37 @@ def _is_windows_side(cfg: Path, users_dir: Path) -> bool:
         return False
 
 
-def server_entry(repo_root: Path, cfg: Path, *, in_wsl: bool, distro: str | None,
-                 windows_side: bool | None = None,
-                 which: Callable[[str], str | None] = shutil.which) -> dict:
-    """The ``mcpServers['clauderizer']`` entry for the daimon config.
+_ARGS = ["--from", "clauderizer[mcp]", "clauderizer-mcp"]
 
-    Windows/macOS/Linux native: ``uvx --from clauderizer[mcp] clauderizer-mcp``
-    (uvx absolute when resolvable — a desktop runtime's PATH is often thin).
-    WSL-in + Windows-side config: ``wsl.exe -d <distro> -e bash -lc 'cd <repo> &&
-    uvx …'`` so the Windows-spawned server runs where uvx and the repo live.
 
-    ``windows_side`` says whether ``cfg`` is a Windows-mounted config; when unset it
-    falls back to a ``/mnt/`` prefix heuristic for direct callers.
+def server_entry(cfg: Path, *, in_wsl: bool, windows_side: bool | None = None,
+                 which: Callable[[str], str | None] = shutil.which) -> tuple[dict, list[str]]:
+    """The ``mcpServers['clauderizer']`` entry + any warnings.
+
+    The entry is **repo-agnostic** on purpose: the daimon config is one per-user
+    file shared by every repo the desktop app opens, so the server must discover
+    the *open* repo from the app's working directory rather than be pinned to one
+    (this is the user-verified working shape). So it is always
+    ``uvx --from clauderizer[mcp] clauderizer-mcp`` — never a ``cd <repo>`` wrapper.
+
+    - **same-OS** (init and app on one OS): resolve ``uvx`` to an absolute path when
+      possible (a desktop runtime's PATH is often thin);
+    - **WSL init → Windows-side config**: the command runs on *Windows*, so a
+      WSL-absolute path would be wrong — write a bare ``uvx`` and warn that uvx.exe
+      must be on the Windows PATH.
     """
     if windows_side is None:
         windows_side = str(cfg).startswith("/mnt/")
-    if in_wsl and windows_side and distro:
-        inner = (f"cd {shlex.quote(repo_root.as_posix())} && "
-                 "uvx --from 'clauderizer[mcp]' clauderizer-mcp")
-        return {"command": "wsl.exe",
-                "args": ["-d", distro, "-e", "bash", "-lc", inner]}
-    uvx = which("uvx") or "uvx"
-    return {"command": uvx, "args": ["--from", "clauderizer[mcp]", "clauderizer-mcp"]}
+    if in_wsl and windows_side:
+        return ({"command": "uvx", "args": list(_ARGS)},
+                ["the Kimi desktop runs on Windows — wrote a bare 'uvx'; ensure uvx.exe "
+                 "is on the Windows PATH, and open the repo in the app (the server reads "
+                 "the open repo from its working directory)"])
+    uvx = which("uvx")
+    if uvx is None:
+        return ({"command": "uvx", "args": list(_ARGS)},
+                ["uvx is not on PATH — wrote a bare 'uvx'; install uv so the server launches"])
+    return ({"command": uvx, "args": list(_ARGS)}, [])
 
 
 def _atomic_write_json(path: Path, data: dict) -> None:
@@ -138,9 +155,10 @@ def _atomic_write_json(path: Path, data: dict) -> None:
     os.replace(tmp, path)                             # atomic on POSIX and Windows
 
 
-def merge_entry(cfg: Path, entry: dict) -> Path:
+def merge_entry(cfg: Path, entry: dict) -> tuple[Path, bool]:
     """Non-destructively add/replace only the ``clauderizer`` server in ``cfg``,
-    preserving every other server and top-level key. Atomic write."""
+    preserving every other server and top-level key. Atomic write, and idempotent:
+    returns ``(cfg, changed)`` and skips the write when already current."""
     data: dict = {}
     if cfg.exists():
         try:
@@ -152,9 +170,11 @@ def merge_entry(cfg: Path, entry: dict) -> Path:
     servers = data.get("mcpServers")
     if not isinstance(servers, dict):
         servers = data["mcpServers"] = {}
+    if servers.get("clauderizer") == entry:
+        return cfg, False                             # already current — no write
     servers["clauderizer"] = entry
     _atomic_write_json(cfg, data)
-    return cfg
+    return cfg, True
 
 
 def remove_entry(cfg: Path) -> bool:
@@ -174,42 +194,30 @@ def remove_entry(cfg: Path) -> bool:
     return True
 
 
-def wire(repo_root: Path, *, home: Path | None = None, platform: str | None = None,
+def wire(*, home: Path | None = None, platform: str | None = None,
          environ: dict | None = None, in_wsl: bool | None = None,
-         distro: str | None = None, users_dir: Path = WSL_USERS_DIR,
+         users_dir: Path = WSL_USERS_DIR,
          which: Callable[[str], str | None] = shutil.which) -> dict:
-    """Detect the daimon host and, if present, auto-write the clauderizer server.
-
-    Returns ``{"status": "wired"|"not_detected"|"failed", "path", "entry",
-    "warnings"}``. Never raises on a detected-but-unwritable config — reports it as
-    a warning so doctor/init can surface it loudly instead of dying (D-053)."""
+    """Detect the daimon host and, if present, auto-write the clauderizer server
+    (repo-agnostic). Returns ``{"status": "wired"|"not_detected"|"failed", "path",
+    "entry", "changed", "warnings"}``. Never raises on a detected-but-unwritable
+    config — reports it as a warning so doctor/init surface it loudly, not die."""
     environ = environ if environ is not None else os.environ
     if in_wsl is None:
         in_wsl = bool(environ.get("WSL_DISTRO_NAME"))
-    if distro is None:
-        distro = environ.get("WSL_DISTRO_NAME")
-    warnings: list[str] = []
     cfg = detect_config(home=home, platform=platform, environ=environ,
                         in_wsl=in_wsl, users_dir=users_dir)
     if cfg is None:
         return {"status": "not_detected", "path": None, "entry": None, "warnings": []}
     windows_side = in_wsl and _is_windows_side(cfg, users_dir)
-    entry = server_entry(repo_root, cfg, in_wsl=in_wsl, distro=distro,
-                         windows_side=windows_side, which=which)
-    if entry["command"] == "uvx" and which("uvx") is None:
-        warnings.append(
-            "uvx is not on PATH — wrote a bare 'uvx' command; install uv or put uvx "
-            "on the Kimi desktop runtime's PATH, or the server will not launch")
-    if in_wsl and windows_side and not distro:
-        warnings.append(
-            "running in WSL against a Windows-side config but no WSL distro is known "
-            "(WSL_DISTRO_NAME unset) — the command may not launch; re-run inside the distro")
+    entry, warnings = server_entry(cfg, in_wsl=in_wsl, windows_side=windows_side, which=which)
     try:
-        merge_entry(cfg, entry)
+        _, changed = merge_entry(cfg, entry)
     except OSError as exc:
         return {"status": "failed", "path": cfg, "entry": entry,
                 "warnings": warnings + [f"could not write {cfg}: {exc}"]}
-    return {"status": "wired", "path": cfg, "entry": entry, "warnings": warnings}
+    return {"status": "wired", "path": cfg, "entry": entry,
+            "changed": changed, "warnings": warnings}
 
 
 def setup_guide() -> str:
@@ -242,13 +250,12 @@ not probe). Add the `clauderizer` server to the runtime-home `mcp.json`:
 }}
 ```
 
-If `uvx` is not on the desktop runtime's PATH, use its absolute path as `command`.
-For a repo inside WSL, use instead:
-
-```json
-{{ "command": "wsl.exe",
-   "args": ["-d", "<distro>", "-e", "bash", "-lc", "cd /path/to/repo && uvx --from 'clauderizer[mcp]' clauderizer-mcp"] }}
-```
+This entry is **repo-agnostic** — the server serves whichever repo you open in the
+app (it reads the app's working directory), so one entry covers every repo. If
+`uvx` is not on the desktop runtime's PATH, use its absolute path as `command`.
+For a **repo in WSL with the app on Windows**, keep the bare `uvx` (the app runs it
+on Windows) and make sure `uvx.exe` is on the Windows PATH; you can override
+`CLAUDERIZER_NO_KIMI_DESKTOP=1` to skip this auto-registration entirely.
 
 MCP servers load at **session start** — restart the desktop app (or open a new
 session) after editing. Preserve any other servers already in the file.

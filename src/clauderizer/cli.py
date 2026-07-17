@@ -374,6 +374,24 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             check(f"{hid} native floor present",
                   _has_marker(paths.root / rel, "clauderizer"),
                   f"missing {rel} — re-run `clauderize init --host {hid}`")
+
+    # kimi-desktop (daimon runtime) — bespoke auto-write host (D-053). Read-only
+    # report: detected + registered / detected-but-unwired / not installed. Loud on
+    # a missing uvx, since MCP is that host's only orientation lane.
+    import shutil as _shutil
+
+    from . import kimidesktop
+    desk_cfg = kimidesktop.detect_config()
+    if desk_cfg is None:
+        print("· kimi-desktop: app not detected (no daimon runtime home) — nothing to wire")
+    elif _host_mcp_registered(desk_cfg, "mcpServers"):
+        print(f"✓ kimi-desktop: MCP registered ({desk_cfg})")
+        if _shutil.which("uvx") is None:
+            warn("kimi-desktop", "uvx not on PATH — the desktop server may not launch; install uv")
+    else:
+        warn("kimi-desktop",
+             f"app detected but clauderizer not in {desk_cfg} — re-run `clauderize init`")
+
     # D4 breadcrumb wrapper: when the registered command is the wrapper, its
     # file must exist and its baked engine command should match what a fresh
     # init would compose (staleness = the engine moved since the last init).

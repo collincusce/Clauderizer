@@ -406,6 +406,23 @@ def init(
         for res in hosttargets.emit_host_wiring(hid, root):
             report.note(f"{res.label}:{hid}", res.path, res.changed)
 
+    # kimi-desktop (daimon runtime): the one auto-write host whose config is a
+    # per-user runtime home (D-053). Detected-only — a silent no-op when the app
+    # is not installed; on a detected-but-unwritable config it drops a setup guide.
+    from .. import kimidesktop
+
+    desk = kimidesktop.wire()
+    if desk["status"] == "wired":
+        report.note("kimi-desktop MCP", desk["path"], desk.get("changed", True))
+        for w in desk["warnings"]:
+            report.warnings.append(f"kimi-desktop: {w}")
+    elif desk["status"] == "failed":
+        guide = root / ".clauderizer" / "kimi-desktop-mcp-setup.md"
+        report.note("kimi-desktop guide",
+                    guide, _rewrite_if_diff(guide, kimidesktop.setup_guide()))
+        for w in desk["warnings"]:
+            report.warnings.append(f"kimi-desktop: {w}")
+
     # Multi-host (or any non-claude that shares .mcp.json): ensure portable .mcp.json.
     if multi or (not wire_claude and any(
         hosttargets.HOST_EMITTERS.get(h)

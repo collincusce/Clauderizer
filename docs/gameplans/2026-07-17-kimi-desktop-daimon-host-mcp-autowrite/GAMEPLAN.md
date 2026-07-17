@@ -73,11 +73,11 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] init auto-writes the desktop registration when the runtime home is detected, and emits kimi-desktop-mcp-setup.md otherwise; idempotent (second run = zero diffs)
-- [ ] doctor reports the kimi-desktop host state and warns loudly on missing uvx / unwritable config / undetected-app (never silent green)
-- [ ] uninstall removes only the clauderizer entry from the runtime-home mcp.json, preserving others
-- [ ] configure_hints + the generated guide cover the runtime-home path, session-restart, no-hook-lane, and the WSL variant
-- [ ] Full suite green in a fresh venv
+- [x] init auto-writes the desktop registration when the runtime home is detected, and emits kimi-desktop-mcp-setup.md otherwise; idempotent (second run = zero diffs)
+- [x] doctor reports the kimi-desktop host state and warns loudly on missing uvx / unwritable config / undetected-app (never silent green)
+- [x] uninstall removes only the clauderizer entry from the runtime-home mcp.json, preserving others
+- [x] configure_hints + the generated guide cover the runtime-home path, session-restart, no-hook-lane, and the WSL variant
+- [x] Full suite green in a fresh venv
 
 ### Phase 3: Docs, ship 1.9.0, dogfood close
 

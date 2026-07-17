@@ -51,3 +51,13 @@ def empty_python_repo(tmp_path: Path) -> Path:
     (repo / ".git").mkdir()
     (repo / "pyproject.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
     return repo
+
+
+@pytest.fixture(autouse=True)
+def _no_real_kimi_desktop(monkeypatch):
+    """Never touch a real per-user daimon (Kimi desktop) config during tests (L-29).
+    init() calls kimidesktop.wire() with the real environment; this env guard makes
+    detect_config() return None there. Tests that exercise the desktop host pass
+    their own environ (unaffected) or monkeypatch detect_config directly."""
+    from clauderizer import kimidesktop
+    monkeypatch.setenv(kimidesktop.DISABLE_ENV, "1")
