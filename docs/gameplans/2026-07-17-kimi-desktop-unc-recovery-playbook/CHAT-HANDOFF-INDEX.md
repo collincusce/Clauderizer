@@ -1,7 +1,7 @@
 # Chat Handoff Index — kimi-desktop-unc-recovery-playbook
 
 > Last updated: 2026-07-17
-> Status: Phase 1 ready
+> Status: All 2 phases complete
 
 ## How This Works
 
@@ -30,7 +30,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Agent-recovery guide + doctor warning for the WSL/UNC combo | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Ship 1.9.1, dogfood close, release | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Ship 1.9.1, dogfood close, release | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-1-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -39,6 +39,10 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 ### Phase 0 — completed 2026-07-17
 
 Shipped the agent-recovery playbook (D-054). Expanded the kimi-desktop setup guide with a 'shell/tools failing' section — the UNC-cwd cause, how to keep working via file tools + docs/, and the two real fixes (repo on Windows / Kimi Code CLI in WSL). init now emits that guide into .clauderizer/ whenever it detects the WSL-repo + Windows-desktop combo (so a spawn-broken agent can read its way out), plus a loud warning; doctor warns for the same combo. Fixed a stale module-docstring claim and f-string backslash escaping. Live-verified on this WSL+desktop machine: doctor printed the UNC warning, init emitted the 9-keyword playbook. Suite 837->840, fresh venv.
+
+### Phase 1 — completed 2026-07-17
+
+Shipped 1.9.1. CHANGELOG 1.9.1; pyproject + __version__ 1.9.1 lockstep; subsys.scaffold 0.15.0 + cascade resolved. cz_audit clean (0 findings); fresh-venv 840 passed. Post-mortem written. Release (merge/tag v1.9.1/CI/GitHub Release/PyPI) follows.
 
 ## Accumulated Lessons
 
