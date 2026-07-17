@@ -31,9 +31,16 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 **Consequences**: Nothing is hand-deleted — cz_obsolete_lesson marks stale while preserving the append-only record (INVARIANT-03). Handoff shrinks below the 20-lesson warning across the whole portfolio.
 **Status**: active (2026-07-16)
 
+### D2 — Declare a standing condition for the curator loop rather than dismiss the proposal
+
+**Context**: The no_standing_conditions advisory flagged that the standing-curator-loop-memory-maintenance loop gameplan declared no standing conditions, so status never proposed iterations for it. Standing conditions are shell probes: exit 0 means met and an iteration is proposed, advisory-only per INVARIANT-05.
+**Decision**: Declare a probe rather than dismiss. Added conditions.2026-06-21-standing-curator-loop-memory-maintenance.toml with lessons_over_threshold, a shell test that trips when active docs/LESSONS.md lessons exceed 20 — the exact drift this hotpatch fixed. The loop now self-arms for future memory bloat.
+**Consequences**: status, cz_preflight, and cz_loop_step will surface an iteration proposal when the corpus drifts past 20 active lessons; nothing auto-runs. The conditions file is host-agnostic config the engine reads, not a tracked corpus log.
+**Status**: active (2026-07-16)
+
 ## Open Items
 
-**O-01.** Decide the no_standing_conditions proposal (no_standing_conditions:3f4873045bf1): the standing-curator loop gameplan declares no standing conditions. Phase 1 either declares threshold probes in .clauderizer/conditions.2026-06-21-standing-curator-loop-memory-maintenance.toml (e.g. project_lessons > 20, the very threshold this hotpatch fixes) so status can auto-propose iterations, or dismisses via cz_dismiss_proposal if not worth the machinery. Resolve to 0 pending proposals.
+**O-01.** Decide the no_standing_conditions proposal (no_standing_conditions:3f4873045bf1): the standing-curator loop gameplan declares no standing conditions. Phase 1 either declares threshold probes in .clauderizer/conditions.2026-06-21-standing-curator-loop-memory-maintenance.toml (e.g. project_lessons > 20, the very threshold this hotpatch fixes) so status can auto-propose iterations, or dismisses via cz_dismiss_proposal if not worth the machinery. Resolve to 0 pending proposals. _(resolved 2026-07-16: Declared, not dismissed. Wrote .clauderizer/conditions.2026-06-21-standing-curator-loop-memory-maintenance.toml with one shell probe lessons_over_threshold that exits 0 when active docs/LESSONS.md lessons exceed 20 — so status/preflight/loop_step auto-propose a curator iteration when memory bloats again. Standing conditions are shell probes evaluated at repo root, exit 0 == met, advisory-only per INVARIANT-05. Verified: TOML parses, probe returns not-met at the current 19, and cz_modernize now reports 0 advisory proposals.)_
 
 ## Phase Breakdown
 
@@ -73,8 +80,8 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_status / cz_modernize reports 0 pending proposals
-- [ ] Open item O-01 resolved with a recorded rationale (declared probe or dismissed)
+- [x] cz_status / cz_modernize reports 0 pending proposals
+- [x] Open item O-01 resolved with a recorded rationale (declared probe or dismissed)
 
 ### Phase 3: Ship 1.8.1 release
 

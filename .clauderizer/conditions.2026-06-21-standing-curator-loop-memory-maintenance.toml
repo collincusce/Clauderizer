@@ -1,0 +1,16 @@
+# Standing conditions for the standing-curator-loop-memory-maintenance loop gameplan.
+#
+# Each entry maps a condition name to a shell probe (evaluated at repo root,
+# 30s cap). Exit 0 == "met" -> status / cz_preflight / cz_loop_step PROPOSE a
+# curator iteration (never auto-run; advisory only, per INVARIANT-05/06).
+#
+# This gameplan's whole job is periodic memory maintenance, so it should
+# self-arm when the corpus drifts past a maintenance threshold instead of
+# waiting for someone to notice.
+
+[conditions]
+# Active project lessons back over 20 -> docs/LESSONS.md rides every handoff
+# across all gameplans, so re-distill (consolidate + obsolete). This is the
+# exact drift the 2026-07-16 hotpatch fixed (34 -> 19); the probe would have
+# surfaced it automatically. Counts non-obsolete "**L-NN.**" entries.
+lessons_over_threshold = "test $(grep -F '**L-' docs/LESSONS.md | grep -vc '(obsolete') -gt 20"

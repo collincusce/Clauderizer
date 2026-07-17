@@ -1,7 +1,7 @@
 # Chat Handoff Index — hotpatch-lesson-redistill-and-proposal-triage
 
 > Last updated: 2026-07-16
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Bootstrap | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Re-distill lessons under the 20 threshold | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Triage the no_standing_conditions proposal | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Triage the no_standing_conditions proposal | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Ship 1.8.1 release | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -45,6 +45,10 @@ Bootstrap complete: gameplan planned and committed, source-of-truth captured (v1
 ### Phase 1 — completed 2026-07-16
 
 Re-distilled docs/LESSONS.md from 34 → 19 active project lessons (< 20 threshold met). With 0 lexical-duplicate pairs, the honest lever was thematic consolidation, not near-duplicate merging: 7 syntheses (L-50–L-56) each absorbing a cluster of one-principle-across-war-stories lessons, 22 sources obsoleted into them (append-only, marked not deleted), plus L-43 obsoleted as situation-specific. 12 distinct high-value lessons retained (incl. high-utility L-07, L-21). Dogfooding surfaced engine bug H-18: an obsolete-marker reason containing ')' is miscounted as active (fixed the one occurrence in L-43's reason; regex fix + regression test recommended). Correction C-01 records that corpus re-distill is consolidate+obsolete, not cz_promote_lesson. Handoff now ~2.7k tok; the >20 warning that rode every portfolio handoff is cleared.
+
+### Phase 2 — completed 2026-07-16
+
+Triaged the no_standing_conditions advisory by DECLARING a standing condition rather than dismissing. Discovered via read-only exploration that standing conditions are shell probes (exit 0 == met -> iteration proposed, advisory-only per INVARIANT-05), not declarative metric/operator/threshold. Wrote .clauderizer/conditions.2026-06-21-standing-curator-loop-memory-maintenance.toml with one probe, lessons_over_threshold, that trips when active docs/LESSONS.md lessons exceed 20 — the loop now self-arms for the exact drift this hotpatch fixed. Verified: TOML parses, probe returns not-met at 19, cz_modernize advisory proposals now 0. Decision D2, output recorded, O-01 resolved. Note: 2 mechanical procedure-stamp updates surfaced from the stashed WIP (config reverted to procedure 1.6.0 on stash) — orthogonal to this hotpatch, left for the stash.
 
 ## Accumulated Lessons
 

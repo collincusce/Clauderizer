@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Bootstrap | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Re-distill lessons under the 20 threshold | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Triage the no_standing_conditions proposal | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Triage the no_standing_conditions proposal | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Ship 1.8.1 release | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
@@ -24,6 +24,12 @@ source-of-truth: version=1.8.0 (pyproject.toml); baseline=821 tests (pytest); 34
 
 ```
 redistill-result: docs/LESSONS.md re-distilled 34 → 19 active project lessons (< 20). 7 thematic syntheses added+promoted: L-50 (verification-honesty/eval-discipline), L-51 (release ritual), L-52 (parser round-trip+render), L-53 (self-improving memory loop), L-54 (verify host/model/product reality), L-55 (pin-the-seam integration), L-56 (memory tool-surface contracts). 22 sources obsoleted into them + L-43 obsoleted (absorbed into L-50). 12 distinct high-value survivors retained (incl. high-utility L-07, L-21). 0 redundant pairs, pass_rate 1.0. Append-only preserved (all sources marked, none deleted). Surfaced engine bug H-18 (obsolete-marker parser miscounts reasons containing ')').
+```
+
+### Phase 2 Outputs
+
+```
+standing-condition-declared: .clauderizer/conditions.2026-06-21-standing-curator-loop-memory-maintenance.toml — one probe lessons_over_threshold: `test $(grep -F '**L-' docs/LESSONS.md | grep -vc '(obsolete') -gt 20`. Resolves proposal no_standing_conditions:3f4873045bf1. cz_modernize pending advisory proposals now 0.
 ```
 
 ## Corrections Log
