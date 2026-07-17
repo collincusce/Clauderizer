@@ -95,9 +95,16 @@ def _near_dup_invariant_pairs(paths: RepoPaths, limit: int = 5) -> list[tuple]:
     return out[:limit]
 
 
-def report(paths: RepoPaths, config: Config) -> dict:
+def report(paths: RepoPaths, config: Config, *, cheap: bool = False) -> dict:
     """The read-only modernization report: what apply WOULD do (mechanical tier)
-    plus the advisory memory-tier proposals. Never writes anything."""
+    plus the advisory memory-tier proposals. Never writes anything.
+
+    Each advisory proposal carries a stable ``id`` (D-052) so it can be triaged
+    (dismissed/deferred) and re-identified across runs. ``cheap=True`` skips the
+    only expensive detector — the near-duplicate-invariant scan, which builds the
+    abstract index — so the status digest can compute a pending count without the
+    cost (the near-dup proposals are simply omitted from a cheap report)."""
+    from . import proposals as _proposals
     mechanical: list[dict] = []
     stamp = config.procedure_version or ""
     if stamp != PROCEDURE_VERSION:
@@ -151,6 +158,7 @@ def report(paths: RepoPaths, config: Config) -> dict:
             if unwired:
                 proposals.append({
                     "kind": "unwired_gates", "gameplan": gid,
+                    "id": _proposals.proposal_id("unwired_gates", gid, *sorted(unwired)),
                     "detail": f"kind '{kind_name}' declares QA gates with no wired "
                               f"command ({', '.join(unwired)}) — wire [gates] in "
                               f".clauderizer/preflight.{kind_name}.toml so preflight "
@@ -158,6 +166,7 @@ def report(paths: RepoPaths, config: Config) -> dict:
         if kind.lifecycle and not status_bundle.deliverables_for(paths, gid):
             proposals.append({
                 "kind": "no_deliverables", "gameplan": gid,
+                "id": _proposals.proposal_id("no_deliverables", gid),
                 "detail": f"'{gid}' tracks no deliverable entities — record each "
                           "execution unit with cz_upsert_entity(type='deliverable', "
                           f"fields={{'gameplan': '{gid}'}}) to get the "
@@ -165,6 +174,7 @@ def report(paths: RepoPaths, config: Config) -> dict:
         if kind_name == "loop" and not conditions_mod.load_conditions(paths, gid):
             proposals.append({
                 "kind": "no_standing_conditions", "gameplan": gid,
+                "id": _proposals.proposal_id("no_standing_conditions", gid),
                 "detail": f"loop gameplan '{gid}' declares no standing conditions — "
                           f"declare threshold probes in .clauderizer/conditions.{gid}.toml "
                           "so status can propose iterations when they trip"})
@@ -180,6 +190,7 @@ def report(paths: RepoPaths, config: Config) -> dict:
             shown = ", ".join(unseeded[:4]) + ("…" if len(unseeded) > 4 else "")
             proposals.append({
                 "kind": "unseeded_docs",
+                "id": _proposals.proposal_id("unseeded_docs", *sorted(unseeded)),
                 "detail": f"{len(unseeded)} Clauderizer doc(s) are still scaffold "
                           f"placeholders ({shown}) while {len(cands)} existing "
                           f"doc(s) look like specs (e.g. {cands[0]['path']}) — run "
@@ -201,14 +212,16 @@ def report(paths: RepoPaths, config: Config) -> dict:
             statuses = ", ".join(f'"{s}"' for s in pk.lifecycle)
             proposals.append({
                 "kind": "stale_kind_overlay",
+                "id": _proposals.proposal_id("stale_kind_overlay", kind_name),
                 "detail": f".clauderizer/kinds/{kind_name}.toml predates the packaged "
                           f"'{kind_name}' kind's deliverable lifecycle and overrides it "
                           f"away — add a [lifecycle] table (statuses = [{statuses}]) to "
                           "the overlay, or delete the overlay if it no longer customizes "
                           "anything, to enable deliverable tracking"})
-    for a, b, jac in _near_dup_invariant_pairs(paths):
+    for a, b, jac in ([] if cheap else _near_dup_invariant_pairs(paths)):
         proposals.append({
             "kind": "near_dup_invariants",
+            "id": _proposals.proposal_id("near_dup_invariants", a, b),
             "detail": f"{a} and {b} strongly overlap (Jaccard {jac}) — if one "
                       "restates a single gameplan's rule, record future ones with "
                       "scope='gameplan:<id>' (D-043); append-only history stays"})

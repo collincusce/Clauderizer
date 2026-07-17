@@ -876,8 +876,46 @@ def cz_modernize(apply: bool = False) -> dict:
     """
     paths, config = repo_ctx()
     from . import modernize
+    from . import proposals as _proposals
 
-    return modernize.apply(paths, config) if apply else modernize.report(paths, config)
+    if apply:
+        return modernize.apply(paths, config)
+    rep = modernize.report(paths, config)
+    led = _proposals.load_ledger(paths)
+    all_props = rep["proposals"]
+    pending = _proposals.filter_pending(all_props, led)
+    suppressed = len(all_props) - len(pending)
+    rep["proposals"] = pending
+    rep["pending_count"] = len(pending)
+    rep["suppressed_count"] = suppressed
+    rep["summary"] = (
+        f"{len(rep['mechanical'])} mechanical update(s) available, "
+        f"{len(pending)} advisory proposal(s) pending"
+        + (f" ({suppressed} dismissed/deferred)" if suppressed else "")
+    )
+    return rep
+
+
+def cz_dismiss_proposal(proposal_id: str) -> dict:
+    """Dismiss an advisory modernize proposal by its ``id`` — it will NOT
+    re-surface (in cz_modernize or the session digest) until it materially
+    changes and hashes to a new id. Recorded in a per-user, gitignored ledger
+    (.clauderizer/proposals.local.toml); this is a personal "seen it", not a
+    team-wide gate off-switch (D-052). Get ids from cz_modernize."""
+    paths, _ = repo_ctx()
+    from . import proposals as _proposals
+
+    return _proposals.dismiss(paths, proposal_id)
+
+
+def cz_defer_proposal(proposal_id: str, days: int = 7) -> dict:
+    """Snooze an advisory modernize proposal by its ``id`` for ``days`` days
+    (default 7); it re-surfaces after that. Per-user, gitignored ledger (D-052).
+    Get ids from cz_modernize."""
+    paths, _ = repo_ctx()
+    from . import proposals as _proposals
+
+    return _proposals.defer(paths, proposal_id, days)
 
 
 def cz_onboard() -> dict:
@@ -1128,6 +1166,8 @@ REGISTRY: dict[str, Op] = {
     "cz_check_exit_criterion": Op(cz_check_exit_criterion, writes=True),
     "cz_approve_gate": Op(cz_approve_gate, writes=True),
     "cz_modernize": Op(cz_modernize, writes=True),
+    "cz_dismiss_proposal": Op(cz_dismiss_proposal, writes=True),
+    "cz_defer_proposal": Op(cz_defer_proposal, writes=True),
     "cz_onboard": Op(cz_onboard, writes=False),
     "cz_analyze": Op(cz_analyze, writes=False),
     "cz_critique": Op(cz_critique, writes=False),

@@ -424,6 +424,8 @@ def init(
     gi = root / ".gitignore"
     changed = _ensure_gitignore(gi, ".clauderizer/index.json")
     changed = _ensure_gitignore(gi, ".clauderizer/abstract_index.json") or changed
+    # per-user proposal-triage ledger — personal "seen it" state, not team memory (D-052)
+    changed = _ensure_gitignore(gi, ".clauderizer/proposals.local.toml") or changed
     report.note(".gitignore", gi, changed)
     graph = index.build(paths.docs)
     index.write_cache(graph, paths.index_file, paths.docs)

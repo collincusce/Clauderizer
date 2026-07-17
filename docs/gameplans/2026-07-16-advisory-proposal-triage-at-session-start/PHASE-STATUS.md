@@ -7,15 +7,25 @@
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Design the proposal-triage primitive | ⬜ READY | — | — | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Proposal identity + triage ledger + cz_modernize filtering + tools | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 0 | Design the proposal-triage primitive | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-0-HANDOFF.md |
+| 1 | Proposal identity + triage ledger + cz_modernize filtering + tools | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | SessionStart digest surfacing + terse upgrade CLI output | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Ship the clauderizer-modernize triage skill | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Docs, dogfood 1.7.0 blind, ship 1.8.0, close | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
 ## Outputs Registry
 
-_(Concrete values produced by completed phases that later phases need.)_
+### Phase 0 Outputs
+
+```
+triage-design: Stable ids: proposals.proposal_id(kind, *parts) = '<kind>:<12-hex>' over the identifying structural parts (gameplan + gate names / doc list / invariant pair) — materially-changed proposal => new id. Ledger: per-user gitignored .clauderizer/proposals.local.toml, [dismissed] id=date + [deferred] id=until-date; 'handle' stores nothing (condition resolves). filter_pending(proposals, ledger, today) drops dismissed + unexpired-deferred. cheap=True on modernize.report skips only the near-dup-invariant scan (the abstract-index build) so the digest count stays cheap. Invariant-safety: ledger writes are blessed cz_* tools (agent decides, INVARIANT-05); it's per-proposal user verdict not a gate on/off; hook will only surface the count (INVARIANT-04/06); count rides the existing digest (INVARIANT-08).
+```
+
+### Phase 1 Outputs
+
+```
+triage-impl: src/clauderizer/proposals.py (id + ledger + dismiss/defer/is_suppressed/filter_pending). modernize.report() attaches a stable id to all 6 proposal kinds and gained cheap=True (skips near_dup). ops.cz_modernize filters via the ledger and reports pending_count/suppressed_count; new tools cz_dismiss_proposal / cz_defer_proposal (writes=True) registered in ops REGISTRY + tools_list. init gitignores .clauderizer/proposals.local.toml. tests/test_proposals.py (8): stable+content-sensitive ids, dismiss-hides / fresh-shows / materially-changed-reappears (L-25), defer snoozes-until-date-then-returns, dismiss<->defer move, all report proposals carry ids, cheap omits near_dup, tools registered as writers, init gitignores ledger. Suite 807->815, green fresh venv. E2E smoke: dismiss hides via cz_modernize; ledger file written.
+```
 
 ## Corrections Log
 

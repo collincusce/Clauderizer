@@ -1,7 +1,7 @@
 # advisory-proposal-triage-at-session-start Gameplan
 
 > Created: 2026-07-16
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -42,9 +42,9 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Stable proposal-id scheme decided (content hash of type+subject; materially-changed proposal => new id)
-- [ ] Ledger format + location locked: per-user, gitignored .clauderizer/proposals.local.toml; verdicts dismissed[id] + deferred[id]=until; 'handle' stores nothing (condition resolves)
-- [ ] Invariant-safety confirmed: hook only surfaces the count (INVARIANT-04/06), agent triages; ledger is per-proposal user verdict not a gate on/off (INVARIANT-05); count rides in the existing digest, no 2nd injection (INVARIANT-08)
+- [x] Stable proposal-id scheme decided (content hash of type+subject; materially-changed proposal => new id)
+- [x] Ledger format + location locked: per-user, gitignored .clauderizer/proposals.local.toml; verdicts dismissed[id] + deferred[id]=until; 'handle' stores nothing (condition resolves)
+- [x] Invariant-safety confirmed: hook only surfaces the count (INVARIANT-04/06), agent triages; ledger is per-proposal user verdict not a gate on/off (INVARIANT-05); count rides in the existing digest, no 2nd injection (INVARIANT-08)
 
 ### Phase 1: Proposal identity + triage ledger + cz_modernize filtering + tools
 
@@ -56,11 +56,11 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Each modernize proposal carries a stable id; a materially-changed proposal yields a new id (test)
-- [ ] Ledger read/write helpers for .clauderizer/proposals.local.toml (dismissed + deferred); init gitignores it
-- [ ] cz_modernize hides dismissed + unexpired-deferred proposals and reports a pending count; a dismissed proposal stays hidden and a fresh one still shows (both directions, L-25)
-- [ ] Triage tools (cz_dismiss_proposal / cz_defer_proposal) registered in ops + tools_list, read/write as appropriate
-- [ ] Full suite green in a fresh venv
+- [x] Each modernize proposal carries a stable id; a materially-changed proposal yields a new id (test)
+- [x] Ledger read/write helpers for .clauderizer/proposals.local.toml (dismissed + deferred); init gitignores it
+- [x] cz_modernize hides dismissed + unexpired-deferred proposals and reports a pending count; a dismissed proposal stays hidden and a fresh one still shows (both directions, L-25)
+- [x] Triage tools (cz_dismiss_proposal / cz_defer_proposal) registered in ops + tools_list, read/write as appropriate
+- [x] Full suite green in a fresh venv
 
 ### Phase 2: SessionStart digest surfacing + terse upgrade CLI output
 
