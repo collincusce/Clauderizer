@@ -1,7 +1,7 @@
 # Chat Handoff Index — kimi-desktop-daimon-host-mcp-autowrite
 
 > Last updated: 2026-07-17
-> Status: Phase 3 ready
+> Status: All 4 phases complete
 
 ## How This Works
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Confirm the daimon runtime contract + design cross-platform detection | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Bespoke kimi-desktop detection + auto-write emitter | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Wire kimi-desktop into init, doctor, uninstall | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Docs, ship 1.9.0, dogfood close | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Docs, ship 1.9.0, dogfood close | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -46,6 +46,10 @@ Built the bespoke kimidesktop emitter: cross-platform daimon runtime-home resolu
 
 Wired kimi-desktop into init (auto-write on detect, guide on write-failure, silent no-op when absent), doctor (reports registered/unwired/not-detected + loud uvx warning), and uninstall (surgical removal). A live dogfood against the real installed app caught a design flaw (C-01): the per-user config is one file for all repos, so the WSL cd-wrapper was repo-specific and a real init from a temp/test repo overwrote the user's config with a dead pointer. Fixed to a repo-agnostic command (server finds the open repo from the app cwd — the user's verified shape), added the CLAUDERIZER_NO_KIMI_DESKTOP opt-out + an autouse conftest guard so the suite never mutates real per-user state (verified untouched across the run), and cleaned up the real config. Real-machine E2E confirmed idempotent, no-pollution writes. Suite 837 passed, fresh venv.
 
+### Phase 3 — completed 2026-07-17
+
+Shipped 1.9.0 and dogfooded the close. Docs swept (CROSS-HOST kimi-desktop row + 13-host count + D-053 note, README/VISION host lists, CHANGELOG 1.9.0); pyproject + __version__ -> 1.9.0 lockstep; subsys.scaffold 0.14.0 + cascade resolved. cz_audit ran clean (0 findings). Promoted L-58 (per-user config => repo-agnostic command; absolute-per-user writes are an L-29 test hazard). Post-mortem written; focus handed back. Release (merge/tag/CI/GitHub Release/PyPI) follows.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -55,4 +59,4 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 _(none yet)_
 
-**1.** A host whose config is a single per-user file (shared across all repos) must get a REPO-AGNOSTIC server command — one that discovers the repo from the host's working directory — never a repo-pinned `cd <repo>` wrapper, or the last init wins and re-init from another repo silently repoints it. And any init/emit step that writes an absolute per-user path (outside the repo) is an L-29 test hazard: guard it behind an env opt-out and an autouse fixture so the suite never mutates real machine state — verify by asserting the real file is untouched after a full run.
+**1.** A host whose config is a single per-user file (shared across all repos) must get a REPO-AGNOSTIC server command — one that discovers the repo from the host's working directory — never a repo-pinned `cd <repo>` wrapper, or the last init wins and re-init from another repo silently repoints it. And any init/emit step that writes an absolute per-user path (outside the repo) is an L-29 test hazard: guard it behind an env opt-out and an autouse fixture so the suite never mutates real machine state — verify by asserting the real file is untouched after a full run. (promoted 2026-07-17: L-58)

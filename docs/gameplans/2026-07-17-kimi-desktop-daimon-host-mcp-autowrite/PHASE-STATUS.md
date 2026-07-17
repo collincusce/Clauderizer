@@ -10,7 +10,7 @@
 | 0 | Confirm the daimon runtime contract + design cross-platform detection | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Bespoke kimi-desktop detection + auto-write emitter | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Wire kimi-desktop into init, doctor, uninstall | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Docs, ship 1.9.0, dogfood close | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Docs, ship 1.9.0, dogfood close | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
 

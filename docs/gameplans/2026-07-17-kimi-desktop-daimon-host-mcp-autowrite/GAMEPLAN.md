@@ -1,7 +1,7 @@
 # kimi-desktop-daimon-host-mcp-autowrite Gameplan
 
 > Created: 2026-07-17
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -89,8 +89,8 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Docs swept: CROSS-HOST kimi-desktop row + host count + D-053 note + WSL variant; README host list; VISION; generated guide
-- [ ] pyproject AND __version__ bumped to 1.9.0 in lockstep (cz_audit + guard test green)
-- [ ] subsys.scaffold bumped; cz_cascade run and resolved
-- [ ] Gameplan closed via the clauderizer-close-gameplan skill with cz_audit run; findings addressed; post-mortem written
+- [x] Docs swept: CROSS-HOST kimi-desktop row + host count + D-053 note + WSL variant; README host list; VISION; generated guide
+- [x] pyproject AND __version__ bumped to 1.9.0 in lockstep (cz_audit + guard test green)
+- [x] subsys.scaffold bumped; cz_cascade run and resolved
+- [x] Gameplan closed via the clauderizer-close-gameplan skill with cz_audit run; findings addressed; post-mortem written
 - [ ] Released: merged to main, tag v1.9.0, CI green (9 cells), GitHub Release published, clauderizer 1.9.0 verified live on PyPI
