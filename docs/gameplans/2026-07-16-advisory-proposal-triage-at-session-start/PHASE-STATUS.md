@@ -11,7 +11,7 @@
 | 1 | Proposal identity + triage ledger + cz_modernize filtering + tools | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | SessionStart digest surfacing + terse upgrade CLI output | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Ship the clauderizer-modernize triage skill | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Docs, dogfood 1.7.0 blind, ship 1.8.0, close | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Docs, dogfood 1.7.0 blind, ship 1.8.0, close | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-4-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -37,6 +37,12 @@ digest-and-terse-cli: status_bundle.compute() computes a cheap pending-proposal 
 
 ```
 modernize-skill: Shipped src/clauderizer/skills/clauderizer-modernize/SKILL.md (+ synced .claude/skills copy). Flow: ask-first ('triage now or keep working?') -> cz_modernize for the pending list -> per proposal handle/dismiss/defer. Per-kind handle playbook: unwired_gates (scaffold .clauderizer/preflight.<kind>.toml [gates], infer from repo scripts else TODO-stub, never guess a real command), no_deliverables (propose deliverables from the specs, confirm, cz_upsert_entity), unseeded_docs (invoke clauderizer-onboard), no_standing_conditions/stale_kind_overlay/near_dup_invariants guidance. dismiss=cz_dismiss_proposal, defer=cz_defer_proposal. Propose-confirm constitution stated (INVARIANT-05). Auto-discovered (appeared in the skills list) + installed by init. 2 tests. Suite 819->821, fresh venv.
+```
+
+### Phase 4 Outputs
+
+```
+docs-version-cascade: CHANGELOG 1.8.0 entry (triage: tools + digest + skill + terse upgrade). pyproject + __version__ bumped 1.7.0 -> 1.8.0 in lockstep (guard test + cz_audit clean; verified pyproject=__version__=metadata=changelog=1.8.0). README upgrade section + ARCHITECTURE modernization bullet document the triage flow (handle/dismiss/defer, cz_dismiss_proposal/cz_defer_proposal, clauderizer-modernize skill). subsys.mcp-server 0.11->0.12, scaffold 0.12->0.13, rituals 0.10->0.11; all 3 cascades resolved (additive; feat.corpus-modernization is the extended consumer). Fresh-venv suite 821 passed, 5 skipped.
 ```
 
 ## Corrections Log

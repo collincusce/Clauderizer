@@ -1,7 +1,7 @@
 # advisory-proposal-triage-at-session-start Gameplan
 
 > Created: 2026-07-16
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -102,8 +102,8 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Docs swept (README/ARCHITECTURE tool surface + triage flow; CHANGELOG 1.8.0; procedure upgrade section)
-- [ ] pyproject AND __version__ bumped to 1.8.0 in lockstep (cz_audit + guard test green)
-- [ ] Touched subsystems bumped; cz_cascade run and resolved
-- [ ] Full suite verified green in a FRESH venv; count recorded
+- [x] Docs swept (README/ARCHITECTURE tool surface + triage flow; CHANGELOG 1.8.0; procedure upgrade section)
+- [x] pyproject AND __version__ bumped to 1.8.0 in lockstep (cz_audit + guard test green)
+- [x] Touched subsystems bumped; cz_cascade run and resolved
+- [x] Full suite verified green in a FRESH venv; count recorded
 - [ ] Gameplan closed via the clauderizer-close-gameplan SKILL with cz_audit run blind; its findings reported and addressed; post-mortem written; focus handed back

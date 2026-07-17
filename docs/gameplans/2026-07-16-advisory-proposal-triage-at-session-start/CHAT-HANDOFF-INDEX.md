@@ -1,7 +1,7 @@
 # Chat Handoff Index — advisory-proposal-triage-at-session-start
 
 > Last updated: 2026-07-16
-> Status: Phase 4 ready
+> Status: All 5 phases complete
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Proposal identity + triage ledger + cz_modernize filtering + tools | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | SessionStart digest surfacing + terse upgrade CLI output | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Ship the clauderizer-modernize triage skill | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Docs, dogfood 1.7.0 blind, ship 1.8.0, close | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Docs, dogfood 1.7.0 blind, ship 1.8.0, close | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-4-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
