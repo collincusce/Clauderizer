@@ -61,7 +61,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 ### Category: Process
 
-**8.** Corpus re-distill of docs/LESSONS.md is consolidate+obsolete (add synthesis → promote → obsolete sources), never cz_promote_lesson (that is gameplan→project). cz_lesson_health's 'promotion candidate' means high-utility/keep, not 'move it' when it is already a project lesson.
+**8.** Corpus re-distill of docs/LESSONS.md is consolidate+obsolete (add synthesis → promote → obsolete sources), never cz_promote_lesson (that is gameplan→project). cz_lesson_health's 'promotion candidate' means high-utility/keep, not 'move it' when it is already a project lesson. (promoted 2026-07-17: L-57)
 
 ### Category: Eval methodology
 

@@ -67,6 +67,8 @@
 
 **L-49.** When a host's config paths look "stale," first confirm whether it is ONE product that moved or TWO products (predecessor/successor) before repointing — the "stale" path is often correct for a still-shipping legacy tool. Evidence: Moonshot's Kimi CLI (`~/.kimi/`, pip) and Kimi Code CLI (`.kimi-code/`, npm) are distinct tools; Clauderizer's `kimi` wiring was correct for the legacy one, and Kimi K3 is served by the successor. Verify the product split from upstream docs, then decide repoint-vs-add-host; a successor may also drop conventions the predecessor had (Kimi Code CLI does not read `.claude/skills`). *(from 2026-07-16-kimi-code-truth-up-k3-mcp-autowrite)* (obsolete 2026-07-16: consolidated into L-54)
 
+**L-57.** Curating docs/LESSONS.md DOWN is consolidate + obsolete (add a synthesis via cz_add_lesson→cz_promote_lesson, then cz_obsolete_lesson each source pointing at it), never cz_promote_lesson on the sources — promotion is a gameplan→project move, a no-op for lessons already in docs/LESSONS.md. cz_lesson_health's "promotion candidate" flags a high-utility lesson to KEEP, not one to move. And with 0 lexical-duplicate pairs, the honest lever is THEMATIC synthesis (one principle across many war-stories), not near-duplicate merging. *(from 2026-07-16-hotpatch-lesson-redistill-and-proposal-triage)*
+
 ### Category: Observability
 
 **L-02.** Health checks must verify capability, not just presence — a green check on a non-launchable setup is worse than no check. *(from 2026-05-30-clauderizer-v1-bootstrap)* (obsolete 2026-06-21: consolidated into L-25)
