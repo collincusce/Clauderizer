@@ -2,6 +2,30 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.9.0] — 2026-07-17
+
+The **Kimi Work desktop app** (daimon runtime) is now a first-class host — the
+`cz_*` tools reach desktop sessions with no manual step (gameplan
+`2026-07-17-kimi-desktop-daimon-host-mcp-autowrite`, D-053).
+
+- **New `kimi-desktop` host.** The desktop app embeds kimi-code via a "daimon"
+  runtime and loads MCP servers **only** from its per-user runtime-home `mcp.json`
+  — never the project `.mcp.json`/`.kimi-code/mcp.json`, and with **no hook
+  surface**, so the MCP server is its *only* orientation lane. `clauderize init`
+  now auto-registers the `clauderizer` server there — the single **deliberate
+  exception** to Clauderizer's "never auto-write a global config" rule (D-031),
+  justified purely by UX. Kept narrow: **detected-only** (never creates the app's
+  dirs), **non-destructive + atomic**, and a **repo-agnostic** command (the server
+  serves whichever repo you open in the app — one entry covers every repo).
+- **Cross-platform, best-effort:** Windows (`%APPDATA%\…`), macOS
+  (`~/Library/Application Support/…`), Linux (`~/.config/…`), and the common
+  **repo-in-WSL + app-on-Windows** setup (a bare `uvx` that runs on Windows, with a
+  loud PATH warning). macOS/Linux daimon paths are best-effort candidates.
+- **`clauderize doctor`** reports it (registered / detected-but-unwired / not
+  installed) and warns loudly (missing `uvx`, unwritable config). `clauderize
+  uninstall` removes it surgically. Set **`CLAUDERIZER_NO_KIMI_DESKTOP=1`** to skip.
+- Found and fixed via a live debugging session on a real desktop install.
+
 ## [1.8.1] — 2026-07-16
 
 Memory-maintenance hotpatch (gameplan

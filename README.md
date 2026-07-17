@@ -448,8 +448,9 @@ machine path). **Bare `clauderize init` wires every supported agent at once** (D
 non-destructive merges, path-safe portable commands — so a multi-AI team does not re-init
 per tool. `--host <name>` is an optional **scope filter** (only touch that host's files).
 
-**12 supported hosts** — Claude Code · Cursor · GitHub Copilot / VS Code · OpenAI Codex CLI ·
-Google Gemini CLI · Windsurf · Cline · Amp · Continue.dev · Zed · kimi · **Grok Build TUI**.
+**13 supported hosts** — Claude Code · Cursor · GitHub Copilot / VS Code · OpenAI Codex CLI ·
+Google Gemini CLI · Windsurf · Cline · Amp · Continue.dev · Zed · kimi (Kimi Code CLI) ·
+**Kimi Work desktop** (daimon runtime) · **Grok Build TUI**.
 
 How a session learns where things stand degrades gracefully — best reachable tier wins, and
 status is delivered at most once per session (runtime-detected agent, D-047):
