@@ -10,7 +10,7 @@
 | 0 | Bootstrap | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Re-distill lessons under the 20 threshold | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Triage the no_standing_conditions proposal | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Ship 1.8.1 release | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Ship 1.8.1 release | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -30,6 +30,12 @@ redistill-result: docs/LESSONS.md re-distilled 34 → 19 active project lessons 
 
 ```
 standing-condition-declared: .clauderizer/conditions.2026-06-21-standing-curator-loop-memory-maintenance.toml — one probe lessons_over_threshold: `test $(grep -F '**L-' docs/LESSONS.md | grep -vc '(obsolete') -gt 20`. Resolves proposal no_standing_conditions:3f4873045bf1. cz_modernize pending advisory proposals now 0.
+```
+
+### Phase 3 Outputs
+
+```
+release-1.8.1: Clauderizer 1.8.1 staged. Real payload: fixed H-18 in src/clauderizer/markdown/lesson_state.py AND its sibling src/clauderizer/markdown/skill_state.py — marker payload tolerates one level of nested parens; regression tests added to both test files. Version single-sourced 1.8.1 across pyproject.toml, __init__.py, CHANGELOG top entry; editable install reinstalled so dist metadata reads 1.8.1. Suite 821 to 823 green, 5 skipped. cz_audit run: 0 release/graph findings. Release commit 72ac7e8. Tag v1.8.1 + push to CI/PyPI pending final origin/main push.
 ```
 
 ## Corrections Log

@@ -1,7 +1,7 @@
 # Chat Handoff Index — hotpatch-lesson-redistill-and-proposal-triage
 
 > Last updated: 2026-07-16
-> Status: Phase 3 ready
+> Status: All 4 phases complete
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 821
+**Current baseline test count**: 823
 
 ## Ending Protocol
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Bootstrap | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Re-distill lessons under the 20 threshold | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Triage the no_standing_conditions proposal | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Ship 1.8.1 release | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Ship 1.8.1 release | ✅ COMPLETE | 2026-07-16 | 2026-07-16 | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -49,6 +49,10 @@ Re-distilled docs/LESSONS.md from 34 → 19 active project lessons (< 20 thresho
 ### Phase 2 — completed 2026-07-16
 
 Triaged the no_standing_conditions advisory by DECLARING a standing condition rather than dismissing. Discovered via read-only exploration that standing conditions are shell probes (exit 0 == met -> iteration proposed, advisory-only per INVARIANT-05), not declarative metric/operator/threshold. Wrote .clauderizer/conditions.2026-06-21-standing-curator-loop-memory-maintenance.toml with one probe, lessons_over_threshold, that trips when active docs/LESSONS.md lessons exceed 20 — the loop now self-arms for the exact drift this hotpatch fixed. Verified: TOML parses, probe returns not-met at 19, cz_modernize advisory proposals now 0. Decision D2, output recorded, O-01 resolved. Note: 2 mechanical procedure-stamp updates surfaced from the stashed WIP (config reverted to procedure 1.6.0 on stash) — orthogonal to this hotpatch, left for the stash.
+
+### Phase 3 — completed 2026-07-16
+
+Shipped 1.8.1 as a genuine patch release, not a code-identical bump. Per amendment A-001, folded in the H-18 fix: the lesson-state marker parser (and its sibling skill-state parser, caught by the consumer re-audit) required a paren-free reason, so an obsoleted/superseded entry whose reason contained parens read as ACTIVE and kept riding handoffs. Both payloads now tolerate one level of nested parens; regression tests added to test_lesson_state.py and test_skill_state.py. Version single-sourced 1.8.1 (pyproject, __init__, CHANGELOG); reinstalled editable so dist metadata agrees — the stale-metadata drift briefly turned 11 doctor/version tests red (exactly the L-51 clean-environment failure mode) until the reinstall. Suite 821 to 823 green. cz_audit clean (0 release/graph findings). Release commit 72ac7e8. Remaining: push origin/main then tag v1.8.1 and push the tag to trigger CI to PyPI.
 
 ## Accumulated Lessons
 

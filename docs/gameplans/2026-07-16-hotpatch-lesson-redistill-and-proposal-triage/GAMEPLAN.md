@@ -1,7 +1,7 @@
 # hotpatch-lesson-redistill-and-proposal-triage Gameplan
 
 > Created: 2026-07-16
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -20,7 +20,14 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 ## Amendments
 
-_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+### A-001 — Phase 3 folds in the H-18 code fix so 1.8.1 has a real payload
+
+- **Date**: 2026-07-16
+- **Affected sections in GAMEPLAN.md**: Phase Breakdown (Phase 3), Decisions
+- **Affected phases**: 3
+- **Triggered by**: Phase 1 dogfooding surfaced H-18; Phase 3 review found no shipped src/ code changed, so a 1.8.1 PyPI release would be byte-identical to 1.8.0. User chose to fold in the H-18 fix.
+- **What changed**: Expand Phase 3 beyond version/changelog: fix the obsolete/promoted marker parser in src/clauderizer/markdown/lesson_state.py so a reason containing parentheses no longer makes the lesson parse as ACTIVE, add a regression test, resolve H-18, then bump 1.8.1, changelog, cz_audit/cz_preflight, commit, tag and push to CI/PyPI.
+- **Why**: A release must carry a real payload (L-50/L-51). The H-18 memory-correctness bug — an obsoleted lesson silently keeps riding every handoff — is exactly the substance a 1.8.1 patch should ship, and it was found by dogfooding this gameplan.
 
 ## Decisions
 
@@ -93,7 +100,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] pyproject.toml version == 1.8.1
-- [ ] Changelog/release notes updated for 1.8.1
-- [ ] cz_preflight passes and cz_audit run at close
+- [x] pyproject.toml version == 1.8.1
+- [x] Changelog/release notes updated for 1.8.1
+- [x] cz_preflight passes and cz_audit run at close
 - [ ] Release committed and tagged
