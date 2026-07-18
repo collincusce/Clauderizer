@@ -76,6 +76,21 @@ NEXT release from reusing it. It must be exit 0 *before* tagging, red
 (and post-0.9.0 wiring survives that clean — see
 [UPGRADING.md](UPGRADING.md) if yours does not).
 
+## Kimi Work desktop: no `cz_*` tools, or every shell command fails
+
+The desktop app (daimon runtime) loads MCP only from a per-user config it
+**regenerates on project switch** — so a registration can vanish. Fix: run
+`clauderize doctor` (or `status`/`init`) from any shell on the machine; it
+**self-heals** the entry (and `doctor` handshake-verifies it). If the tools
+still don't appear and *every* shell command also fails, your repo lives in
+WSL while the app runs on Windows: the app spawns with a `\\wsl.localhost`
+**UNC** working directory Windows cannot use, so neither the shell nor the MCP
+server can launch **for that repo**. The registered entry still serves
+*Windows-hosted* repos — clone the repo onto the Windows filesystem, or use
+Kimi Code CLI inside WSL. The full agent playbook is written to
+`.clauderizer/kimi-desktop-mcp-setup.md` (readable with file tools even when
+spawning is blocked — D-054).
+
 ## Where the deeper evidence lives
 
 - [HARDENING.md](HARDENING.md) — the append-only findings tracker

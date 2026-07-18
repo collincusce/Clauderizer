@@ -193,3 +193,33 @@ reachable tier** (delivered at most once per session):
 
 The full per-host capability matrix and the decisions behind it live in
 `docs/CROSS-HOST.md`.
+
+### Bespoke auto-write hosts (D-053 / D-055 / D-056)
+
+Most hosts get a repo-local config (a non-destructive key-merge into `.mcp.json`,
+`.cursor/mcp.json`, …) or a guide. A **bespoke auto-write host** is different: an app
+whose MCP servers load *only* from a per-user config it owns (and often regenerates),
+with no hook surface — so clauderizer must auto-write that per-user file (the single
+sanctioned exception to "global config → guide-only", D-031, justified by UX). These
+hosts share a small framework so a new one is an *implementation, not a re-implementation*:
+
+- **`bespoke_hosts.py`** — the `BespokeHost` base (a host supplies only the variable
+  parts: `candidate_configs`, `compose_entry`, `setup_guide`, optional `unservable_reason`;
+  `id` / `opt_out_env` / `servers_key`) over the shared lifecycle it inherits
+  (`detect_config` → non-destructive/atomic/idempotent `merge_entry` → `wire` →
+  `self_heal` → `remove_registration`), plus the `BESPOKE_HOSTS` registry and an
+  `all_hosts()` accessor that self-bootstraps the registry regardless of import order.
+- **`mcp_probe.py`** — the host-agnostic MCP `initialize`-handshake capability probe
+  (`handshake_probe`): spawn the registered `{command, args}` from a non-repo cwd, complete
+  the stdio handshake, assert `serverInfo.name == "clauderizer"` (capability, not presence —
+  L-25). Reused by `doctor` and `doctor --deep`.
+- **`winhost.py`** — Windows/WSL command composition: probe for a Windows-native
+  `clauderizer-mcp.exe` and translate `C:\`↔`/mnt/<drive>` so `init` composing from WSL and
+  `doctor` verifying via interop both work.
+
+`init` / `doctor` / `status` / `uninstall` iterate the registry generically. **kimi-desktop**
+(the Kimi Work desktop daimon runtime) is the first `BespokeHost`; the self-heal exists
+because the app regenerates its `mcp.json` on project switch and merges from no persistent
+source (so a one-shot registration doesn't stick), and it runs only from the write-permitted
+CLI entry points — never a hook (INVARIANT-06) or an MCP read op (L-03). The step-by-step
+recipe for adding a host lives in `docs/CROSS-HOST.md`.

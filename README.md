@@ -463,6 +463,13 @@ status is delivered at most once per session (runtime-detected agent, D-047):
 - **kimi (Kimi Code CLI)** has injecting hooks, but Clauderizer auto-wires only its MCP
   (`.kimi-code/mcp.json`) — the hooks are guide-only, so orientation comes from the P7
   bootstrap until you paste them into `~/.kimi-code/config.toml` (D-050).
+- **Kimi Work desktop** (daimon runtime) loads MCP only from a per-user config it owns and
+  has no hook surface, so the MCP server is its only lane. Clauderizer **auto-writes** that
+  config (the one sanctioned per-user exception, D-053) — host-topology-aware (a Windows-native
+  `clauderizer-mcp.exe`, never a bare `uvx` that can't spawn there), **self-healing** (the app
+  regenerates its config on project switch, so `init`/`doctor`/`status` re-apply it), and
+  `doctor` verifies it end-to-end with a live MCP `initialize` handshake. It's the first of a
+  reusable **bespoke auto-write host** framework (D-056) — see [docs/CROSS-HOST.md](docs/CROSS-HOST.md).
 - **Everyone** gets the floor: `AGENTS.md` (or a native rules file for the few hosts that don't
   read it) tells the agent to call `cz_status` first — and the MCP server attaches a status note
   to the first tool call as an automatic fallback for hook-less / governance-hook hosts.
@@ -505,11 +512,14 @@ clauderize init [--size pet|standard|saas] [--profile auto|node|python|go|ruby]
 clauderize status [--json]   # the current digest
 clauderize gameplans [--all] [--json]   # list open gameplans (the portfolio); --all includes finished
 clauderize focus [<id>] [--json]        # switch the focus gameplan (default target); no id = report focus
-clauderize doctor            # present AND runnable for the session host of record;
+clauderize doctor [--deep]   # present AND runnable for the session host of record;
+                             # --deep also MCP-initialize-handshakes each auto-write host's command;
                              # exit 0 ok · 1 not clauderized · 2 drift · 3 ok-but-unverifiable
 clauderize reindex           # rebuild the graph cache from markdown
 clauderize release-check     # maintainers: push ordering + the four version registries · exit 0 ok · 2 red · 3 unverifiable
 clauderize mcp               # launch the MCP server (stdio)
+clauderizer-mcp [--repo <path>]   # the server entry point; --repo / $CLAUDERIZER_REPO serve a repo
+                                  # other than the cwd (for hosts that can't spawn with the repo as cwd)
 clauderize ops <file.json|-> # execute a JSON batch of cz_* ops (the no-MCP write fallback)
 clauderize ops --list        # discover every op: name, read/write, summary, required args
 clauderize ops --schema <op> # show one op's required + optional args (JSON)
