@@ -28,7 +28,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 ## Open Items
 
-**O-01.** _(phase 2)_ Decide the default policy for applying the extracted MCP handshake to the 8 HOST_EMITTERS auto-write hosts in doctor: full handshake for all enabled hosts adds latency (each spawn up to the timeout; portable-uvx entries do a real resolve) and could add 'unverifiable' noise. Options: (a) keep presence-check default + handshake opt-in (e.g. `doctor --deep`); (b) handshake only machine-specific/local-path commands, presence for portable uvx; (c) handshake all with a short timeout. Pick in Phase 2 to avoid regressing doctor UX (L-07: don't add noise to healthy sessions).
+**O-01.** _(phase 2)_ Decide the default policy for applying the extracted MCP handshake to the 8 HOST_EMITTERS auto-write hosts in doctor: full handshake for all enabled hosts adds latency (each spawn up to the timeout; portable-uvx entries do a real resolve) and could add 'unverifiable' noise. Options: (a) keep presence-check default + handshake opt-in (e.g. `doctor --deep`); (b) handshake only machine-specific/local-path commands, presence for portable uvx; (c) handshake all with a short timeout. Pick in Phase 2 to avoid regressing doctor UX (L-07: don't add noise to healthy sessions). _(resolved 2026-07-17: Decided: doctor keeps PRESENCE-check by default for the HOST_EMITTERS auto-write hosts (verify_wiring already launch-probes the session host's wiring; a full handshake per enabled host adds latency for little gain — L-07). The shared mcp_probe handshake is wired into that path as an opt-in `clauderize doctor --deep`, which spawns each registered emitter host's command and completes an initialize handshake (capability, not presence). Bespoke hosts (kimi-desktop) always get the handshake since their command is machine-specific with no other launchability check. Tested: test_doctor_deep_handshakes_auto_write_host (default presence-only, --deep adds the handshake verdict).)_
 
 ## Phase Breakdown
 
@@ -73,10 +73,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] init, doctor, status, and uninstall iterate BESPOKE_HOSTS instead of hardcoding kimidesktop; behavior for the single registered host is identical (verified live)
-- [ ] The extracted handshake primitive is available to the HOST_EMITTERS per-host verification path, with an in-phase-decided default policy that does not add unacceptable doctor latency or false verdicts
-- [ ] A second (test-only) BespokeHost registered in a test proves the registry/iteration is genuinely generic (lifecycle runs for it without kimidesktop-specific code)
-- [ ] No regression: existing per-host doctor behavior and the D-055 kimi-desktop guarantees hold; full suite green
+- [x] init, doctor, status, and uninstall iterate BESPOKE_HOSTS instead of hardcoding kimidesktop; behavior for the single registered host is identical (verified live)
+- [x] The extracted handshake primitive is available to the HOST_EMITTERS per-host verification path, with an in-phase-decided default policy that does not add unacceptable doctor latency or false verdicts
+- [x] A second (test-only) BespokeHost registered in a test proves the registry/iteration is genuinely generic (lifecycle runs for it without kimidesktop-specific code)
+- [x] No regression: existing per-host doctor behavior and the D-055 kimi-desktop guarantees hold; full suite green
 
 ### Phase 3: Extension recipe doc + CHANGELOG + cascade + close-out
 

@@ -1,7 +1,7 @@
 # Chat Handoff Index — bespoke-auto-write-host-framework
 
 > Last updated: 2026-07-17
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Extract host-agnostic MCP-verification + command-composition primitives | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | BespokeHost protocol + registry; port kimi-desktop as first implementation | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Rewire entry points to the registry; offer the handshake to the generic host path | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Rewire entry points to the registry; offer the handshake to the generic host path | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Extension recipe doc + CHANGELOG + cascade + close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -50,6 +50,12 @@ Introduced the `BespokeHost` framework and ported kimi-desktop onto it as the fi
 
 The L-41 identity-default discipline kept this a zero-behavior-change refactor: the full suite went 880 → 886 (only new framework tests added), and a live read-only check reproduced the exact composition (`C:\...\clauderizer-mcp.exe`, idempotent no-op), the `windows_side`/`unservable` back-compat, a green handshake, and the full live `doctor` output. Genericity is proven, not asserted: `test_bespoke_hosts.py` drives a second, test-only `BespokeHost` (a different `servers_key`, no Windows/daimon code) through the entire detect→wire→idempotent-noop→self-heal→remove lifecycle, plus opt-out, unregistrable, and unservable-reason paths. The moved code's `re`/`subprocess`/`json`/`os`/`refuse_if_symlink` imports were dropped from `kimidesktop`; no dangling references remain.
 
+### Phase 2 — completed 2026-07-17
+
+Rewired every entry point off the hardcoded `kimidesktop` calls onto the generic registry: `init`, `doctor`, `status`, and `uninstall` now loop over the bespoke hosts, using `host.id` for the guide filename, `host.servers_key` for the presence check, and the generic `unservable` reason for the "can't-serve-this-repo" guidance — so a second host needs zero new entry-point code. For O-01 (the HOST_EMITTERS handshake), the decided policy is presence-check by default (`verify_wiring` already launch-probes the session host's wiring; a handshake per enabled host is latency for little gain — L-07) with a `clauderize doctor --deep` opt-in that runs the shared `mcp_probe` handshake against each registered auto-write host.
+
+The critical catch: iterating the raw `BESPOKE_HOSTS` dict left it **empty** in the real `clauderize doctor` — the registry is populated by kimidesktop's import side-effect, and doctor no longer imports kimidesktop; the in-process tests masked it because conftest's autouse fixture imports the module (recorded as lesson #1, extending L-23). Fixed with a lazy `all_hosts()` accessor that imports the impl modules on use, plus a fresh-subprocess regression test that imports only the framework and asserts kimi-desktop self-bootstraps. Behavior-preservation re-verified live: `doctor` output is byte-identical (registered ✓, handshake ✓ serverInfo clauderizer, version-skew ?, UNC ?, exit 3) and a live wipe→`status`→restore round-trips the exact `C:\...\clauderizer-mcp.exe` entry through the generic loop. Suite 886 → 888 passed, 5 skipped.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -58,3 +64,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Process
 
 _(none yet)_
+
+**1.** A registry populated by IMPORT SIDE-EFFECTS (module top-level `register(Impl())`) is EMPTY until something imports the implementation module — and an in-process test suite masks the emptiness because a shared fixture imports it (here conftest's autouse `_no_real_kimi_desktop` imports kimidesktop), while the REAL entry point (a `clauderize doctor` that imports only the framework, not the impl) iterates an empty registry and silently does nothing. Two-part fix: (1) iterate through an ACCESSOR that explicitly imports the implementation modules (`all_hosts()` does `from . import kimidesktop` then returns the dict) so bootstrap is order-independent — never iterate the raw registry dict from a caller that may not have imported the impls; a top-level import in the framework module would cycle, so the accessor imports lazily. (2) The masking means an in-process test can't catch it (the fixture already imported the impl) — add a FRESH-PROCESS regression test (`subprocess` running `python -c "from pkg import framework; print(framework.all_hosts())"`, importing ONLY the framework) that fails if the accessor stops bootstrapping. Extends L-23 (the author's/test's environment is not the real execution leg): here the test process' import graph differs from the CLI's. *(evidence: D-056 Phase 2: cmd_doctor rewired to iterate bespoke_hosts.all_hosts(); live `clauderize doctor` showed NO kimi-desktop section (registry empty) until all_hosts() imported kimidesktop; tests/test_bespoke_hosts.py::test_all_hosts_self_bootstraps_in_a_fresh_process is the subprocess guard.)*

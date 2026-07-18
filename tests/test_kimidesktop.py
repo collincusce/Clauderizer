@@ -198,6 +198,11 @@ def _detected(monkeypatch, cfg):
     monkeypatch.setattr(kd._HOST, "detect_config", lambda **kw: cfg)
     monkeypatch.setattr(kd._HOST, "compose_entry",
                         lambda *a, **k: ({"command": "clauderizer-mcp", "args": []}, []))
+    # doctor now handshakes any registered host; default it to a benign ok so these
+    # plumbing tests don't spawn a real process (the handshake tests override this).
+    from clauderizer import mcp_probe
+    monkeypatch.setattr(mcp_probe, "handshake_probe", lambda *a, **k: {
+        "status": "ok", "detail": "ok", "server_name": "clauderizer", "server_version": None})
 
 
 def test_init_autowrites_desktop_when_detected(empty_python_repo, monkeypatch, tmp_path):
@@ -219,11 +224,12 @@ def test_init_is_silent_noop_when_desktop_absent(empty_python_repo, monkeypatch)
 def test_init_drops_guide_on_unregistrable(empty_python_repo, monkeypatch):
     # App detected on a Windows host but no clauderizer-mcp.exe → init drops the
     # setup guide (agent can read its way out) instead of a dead/bare-uvx entry.
+    # init iterates BESPOKE_HOSTS and calls host.wire() (D-056), so patch _HOST.wire.
     from clauderizer.scaffold.init import init
-    monkeypatch.setattr(kd, "wire", lambda **kw: {
+    monkeypatch.setattr(kd._HOST, "wire", lambda **kw: {
         "status": "unregistrable",
         "path": "/mnt/c/Users/rafaj/AppData/Roaming/.../mcp.json",
-        "entry": None, "windows_side": True,
+        "entry": None, "unservable": None,
         "warnings": ["no clauderizer-mcp.exe found for the Windows desktop"]})
     init(empty_python_repo, spawn_test=False)
     guide = empty_python_repo / ".clauderizer" / "kimi-desktop-mcp-setup.md"
@@ -427,10 +433,12 @@ def test_doctor_wsl_combo_clarifies_registration_stands(empty_python_repo, monke
 
 
 def test_init_emits_playbook_guide_on_wsl_combo(empty_python_repo, monkeypatch):
+    # A wired-but-unservable host (WSL repo + Windows desktop) → init drops the guide.
+    # init iterates BESPOKE_HOSTS and calls host.wire() (D-056), so patch _HOST.wire.
     from clauderizer.scaffold.init import init
-    monkeypatch.setattr(kd, "wire", lambda **kw: {
+    monkeypatch.setattr(kd._HOST, "wire", lambda **kw: {
         "status": "wired", "path": "/mnt/c/u/me/AppData/Roaming/.../mcp.json",
-        "changed": True, "windows_side": True, "warnings": []})   # WSL cross-boundary
+        "changed": True, "unservable": kd.UNC_GUIDANCE, "warnings": []})   # WSL cross-boundary
     init(empty_python_repo, spawn_test=False)
     guide = empty_python_repo / ".clauderizer" / "kimi-desktop-mcp-setup.md"
     assert guide.is_file() and "UNC" in guide.read_text(encoding="utf-8")   # agent can read its way out

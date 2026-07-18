@@ -406,39 +406,30 @@ def init(
         for res in hosttargets.emit_host_wiring(hid, root):
             report.note(f"{res.label}:{hid}", res.path, res.changed)
 
-    # kimi-desktop (daimon runtime): the one auto-write host whose config is a
-    # per-user runtime home (D-053). Detected-only — a silent no-op when the app
-    # is not installed; on a detected-but-unwritable config it drops a setup guide.
-    from .. import kimidesktop
+    # Bespoke auto-write hosts (kimi-desktop and any future one — D-053/D-056): the
+    # hosts whose config is a per-user runtime home clauderizer auto-writes. Generic
+    # over the BESPOKE_HOSTS registry. Detected-only — a silent no-op when the app is
+    # not installed; on a detected-but-unwritable/unregistrable config, or one that
+    # can't serve THIS repo (unservable), it drops the host's setup guide so a
+    # spawn-broken agent can READ its way out (file tools still work — D-054).
+    from .. import bespoke_hosts
 
-    desk = kimidesktop.wire()
-    if desk["status"] == "wired":
-        report.note("kimi-desktop MCP", desk["path"], desk.get("changed", True))
-        for w in desk["warnings"]:
-            report.warnings.append(f"kimi-desktop: {w}")
-        # WSL repo + Windows desktop: the app can't spawn with a UNC cwd, so the
-        # shell AND the MCP server will fail to launch here. Drop the guide into the
-        # repo so a spawn-broken agent can READ its way out (file tools still work) —
-        # D-054. Also warn loudly.
-        if desk.get("windows_side"):
-            guide = root / ".clauderizer" / "kimi-desktop-mcp-setup.md"
-            report.note("kimi-desktop guide",
-                        guide, _rewrite_if_diff(guide, kimidesktop.setup_guide()))
-            report.warnings.append(
-                "kimi-desktop: THIS repo is in WSL but the desktop app runs on Windows — the "
-                "app spawns with a UNC (\\\\wsl.localhost) cwd it cannot use, so the shell and "
-                "MCP server fail to launch FOR THIS REPO (the registered entry still serves "
-                "Windows-hosted repos). Clone the repo onto the Windows filesystem, or use "
-                "Kimi Code CLI in WSL. See .clauderizer/kimi-desktop-mcp-setup.md")
-    elif desk["status"] in ("failed", "unregistrable"):
-        # Detected but no launchable command (no clauderizer-mcp.exe on a Windows
-        # host, or the config was unwritable): drop the guide so the agent can read
-        # its way to a working setup — never a dead/bare-uvx entry (D-055).
-        guide = root / ".clauderizer" / "kimi-desktop-mcp-setup.md"
-        report.note("kimi-desktop guide",
-                    guide, _rewrite_if_diff(guide, kimidesktop.setup_guide()))
-        for w in desk["warnings"]:
-            report.warnings.append(f"kimi-desktop: {w}")
+    for host in bespoke_hosts.all_hosts().values():
+        desk = host.wire()
+        guide = root / ".clauderizer" / f"{host.id}-mcp-setup.md"
+        if desk["status"] == "wired":
+            report.note(f"{host.id} MCP", desk["path"], desk.get("changed", True))
+            for w in desk["warnings"]:
+                report.warnings.append(f"{host.id}: {w}")
+            if desk.get("unservable"):
+                report.note(f"{host.id} guide",
+                            guide, _rewrite_if_diff(guide, host.setup_guide()))
+                report.warnings.append(f"{host.id}: {desk['unservable']}")
+        elif desk["status"] in ("failed", "unregistrable"):
+            report.note(f"{host.id} guide",
+                        guide, _rewrite_if_diff(guide, host.setup_guide()))
+            for w in desk["warnings"]:
+                report.warnings.append(f"{host.id}: {w}")
 
     # Multi-host (or any non-claude that shares .mcp.json): ensure portable .mcp.json.
     if multi or (not wire_claude and any(

@@ -185,11 +185,13 @@ def uninstall(root: Path, *, host: str | None = None) -> UninstallReport:
             report.note(f"{host_id} MCP registration")
     if hosttargets.remove_grok_hooks(root):
         report.note(hosttargets.GROK_HOOKS_REL)
-    # kimi-desktop (daimon runtime) — the bespoke per-user config (D-053)
-    from .. import kimidesktop
-    desk_cfg = kimidesktop.detect_config()
-    if desk_cfg is not None and kimidesktop.remove_entry(desk_cfg):
-        report.note(f"kimi-desktop MCP registration ({desk_cfg})")
+    # Bespoke auto-write hosts (kimi-desktop and any future one) — the per-user configs
+    # clauderizer auto-writes (D-053/D-056). Generic over the registry; surgical removal.
+    from .. import bespoke_hosts
+    for host in bespoke_hosts.all_hosts().values():
+        cfg = host.detect_config()
+        if cfg is not None and host.remove_registration(cfg):
+            report.note(f"{host.id} MCP registration ({cfg})")
     for host_id, rel in hosttargets.NATIVE_INSTRUCTIONS.items():
         if writer.remove_marker_block(root / rel, "clauderizer"):
             report.note(f"{rel} floor block")

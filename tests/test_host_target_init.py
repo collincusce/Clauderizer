@@ -416,6 +416,23 @@ def test_doctor_does_not_false_fail_cursor_repo(empty_python_repo, monkeypatch, 
     assert "✗" not in out                                     # no failed check
 
 
+def test_doctor_deep_handshakes_auto_write_host(empty_python_repo, monkeypatch, capsys):
+    # O-01/D-056: `doctor --deep` opts into the shared MCP handshake for a registered
+    # auto-write emitter host; the default (no --deep) stays presence-only.
+    from clauderizer import mcp_probe
+    init(empty_python_repo, host_target="cursor", spawn_test=False)
+    monkeypatch.chdir(empty_python_repo)
+    monkeypatch.setattr(mcp_probe, "handshake_probe", lambda *a, **k: {
+        "status": "ok", "detail": "initialize → serverInfo clauderizer",
+        "server_name": "clauderizer", "server_version": None})
+
+    cli.main(["doctor"])
+    assert "cursor MCP initialize handshake" not in capsys.readouterr().out   # default: presence only
+
+    cli.main(["doctor", "--deep"])
+    assert "cursor MCP initialize handshake" in capsys.readouterr().out       # --deep: capability
+
+
 def test_doctor_guide_only_host_notes_manual(empty_python_repo, monkeypatch, capsys):
     init(empty_python_repo, host_target="codex", spawn_test=False)
     monkeypatch.chdir(empty_python_repo)

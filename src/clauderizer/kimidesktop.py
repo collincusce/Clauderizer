@@ -193,7 +193,10 @@ class KimiDesktopHost(BespokeHost):
                             home=home, users_dir=users_dir, exists=exists, which=which)
 
     def unservable_reason(self, cfg, *, in_wsl, users_dir):
-        return UNC_GUIDANCE if (in_wsl and _is_windows_side(cfg, users_dir)) else None
+        # A ``/mnt/.../Users`` config is a Windows-side daimon seen from WSL — only
+        # possible under WSL, so ``_is_windows_side`` alone is the signal (the repo is
+        # WSL-hosted, the app is on Windows, UNC-cwd spawn limit applies — D-054).
+        return UNC_GUIDANCE if _is_windows_side(cfg, users_dir) else None
 
     def setup_guide(self):
         return setup_guide()

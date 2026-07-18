@@ -102,12 +102,13 @@ def cmd_status(args: argparse.Namespace) -> int:
     if config is None:
         print("Not a clauderized repo. Run `clauderize init`.")
         return 1
-    # Self-heal the kimi-desktop registration (the app wipes its mcp.json on project
-    # switch, with no persistent source to merge from — D-055). An explicit CLI run
-    # is write-permitted; silent + idempotent, and NOT done from the read-only hook
-    # (INVARIANT-06). Detected-only + opt-out-aware, so a no-op off that host.
-    from . import kimidesktop
-    kimidesktop.self_heal()
+    # Self-heal every bespoke auto-write host's registration (the app wipes its config
+    # on project switch, with no persistent source to merge from — D-055/D-056). An
+    # explicit CLI run is write-permitted; silent + idempotent, and NOT done from the
+    # read-only hook (INVARIANT-06). Detected-only + opt-out-aware, so a no-op off host.
+    from . import bespoke_hosts
+    for _host in bespoke_hosts.all_hosts().values():
+        _host.self_heal()
     # An explicit CLI ask evaluates standing conditions (D3), same as cz_status;
     # only the read-only hook path stays probe-free.
     bundle = status_bundle.compute(paths, config, conditions=True)
@@ -352,6 +353,18 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             present = _host_mcp_registered(paths.root / em.config_path, em.servers_key)
             if present:
                 print(f"✓ {hid}: MCP config present ({em.config_path})")
+                # Default is presence (verify_wiring already launch-probes the session
+                # host's wiring; a handshake per enabled host adds latency for little
+                # gain — O-01/L-07). `--deep` opts into the capability check for every
+                # auto-write host, reusing the shared mcp_probe primitive (D-056).
+                if getattr(args, "deep", False):
+                    import tempfile
+
+                    from . import mcp_probe
+                    entry = _host_registered_entry(paths.root / em.config_path, em.servers_key)
+                    r = mcp_probe.handshake_probe(entry or {}, cwd=tempfile.gettempdir())
+                    verdict(f"{hid} MCP initialize handshake",
+                            hosts.Probe(r["status"], r["detail"]))
             else:
                 warn(f"{hid} MCP",
                      f"{em.config_path} missing clauderizer — re-run `clauderize init` "
@@ -381,60 +394,50 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                   _has_marker(paths.root / rel, "clauderizer"),
                   f"missing {rel} — re-run `clauderize init --host {hid}`")
 
-    # kimi-desktop (daimon runtime) — bespoke self-healing auto-write host (D-055).
-    # Re-applies the registration each run (the app wipes its mcp.json on project
-    # switch, O-01), then reports: registered / unregistrable / not installed.
-    from . import kimidesktop
-    # Self-heal first (D-055): the app regenerates its mcp.json on project switch and
-    # merges from no persistent source (O-01), so re-apply the entry every doctor run
-    # before reporting — the report then reflects the healed state. Idempotent no-op
-    # when already current; detected-only + opt-out-aware; never raises.
-    heal = kimidesktop.self_heal()
-    if heal["status"] == "wired" and heal.get("changed"):
-        print(f"✓ kimi-desktop: re-applied MCP registration ({heal['path']})")
-    desk_cfg = kimidesktop.detect_config()
-    if desk_cfg is None:
-        print("· kimi-desktop: app not detected (no daimon runtime home) — nothing to wire")
-    elif heal["status"] == "unregistrable":
-        warn("kimi-desktop",
-             f"app detected but no clauderizer-mcp.exe to register — {'; '.join(heal['warnings'])}")
-    else:
-        if _host_mcp_registered(desk_cfg, "mcpServers"):
-            print(f"✓ kimi-desktop: MCP registered ({desk_cfg})")
-            # Capability, not presence (L-25): spawn the composed command from a
-            # non-repo cwd (the way the app does) and complete an MCP initialize
-            # handshake — asserting serverInfo.name=='clauderizer'. Fails loudly on
-            # MSYS-mangled / UNC / vanished commands; unverifiable (never green) when
-            # the command targets a host this doctor can't reach.
-            import tempfile
+    # Bespoke auto-write hosts (kimi-desktop and any future one — D-056). Generic over
+    # the BESPOKE_HOSTS registry: self-heal each (the app wipes its config on project
+    # switch, O-01), then report registered / unregistrable / not installed, and verify
+    # CAPABILITY (not presence, L-25) with a live MCP initialize handshake.
+    import tempfile
 
-            from . import mcp_probe
-            entry = _host_registered_entry(desk_cfg, "mcpServers")
+    from . import bespoke_hosts, mcp_probe
+    for host in bespoke_hosts.all_hosts().values():
+        # Self-heal first so the report reflects the healed state (idempotent no-op when
+        # current; detected-only + opt-out-aware; never raises).
+        heal = host.self_heal()
+        if heal["status"] == "wired" and heal.get("changed"):
+            print(f"✓ {host.id}: re-applied MCP registration ({heal['path']})")
+        cfg = host.detect_config()
+        if cfg is None:
+            print(f"· {host.id}: app not detected — nothing to wire")
+            continue
+        if heal["status"] == "unregistrable":
+            warn(host.id, f"app detected but no launchable command to register — "
+                          f"{'; '.join(heal['warnings'])}")
+        elif _host_mcp_registered(cfg, host.servers_key):
+            print(f"✓ {host.id}: MCP registered ({cfg})")
+            # Spawn the composed command from a non-repo cwd (the way the app does) and
+            # complete an MCP initialize handshake asserting serverInfo.name=='clauderizer'.
+            # Fails loudly on MSYS-mangled / UNC / vanished commands; unverifiable (never
+            # green) when the command targets a host this doctor can't reach.
+            entry = _host_registered_entry(cfg, host.servers_key)
             r = mcp_probe.handshake_probe(entry or {}, cwd=tempfile.gettempdir())
-            verdict("kimi-desktop MCP initialize handshake",
-                    hosts.Probe(r["status"], r["detail"]))
-            # The desktop exe is a SEPARATE install (Windows pipx) from this engine,
-            # so a version skew is advisory (not drift like verify_wiring's same-install
-            # parity): flag it so the desktop doesn't silently serve a stale engine.
+            verdict(f"{host.id} MCP initialize handshake", hosts.Probe(r["status"], r["detail"]))
+            # A bespoke host's server is a SEPARATE install (e.g. Windows pipx) from this
+            # engine, so a version skew is advisory (not same-install drift): flag it so
+            # the host doesn't silently serve a stale engine.
             served = r.get("server_version")
             if r["status"] == "ok" and served and served != __version__:
-                warn("kimi-desktop MCP version",
-                     f"the desktop serves clauderizer {served} but this engine is "
-                     f"{__version__} — update the Windows install (e.g. `pipx upgrade clauderizer`)")
+                warn(f"{host.id} MCP version",
+                     f"the host serves clauderizer {served} but this engine is {__version__} "
+                     f"— update that install (e.g. `pipx upgrade clauderizer`)")
         else:
-            warn("kimi-desktop",
-                 f"app detected but clauderizer not in {desk_cfg} — re-run `clauderize init`")
-        # WSL repo + Windows desktop config → the app can't spawn with a UNC cwd (D-054).
-        # The registration above is the repo-agnostic Windows .exe and DOES serve any
-        # Windows-hosted repo the app opens (D-055); only THIS WSL-hosted repo can't be
-        # served, because the app spawns with a \\wsl.localhost UNC cwd it cannot use.
-        if kimidesktop._is_windows_side(desk_cfg, kimidesktop.WSL_USERS_DIR):
-            warn("kimi-desktop",
-                 "THIS repo is in WSL but the desktop app is on Windows — the app spawns "
-                 "with a UNC (\\\\wsl.localhost) cwd it cannot use, so the shell and the MCP "
-                 "server will fail to launch FOR THIS REPO (the registered entry still serves "
-                 "Windows-hosted repos). Clone the repo onto the Windows filesystem, or use "
-                 "Kimi Code CLI in WSL. See .clauderizer/kimi-desktop-mcp-setup.md")
+            warn(host.id, f"app detected but clauderizer not in {cfg} — re-run `clauderize init`")
+        # Detected but can't serve THIS repo (e.g. a WSL repo under a Windows desktop's
+        # UNC-cwd spawn limit, D-054): the registered entry still serves other repos the
+        # host opens; surface the host's own guidance for this one.
+        if heal.get("unservable"):
+            warn(host.id, heal["unservable"])
 
     # D4 breadcrumb wrapper: when the registered command is the wrapper, its
     # file must exist and its baked engine command should match what a fresh
@@ -862,6 +865,9 @@ def build_parser() -> argparse.ArgumentParser:
     pup.set_defaults(func=cmd_upgrade)
 
     pd = sub.add_parser("doctor", help="verify the install and report drift")
+    pd.add_argument("--deep", action="store_true",
+                    help="also spawn each auto-write host's registered MCP command and "
+                         "complete an initialize handshake (capability, not just presence)")
     pd.set_defaults(func=cmd_doctor)
 
     prc = sub.add_parser(

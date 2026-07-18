@@ -10,8 +10,24 @@ from clauderizer import kimidesktop as kd
 
 
 def test_registry_contains_kimi_desktop():
-    assert bh.BESPOKE_HOSTS.get("kimi-desktop") is kd._HOST
+    assert bh.all_hosts().get("kimi-desktop") is kd._HOST
     assert isinstance(kd._HOST, bh.BespokeHost)
+
+
+def test_all_hosts_self_bootstraps_in_a_fresh_process():
+    # Regression (D-056 Phase 2): the entry points iterate bespoke_hosts.all_hosts(),
+    # which MUST populate the registry even when nothing imported the host module first
+    # — a real `clauderize doctor` does not import kimidesktop, and the in-process tests
+    # mask this because conftest's autouse fixture imports it (L-23). Prove it in a FRESH
+    # process that imports ONLY bespoke_hosts.
+    import subprocess
+    import sys
+    out = subprocess.run(
+        [sys.executable, "-c",
+         "from clauderizer import bespoke_hosts as b; print(sorted(b.all_hosts()))"],
+        capture_output=True, text=True, timeout=30)
+    assert out.returncode == 0, out.stderr
+    assert "kimi-desktop" in out.stdout                         # registry self-bootstrapped
 
 
 def test_generic_merge_is_nondestructive_and_idempotent(tmp_path):

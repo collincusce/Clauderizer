@@ -200,3 +200,15 @@ def register(host: BespokeHost) -> BespokeHost:
     a module can ``_HOST = register(KimiDesktopHost())`` in one line."""
     BESPOKE_HOSTS[host.id] = host
     return host
+
+
+def all_hosts() -> dict[str, BespokeHost]:
+    """The registered bespoke hosts. Imports the host implementation modules on first
+    use so their registration side-effects run regardless of who imported what — a
+    top-level import here would cycle (kimidesktop imports this module), and relying on
+    some other caller to have imported the host first is a latent bug (a real
+    ``clauderize doctor`` does not import kimidesktop otherwise). Entry points
+    (init/doctor/status/uninstall) MUST iterate via this accessor, not the raw dict.
+    Add a new host's module to the import list below."""
+    from . import kimidesktop  # noqa: F401 — importing registers KimiDesktopHost
+    return BESPOKE_HOSTS
