@@ -32,6 +32,7 @@ tests exercise it against a temp home and never a real ``~/.config``/``%APPDATA%
 
 from __future__ import annotations
 
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -186,6 +187,58 @@ UNC_GUIDANCE = (
     "See .clauderizer/kimi-desktop-mcp-setup.md")
 
 
+def _existing_repo_pin(cfg: Path, servers_key: str) -> str | None:
+    """The ``--repo <X>`` value in the current daimon entry, if it is pinned (D-057) —
+    a same-session fallback so self-heal preserves a hand-applied pin. Not durable across
+    the app's regenerate-to-{} wipe (C-01); that is what the sidecar below is for."""
+    entry = bespoke_hosts.read_entry(cfg, servers_key=servers_key)
+    args = (entry or {}).get("args") or []
+    for i, a in enumerate(args):
+        if a == "--repo" and i + 1 < len(args):
+            return args[i + 1]
+        if isinstance(a, str) and a.startswith("--repo="):
+            return a[len("--repo="):]
+    return None
+
+
+# The opt-in WSL-serving pin is recorded in a per-user SIDECAR beside the daimon mcp.json
+# (D-057, C-01). The app regenerates mcp.json on project switch but leaves this file, so
+# self-heal re-composes the pin after a wipe — durability the entry itself can't provide.
+SERVE_PIN_FILE = "clauderizer-serve.json"
+
+
+def serve_pin_path(cfg: Path) -> Path:
+    return cfg.parent / SERVE_PIN_FILE
+
+
+def read_serve_pin(cfg: Path) -> str | None:
+    """The pinned repo (a UNC path) recorded in the sidecar, or ``None``."""
+    p = serve_pin_path(cfg)
+    if not p.exists():
+        return None
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    repo = data.get("repo") if isinstance(data, dict) else None
+    return repo if isinstance(repo, str) and repo else None
+
+
+def write_serve_pin(cfg: Path, repo_unc: str) -> Path:
+    """Record the opt-in WSL-serving pin in the sidecar (atomic)."""
+    bespoke_hosts._atomic_write_json(serve_pin_path(cfg), {"repo": repo_unc})
+    return serve_pin_path(cfg)
+
+
+def clear_serve_pin(cfg: Path) -> bool:
+    """Remove the pin sidecar (unpin). True if it existed."""
+    p = serve_pin_path(cfg)
+    if p.exists():
+        p.unlink()
+        return True
+    return False
+
+
 class KimiDesktopHost(BespokeHost):
     """The first bespoke auto-write host (D-053/D-056): the Kimi Work desktop's daimon
     runtime, whose per-user ``mcp.json`` clauderizer auto-writes. Supplies only the
@@ -201,8 +254,13 @@ class KimiDesktopHost(BespokeHost):
 
     def compose_entry(self, cfg, *, in_wsl, platform, home, users_dir, exists, which):
         windows_side = in_wsl and _is_windows_side(cfg, users_dir)
+        # A deliberate WSL-serving pin (D-057) sourced from the durable sidecar (survives
+        # the app's mcp.json wipe — C-01), falling back to an existing --repo in the entry
+        # (a hand-applied pin, same-session). Either way self-heal recomposes it keeping
+        # the repo but re-probing a fresh exe + cwd. No pin → the repo-agnostic path.
+        pin = read_serve_pin(cfg) or _existing_repo_pin(cfg, self.servers_key)
         return server_entry(cfg, in_wsl=in_wsl, windows_side=windows_side, platform=platform,
-                            home=home, users_dir=users_dir, exists=exists, which=which)
+                            home=home, users_dir=users_dir, exists=exists, which=which, pin=pin)
 
     def unservable_reason(self, cfg, *, in_wsl, users_dir):
         # A ``/mnt/.../Users`` config is a Windows-side daimon seen from WSL — only

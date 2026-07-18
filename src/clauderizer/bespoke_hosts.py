@@ -73,6 +73,21 @@ def merge_entry(cfg: Path, entry: dict, *, servers_key: str = "mcpServers",
     return cfg, True
 
 
+def read_entry(cfg: Path, *, servers_key: str = "mcpServers",
+               server_name: str = SERVER_NAME) -> dict | None:
+    """The current ``{command, args, ...}`` server entry in ``cfg``, or ``None`` — lets a
+    host inspect what is already registered (e.g. to PRESERVE a deliberate override on
+    self-heal, D-057) rather than blindly recompose."""
+    if not cfg.exists():
+        return None
+    try:
+        data = json.loads(cfg.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    entry = (data.get(servers_key) or {}).get(server_name)
+    return entry if isinstance(entry, dict) else None
+
+
 def remove_entry(cfg: Path, *, servers_key: str = "mcpServers",
                  server_name: str = SERVER_NAME) -> bool:
     """Uninstall: remove ONLY the clauderizer server from ``cfg``. True if it removed."""

@@ -57,10 +57,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] When the existing daimon entry carries --repo <X>, wire()/self_heal recompose KEEPING X and re-probing a fresh exe path + cwd (verified by test)
-- [ ] A pinned entry survives repeated self-heal (init/status/doctor) — the --repo value is never clobbered to args:[]
-- [ ] A pin with a stale exe path is refreshed to the current exe on self-heal (proves 'preserve X, refresh command')
-- [ ] A non-pinned entry is untouched by the new logic (repo-agnostic behavior unchanged); full suite green
+- [x] The opt-in pin is recorded in a durable per-user SIDECAR (clauderizer-serve.json in the daimon home) that survives the app's regenerate-to-{} wipe (C-01); self-heal composes the pin from it (verified: pin re-composed after an emptied mcp.json)
+- [x] compose_entry sources the pin as sidecar-repo OR an existing --repo in the entry (same-session fallback for a hand-applied pin); either way it recomposes KEEPING the repo and re-probing a fresh exe + cwd
+- [x] A pin with a stale exe path is refreshed to the current exe on self-heal (preserve repo, refresh command)
+- [x] A non-pinned entry (no sidecar, no --repo) is untouched — repo-agnostic behavior unchanged; full suite green
 
 ### Phase 2: init --serve-wsl-here trigger + init/doctor pinned messaging
 

@@ -174,6 +174,84 @@ def test_server_entry_pin_ignored_on_non_windows(tmp_path):
                      "args": ["--from", "clauderizer[mcp]", "clauderizer-mcp"]}
 
 
+def _pin_setup(tmp_path):
+    """A detected WSL/windows-side daimon cfg + a fresh exe on the /mnt mirror."""
+    users = tmp_path / "mnt" / "c" / "Users"
+    cfg = (users / "rafaj" / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    cfg.parent.mkdir(parents=True)
+    exe = users / "rafaj" / "pipx" / "venvs" / "clauderizer" / "Scripts" / "clauderizer-mcp.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("", encoding="utf-8")
+    return users, cfg
+
+
+_UNC = r"\\wsl.localhost\Ubuntu\home\ccusce\clauderizer-site"
+_FRESH_EXE = r"C:\Users\rafaj\pipx\venvs\clauderizer\Scripts\clauderizer-mcp.exe"
+
+
+def test_self_heal_preserves_existing_pin(tmp_path):
+    # D-057 Phase 1: a pinned entry survives self-heal (never clobbered to args:[]).
+    users, cfg = _pin_setup(tmp_path)
+    cfg.write_text(json.dumps({"mcpServers": {"clauderizer": {
+        "command": _FRESH_EXE, "args": ["--repo", _UNC], "cwd": r"C:\Users\rafaj"}}}),
+        encoding="utf-8")
+    res = kd.wire(home=tmp_path / "linuxhome", platform="linux",
+                  environ={"WSL_DISTRO_NAME": "Ubuntu"}, in_wsl=True, users_dir=users)
+    assert res["status"] == "wired" and res["changed"] is False        # already current → no-op
+    entry = json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]["clauderizer"]
+    assert entry["args"] == ["--repo", _UNC] and entry["cwd"] == r"C:\Users\rafaj"
+
+
+def test_self_heal_refreshes_stale_pin_exe_but_keeps_repo(tmp_path):
+    # A pin whose exe path went stale (pipx reinstall) is refreshed to the current exe,
+    # while the --repo pin is preserved.
+    users, cfg = _pin_setup(tmp_path)
+    cfg.write_text(json.dumps({"mcpServers": {"clauderizer": {
+        "command": r"C:\Users\rafaj\OLD\clauderizer-mcp.exe",
+        "args": ["--repo", _UNC], "cwd": r"C:\Users\rafaj"}}}), encoding="utf-8")
+    res = kd.wire(home=tmp_path / "linuxhome", platform="linux",
+                  environ={"WSL_DISTRO_NAME": "Ubuntu"}, in_wsl=True, users_dir=users)
+    assert res["status"] == "wired" and res["changed"] is True         # exe refreshed → wrote
+    entry = json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]["clauderizer"]
+    assert entry["command"] == _FRESH_EXE                              # fresh exe
+    assert entry["args"] == ["--repo", _UNC]                           # pin PRESERVED
+
+
+def test_self_heal_leaves_unpinned_entry_repo_agnostic(tmp_path):
+    # No --repo and no sidecar → self-heal composes the repo-agnostic entry, unchanged.
+    users, cfg = _pin_setup(tmp_path)
+    cfg.write_text('{"mcpServers": {"clauderizer": {"command": "stale", "args": []}}}',
+                   encoding="utf-8")
+    kd.wire(home=tmp_path / "linuxhome", platform="linux",
+            environ={"WSL_DISTRO_NAME": "Ubuntu"}, in_wsl=True, users_dir=users)
+    entry = json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]["clauderizer"]
+    assert entry == {"command": _FRESH_EXE, "args": []} and "cwd" not in entry
+
+
+def test_serve_pin_sidecar_roundtrip(tmp_path):
+    _, cfg = _pin_setup(tmp_path)
+    assert kd.read_serve_pin(cfg) is None
+    assert kd.serve_pin_path(cfg).name == "clauderizer-serve.json"
+    kd.write_serve_pin(cfg, _UNC)
+    assert kd.read_serve_pin(cfg) == _UNC
+    assert kd.clear_serve_pin(cfg) is True
+    assert kd.read_serve_pin(cfg) is None
+    assert kd.clear_serve_pin(cfg) is False                            # idempotent
+
+
+def test_self_heal_composes_pin_from_sidecar_after_app_wipe(tmp_path):
+    # C-01: the app wiped mcp.json to {} — the durable sidecar makes self-heal re-compose
+    # the pin (the entry alone couldn't, since there's no --repo left to read).
+    users, cfg = _pin_setup(tmp_path)
+    cfg.write_text('{"mcpServers": {}}', encoding="utf-8")             # app-regenerated (wiped)
+    kd.write_serve_pin(cfg, _UNC)                                      # durable pin sidecar
+    res = kd.wire(home=tmp_path / "linuxhome", platform="linux",
+                  environ={"WSL_DISTRO_NAME": "Ubuntu"}, in_wsl=True, users_dir=users)
+    assert res["status"] == "wired" and res["changed"] is True
+    entry = json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]["clauderizer"]
+    assert entry == {"command": _FRESH_EXE, "args": ["--repo", _UNC], "cwd": r"C:\Users\rafaj"}
+
+
 def test_win32_native_unregistrable_without_exe(tmp_path):
     home = tmp_path / "winhome"
     cfg = (home / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)

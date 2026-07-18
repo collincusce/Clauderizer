@@ -8,7 +8,7 @@
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Compose the WSL-serving pin (UNC --repo + Windows-safe cwd) | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Self-heal preserves + refreshes an existing --repo/cwd pin | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Self-heal preserves + refreshes an existing --repo/cwd pin | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | init --serve-wsl-here trigger + init/doctor pinned messaging | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Docs + 1.11.0 release + cascade + close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
@@ -20,6 +20,17 @@
 pin-compose-primitives: winhost.wsl_repo_to_unc(repo_root, distro) → \\wsl.localhost\<distro>\<path>; winhost.windows_safe_cwd(cfg, platform, home, users_dir) → win_base (C:\Users\<user>) from WSL, %USERPROFILE% on win32, None if underivable. kimidesktop.server_entry gained pin: str|None — when pin set + windows_host + exe found, composes {command: exe, args:[--repo, pin], cwd: <win_safe>} (cwd omitted if None); refactored to probe the exe once then branch pinned/repo-agnostic (non-pinned byte-identical). VERIFIED: composed pin for clauderizer-site == the agent's live-verified working entry (byte-for-byte). Suite 889→897.
 ```
 
+### Phase 1 Outputs
+
+```
+durable-pin-sidecar: Pin durability via a sidecar (C-01): kimidesktop.SERVE_PIN_FILE = "clauderizer-serve.json" beside the daimon mcp.json (survives the app's regenerate-to-{} wipe). Helpers: serve_pin_path/read_serve_pin/write_serve_pin/clear_serve_pin (write via bespoke_hosts._atomic_write_json). KimiDesktopHost.compose_entry: pin = read_serve_pin(cfg) or _existing_repo_pin(cfg,servers_key) → server_entry(pin=...); so self-heal recomposes the pin (fresh exe + cwd) even after an app-wipe (sidecar), or preserves a hand-applied --repo same-session. bespoke_hosts.read_entry added (read current server entry). Verified: emptied mcp.json + sidecar → wire re-composes {command: <fresh exe>, args:[--repo, UNC], cwd}. Suite 897→902.
+```
+
 ## Corrections Log
 
-_(Every divergence from the gameplan, captured in real time, as C-NN entries.)_
+### C-01 — Phase 1
+
+**Phase**: 1
+**What gameplan said**: Self-heal preserves a pin by reading the existing --repo <X> from the daimon entry and recomposing keeping X.
+**What was actually correct**: Reading the existing --repo alone does NOT survive the app's regenerate-to-{} wipe (O-01) — after a wipe the entry is empty, so there is no --repo to read and self-heal composes the repo-agnostic args:[], losing the pin. The durable pin target must live in a per-user SIDECAR (clauderizer-serve.json in the daimon home, which the app leaves alone when it regenerates mcp.json). compose_entry reads pin = sidecar-repo OR existing --repo (fallback for a hand-applied pin within a session).
+**Why**: Verified live 2026-07-18: the live daimon mcp.json is currently {"mcpServers": {}} — the app wiped both clauderizer's entry AND the other agent's manual pin. A pin that only lives in mcp.json cannot survive that; the whole point of the feature is durability, so the pin choice must be stored where the app can't wipe it (a clauderizer-owned sidecar in the same per-user daimon home, detected-only + atomic like the mcp.json write, D-053).
