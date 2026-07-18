@@ -423,23 +423,33 @@ UNC cwd. The bundled bash is fine; only process *spawning* is blocked.
   tracked `cz_*` writes here.
 
 **How to fix it for good** (pick one):
-1. **Put the repo on the Windows filesystem** — e.g. clone it under
-   `C:\\Users\\<you>\\Documents\\kimi\\workspace\\<repo>` (the app's own workspace). Then
-   every spawn gets a normal Windows cwd, so the shell works and the `uvx` MCP
-   server launches. WSL can still reach it at `/mnt/c/Users/<you>/…`.
-2. **Use Kimi Code CLI *inside* WSL** for a WSL-hosted repo — no UNC anywhere, and
-   the K3 model is available there too. This is the setup with zero of these issues.
+1. **Pin the desktop to serve this WSL repo** (opt-in, D-057) — run, from inside this
+   repo in WSL:
 
-**The forward path (not yet automatic).** `clauderizer-mcp` accepts `--repo <path>`
-(or `$CLAUDERIZER_REPO`) to serve a repo other than its process cwd. So a desktop
-that spawned the server from a **Windows-safe cwd** while passing
-`--repo \\\\wsl.localhost\\<distro>\\home\\<you>\\<repo>` could serve a WSL-hosted repo
-over UNC (file I/O over UNC works; only the process *cwd* may not be UNC). The daimon
-entry is one repo-agnostic file shared by every repo the app opens, so clauderizer
-can't bake a per-repo `--repo` there automatically — until the app exposes a
-Windows-safe spawn cwd, use one of the two fixes above.
+   ```
+   clauderize init --serve-wsl-here
+   ```
+
+   This composes a per-server override in the daimon config —
+   `{{command: …clauderizer-mcp.exe, args: ["--repo", "\\\\wsl.localhost\\<distro>\\…"],
+   cwd: "C:\\Users\\<you>"}}` — so the server spawns from a **Windows-safe cwd** and reads
+   this repo over UNC (file I/O over UNC works; only the process *cwd* may not be UNC).
+   The verified daimon fact that makes this work: the runtime honors a per-server `cwd`
+   field. Restart the app (or open a new session) to pick it up.
+   **The one tradeoff** (surfaced by `clauderize doctor`): the daimon config is a single
+   per-user file, so while pinned the desktop serves **this** repo for *every* project you
+   open in the app — not the one you actually opened. It is opt-in for exactly that
+   reason, and self-heal keeps it (the pin is recorded in a `clauderizer-serve.json`
+   sidecar that survives the app regenerating its `mcp.json`). Unpin with
+   `clauderize uninstall` (or delete the sidecar).
+2. **Put the repo on the Windows filesystem** — clone it under
+   `C:\\Users\\<you>\\Documents\\kimi\\workspace\\<repo>`; every spawn then gets a normal
+   Windows cwd, and the repo-agnostic entry serves it with no pin. WSL still reaches it
+   at `/mnt/c/Users/<you>/…`.
+3. **Use Kimi Code CLI *inside* WSL** — no UNC anywhere, K3 available, zero of these
+   issues.
 
 (The underlying limitation is the desktop app spawning Windows processes with a UNC
-cwd; the real fix is for it to execute via `wsl.exe` inside the distro, or to spawn
-from a Windows-safe cwd and pass `--repo` for the UNC repo.)
+cwd; option 1 sidesteps it by spawning from a Windows-safe cwd and pointing the server
+at the UNC repo with `--repo`.)
 """

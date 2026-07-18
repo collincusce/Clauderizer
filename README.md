@@ -469,7 +469,9 @@ status is delivered at most once per session (runtime-detected agent, D-047):
   `clauderizer-mcp.exe`, never a bare `uvx` that can't spawn there), **self-healing** (the app
   regenerates its config on project switch, so `init`/`doctor`/`status` re-apply it), and
   `doctor` verifies it end-to-end with a live MCP `initialize` handshake. It's the first of a
-  reusable **bespoke auto-write host** framework (D-056) — see [docs/CROSS-HOST.md](docs/CROSS-HOST.md).
+  reusable **bespoke auto-write host** framework (D-056). A WSL-hosted repo opened in the
+  Windows desktop can even be served with `clauderize init --serve-wsl-here` (opt-in, D-057) —
+  see [docs/CROSS-HOST.md](docs/CROSS-HOST.md).
 - **Everyone** gets the floor: `AGENTS.md` (or a native rules file for the few hosts that don't
   read it) tells the agent to call `cz_status` first — and the MCP server attaches a status note
   to the first tool call as an automatic fallback for hook-less / governance-hook hosts.

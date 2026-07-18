@@ -564,6 +564,15 @@ def test_setup_guide_carries_recovery_playbook():
     assert "Windows filesystem" in g and "Kimi Code CLI" in g   # both permanent fixes
 
 
+def test_setup_guide_documents_the_serve_wsl_pin():
+    # D-057: the guide documents the opt-in pin recipe, the sidecar, and the tradeoff.
+    g = kd.setup_guide()
+    assert "clauderize init --serve-wsl-here" in g
+    assert "cwd" in g and "wsl.localhost" in g                 # the override shape
+    assert "clauderizer-serve.json" in g                       # the durable sidecar
+    assert "tradeoff" in g and "per-user file" in g            # the single-repo tradeoff
+
+
 def test_setup_guide_carries_persistence_and_topology():
     # D-055 Phase 5: the guide documents the persistence finding, the per-topology
     # compositions, and the doctor smoke-test (a doc claim needs a test — L-55).
@@ -575,12 +584,12 @@ def test_setup_guide_carries_persistence_and_topology():
     assert "uv.exe" in g and "not" in g                  # why bare uvx can't spawn on Windows
 
 
-def test_setup_guide_references_repo_forward_path():
-    # D-055 Phase 4: the guide names --repo / CLAUDERIZER_REPO as the forward path to
-    # serving a UNC repo from a Windows-safe cwd.
+def test_setup_guide_serves_wsl_repo_from_windows_safe_cwd():
+    # D-055 named --repo as the forward path; D-057 realized it — the guide now presents
+    # the pin (--repo + a Windows-safe cwd) as the working fix, not a future one.
     g = kd.setup_guide()
-    assert "--repo" in g and "CLAUDERIZER_REPO" in g
-    assert "Windows-safe cwd" in g
+    assert "--repo" in g and "Windows-safe cwd" in g
+    assert "not yet automatic" not in g                        # the forward path landed
 
 
 def test_wsl_combo_registration_is_not_dead(tmp_path):

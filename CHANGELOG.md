@@ -2,6 +2,30 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.11.0] — 2026-07-18
+
+**Opt-in: serve a WSL-hosted repo from the Kimi Work desktop app** (gameplan
+`2026-07-18-kimi-desktop-serve-wsl-repo-via-repo-cwd-pin`, D-057). The D-055
+`--repo` "forward path" is now verified and automatic: the daimon runtime honors a
+per-server `cwd`, so the server can spawn from a Windows-safe cwd and read a WSL repo
+over its `\\wsl.localhost` UNC path (file I/O over UNC works; only the process *cwd*
+may not be UNC — D-054).
+
+- **`clauderize init --serve-wsl-here`** — run inside a WSL-hosted repo opened in the
+  Windows desktop, it pins the daimon to serve THAT repo:
+  `{command: …clauderizer-mcp.exe, args: ["--repo", "\\wsl.localhost\<distro>\…"],
+  cwd: "C:\Users\<you>"}`. A clear no-op off the WSL-repo + Windows-desktop combo.
+- **Durable across the app's config wipe.** The pin is recorded in a
+  `clauderizer-serve.json` sidecar beside the daimon `mcp.json`; the app regenerates
+  `mcp.json` but leaves the sidecar, so `init`/`doctor`/`status` self-heal re-compose
+  the pin (and re-probe a fresh exe path).
+- **`doctor`** reports which repo the pin serves and the one tradeoff — a single
+  per-user file means the desktop serves that repo for *every* project opened in the
+  app — then handshake-verifies the pinned command. **`uninstall`** clears the pin.
+- Strictly opt-in; the default is unchanged (repo-agnostic `.exe` for Windows-hosted
+  repos + the UNC read-your-way-out guidance for WSL repos). Verified live end-to-end:
+  the pinned command's `cz_status` served a real WSL repo over UNC.
+
 ## [1.10.0] — 2026-07-17
 
 End-to-end repair of the **Kimi Work desktop (daimon runtime)** MCP wiring, verified
