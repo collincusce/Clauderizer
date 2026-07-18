@@ -34,13 +34,12 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 from typing import Callable
 
+from . import winhost
 from .markdown.writer import refuse_if_symlink
 
 # The runtime-home path suffix, under each platform's app-data root.
@@ -121,61 +120,8 @@ def _is_windows_side(cfg: Path, users_dir: Path) -> bool:
 
 _ARGS = ["--from", "clauderizer[mcp]", "clauderizer-mcp"]
 
-# The Windows-native console script the daimon runtime must launch. kimi-desktop
-# bundles uv.exe but NOT uvx.exe (verified 2026-07-17), so a bare ``uvx`` can never
-# spawn on Windows — the absolute path to this .exe is the verified-good command
-# (MCP initialize returns serverInfo clauderizer). D-055.
-_WIN_EXE = "clauderizer-mcp.exe"
-
-# Per-user roots under the Windows profile that hold clauderizer-mcp.exe, in
-# priority order. ``.local\\bin`` doubles as uv's tool-bin dir (uv installs tool
-# launchers there on every platform), so these two cover pipx AND uv tool installs.
-_WIN_EXE_SUBPATHS = (
-    ("pipx", "venvs", "clauderizer", "Scripts"),
-    (".local", "bin"),
-)
-
-
-def _windows_profile_from_cfg(cfg: Path, users_dir: Path) -> tuple[Path, str] | None:
-    """From a WSL-mounted Windows config path, derive ``(mnt_base, win_base)``:
-    the ``/mnt/<drive>/Users/<user>`` directory THIS WSL host can stat, and the
-    ``<DRIVE>:\\Users\\<user>`` spelling Windows will actually launch. ``None`` when
-    ``cfg`` is not under the mounted Users dir."""
-    try:
-        rel = cfg.relative_to(users_dir)          # <user>/AppData/Roaming/...
-    except ValueError:
-        return None
-    if not rel.parts:
-        return None
-    user = rel.parts[0]
-    mnt_base = users_dir / user                   # /mnt/c/Users/<user>
-    # users_dir ends in .../<drive>/Users → the drive is the segment before 'Users'
-    drive = users_dir.parts[-2] if len(users_dir.parts) >= 2 else "c"
-    win_base = f"{drive.upper()}:\\Users\\{user}"
-    return mnt_base, win_base
-
-
-def _win_exe_candidates(*, cfg: Path, platform: str, home: Path,
-                        users_dir: Path) -> list[tuple[Path, str]]:
-    """``(stat_path, command_str)`` candidates for a Windows-native
-    clauderizer-mcp.exe, in priority order. ``stat_path`` is what the CURRENT host
-    can check (a ``/mnt/c`` mirror from WSL, or a native Windows path); ``command_str``
-    is the Windows-spelled absolute path to register."""
-    out: list[tuple[Path, str]] = []
-    if platform == "win32":                       # native Windows: stat == command
-        for sub in _WIN_EXE_SUBPATHS:
-            p = home.joinpath(*sub, _WIN_EXE)
-            out.append((p, str(p)))
-        return out
-    prof = _windows_profile_from_cfg(cfg, users_dir)   # WSL → Windows-side config
-    if prof is None:
-        return out
-    mnt_base, win_base = prof
-    for sub in _WIN_EXE_SUBPATHS:
-        stat_path = mnt_base.joinpath(*sub, _WIN_EXE)
-        command = win_base + "\\" + "\\".join(sub) + "\\" + _WIN_EXE
-        out.append((stat_path, command))
-    return out
+# Windows-native command composition (Windows/WSL path translation + clauderizer-mcp.exe
+# probing) is the host-agnostic winhost primitive (D-056), reused by any bespoke host.
 
 
 def server_entry(cfg: Path, *, in_wsl: bool, windows_side: bool | None = None,
@@ -209,16 +155,16 @@ def server_entry(cfg: Path, *, in_wsl: bool, windows_side: bool | None = None,
         windows_side = _is_windows_side(cfg, users_dir)
     windows_host = platform == "win32" or (in_wsl and windows_side)
     if windows_host:
-        for stat_path, command in _win_exe_candidates(
+        for stat_path, command in winhost.win_exe_candidates(
                 cfg=cfg, platform=platform, home=home, users_dir=users_dir):
             if exists(stat_path):
                 return ({"command": command, "args": []}, [])
         if platform == "win32":                   # last resort: PATH / uv tool dir
-            found = which(_WIN_EXE) or which("clauderizer-mcp")
+            found = which(winhost.WIN_EXE) or which("clauderizer-mcp")
             if found:
                 return ({"command": found, "args": []}, [])
         return (None,
-                [f"no {_WIN_EXE} found for the Windows desktop (probed pipx venv "
+                [f"no {winhost.WIN_EXE} found for the Windows desktop (probed pipx venv "
                  "Scripts, .local\\bin / uv tool dir) — install clauderizer on Windows "
                  "(e.g. `pipx install \"clauderizer[mcp]\"`), then re-run `clauderize init`. "
                  "Wrote the setup guide instead of a command that cannot spawn"])
@@ -333,127 +279,6 @@ def self_heal(*, home: Path | None = None, platform: str | None = None,
                     users_dir=users_dir, exists=exists, which=which)
     except Exception as exc:                          # self-heal must never break the caller
         return {"status": "failed", "path": None, "entry": None, "warnings": [str(exc)]}
-
-
-# --- doctor: end-to-end MCP handshake smoke-test (D-055 Phase 3, L-25) -----------
-# Presence in mcp.json is not capability: the composed command must actually spawn
-# and complete an MCP `initialize` over stdio, returning serverInfo.name=="clauderizer".
-# This mirrors hosts.spawn_probe/verify_wiring for the SessionStart hook, but for the
-# daimon MCP command. MCP stdio is newline-delimited JSON-RPC (verified: a Windows
-# clauderizer-mcp.exe answers over WSL interop with serverInfo in one line).
-
-_PROTOCOL_VERSION = "2024-11-05"
-HANDSHAKE_TIMEOUT = 20.0
-
-
-def _init_request() -> dict:
-    return {"jsonrpc": "2.0", "id": 1, "method": "initialize",
-            "params": {"protocolVersion": _PROTOCOL_VERSION, "capabilities": {},
-                       "clientInfo": {"name": "clauderize-doctor", "version": "1"}}}
-
-
-def _win_path_to_wsl(win_path: str, *, mnt_root: Path = Path("/mnt")) -> Path | None:
-    """``C:\\Users\\me\\x.exe`` → ``/mnt/c/Users/me/x.exe`` (WSL interop), else None."""
-    m = re.match(r"^([A-Za-z]):[\\/](.*)$", win_path)
-    if not m:
-        return None
-    drive, rest = m.group(1).lower(), m.group(2).replace("\\", "/")
-    return mnt_root / drive / rest
-
-
-def _spawn_target(entry: dict, *, platform: str,
-                  mnt_root: Path = Path("/mnt")) -> tuple[list[str] | None, str | None]:
-    """``(argv, unreachable_reason)``. ``argv`` is what THIS host can spawn to reach
-    the registered command; ``unreachable_reason`` is set (argv None) only when the
-    command targets a host we genuinely cannot reach → an honest ``unverifiable``
-    (never a false pass, never a false fail — L-25). A command whose target is
-    reachable-but-absent returns an argv so the spawn fails loudly."""
-    command = str(entry.get("command", ""))
-    args = [str(a) for a in entry.get("args", [])]
-    if not command:
-        return None, None
-    if Path(command).name.lower() == "wsl.exe":
-        if platform != "win32" and shutil.which("wsl.exe") is None:
-            return None, "command launches via wsl.exe but Windows interop is unreachable here"
-        return [command, *args], None
-    is_win = bool(re.match(r"^[A-Za-z]:[\\/]", command)) or command.lower().endswith(".exe")
-    if is_win and platform != "win32":
-        mnt = _win_path_to_wsl(command, mnt_root=mnt_root)
-        if mnt is None:
-            return None, f"cannot map Windows command '{command}' to a reachable path"
-        return [str(mnt), *args], None                # absent → spawn fails loudly (real fault)
-    return [command, *args], None
-
-
-def _server_info(stdout: bytes) -> dict | None:
-    """The ``result.serverInfo`` from the first JSON-RPC line that carries it."""
-    for line in stdout.splitlines():
-        line = line.strip()
-        if not line.startswith(b"{"):
-            continue
-        try:
-            msg = json.loads(line)
-        except (json.JSONDecodeError, ValueError):
-            continue
-        info = msg.get("result", {}).get("serverInfo") if isinstance(msg, dict) else None
-        if isinstance(info, dict):
-            return info
-    return None
-
-
-def _default_run(argv: list[str], cwd: str | None, stdin: bytes,
-                 timeout: float) -> tuple[int, bytes, bytes]:
-    p = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE, cwd=cwd)
-    try:
-        out, err = p.communicate(stdin, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        p.kill()
-        p.communicate()
-        raise
-    return p.returncode or 0, out, err
-
-
-def handshake_probe(entry: dict, *, cwd: str | None = None, platform: str | None = None,
-                    mnt_root: Path = Path("/mnt"), timeout: float = HANDSHAKE_TIMEOUT,
-                    run: Callable[..., tuple[int, bytes, bytes]] | None = None) -> dict:
-    """Spawn the registered daimon command from ``cwd`` (a NON-repo dir, the way the
-    app spawns) and complete an MCP ``initialize`` handshake, asserting
-    ``serverInfo.name == 'clauderizer'``. Returns ``{status: ok|fail|unverifiable,
-    detail, server_name, server_version}``. Never raises. ``run`` is injectable for
-    tests: ``run(argv, cwd, stdin_bytes, timeout) -> (rc, stdout, stderr)``."""
-    platform = platform or sys.platform
-    base = {"server_name": None, "server_version": None}
-    if not entry or not entry.get("command"):
-        return {**base, "status": "fail", "detail": "no command registered in mcp.json"}
-    argv, unreachable = _spawn_target(entry, platform=platform, mnt_root=mnt_root)
-    if unreachable:
-        return {**base, "status": "unverifiable",
-                "detail": f"{unreachable} — verify from the session host: `{entry['command']}`"}
-    run = run or _default_run
-    shown = " ".join(argv)
-    try:
-        _rc, out, err = run(argv, cwd, (json.dumps(_init_request()) + "\n").encode(), timeout)
-    except FileNotFoundError:
-        return {**base, "status": "fail",
-                "detail": f"'{argv[0]}' not found or not executable — the desktop cannot spawn it"}
-    except subprocess.TimeoutExpired:
-        return {**base, "status": "fail",
-                "detail": f"initialize handshake timed out after {timeout:.0f}s: `{shown}`"}
-    except OSError as exc:
-        return {**base, "status": "fail", "detail": f"spawn failed for `{shown}`: {exc}"}
-    info = _server_info(out)
-    if info is None:
-        tail = (err or out).decode("utf-8", "replace").strip()[-300:]
-        return {**base, "status": "fail",
-                "detail": f"no serverInfo from the initialize handshake (`{shown}`)"
-                          + (f" — {tail}" if tail else "")}
-    name, ver = info.get("name"), info.get("version")
-    if name != "clauderizer":
-        return {"server_name": name, "server_version": ver, "status": "fail",
-                "detail": f"handshake returned serverInfo.name={name!r}, expected 'clauderizer' (`{shown}`)"}
-    return {"server_name": name, "server_version": ver, "status": "ok",
-            "detail": f"initialize → serverInfo clauderizer {ver}"}
 
 
 def setup_guide() -> str:

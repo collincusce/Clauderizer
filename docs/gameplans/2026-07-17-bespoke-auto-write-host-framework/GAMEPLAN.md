@@ -1,7 +1,7 @@
 # bespoke-auto-write-host-framework Gameplan
 
 > Created: 2026-07-17
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -42,10 +42,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] The MCP initialize-handshake verifier (handshake_probe + _spawn_target + _server_info + _default_run) lives in a host-agnostic home and operates on a generic {command,args} entry
-- [ ] Windows/WSL command composition (native-exe probing + C:\↔/mnt translation) is a shared helper usable by any host, not kimidesktop-private
-- [ ] kimidesktop consumes the extracted primitives; composition against the live env is byte-identical to before (verified), and the D-055 kimi-desktop tests stay green
-- [ ] No behavior change: full suite green (>= 873 passed), Claude Code wiring untouched
+- [x] The MCP initialize-handshake verifier (handshake_probe + _spawn_target + _server_info + _default_run) lives in a host-agnostic home and operates on a generic {command,args} entry
+- [x] Windows/WSL command composition (native-exe probing + C:\↔/mnt translation) is a shared helper usable by any host, not kimidesktop-private
+- [x] kimidesktop consumes the extracted primitives; composition against the live env is byte-identical to before (verified), and the D-055 kimi-desktop tests stay green
+- [x] No behavior change: full suite green (>= 873 passed), Claude Code wiring untouched
 
 ### Phase 1: BespokeHost protocol + registry; port kimi-desktop as first implementation
 

@@ -407,8 +407,10 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             # MSYS-mangled / UNC / vanished commands; unverifiable (never green) when
             # the command targets a host this doctor can't reach.
             import tempfile
+
+            from . import mcp_probe
             entry = _host_registered_entry(desk_cfg, "mcpServers")
-            r = kimidesktop.handshake_probe(entry or {}, cwd=tempfile.gettempdir())
+            r = mcp_probe.handshake_probe(entry or {}, cwd=tempfile.gettempdir())
             verdict("kimi-desktop MCP initialize handshake",
                     hosts.Probe(r["status"], r["detail"]))
             # The desktop exe is a SEPARATE install (Windows pipx) from this engine,
