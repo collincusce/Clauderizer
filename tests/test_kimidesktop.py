@@ -447,6 +447,46 @@ def test_setup_guide_carries_recovery_playbook():
     assert "Windows filesystem" in g and "Kimi Code CLI" in g   # both permanent fixes
 
 
+def test_setup_guide_references_repo_forward_path():
+    # D-055 Phase 4: the guide names --repo / CLAUDERIZER_REPO as the forward path to
+    # serving a UNC repo from a Windows-safe cwd.
+    g = kd.setup_guide()
+    assert "--repo" in g and "CLAUDERIZER_REPO" in g
+    assert "Windows-safe cwd" in g
+
+
+def test_wsl_combo_registration_is_not_dead(tmp_path):
+    # D-055 Phase 4: for the WSL-repo + Windows-host combo, the repo-agnostic entry
+    # is the working Windows .exe (serves Windows-hosted repos) — NOT a dead/bare-uvx
+    # command — AND windows_side is flagged so the caller emits the UNC guidance.
+    users = tmp_path / "mnt" / "c" / "Users"
+    cfg = (users / "rafaj" / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    _make_home(users, cfg)
+    exe = users / "rafaj" / "pipx" / "venvs" / "clauderizer" / "Scripts" / "clauderizer-mcp.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("", encoding="utf-8")
+    res = kd.wire(home=tmp_path / "linuxhome", platform="linux",
+                  environ={"WSL_DISTRO_NAME": "Ubuntu"}, in_wsl=True, users_dir=users)
+    assert res["status"] == "wired" and res["windows_side"] is True   # guidance path fires
+    entry = json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]["clauderizer"]
+    assert entry["command"].endswith("clauderizer-mcp.exe") and entry["command"] != "uvx"
+
+
+def test_doctor_wsl_combo_clarifies_registration_stands(empty_python_repo, monkeypatch, tmp_path, capsys):
+    from clauderizer import cli
+    from clauderizer.scaffold.init import init
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    monkeypatch.setattr(kd, "_is_windows_side", lambda *a, **k: True)
+    monkeypatch.setattr(kd, "handshake_probe", lambda *a, **k: {
+        "status": "ok", "detail": "ok", "server_name": "clauderizer", "server_version": None})
+    monkeypatch.chdir(empty_python_repo)
+    cli.main(["doctor"])
+    out = capsys.readouterr().out
+    assert "UNC" in out and "still serves Windows-hosted repos" in out   # not "dead registration"
+
+
 def test_init_emits_playbook_guide_on_wsl_combo(empty_python_repo, monkeypatch):
     from clauderizer.scaffold.init import init
     monkeypatch.setattr(kd, "wire", lambda **kw: {

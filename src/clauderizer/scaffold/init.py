@@ -425,10 +425,11 @@ def init(
             report.note("kimi-desktop guide",
                         guide, _rewrite_if_diff(guide, kimidesktop.setup_guide()))
             report.warnings.append(
-                "kimi-desktop: this repo is in WSL but the desktop app runs on Windows — "
-                "it cannot spawn the MCP server or shell with a UNC (\\\\wsl.localhost) cwd. "
-                "Put the repo on the Windows filesystem, or use Kimi Code CLI in WSL. "
-                "See .clauderizer/kimi-desktop-mcp-setup.md")
+                "kimi-desktop: THIS repo is in WSL but the desktop app runs on Windows — the "
+                "app spawns with a UNC (\\\\wsl.localhost) cwd it cannot use, so the shell and "
+                "MCP server fail to launch FOR THIS REPO (the registered entry still serves "
+                "Windows-hosted repos). Clone the repo onto the Windows filesystem, or use "
+                "Kimi Code CLI in WSL. See .clauderizer/kimi-desktop-mcp-setup.md")
     elif desk["status"] in ("failed", "unregistrable"):
         # Detected but no launchable command (no clauderizer-mcp.exe on a Windows
         # host, or the config was unwritable): drop the guide so the agent can read

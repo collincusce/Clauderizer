@@ -107,10 +107,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] When the current repo is WSL-hosted and the daimon host is Windows, init/doctor emit the D-054 UNC guidance (Windows-hosted clone or Kimi Code CLI in WSL) instead of a dead command
-- [ ] The repo-agnostic Windows .exe entry still stands so Windows-hosted repos the app opens keep the cz_* tools
-- [ ] Guidance references the --repo primitive as the forward path to serving a UNC repo from a Windows-safe cwd
-- [ ] Tests assert guidance-not-dead-registration for the WSL-repo+Windows-host combo; full suite green
+- [x] When the current repo is WSL-hosted and the daimon host is Windows, init/doctor emit the D-054 UNC guidance (Windows-hosted clone or Kimi Code CLI in WSL) instead of a dead command
+- [x] The repo-agnostic Windows .exe entry still stands so Windows-hosted repos the app opens keep the cz_* tools
+- [x] Guidance references the --repo primitive as the forward path to serving a UNC repo from a Windows-safe cwd
+- [x] Tests assert guidance-not-dead-registration for the WSL-repo+Windows-host combo; full suite green
 
 ### Phase 5: Docs + release close-out
 

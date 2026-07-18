@@ -522,6 +522,16 @@ UNC cwd. The bundled bash is fine; only process *spawning* is blocked.
 2. **Use Kimi Code CLI *inside* WSL** for a WSL-hosted repo — no UNC anywhere, and
    the K3 model is available there too. This is the setup with zero of these issues.
 
+**The forward path (not yet automatic).** `clauderizer-mcp` accepts `--repo <path>`
+(or `$CLAUDERIZER_REPO`) to serve a repo other than its process cwd. So a desktop
+that spawned the server from a **Windows-safe cwd** while passing
+`--repo \\\\wsl.localhost\\<distro>\\home\\<you>\\<repo>` could serve a WSL-hosted repo
+over UNC (file I/O over UNC works; only the process *cwd* may not be UNC). The daimon
+entry is one repo-agnostic file shared by every repo the app opens, so clauderizer
+can't bake a per-repo `--repo` there automatically — until the app exposes a
+Windows-safe spawn cwd, use one of the two fixes above.
+
 (The underlying limitation is the desktop app spawning Windows processes with a UNC
-cwd; the real fix is for it to execute via `wsl.exe` inside the distro.)
+cwd; the real fix is for it to execute via `wsl.exe` inside the distro, or to spawn
+from a Windows-safe cwd and pass `--repo` for the UNC repo.)
 """

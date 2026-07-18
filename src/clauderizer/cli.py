@@ -422,13 +422,17 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         else:
             warn("kimi-desktop",
                  f"app detected but clauderizer not in {desk_cfg} — re-run `clauderize init`")
-        # WSL repo + Windows desktop config → the app can't spawn with a UNC cwd (D-054)
+        # WSL repo + Windows desktop config → the app can't spawn with a UNC cwd (D-054).
+        # The registration above is the repo-agnostic Windows .exe and DOES serve any
+        # Windows-hosted repo the app opens (D-055); only THIS WSL-hosted repo can't be
+        # served, because the app spawns with a \\wsl.localhost UNC cwd it cannot use.
         if kimidesktop._is_windows_side(desk_cfg, kimidesktop.WSL_USERS_DIR):
             warn("kimi-desktop",
-                 "this repo is in WSL but the desktop app is on Windows — it cannot spawn "
-                 "the MCP server or shell with a UNC (\\\\wsl.localhost) cwd, so tools/shell "
-                 "will fail. Put the repo on the Windows filesystem, or use Kimi Code CLI in "
-                 "WSL. See .clauderizer/kimi-desktop-mcp-setup.md")
+                 "THIS repo is in WSL but the desktop app is on Windows — the app spawns "
+                 "with a UNC (\\\\wsl.localhost) cwd it cannot use, so the shell and the MCP "
+                 "server will fail to launch FOR THIS REPO (the registered entry still serves "
+                 "Windows-hosted repos). Clone the repo onto the Windows filesystem, or use "
+                 "Kimi Code CLI in WSL. See .clauderizer/kimi-desktop-mcp-setup.md")
 
     # D4 breadcrumb wrapper: when the registered command is the wrapper, its
     # file must exist and its baked engine command should match what a fresh

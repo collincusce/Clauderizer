@@ -1,7 +1,7 @@
 # Chat Handoff Index — kimi-desktop-wiring-end-to-end-repair
 
 > Last updated: 2026-07-17
-> Status: Phase 4 ready
+> Status: Phase 5 ready
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Windows-native command composition (clauderizer-mcp.exe) | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Self-healing registration on every entry point | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Doctor MCP initialize-handshake smoke-test | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | WSL-hosted-repo UNC guidance instead of dead registration | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | WSL-hosted-repo UNC guidance instead of dead registration | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Docs + release close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -63,6 +63,12 @@ Deliberately scoped away from two paths (C-01): the SessionStart hook (INVARIANT
 Doctor now verifies the kimi-desktop MCP command's CAPABILITY, not its mere presence in mcp.json (L-25). `kimidesktop.handshake_probe` spawns the registered command from a non-repo cwd (the way the app does — doctor passes the system tempdir), sends an MCP `initialize` over stdio (newline-delimited JSON-RPC, protocol 2024-11-05), parses `result.serverInfo`, and asserts `name == "clauderizer"`. It returns a three-state verdict wired into doctor's `verdict()`: a failed/mismatched handshake is drift (exit 2), and a command targeting an unreachable host (a wsl.exe shim with no interop) is honestly `unverifiable` (exit 3) — never a false green. `_spawn_target` makes this work cross-host by translating a `C:\` command to `/mnt/<drive>/...` for WSL interop; a green handshake against a different-version desktop install raises an advisory warn (the exe is a separate Windows pipx install, so a skew isn't same-install drift).
 
 O-02 was resolved empirically: a WSL doctor CAN spawn the real Windows clauderizer-mcp.exe via the /mnt interop path and complete the handshake (serverInfo clauderizer 1.9.1) — so this is a real live verification, not unverifiable. Both directions confirmed against the live machine: the good entry → ok, a bogus exe → fail loudly. 12 new tests (ok, wrong-name, no-serverInfo+stderr tail, spawn-not-found, timeout, no-command, /mnt translation, native passthrough, wsl.exe-unverifiable, doctor-fails, doctor-passes, version-skew-advisory). Suite 857 → 868 → 869 passed, 5 skipped.
+
+### Phase 4 — completed 2026-07-17
+
+Refined the WSL-hosted-repo messaging so it reads as targeted guidance, not a dead registration. Since Phase 1 already made the composed entry the working Windows `.exe` (repo-agnostic, serving any Windows-hosted repo the app opens) and D-054 already emitted the UNC playbook, Phase 4 closed the remaining gap: the init and doctor warnings now state explicitly that the registered entry *still serves Windows-hosted repos* and only THIS WSL-hosted repo can't be served (the app spawns with a `\\wsl.localhost` UNC cwd it can't use). `setup_guide()` gained a "forward path (not yet automatic)" section naming `--repo`/`$CLAUDERIZER_REPO` as the mechanism by which a desktop spawning from a Windows-safe cwd could serve a UNC repo — with the honest caveat that the one repo-agnostic daimon file can't bake a per-repo `--repo` automatically, so the two existing fixes (Windows-filesystem clone, or Kimi Code CLI in WSL) remain the recommendation until the app exposes a safe spawn cwd.
+
+3 new tests: the guide references the `--repo` forward path; `wire()` for the WSL+Windows combo registers the launchable `.exe` (not a dead/bare-uvx entry) while flagging `windows_side`; doctor's combo warning clarifies the registration stands. Verified live: the real doctor prints the refined "THIS repo … the registered entry still serves Windows-hosted repos" guidance. Suite 869 → 872 passed, 5 skipped.
 
 ## Accumulated Lessons
 
