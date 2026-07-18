@@ -18,7 +18,7 @@ exercise it against a temp tree, never a real profile (L-29).
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 # The Windows-native console script a Windows daimon/desktop host must launch. All
 # clauderizer bespoke hosts serve the same MCP server, so this name is constant.
@@ -33,8 +33,13 @@ WIN_EXE_SUBPATHS = (
 )
 
 
-def win_path_to_wsl(win_path: str, *, mnt_root: Path = Path("/mnt")) -> Path | None:
-    """``C:\\Users\\me\\x.exe`` → ``/mnt/c/Users/me/x.exe`` (WSL interop), else None."""
+def win_path_to_wsl(win_path: str, *, mnt_root: PurePosixPath = PurePosixPath("/mnt")):
+    """``C:\\Users\\me\\x.exe`` → ``/mnt/c/Users/me/x.exe`` (WSL interop), else None.
+
+    A ``/mnt/<drive>/...`` mount path is a POSIX path by definition (it is executed
+    inside WSL), so the result is a ``PurePosixPath`` — it renders forward-slashed no
+    matter which OS the interpreter runs on (a Windows CI runner would otherwise
+    backslash it — the flavour follows the host, not the semantics)."""
     m = re.match(r"^([A-Za-z]):[\\/](.*)$", win_path)
     if not m:
         return None

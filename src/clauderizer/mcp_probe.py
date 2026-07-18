@@ -22,7 +22,7 @@ import re
 import shutil
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Callable
 
 from . import winhost
@@ -38,7 +38,7 @@ def init_request() -> dict:
 
 
 def spawn_target(entry: dict, *, platform: str,
-                 mnt_root: Path = Path("/mnt")) -> tuple[list[str] | None, str | None]:
+                 mnt_root: PurePosixPath = PurePosixPath("/mnt")) -> tuple[list[str] | None, str | None]:
     """``(argv, unreachable_reason)``. ``argv`` is what THIS host can spawn to reach
     the registered command; ``unreachable_reason`` is set (argv None) only when the
     command targets a host we genuinely cannot reach → an honest ``unverifiable``
@@ -91,7 +91,7 @@ def default_run(argv: list[str], cwd: str | None, stdin: bytes,
 
 
 def handshake_probe(entry: dict, *, cwd: str | None = None, platform: str | None = None,
-                    mnt_root: Path = Path("/mnt"), timeout: float = HANDSHAKE_TIMEOUT,
+                    mnt_root: PurePosixPath = PurePosixPath("/mnt"), timeout: float = HANDSHAKE_TIMEOUT,
                     run: Callable[..., tuple[int, bytes, bytes]] | None = None) -> dict:
     """Spawn the registered command from ``cwd`` (a NON-repo dir, the way an MCP client
     spawns) and complete an MCP ``initialize`` handshake, asserting

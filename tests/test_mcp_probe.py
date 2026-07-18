@@ -3,7 +3,6 @@ the kimi-desktop wiring (D-055) so any host's registered MCP command can be
 capability-checked (L-25). `run` is injected so no test spawns a real process."""
 
 import json
-from pathlib import Path
 
 from clauderizer import mcp_probe as mp
 
@@ -59,9 +58,11 @@ def test_handshake_no_command_fails():
 
 
 def test_spawn_target_translates_windows_exe_for_wsl():
+    # The /mnt path is POSIX by definition, so it renders forward-slashed on any host
+    # (incl. a Windows CI runner) — the default mnt_root is a PurePosixPath.
     argv, unreach = mp.spawn_target(
         {"command": r"C:\Users\rafaj\pipx\venvs\clauderizer\Scripts\clauderizer-mcp.exe",
-         "args": []}, platform="linux", mnt_root=Path("/mnt"))
+         "args": []}, platform="linux")
     assert unreach is None
     assert argv == ["/mnt/c/Users/rafaj/pipx/venvs/clauderizer/Scripts/clauderizer-mcp.exe"]
 

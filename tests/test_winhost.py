@@ -2,14 +2,16 @@
 kimi-desktop wiring so any bespoke Windows host reuses them. Pure/injectable, exercised
 against temp trees (L-29)."""
 
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from clauderizer import winhost as wh
 
 
 def test_win_path_to_wsl_translates_drive():
-    assert wh.win_path_to_wsl(r"C:\Users\me\x.exe") == Path("/mnt/c/Users/me/x.exe")
-    assert wh.win_path_to_wsl(r"D:\a\b") == Path("/mnt/d/a/b")
+    # POSIX by definition (forward-slashed on any host, incl. a Windows CI runner).
+    assert wh.win_path_to_wsl(r"C:\Users\me\x.exe") == PurePosixPath("/mnt/c/Users/me/x.exe")
+    assert wh.win_path_to_wsl(r"D:\a\b") == PurePosixPath("/mnt/d/a/b")
+    assert str(wh.win_path_to_wsl(r"C:\Users\me\x.exe")) == "/mnt/c/Users/me/x.exe"
     assert wh.win_path_to_wsl("/already/posix") is None          # not a Windows path
     assert wh.win_path_to_wsl("clauderizer-mcp") is None
 
