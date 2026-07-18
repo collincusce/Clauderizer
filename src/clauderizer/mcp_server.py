@@ -18,6 +18,7 @@ it is imported lazily so the rest of the package works without it.
 from __future__ import annotations
 
 import functools
+import os
 import sys
 
 from . import __version__, session
@@ -159,6 +160,28 @@ def build_server():
     return mcp
 
 
+def _parse_repo(args: list[str]) -> str | None:
+    """The ``--repo <path>`` / ``--repo=<path>`` value, if present (last wins).
+
+    Decouples repo discovery from the process cwd: a host that cannot set the repo
+    as its spawn cwd (a Windows desktop serving a UNC repo, D-055) passes it here.
+    The CLI flag takes precedence over any inherited ``$CLAUDERIZER_REPO``.
+    """
+    repo: str | None = None
+    i = 0
+    while i < len(args):
+        tok = args[i]
+        if tok == "--repo":
+            if i + 1 < len(args):
+                repo = args[i + 1]
+                i += 2
+                continue
+        elif tok.startswith("--repo="):
+            repo = tok[len("--repo="):]
+        i += 1
+    return repo
+
+
 def main(argv: list[str] | None = None) -> int:
     # Answer --version/--help without touching stdin or the mcp SDK: init's and
     # doctor's spawn probes (D3) need a deterministic, fast exit-0 path that
@@ -169,8 +192,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if "--help" in args or "-h" in args:
         print("clauderizer-mcp — launch the Clauderizer MCP server on stdio.\n"
-              "Flags: --version, --help. No other arguments.")
+              "Flags: --version, --help, --repo <path>.\n"
+              "--repo (or $CLAUDERIZER_REPO) serves that repo instead of the cwd — "
+              "for hosts that cannot spawn with the repo as their working directory.")
         return 0
+    # --repo wins over an inherited env var; repo_ctx reads $CLAUDERIZER_REPO.
+    repo = _parse_repo(args)
+    if repo is not None:
+        os.environ["CLAUDERIZER_REPO"] = repo
     try:
         server = build_server()
     except ImportError:

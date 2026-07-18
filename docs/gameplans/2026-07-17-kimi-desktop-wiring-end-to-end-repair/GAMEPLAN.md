@@ -1,7 +1,7 @@
 # kimi-desktop-wiring-end-to-end-repair Gameplan
 
 > Created: 2026-07-17
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -44,10 +44,10 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] clauderizer-mcp accepts `--repo <path>` and honors `CLAUDERIZER_REPO`; repo_ctx resolves that path instead of Path.cwd() when set
-- [ ] Precedence is explicit and tested: --repo > CLAUDERIZER_REPO > cwd discovery; an invalid/non-clauderized --repo fails with a clear message
-- [ ] --version/--help fast-path still exits 0 without touching the SDK or stdin
-- [ ] New tests cover --repo, CLAUDERIZER_REPO, and precedence; full suite green (>= 840 passed)
+- [x] clauderizer-mcp accepts `--repo <path>` and honors `CLAUDERIZER_REPO`; repo_ctx resolves that path instead of Path.cwd() when set
+- [x] Precedence is explicit and tested: --repo > CLAUDERIZER_REPO > cwd discovery; an invalid/non-clauderized --repo fails with a clear message
+- [x] --version/--help fast-path still exits 0 without touching the SDK or stdin
+- [x] New tests cover --repo, CLAUDERIZER_REPO, and precedence; full suite green (>= 840 passed)
 
 ### Phase 1: Windows-native command composition (clauderizer-mcp.exe)
 

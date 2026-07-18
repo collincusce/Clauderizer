@@ -17,6 +17,7 @@ callers inherit it identically. Read ops never lock (L-03).
 from __future__ import annotations
 
 import inspect
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -32,12 +33,24 @@ from .rituals import handoff, preflight, status_bundle
 
 
 def repo_ctx() -> tuple[RepoPaths, Config]:
-    """Resolve the clauderized repo from cwd — shared by every op and resource."""
-    root = find_repo_root(Path.cwd())
+    """Resolve the clauderized repo and its config — shared by every op and resource.
+
+    Discovery is decoupled from the process cwd: when ``$CLAUDERIZER_REPO`` is set
+    it names the repo to serve (``clauderizer-mcp --repo`` exports it), else we fall
+    back to cwd. That lets a host which cannot set the repo as its process cwd — a
+    Windows desktop serving a ``\\\\wsl.localhost`` UNC repo it can't ``cd`` into
+    (D-054/D-055) — still point the stateless server at the right repo. The value
+    may be any path inside the repo; ``find_repo_root`` walks up to the marker.
+    """
+    override = os.environ.get("CLAUDERIZER_REPO")
+    start = Path(override) if override else Path.cwd()
+    root = find_repo_root(start)
     paths = resolve(root)
     if not paths.config_file.exists():
+        src = f"$CLAUDERIZER_REPO ({override})" if override else f"cwd ({start})"
         raise RuntimeError(
-            "not a clauderized repo (no .clauderizer/config.toml). Run `clauderize init`."
+            f"not a clauderized repo (no .clauderizer/config.toml under {root}, "
+            f"resolved from {src}). Run `clauderize init`."
         )
     return paths, Config.load(paths.config_file)
 
