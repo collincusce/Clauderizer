@@ -190,12 +190,13 @@ def test_disable_env_guard_skips_detection(tmp_path):
 def _detected(monkeypatch, cfg):
     cfg.parent.mkdir(parents=True, exist_ok=True)
     cfg.write_text('{"mcpServers": {}}', encoding="utf-8")
-    monkeypatch.setattr(kd, "detect_config", lambda **kw: cfg)
-    # Deterministic composition regardless of the CI host OS: init() calls wire()
-    # with the real platform, so pin server_entry here (per-platform composition is
-    # unit-tested separately). Keeps these init/doctor/uninstall plumbing tests green
-    # on the Windows CI leg (L-23) where no clauderizer-mcp.exe exists.
-    monkeypatch.setattr(kd, "server_entry",
+    # Patch the registered host's lifecycle methods (the framework routes through them,
+    # D-056): force detection to this cfg, and pin composition to a deterministic entry
+    # regardless of the CI host OS (per-platform composition is unit-tested separately),
+    # so these init/doctor/uninstall plumbing tests stay green on the Windows CI leg
+    # (L-23) where no clauderizer-mcp.exe exists.
+    monkeypatch.setattr(kd._HOST, "detect_config", lambda **kw: cfg)
+    monkeypatch.setattr(kd._HOST, "compose_entry",
                         lambda *a, **k: ({"command": "clauderizer-mcp", "args": []}, []))
 
 
@@ -209,7 +210,7 @@ def test_init_autowrites_desktop_when_detected(empty_python_repo, monkeypatch, t
 
 def test_init_is_silent_noop_when_desktop_absent(empty_python_repo, monkeypatch):
     from clauderizer.scaffold.init import init
-    monkeypatch.setattr(kd, "detect_config", lambda **kw: None)
+    monkeypatch.setattr(kd._HOST, "detect_config", lambda **kw: None)
     init(empty_python_repo, spawn_test=False)                    # no crash
     # no guide littered into a repo whose user doesn't have the app
     assert not (empty_python_repo / ".clauderizer" / "kimi-desktop-mcp-setup.md").exists()
@@ -282,7 +283,7 @@ def test_self_heal_respects_opt_out(tmp_path):
 def test_self_heal_never_raises(monkeypatch, tmp_path):
     def boom(**kw):
         raise RuntimeError("disk gone")
-    monkeypatch.setattr(kd, "wire", boom)
+    monkeypatch.setattr(kd._HOST, "wire", boom)                  # framework routes here
     r = kd.self_heal(home=tmp_path)                               # must not propagate
     assert r["status"] == "failed" and "disk gone" in r["warnings"][0]
 

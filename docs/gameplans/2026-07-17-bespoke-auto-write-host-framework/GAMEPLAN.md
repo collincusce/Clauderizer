@@ -57,11 +57,11 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] A BespokeHost protocol/base defines the variable members (id, opt_out_env, servers_key, config discovery, compose_entry, setup_guide, optional unservable-guidance hook)
-- [ ] Shared machinery (detect / non-destructive atomic idempotent merge / self_heal / handshake verify / wire status contract) operates on any BespokeHost, not kimidesktop-specific
-- [ ] kimi-desktop is expressed as the first BespokeHost implementation and registered in BESPOKE_HOSTS
-- [ ] Behavior-preserving: the D-055 acceptance criteria (byte-identical composition, self-heal, handshake, UNC guidance) still hold; full suite green
-- [ ] The protocol is minimal (only what kimi-desktop actually varies) and the registry is a plain dict — no plugin/entry-point system
+- [x] A BespokeHost protocol/base defines the variable members (id, opt_out_env, servers_key, config discovery, compose_entry, setup_guide, optional unservable-guidance hook)
+- [x] Shared machinery (detect / non-destructive atomic idempotent merge / self_heal / handshake verify / wire status contract) operates on any BespokeHost, not kimidesktop-specific
+- [x] kimi-desktop is expressed as the first BespokeHost implementation and registered in BESPOKE_HOSTS
+- [x] Behavior-preserving: the D-055 acceptance criteria (byte-identical composition, self-heal, handshake, UNC guidance) still hold; full suite green
+- [x] The protocol is minimal (only what kimi-desktop actually varies) and the registry is a plain dict — no plugin/entry-point system
 
 ### Phase 2: Rewire entry points to the registry; offer the handshake to the generic host path
 

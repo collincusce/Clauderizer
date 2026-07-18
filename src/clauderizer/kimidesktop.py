@@ -32,21 +32,20 @@ tests exercise it against a temp home and never a real ``~/.config``/``%APPDATA%
 
 from __future__ import annotations
 
-import json
-import os
 import shutil
 import sys
 from pathlib import Path
 from typing import Callable
 
-from . import winhost
-from .markdown.writer import refuse_if_symlink
+from . import bespoke_hosts, winhost
+from .bespoke_hosts import BespokeHost
 
 # The runtime-home path suffix, under each platform's app-data root.
 DAIMON_SUFFIX = ("kimi-desktop", "daimon-share", "daimon", "runtime", "kimi-code", "home")
 MCP_JSON = "mcp.json"
 
-WSL_USERS_DIR = Path("/mnt/c/Users")
+# Single-sourced from the framework (generic to any WSL vantage on a Windows host).
+WSL_USERS_DIR = bespoke_hosts.WSL_USERS_DIR
 
 
 def app_data_roots(home: Path, platform: str, environ: dict) -> list[Path]:
@@ -90,24 +89,12 @@ def candidate_configs(*, home: Path, platform: str, environ: dict, in_wsl: bool,
 DISABLE_ENV = "CLAUDERIZER_NO_KIMI_DESKTOP"
 
 
-def detect_config(*, home: Path | None = None, platform: str | None = None,
-                  environ: dict | None = None, in_wsl: bool | None = None,
-                  users_dir: Path = WSL_USERS_DIR) -> Path | None:
+def detect_config(**kw) -> Path | None:
     """The daimon runtime-home ``mcp.json`` if the app is installed (its ``home/``
     dir already exists), else ``None`` — detected-only, never creating anything.
-    Returns ``None`` when ``CLAUDERIZER_NO_KIMI_DESKTOP`` is set in ``environ``."""
-    home = home or Path.home()
-    platform = platform or sys.platform
-    environ = environ if environ is not None else os.environ
-    if environ.get(DISABLE_ENV):
-        return None
-    if in_wsl is None:
-        in_wsl = bool(environ.get("WSL_DISTRO_NAME"))
-    for cfg in candidate_configs(home=home, platform=platform, environ=environ,
-                                 in_wsl=in_wsl, users_dir=users_dir):
-        if cfg.parent.is_dir():                       # the daimon 'home/' dir exists
-            return cfg
-    return None
+    Delegates to the framework host (``KimiDesktopHost``); kept as a module function
+    for the existing callers/tests. Honors ``CLAUDERIZER_NO_KIMI_DESKTOP``."""
+    return _HOST.detect_config(**kw)
 
 
 def _is_windows_side(cfg: Path, users_dir: Path) -> bool:
@@ -175,110 +162,81 @@ def server_entry(cfg: Path, *, in_wsl: bool, windows_side: bool | None = None,
     return ({"command": uvx, "args": list(_ARGS)}, [])
 
 
-def _atomic_write_json(path: Path, data: dict) -> None:
-    refuse_if_symlink(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp, path)                             # atomic on POSIX and Windows
+# The guidance surfaced when the app is detected but can't serve THIS repo: a WSL repo
+# opened on the Windows desktop, where the app spawns with a \\wsl.localhost UNC cwd it
+# cannot use (D-054). The .exe entry still serves Windows-hosted repos; only this repo
+# is unservable. Single-sourced here so init/doctor speak with one voice.
+UNC_GUIDANCE = (
+    "THIS repo is in WSL but the desktop app runs on Windows — the app spawns with a "
+    "UNC (\\\\wsl.localhost) cwd it cannot use, so the shell and the MCP server fail to "
+    "launch FOR THIS REPO (the registered entry still serves Windows-hosted repos). "
+    "Clone the repo onto the Windows filesystem, or use Kimi Code CLI in WSL. "
+    "See .clauderizer/kimi-desktop-mcp-setup.md")
+
+
+class KimiDesktopHost(BespokeHost):
+    """The first bespoke auto-write host (D-053/D-056): the Kimi Work desktop's daimon
+    runtime, whose per-user ``mcp.json`` clauderizer auto-writes. Supplies only the
+    variable parts; the detect/merge/self-heal lifecycle is inherited from BespokeHost."""
+
+    id = "kimi-desktop"
+    opt_out_env = DISABLE_ENV
+    servers_key = "mcpServers"
+
+    def candidate_configs(self, *, home, platform, environ, in_wsl, users_dir):
+        return candidate_configs(home=home, platform=platform, environ=environ,
+                                 in_wsl=in_wsl, users_dir=users_dir)
+
+    def compose_entry(self, cfg, *, in_wsl, platform, home, users_dir, exists, which):
+        windows_side = in_wsl and _is_windows_side(cfg, users_dir)
+        return server_entry(cfg, in_wsl=in_wsl, windows_side=windows_side, platform=platform,
+                            home=home, users_dir=users_dir, exists=exists, which=which)
+
+    def unservable_reason(self, cfg, *, in_wsl, users_dir):
+        return UNC_GUIDANCE if (in_wsl and _is_windows_side(cfg, users_dir)) else None
+
+    def setup_guide(self):
+        return setup_guide()
+
+
+# The registered singleton. init/doctor/status/uninstall reach every bespoke host via
+# bespoke_hosts.BESPOKE_HOSTS; these module functions stay for the existing callers/tests.
+_HOST = bespoke_hosts.register(KimiDesktopHost())
+
+
+def _compat(result: dict) -> dict:
+    """Back-compat: expose the generic ``unservable`` reason as the legacy boolean
+    ``windows_side`` key that init/doctor read on a detected daimon result."""
+    if result.get("path") is not None:
+        return {**result, "windows_side": result.get("unservable") is not None}
+    return result
 
 
 def merge_entry(cfg: Path, entry: dict) -> tuple[Path, bool]:
-    """Non-destructively add/replace only the ``clauderizer`` server in ``cfg``,
-    preserving every other server and top-level key. Atomic write, and idempotent:
-    returns ``(cfg, changed)`` and skips the write when already current."""
-    data: dict = {}
-    if cfg.exists():
-        try:
-            loaded = json.loads(cfg.read_text(encoding="utf-8"))
-            if isinstance(loaded, dict):
-                data = loaded
-        except json.JSONDecodeError:
-            data = {}
-    servers = data.get("mcpServers")
-    if not isinstance(servers, dict):
-        servers = data["mcpServers"] = {}
-    if servers.get("clauderizer") == entry:
-        return cfg, False                             # already current — no write
-    servers["clauderizer"] = entry
-    _atomic_write_json(cfg, data)
-    return cfg, True
+    """Non-destructively add/replace only the ``clauderizer`` server in ``cfg`` (the
+    shared, atomic, idempotent merge). Delegates to the framework."""
+    return bespoke_hosts.merge_entry(cfg, entry, servers_key="mcpServers")
 
 
 def remove_entry(cfg: Path) -> bool:
-    """Uninstall: remove ONLY the ``clauderizer`` server from ``cfg``. Returns True
-    if something was removed."""
-    if not cfg.exists():
-        return False
-    try:
-        data = json.loads(cfg.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return False
-    servers = data.get("mcpServers")
-    if not isinstance(servers, dict) or "clauderizer" not in servers:
-        return False
-    del servers["clauderizer"]
-    _atomic_write_json(cfg, data)
-    return True
+    """Uninstall: remove ONLY the ``clauderizer`` server from ``cfg``. Delegates."""
+    return bespoke_hosts.remove_entry(cfg, servers_key="mcpServers")
 
 
-def wire(*, home: Path | None = None, platform: str | None = None,
-         environ: dict | None = None, in_wsl: bool | None = None,
-         users_dir: Path = WSL_USERS_DIR,
-         exists: Callable[[Path], bool] | None = None,
-         which: Callable[[str], str | None] = shutil.which) -> dict:
+def wire(**kw) -> dict:
     """Detect the daimon host and, if present, auto-write the clauderizer server
-    (repo-agnostic). Returns ``{"status": "wired"|"not_detected"|"unregistrable"|
-    "failed", "path", "entry", "changed", "windows_side", "warnings"}``. Never raises
-    on a detected-but-unwritable config — reports it as a warning so doctor/init
-    surface it loudly, not die. ``unregistrable`` = the app is installed but no
-    launchable command could be composed (e.g. Windows host with no
-    clauderizer-mcp.exe); the caller drops the setup guide instead of a dead entry."""
-    environ = environ if environ is not None else os.environ
-    if in_wsl is None:
-        in_wsl = bool(environ.get("WSL_DISTRO_NAME"))
-    cfg = detect_config(home=home, platform=platform, environ=environ,
-                        in_wsl=in_wsl, users_dir=users_dir)
-    if cfg is None:
-        return {"status": "not_detected", "path": None, "entry": None, "warnings": []}
-    windows_side = in_wsl and _is_windows_side(cfg, users_dir)
-    entry, warnings = server_entry(cfg, in_wsl=in_wsl, windows_side=windows_side,
-                                   platform=platform, home=home, users_dir=users_dir,
-                                   exists=exists, which=which)
-    if entry is None:
-        return {"status": "unregistrable", "path": cfg, "entry": None,
-                "windows_side": windows_side, "warnings": warnings}
-    try:
-        _, changed = merge_entry(cfg, entry)
-    except OSError as exc:
-        return {"status": "failed", "path": cfg, "entry": entry, "windows_side": windows_side,
-                "warnings": warnings + [f"could not write {cfg}: {exc}"]}
-    return {"status": "wired", "path": cfg, "entry": entry, "changed": changed,
-            "windows_side": windows_side, "warnings": warnings}
+    (repo-agnostic). ``{"status": "wired"|"not_detected"|"unregistrable"|"failed",
+    "path", "entry", "changed", "windows_side", "warnings"}``. Never raises on a
+    detected-but-unwritable config. Delegates to ``KimiDesktopHost``."""
+    return _compat(_HOST.wire(**kw))
 
 
-def self_heal(*, home: Path | None = None, platform: str | None = None,
-              environ: dict | None = None, in_wsl: bool | None = None,
-              users_dir: Path = WSL_USERS_DIR,
-              exists: Callable[[Path], bool] | None = None,
-              which: Callable[[str], str | None] = shutil.which) -> dict:
-    """Best-effort re-apply of the daimon registration, for the write-permitted CLI
-    entry points (init/doctor/status) to call on every run.
-
-    The Kimi desktop app REGENERATES its runtime ``mcp.json`` on project/session
-    switch and merges from NO persistent user-level source (O-01, verified
-    2026-07-17), so a one-shot ``init`` registration does not stick — the entry must
-    be re-applied whenever clauderizer runs on the machine. This is deliberately NOT
-    called from any hook handler (INVARIANT-06: hooks are read-only) nor from the MCP
-    ``cz_status`` read op (L-03: read ops never mutate); the merge is idempotent +
-    atomic, so a re-heal when the entry is already current is a no-op. Honors the
-    ``CLAUDERIZER_NO_KIMI_DESKTOP`` opt-out (via ``detect_config``) and never raises —
-    a self-heal must never break its caller."""
-    try:
-        return wire(home=home, platform=platform, environ=environ, in_wsl=in_wsl,
-                    users_dir=users_dir, exists=exists, which=which)
-    except Exception as exc:                          # self-heal must never break the caller
-        return {"status": "failed", "path": None, "entry": None, "warnings": [str(exc)]}
+def self_heal(**kw) -> dict:
+    """Best-effort re-apply of the daimon registration for the write-permitted CLI
+    entry points (init/doctor/status) — the app regenerates its ``mcp.json`` on project
+    switch (O-01). Idempotent, opt-out-aware, never raises. NOT from a hook (INVARIANT-06)
+    or the MCP read path (L-03). Delegates to ``KimiDesktopHost``."""
+    return _compat(_HOST.self_heal(**kw))
 
 
 def setup_guide() -> str:
