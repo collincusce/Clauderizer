@@ -309,6 +309,30 @@ def wire(*, home: Path | None = None, platform: str | None = None,
             "windows_side": windows_side, "warnings": warnings}
 
 
+def self_heal(*, home: Path | None = None, platform: str | None = None,
+              environ: dict | None = None, in_wsl: bool | None = None,
+              users_dir: Path = WSL_USERS_DIR,
+              exists: Callable[[Path], bool] | None = None,
+              which: Callable[[str], str | None] = shutil.which) -> dict:
+    """Best-effort re-apply of the daimon registration, for the write-permitted CLI
+    entry points (init/doctor/status) to call on every run.
+
+    The Kimi desktop app REGENERATES its runtime ``mcp.json`` on project/session
+    switch and merges from NO persistent user-level source (O-01, verified
+    2026-07-17), so a one-shot ``init`` registration does not stick — the entry must
+    be re-applied whenever clauderizer runs on the machine. This is deliberately NOT
+    called from any hook handler (INVARIANT-06: hooks are read-only) nor from the MCP
+    ``cz_status`` read op (L-03: read ops never mutate); the merge is idempotent +
+    atomic, so a re-heal when the entry is already current is a no-op. Honors the
+    ``CLAUDERIZER_NO_KIMI_DESKTOP`` opt-out (via ``detect_config``) and never raises —
+    a self-heal must never break its caller."""
+    try:
+        return wire(home=home, platform=platform, environ=environ, in_wsl=in_wsl,
+                    users_dir=users_dir, exists=exists, which=which)
+    except Exception as exc:                          # self-heal must never break the caller
+        return {"status": "failed", "path": None, "entry": None, "warnings": [str(exc)]}
+
+
 def setup_guide() -> str:
     """The fallback guide (kimi-desktop-mcp-setup.md) when the daimon runtime home
     is not detected — names the per-user path per OS and the manual entry."""

@@ -102,6 +102,12 @@ def cmd_status(args: argparse.Namespace) -> int:
     if config is None:
         print("Not a clauderized repo. Run `clauderize init`.")
         return 1
+    # Self-heal the kimi-desktop registration (the app wipes its mcp.json on project
+    # switch, with no persistent source to merge from — D-055). An explicit CLI run
+    # is write-permitted; silent + idempotent, and NOT done from the read-only hook
+    # (INVARIANT-06). Detected-only + opt-out-aware, so a no-op off that host.
+    from . import kimidesktop
+    kimidesktop.self_heal()
     # An explicit CLI ask evaluates standing conditions (D3), same as cz_status;
     # only the read-only hook path stays probe-free.
     bundle = status_bundle.compute(paths, config, conditions=True)
@@ -375,20 +381,26 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                   _has_marker(paths.root / rel, "clauderizer"),
                   f"missing {rel} — re-run `clauderize init --host {hid}`")
 
-    # kimi-desktop (daimon runtime) — bespoke auto-write host (D-053). Read-only
-    # report: detected + registered / detected-but-unwired / not installed. Loud on
-    # a missing uvx, since MCP is that host's only orientation lane.
-    import shutil as _shutil
-
+    # kimi-desktop (daimon runtime) — bespoke self-healing auto-write host (D-055).
+    # Re-applies the registration each run (the app wipes its mcp.json on project
+    # switch, O-01), then reports: registered / unregistrable / not installed.
     from . import kimidesktop
+    # Self-heal first (D-055): the app regenerates its mcp.json on project switch and
+    # merges from no persistent source (O-01), so re-apply the entry every doctor run
+    # before reporting — the report then reflects the healed state. Idempotent no-op
+    # when already current; detected-only + opt-out-aware; never raises.
+    heal = kimidesktop.self_heal()
+    if heal["status"] == "wired" and heal.get("changed"):
+        print(f"✓ kimi-desktop: re-applied MCP registration ({heal['path']})")
     desk_cfg = kimidesktop.detect_config()
     if desk_cfg is None:
         print("· kimi-desktop: app not detected (no daimon runtime home) — nothing to wire")
+    elif heal["status"] == "unregistrable":
+        warn("kimi-desktop",
+             f"app detected but no clauderizer-mcp.exe to register — {'; '.join(heal['warnings'])}")
     else:
         if _host_mcp_registered(desk_cfg, "mcpServers"):
             print(f"✓ kimi-desktop: MCP registered ({desk_cfg})")
-            if _shutil.which("uvx") is None:
-                warn("kimi-desktop", "uvx not on PATH — the desktop server may not launch; install uv")
         else:
             warn("kimi-desktop",
                  f"app detected but clauderizer not in {desk_cfg} — re-run `clauderize init`")

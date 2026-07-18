@@ -251,6 +251,67 @@ def test_doctor_reports_desktop_host(empty_python_repo, monkeypatch, tmp_path, c
     assert "kimi-desktop" in capsys.readouterr().out            # surfaced in doctor
 
 
+# --- D-055 Phase 2: self-healing registration on every write-permitted entry -----
+# The app regenerates its mcp.json on project switch and merges from no persistent
+# source (O-01), so the entry must be re-applied whenever clauderizer runs.
+
+def test_self_heal_reapplies_wiped_entry(tmp_path):
+    home = tmp_path / "home"
+    cfg = (home / ".config").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    _make_home(home, cfg)
+    kw = dict(home=home, platform="linux", environ={}, in_wsl=False,
+              which=lambda n: "/usr/bin/uvx")
+    assert kd.self_heal(**kw)["changed"] is True                 # first apply
+    cfg.write_text('{"mcpServers": {}}', encoding="utf-8")        # app wipes it on switch
+    r2 = kd.self_heal(**kw)
+    assert r2["status"] == "wired" and r2["changed"] is True      # re-applied
+    assert "clauderizer" in json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]
+    assert kd.self_heal(**kw)["changed"] is False                 # now current → no-op
+
+
+def test_self_heal_respects_opt_out(tmp_path):
+    home = tmp_path / "home"
+    cfg = (home / ".config").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    _make_home(home, cfg)
+    r = kd.self_heal(home=home, platform="linux",
+                     environ={kd.DISABLE_ENV: "1"}, in_wsl=False)
+    assert r["status"] == "not_detected"
+    assert json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"] == {}   # untouched
+
+
+def test_self_heal_never_raises(monkeypatch, tmp_path):
+    def boom(**kw):
+        raise RuntimeError("disk gone")
+    monkeypatch.setattr(kd, "wire", boom)
+    r = kd.self_heal(home=tmp_path)                               # must not propagate
+    assert r["status"] == "failed" and "disk gone" in r["warnings"][0]
+
+
+def test_cmd_status_self_heals_wiped_entry(empty_python_repo, monkeypatch, tmp_path):
+    from clauderizer import cli
+    from clauderizer.scaffold.init import init
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    cfg.write_text('{"mcpServers": {}}', encoding="utf-8")        # app regenerated the file
+    monkeypatch.chdir(empty_python_repo)
+    cli.main(["status"])
+    assert "clauderizer" in json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]
+
+
+def test_cmd_doctor_self_heals_and_reports(empty_python_repo, monkeypatch, tmp_path, capsys):
+    from clauderizer import cli
+    from clauderizer.scaffold.init import init
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    cfg.write_text('{"mcpServers": {}}', encoding="utf-8")
+    monkeypatch.chdir(empty_python_repo)
+    cli.main(["doctor"])
+    assert "clauderizer" in json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]
+    assert "re-applied" in capsys.readouterr().out               # surfaced the heal
+
+
 # --- 1.9.1: the WSL/UNC agent-recovery playbook (D-054) --------------------------
 
 def test_setup_guide_carries_recovery_playbook():

@@ -28,7 +28,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 ## Open Items
 
-**O-01.** _(phase 2)_ Unknown: does kimi-desktop merge its runtime mcp.json from any persistent user-level source (not config.toml / daimon/config.json, which were checked and have no MCP keys)? If such a source exists, register there instead of self-healing on every entry point. Investigate at the start of Phase 2; if none, self-heal is the fix.
+**O-01.** _(phase 2)_ Unknown: does kimi-desktop merge its runtime mcp.json from any persistent user-level source (not config.toml / daimon/config.json, which were checked and have no MCP keys)? If such a source exists, register there instead of self-healing on every entry point. Investigate at the start of Phase 2; if none, self-heal is the fix. _(resolved 2026-07-17: Investigated 2026-07-17: NO persistent user-level MCP source exists. daimon-share/config.toml and daimon/config.json carry no mcp keys; the only MCP config is the runtime home/mcp.json, which the app regenerates on project switch (the .bak-2026-07-17 preserved our old bare-uvx entry, confirming the wipe). kimi-agent/created-workspaces.json is a workspace registry, not MCP config. Resolution: self-heal — re-apply the entry on every write-permitted CLI entry point (init/doctor/status).)_
 
 **O-02.** _(phase 3)_ Unknown: from a WSL-side doctor, can the composed Windows clauderizer-mcp.exe entry actually be spawned+handshaked via binfmt/interop, or must that verdict be 'unverifiable' (verify from the Windows session host)? Decide the verdict policy in Phase 3, mirroring hosts.verify_wiring's wsl.exe/interop handling — never a false green.
 
@@ -75,11 +75,11 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Finding recorded: whether a persistent user-level source the app merges from exists (and if so, we register there)
-- [ ] doctor, status, and the SessionStart hook each re-apply/repair the daimon entry (self-heal), in addition to init
-- [ ] Re-wiring is idempotent+atomic: a no-op write when the entry is already current (verified by test)
-- [ ] CLAUDERIZER_NO_KIMI_DESKTOP=1 still fully skips detection/auto-write on every entry point
-- [ ] Tests cover self-heal firing from a non-init entry point and the opt-out; full suite green
+- [x] Finding recorded: whether a persistent user-level source the app merges from exists (and if so, we register there)
+- [x] doctor and status (write-permitted CLI entry points) re-apply/repair the daimon entry each run, in addition to init; the SessionStart hook is deliberately EXCLUDED (INVARIANT-06 read-only) and so is the MCP cz_status read op (L-03) — documented in C-01/D-k
+- [x] Re-wiring is idempotent+atomic: a no-op write when the entry is already current (verified by test)
+- [x] CLAUDERIZER_NO_KIMI_DESKTOP=1 still fully skips detection/auto-write on every entry point
+- [x] Tests cover self-heal firing from a non-init entry point and the opt-out; full suite green
 
 ### Phase 3: Doctor MCP initialize-handshake smoke-test
 
