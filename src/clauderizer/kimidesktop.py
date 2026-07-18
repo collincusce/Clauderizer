@@ -34,7 +34,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Callable
@@ -331,6 +333,127 @@ def self_heal(*, home: Path | None = None, platform: str | None = None,
                     users_dir=users_dir, exists=exists, which=which)
     except Exception as exc:                          # self-heal must never break the caller
         return {"status": "failed", "path": None, "entry": None, "warnings": [str(exc)]}
+
+
+# --- doctor: end-to-end MCP handshake smoke-test (D-055 Phase 3, L-25) -----------
+# Presence in mcp.json is not capability: the composed command must actually spawn
+# and complete an MCP `initialize` over stdio, returning serverInfo.name=="clauderizer".
+# This mirrors hosts.spawn_probe/verify_wiring for the SessionStart hook, but for the
+# daimon MCP command. MCP stdio is newline-delimited JSON-RPC (verified: a Windows
+# clauderizer-mcp.exe answers over WSL interop with serverInfo in one line).
+
+_PROTOCOL_VERSION = "2024-11-05"
+HANDSHAKE_TIMEOUT = 20.0
+
+
+def _init_request() -> dict:
+    return {"jsonrpc": "2.0", "id": 1, "method": "initialize",
+            "params": {"protocolVersion": _PROTOCOL_VERSION, "capabilities": {},
+                       "clientInfo": {"name": "clauderize-doctor", "version": "1"}}}
+
+
+def _win_path_to_wsl(win_path: str, *, mnt_root: Path = Path("/mnt")) -> Path | None:
+    """``C:\\Users\\me\\x.exe`` → ``/mnt/c/Users/me/x.exe`` (WSL interop), else None."""
+    m = re.match(r"^([A-Za-z]):[\\/](.*)$", win_path)
+    if not m:
+        return None
+    drive, rest = m.group(1).lower(), m.group(2).replace("\\", "/")
+    return mnt_root / drive / rest
+
+
+def _spawn_target(entry: dict, *, platform: str,
+                  mnt_root: Path = Path("/mnt")) -> tuple[list[str] | None, str | None]:
+    """``(argv, unreachable_reason)``. ``argv`` is what THIS host can spawn to reach
+    the registered command; ``unreachable_reason`` is set (argv None) only when the
+    command targets a host we genuinely cannot reach → an honest ``unverifiable``
+    (never a false pass, never a false fail — L-25). A command whose target is
+    reachable-but-absent returns an argv so the spawn fails loudly."""
+    command = str(entry.get("command", ""))
+    args = [str(a) for a in entry.get("args", [])]
+    if not command:
+        return None, None
+    if Path(command).name.lower() == "wsl.exe":
+        if platform != "win32" and shutil.which("wsl.exe") is None:
+            return None, "command launches via wsl.exe but Windows interop is unreachable here"
+        return [command, *args], None
+    is_win = bool(re.match(r"^[A-Za-z]:[\\/]", command)) or command.lower().endswith(".exe")
+    if is_win and platform != "win32":
+        mnt = _win_path_to_wsl(command, mnt_root=mnt_root)
+        if mnt is None:
+            return None, f"cannot map Windows command '{command}' to a reachable path"
+        return [str(mnt), *args], None                # absent → spawn fails loudly (real fault)
+    return [command, *args], None
+
+
+def _server_info(stdout: bytes) -> dict | None:
+    """The ``result.serverInfo`` from the first JSON-RPC line that carries it."""
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line.startswith(b"{"):
+            continue
+        try:
+            msg = json.loads(line)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        info = msg.get("result", {}).get("serverInfo") if isinstance(msg, dict) else None
+        if isinstance(info, dict):
+            return info
+    return None
+
+
+def _default_run(argv: list[str], cwd: str | None, stdin: bytes,
+                 timeout: float) -> tuple[int, bytes, bytes]:
+    p = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE, cwd=cwd)
+    try:
+        out, err = p.communicate(stdin, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        p.kill()
+        p.communicate()
+        raise
+    return p.returncode or 0, out, err
+
+
+def handshake_probe(entry: dict, *, cwd: str | None = None, platform: str | None = None,
+                    mnt_root: Path = Path("/mnt"), timeout: float = HANDSHAKE_TIMEOUT,
+                    run: Callable[..., tuple[int, bytes, bytes]] | None = None) -> dict:
+    """Spawn the registered daimon command from ``cwd`` (a NON-repo dir, the way the
+    app spawns) and complete an MCP ``initialize`` handshake, asserting
+    ``serverInfo.name == 'clauderizer'``. Returns ``{status: ok|fail|unverifiable,
+    detail, server_name, server_version}``. Never raises. ``run`` is injectable for
+    tests: ``run(argv, cwd, stdin_bytes, timeout) -> (rc, stdout, stderr)``."""
+    platform = platform or sys.platform
+    base = {"server_name": None, "server_version": None}
+    if not entry or not entry.get("command"):
+        return {**base, "status": "fail", "detail": "no command registered in mcp.json"}
+    argv, unreachable = _spawn_target(entry, platform=platform, mnt_root=mnt_root)
+    if unreachable:
+        return {**base, "status": "unverifiable",
+                "detail": f"{unreachable} — verify from the session host: `{entry['command']}`"}
+    run = run or _default_run
+    shown = " ".join(argv)
+    try:
+        _rc, out, err = run(argv, cwd, (json.dumps(_init_request()) + "\n").encode(), timeout)
+    except FileNotFoundError:
+        return {**base, "status": "fail",
+                "detail": f"'{argv[0]}' not found or not executable — the desktop cannot spawn it"}
+    except subprocess.TimeoutExpired:
+        return {**base, "status": "fail",
+                "detail": f"initialize handshake timed out after {timeout:.0f}s: `{shown}`"}
+    except OSError as exc:
+        return {**base, "status": "fail", "detail": f"spawn failed for `{shown}`: {exc}"}
+    info = _server_info(out)
+    if info is None:
+        tail = (err or out).decode("utf-8", "replace").strip()[-300:]
+        return {**base, "status": "fail",
+                "detail": f"no serverInfo from the initialize handshake (`{shown}`)"
+                          + (f" — {tail}" if tail else "")}
+    name, ver = info.get("name"), info.get("version")
+    if name != "clauderizer":
+        return {"server_name": name, "server_version": ver, "status": "fail",
+                "detail": f"handshake returned serverInfo.name={name!r}, expected 'clauderizer' (`{shown}`)"}
+    return {"server_name": name, "server_version": ver, "status": "ok",
+            "detail": f"initialize → serverInfo clauderizer {ver}"}
 
 
 def setup_guide() -> str:

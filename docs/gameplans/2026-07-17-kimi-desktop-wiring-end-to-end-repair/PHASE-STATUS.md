@@ -10,7 +10,7 @@
 | 0 | --repo / CLAUDERIZER_REPO repo decoupling in clauderizer-mcp | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Windows-native command composition (clauderizer-mcp.exe) | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Self-healing registration on every entry point | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Doctor MCP initialize-handshake smoke-test | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Doctor MCP initialize-handshake smoke-test | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | WSL-hosted-repo UNC guidance instead of dead registration | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Docs + release close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
@@ -34,6 +34,12 @@ real-machine-verification: Read-only compose against the live env (WSL_DISTRO_NA
 
 ```
 self-heal-mechanism: kimidesktop.self_heal() wraps wire() (never raises). Called by cmd_status (silent, src/clauderizer/cli.py cmd_status) and cmd_doctor (reports "re-applied" when changed; self-heals BEFORE the presence report). init already wires. NOT called from the SessionStart hook (INVARIANT-06) nor MCP cz_status (L-03) — see C-01. O-01 finding: no persistent user-level MCP source; app regenerates home/mcp.json on project switch. Live-verified: wipe entry → `clauderize status` → exact C:\ .exe entry restored.
+```
+
+### Phase 3 Outputs
+
+```
+handshake-smoke-test: kimidesktop.handshake_probe(entry, cwd, platform, mnt_root, timeout, run) → {status: ok|fail|unverifiable, detail, server_name, server_version}. Spawns the registered command from a non-repo cwd (doctor passes tempfile.gettempdir()), sends MCP initialize JSON-RPC (protocol 2024-11-05, newline-delimited), parses result.serverInfo, asserts name=="clauderizer". _spawn_target translates a C:\ command → /mnt/<drive>/... for WSL interop; wsl.exe-with-no-interop → unverifiable. cli.py: _host_registered_entry reads the entry; cmd_doctor runs the probe via verdict() (fail→exit 2, unverifiable→exit 3) + an advisory warn on version skew (desktop exe is a separate install). MCP stdio is newline-delimited JSON-RPC (not Content-Length framed).
 ```
 
 ## Corrections Log

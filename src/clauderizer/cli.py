@@ -401,6 +401,24 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     else:
         if _host_mcp_registered(desk_cfg, "mcpServers"):
             print(f"✓ kimi-desktop: MCP registered ({desk_cfg})")
+            # Capability, not presence (L-25): spawn the composed command from a
+            # non-repo cwd (the way the app does) and complete an MCP initialize
+            # handshake — asserting serverInfo.name=='clauderizer'. Fails loudly on
+            # MSYS-mangled / UNC / vanished commands; unverifiable (never green) when
+            # the command targets a host this doctor can't reach.
+            import tempfile
+            entry = _host_registered_entry(desk_cfg, "mcpServers")
+            r = kimidesktop.handshake_probe(entry or {}, cwd=tempfile.gettempdir())
+            verdict("kimi-desktop MCP initialize handshake",
+                    hosts.Probe(r["status"], r["detail"]))
+            # The desktop exe is a SEPARATE install (Windows pipx) from this engine,
+            # so a version skew is advisory (not drift like verify_wiring's same-install
+            # parity): flag it so the desktop doesn't silently serve a stale engine.
+            served = r.get("server_version")
+            if r["status"] == "ok" and served and served != __version__:
+                warn("kimi-desktop MCP version",
+                     f"the desktop serves clauderizer {served} but this engine is "
+                     f"{__version__} — update the Windows install (e.g. `pipx upgrade clauderizer`)")
         else:
             warn("kimi-desktop",
                  f"app detected but clauderizer not in {desk_cfg} — re-run `clauderize init`")
@@ -660,6 +678,21 @@ def _host_mcp_registered(path: Path, servers_key: str) -> bool:
         return False
     servers = data.get(servers_key)
     return isinstance(servers, dict) and "clauderizer" in servers
+
+
+def _host_registered_entry(path: Path, servers_key: str) -> dict | None:
+    """The clauderizer server entry ({command, args}) from a per-host config, or
+    None — so doctor can smoke-test the exact command that was registered."""
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    servers = data.get(servers_key)
+    if isinstance(servers, dict) and isinstance(servers.get("clauderizer"), dict):
+        return servers["clauderizer"]
+    return None
 
 
 def _hook_registered(settings: Path) -> bool:

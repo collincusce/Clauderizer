@@ -4,8 +4,19 @@ never a real ~/.config or %APPDATA% (L-29). The write is proven non-destructive
 and detected-only in both directions (L-25)."""
 
 import json
+from pathlib import Path
 
 from clauderizer import kimidesktop as kd
+
+
+def _run_serverinfo(name="clauderizer", version="1.9.1", eol=b"\r\n"):
+    """A fake `run` for handshake_probe: replies with an MCP initialize result."""
+    def run(argv, cwd, stdin, timeout):
+        resp = {"jsonrpc": "2.0", "id": 1, "result": {
+            "protocolVersion": "2024-11-05",
+            "serverInfo": {"name": name, "version": version}}}
+        return 0, json.dumps(resp).encode() + eol, b""
+    return run
 
 
 def _make_home(base, cfg_path):
@@ -310,6 +321,121 @@ def test_cmd_doctor_self_heals_and_reports(empty_python_repo, monkeypatch, tmp_p
     cli.main(["doctor"])
     assert "clauderizer" in json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]
     assert "re-applied" in capsys.readouterr().out               # surfaced the heal
+
+
+# --- D-055 Phase 3: doctor MCP initialize-handshake smoke-test (L-25) -------------
+# Presence in mcp.json is not capability: the composed command must actually spawn
+# and complete an MCP initialize handshake returning serverInfo.name=="clauderizer".
+
+def test_handshake_ok_asserts_serverinfo():
+    r = kd.handshake_probe({"command": "clauderizer-mcp", "args": []},
+                           platform="linux", run=_run_serverinfo())
+    assert r["status"] == "ok"
+    assert r["server_name"] == "clauderizer" and r["server_version"] == "1.9.1"
+
+
+def test_handshake_wrong_server_name_fails():
+    r = kd.handshake_probe({"command": "x"}, platform="linux",
+                           run=_run_serverinfo(name="somethingelse"))
+    assert r["status"] == "fail" and "somethingelse" in r["detail"]
+
+
+def test_handshake_no_serverinfo_fails_with_tail():
+    def run(argv, cwd, stdin, timeout):
+        return 0, b"not json at all\n", b"traceback: boom"
+    r = kd.handshake_probe({"command": "x"}, platform="linux", run=run)
+    assert r["status"] == "fail" and "no serverInfo" in r["detail"] and "boom" in r["detail"]
+
+
+def test_handshake_spawn_not_found_fails():
+    def run(argv, cwd, stdin, timeout):
+        raise FileNotFoundError()
+    r = kd.handshake_probe({"command": "gone.exe"}, platform="win32", run=run)
+    assert r["status"] == "fail" and "cannot spawn" in r["detail"]
+
+
+def test_handshake_timeout_fails():
+    import subprocess
+    def run(argv, cwd, stdin, timeout):
+        raise subprocess.TimeoutExpired(cmd="x", timeout=timeout)
+    r = kd.handshake_probe({"command": "x"}, platform="linux", timeout=2, run=run)
+    assert r["status"] == "fail" and "timed out" in r["detail"]
+
+
+def test_handshake_no_command_fails():
+    r = kd.handshake_probe({}, platform="linux")
+    assert r["status"] == "fail" and "no command" in r["detail"]
+
+
+def test_spawn_target_translates_windows_exe_for_wsl():
+    argv, unreach = kd._spawn_target(
+        {"command": r"C:\Users\rafaj\pipx\venvs\clauderizer\Scripts\clauderizer-mcp.exe",
+         "args": []}, platform="linux", mnt_root=Path("/mnt"))
+    assert unreach is None
+    assert argv == ["/mnt/c/Users/rafaj/pipx/venvs/clauderizer/Scripts/clauderizer-mcp.exe"]
+
+
+def test_spawn_target_native_command_unchanged():
+    argv, unreach = kd._spawn_target({"command": "/usr/bin/uvx", "args": ["--from", "x"]},
+                                     platform="linux")
+    assert unreach is None and argv == ["/usr/bin/uvx", "--from", "x"]
+
+
+def test_handshake_unverifiable_for_wsl_exe_without_interop(monkeypatch):
+    # wsl.exe-shimmed command seen from a host with no Windows interop → unverifiable,
+    # never a false pass or a false fail (L-25).
+    monkeypatch.setattr(kd.shutil, "which", lambda n: None)
+    r = kd.handshake_probe({"command": "wsl.exe", "args": ["-d", "Ubuntu", "x"]},
+                           platform="linux")
+    assert r["status"] == "unverifiable" and "verify from the session host" in r["detail"]
+
+
+def test_doctor_fails_when_handshake_fails(empty_python_repo, monkeypatch, tmp_path, capsys):
+    from clauderizer import cli
+    from clauderizer.scaffold.init import init
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    monkeypatch.setattr(kd, "handshake_probe", lambda *a, **k: {
+        "status": "fail", "detail": "dead engine behind the entry",
+        "server_name": None, "server_version": None})
+    monkeypatch.chdir(empty_python_repo)
+    rc = cli.main(["doctor"])
+    out = capsys.readouterr().out
+    assert "initialize handshake" in out and "dead engine" in out
+    assert rc == 2                                               # a failed handshake is drift
+
+
+def test_doctor_passes_when_handshake_ok(empty_python_repo, monkeypatch, tmp_path, capsys):
+    from clauderizer import cli
+    from clauderizer.scaffold.init import init
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    monkeypatch.setattr(kd, "handshake_probe", lambda *a, **k: {
+        "status": "ok", "detail": "initialize → serverInfo clauderizer 1.9.1",
+        "server_name": "clauderizer", "server_version": "1.9.1"})
+    monkeypatch.chdir(empty_python_repo)
+    cli.main(["doctor"])
+    assert "✓ kimi-desktop MCP initialize handshake" in capsys.readouterr().out
+
+
+def test_doctor_flags_version_skew_as_advisory(empty_python_repo, monkeypatch, tmp_path, capsys):
+    # A green handshake against a DIFFERENT-version desktop install is advisory
+    # (the exe is a separate Windows pipx install), not drift — so warn, don't fail.
+    from clauderizer import cli
+    from clauderizer.scaffold.init import init
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    monkeypatch.setattr(kd, "handshake_probe", lambda *a, **k: {
+        "status": "ok", "detail": "initialize → serverInfo clauderizer 0.0.1",
+        "server_name": "clauderizer", "server_version": "0.0.1"})
+    monkeypatch.chdir(empty_python_repo)
+    rc = cli.main(["doctor"])
+    out = capsys.readouterr().out
+    assert "kimi-desktop MCP version" in out and "0.0.1" in out
+    assert rc != 2                                              # advisory, not drift
 
 
 # --- 1.9.1: the WSL/UNC agent-recovery playbook (D-054) --------------------------

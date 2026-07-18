@@ -1,7 +1,7 @@
 # Chat Handoff Index — kimi-desktop-wiring-end-to-end-repair
 
 > Last updated: 2026-07-17
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | --repo / CLAUDERIZER_REPO repo decoupling in clauderizer-mcp | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Windows-native command composition (clauderizer-mcp.exe) | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Self-healing registration on every entry point | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Doctor MCP initialize-handshake smoke-test | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Doctor MCP initialize-handshake smoke-test | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | WSL-hosted-repo UNC guidance instead of dead registration | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Docs + release close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
@@ -57,6 +57,12 @@ Verified end-to-end against the live machine (read-only): the composition reprod
 Made the daimon registration durable against the app regenerating its `mcp.json` on project switch. Investigation (O-01) confirmed there is NO persistent user-level MCP source the app merges from — `daimon-share/config.toml` and `daimon/config.json` carry no MCP keys, `kimi-agent/created-workspaces.json` is just a workspace registry, and the `.bak-2026-07-17` preserved our old bare-uvx entry, proving the wipe. So the fix is self-heal: `kimidesktop.self_heal()` (a never-raising wrapper over `wire()`) re-applies the idempotent+atomic entry, called on every `clauderize status` (silent) and `clauderize doctor` (reports "re-applied" when it changed), in addition to `init`.
 
 Deliberately scoped away from two paths (C-01): the SessionStart hook (INVARIANT-06 keeps hooks read-only) and the MCP `cz_status` read op (L-03 keeps read ops non-mutating). This is also the only design that can work — once the app wipes the entry, the kimi-desktop MCP server isn't loaded, so it can't self-heal from within; the re-heal necessarily rides other `clauderize` CLI activity on the machine (a WSL `status`/`doctor`, Claude Code sessions). Live-verified end-to-end: after wiping the real config to `{"mcpServers":{}}`, a single `clauderize status` restored the exact verified-good `C:\...\clauderizer-mcp.exe` entry (backup insurance kept, not needed). 5 new tests (self-heal re-applies wiped entry, idempotent no-op, opt-out, never-raises, cmd_status + cmd_doctor heal); suite 852 → 857 passed, 5 skipped.
+
+### Phase 3 — completed 2026-07-17
+
+Doctor now verifies the kimi-desktop MCP command's CAPABILITY, not its mere presence in mcp.json (L-25). `kimidesktop.handshake_probe` spawns the registered command from a non-repo cwd (the way the app does — doctor passes the system tempdir), sends an MCP `initialize` over stdio (newline-delimited JSON-RPC, protocol 2024-11-05), parses `result.serverInfo`, and asserts `name == "clauderizer"`. It returns a three-state verdict wired into doctor's `verdict()`: a failed/mismatched handshake is drift (exit 2), and a command targeting an unreachable host (a wsl.exe shim with no interop) is honestly `unverifiable` (exit 3) — never a false green. `_spawn_target` makes this work cross-host by translating a `C:\` command to `/mnt/<drive>/...` for WSL interop; a green handshake against a different-version desktop install raises an advisory warn (the exe is a separate Windows pipx install, so a skew isn't same-install drift).
+
+O-02 was resolved empirically: a WSL doctor CAN spawn the real Windows clauderizer-mcp.exe via the /mnt interop path and complete the handshake (serverInfo clauderizer 1.9.1) — so this is a real live verification, not unverifiable. Both directions confirmed against the live machine: the good entry → ok, a bogus exe → fail loudly. 12 new tests (ok, wrong-name, no-serverInfo+stderr tail, spawn-not-found, timeout, no-command, /mnt translation, native passthrough, wsl.exe-unverifiable, doctor-fails, doctor-passes, version-skew-advisory). Suite 857 → 868 → 869 passed, 5 skipped.
 
 ## Accumulated Lessons
 

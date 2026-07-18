@@ -30,7 +30,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 **O-01.** _(phase 2)_ Unknown: does kimi-desktop merge its runtime mcp.json from any persistent user-level source (not config.toml / daimon/config.json, which were checked and have no MCP keys)? If such a source exists, register there instead of self-healing on every entry point. Investigate at the start of Phase 2; if none, self-heal is the fix. _(resolved 2026-07-17: Investigated 2026-07-17: NO persistent user-level MCP source exists. daimon-share/config.toml and daimon/config.json carry no mcp keys; the only MCP config is the runtime home/mcp.json, which the app regenerates on project switch (the .bak-2026-07-17 preserved our old bare-uvx entry, confirming the wipe). kimi-agent/created-workspaces.json is a workspace registry, not MCP config. Resolution: self-heal — re-apply the entry on every write-permitted CLI entry point (init/doctor/status).)_
 
-**O-02.** _(phase 3)_ Unknown: from a WSL-side doctor, can the composed Windows clauderizer-mcp.exe entry actually be spawned+handshaked via binfmt/interop, or must that verdict be 'unverifiable' (verify from the Windows session host)? Decide the verdict policy in Phase 3, mirroring hosts.verify_wiring's wsl.exe/interop handling — never a false green.
+**O-02.** _(phase 3)_ Unknown: from a WSL-side doctor, can the composed Windows clauderizer-mcp.exe entry actually be spawned+handshaked via binfmt/interop, or must that verdict be 'unverifiable' (verify from the Windows session host)? Decide the verdict policy in Phase 3, mirroring hosts.verify_wiring's wsl.exe/interop handling — never a false green. _(resolved 2026-07-17: Resolved empirically 2026-07-17: a WSL doctor CAN spawn the registered Windows clauderizer-mcp.exe via the /mnt/c interop path and complete a full MCP initialize handshake (serverInfo clauderizer 1.9.1, rc 0, newline-delimited JSON with \r\n). So handshake_probe translates a C:\ command to /mnt/<drive>/... and verifies end-to-end from WSL — a real green, not unverifiable. unverifiable is reserved for genuinely unreachable targets (wsl.exe shim with no interop). Both directions live-verified: good entry→ok, bogus exe→fail.)_
 
 ## Phase Breakdown
 
@@ -91,11 +91,11 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] A pure, injectable handshake helper spawns the composed command from a non-repo cwd, sends MCP initialize over stdio, and parses serverInfo
-- [ ] doctor fails the kimi-desktop check when the handshake does not return serverInfo.name=="clauderizer" (and flags version mismatch, mirroring verify_wiring)
-- [ ] MSYS-mangled args, UNC-cwd compositions, and vanished registrations fail loudly with actionable detail
-- [ ] Unreachable-host commands (e.g. wsl.exe with no interop) report unverifiable, not a false pass or false fail
-- [ ] Tests cover pass, name-mismatch, spawn-fail, and unverifiable paths; full suite green
+- [x] A pure, injectable handshake helper spawns the composed command from a non-repo cwd, sends MCP initialize over stdio, and parses serverInfo
+- [x] doctor fails the kimi-desktop check when the handshake does not return serverInfo.name=="clauderizer" (and flags version mismatch, mirroring verify_wiring)
+- [x] MSYS-mangled args, UNC-cwd compositions, and vanished registrations fail loudly with actionable detail
+- [x] Unreachable-host commands (e.g. wsl.exe with no interop) report unverifiable, not a false pass or false fail
+- [x] Tests cover pass, name-mismatch, spawn-fail, and unverifiable paths; full suite green
 
 ### Phase 4: WSL-hosted-repo UNC guidance instead of dead registration
 
