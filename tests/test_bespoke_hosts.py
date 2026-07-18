@@ -44,6 +44,22 @@ def test_generic_merge_is_nondestructive_and_idempotent(tmp_path):
     assert "clauderizer" not in json.loads(cfg.read_text(encoding="utf-8"))["servers"]
 
 
+def test_extension_recipe_names_the_real_api():
+    # L-55: the "add a bespoke host" recipe must name the actual API members so it
+    # can't silently drift from the framework.
+    from pathlib import Path
+    doc = (Path(__file__).resolve().parent.parent / "docs" / "CROSS-HOST.md").read_text(encoding="utf-8")
+    assert "Adding a bespoke auto-write host" in doc
+    for member in ("BespokeHost", "bespoke_hosts.register", "all_hosts",
+                   "compose_entry", "candidate_configs", "unservable_reason", "opt_out_env"):
+        assert member in doc, f"recipe no longer mentions {member}"
+    # and every named member actually exists on the framework / class
+    for attr in ("register", "all_hosts", "BespokeHost"):
+        assert hasattr(bh, attr)
+    for meth in ("compose_entry", "candidate_configs", "unservable_reason", "setup_guide"):
+        assert hasattr(bh.BespokeHost, meth)
+
+
 class _FakeHost(bh.BespokeHost):
     """A minimal second bespoke host — a different servers_key, its own config path,
     NO Windows/daimon specifics — to prove the base lifecycle is host-agnostic."""

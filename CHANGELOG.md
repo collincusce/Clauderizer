@@ -33,6 +33,15 @@ D-055 — supersedes the bare-`uvx`-for-Windows clause of D-053).
   repos and only *this* WSL repo can't be served (UNC-cwd spawn limit, D-054), and the
   guide names `--repo` as the forward path. Docs updated (setup guide per-topology +
   persistence finding, TRUST, CROSS-HOST).
+- **Reusable bespoke auto-write host framework (D-056).** The kimi-desktop machinery is
+  now a framework so future agent hosts of the same shape are covered by reuse, not
+  re-implementation: a `BespokeHost` base + `BESPOKE_HOSTS` registry over host-agnostic
+  primitives — `mcp_probe` (the MCP `initialize`-handshake capability probe) and
+  `winhost` (Windows/WSL command composition). `init`/`doctor`/`status`/`uninstall`
+  iterate the registry generically; a new host is a `BespokeHost` subclass + one
+  registry line (recipe in [CROSS-HOST.md](docs/CROSS-HOST.md)). `clauderize doctor
+  --deep` opts into the handshake for the project-config auto-write hosts too. No
+  behavior change for kimi-desktop.
 
 Claude Code wiring (`.mcp.json`, `.claude/settings.json` hooks) is unchanged.
 

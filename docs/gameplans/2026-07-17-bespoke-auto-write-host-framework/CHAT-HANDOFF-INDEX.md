@@ -1,7 +1,7 @@
 # Chat Handoff Index — bespoke-auto-write-host-framework
 
 > Last updated: 2026-07-17
-> Status: Phase 3 ready
+> Status: All 4 phases complete
 
 ## How This Works
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Extract host-agnostic MCP-verification + command-composition primitives | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | BespokeHost protocol + registry; port kimi-desktop as first implementation | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Rewire entry points to the registry; offer the handshake to the generic host path | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Extension recipe doc + CHANGELOG + cascade + close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Extension recipe doc + CHANGELOG + cascade + close-out | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -55,6 +55,12 @@ The L-41 identity-default discipline kept this a zero-behavior-change refactor: 
 Rewired every entry point off the hardcoded `kimidesktop` calls onto the generic registry: `init`, `doctor`, `status`, and `uninstall` now loop over the bespoke hosts, using `host.id` for the guide filename, `host.servers_key` for the presence check, and the generic `unservable` reason for the "can't-serve-this-repo" guidance — so a second host needs zero new entry-point code. For O-01 (the HOST_EMITTERS handshake), the decided policy is presence-check by default (`verify_wiring` already launch-probes the session host's wiring; a handshake per enabled host is latency for little gain — L-07) with a `clauderize doctor --deep` opt-in that runs the shared `mcp_probe` handshake against each registered auto-write host.
 
 The critical catch: iterating the raw `BESPOKE_HOSTS` dict left it **empty** in the real `clauderize doctor` — the registry is populated by kimidesktop's import side-effect, and doctor no longer imports kimidesktop; the in-process tests masked it because conftest's autouse fixture imports the module (recorded as lesson #1, extending L-23). Fixed with a lazy `all_hosts()` accessor that imports the impl modules on use, plus a fresh-subprocess regression test that imports only the framework and asserts kimi-desktop self-bootstraps. Behavior-preservation re-verified live: `doctor` output is byte-identical (registered ✓, handshake ✓ serverInfo clauderizer, version-skew ?, UNC ?, exit 3) and a live wipe→`status`→restore round-trips the exact `C:\...\clauderizer-mcp.exe` entry through the generic loop. Suite 886 → 888 passed, 5 skipped.
+
+### Phase 3 — completed 2026-07-17
+
+Documented the extension path and closed out. `docs/CROSS-HOST.md` gained a concise 4-step "Adding a bespoke auto-write host" recipe — subclass `BespokeHost` (set `id`/`opt_out_env`/`servers_key`, override `candidate_configs`/`compose_entry`/`setup_guide`/`unservable_reason`), register it and add its module to `all_hosts()`, inherit the detect/merge/self-heal/verify lifecycle, and test against a temp config — pinned to the real API by a doc-content test (L-55) that also asserts each named member exists on the framework. The CHANGELOG's unreleased 1.10.0 entry gained a framework bullet (no new version bump — this folds into the same unreleased release). Cascades over `subsys.scaffold` and `subsys.mcp-server` resolved to "no change needed" (behavior-preserving extraction + generalization).
+
+The D-055 kimi-desktop acceptance criteria were re-verified live throughout the gameplan (composition byte-identical to the user's verified-good entry, self-heal wipe→restore, green `initialize` handshake, UNC guidance, `doctor` exit 3) — all now flowing through the generic registry with no behavior change. Final suite: 889 passed, 5 skipped (from 873 at the gameplan's start; +16 tests across the two new primitive modules, the framework, the second-host lifecycle, the fresh-process bootstrap guard, `--deep`, and the recipe pin).
 
 ## Accumulated Lessons
 

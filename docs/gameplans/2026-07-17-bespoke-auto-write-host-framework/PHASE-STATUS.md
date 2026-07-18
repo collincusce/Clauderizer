@@ -10,7 +10,7 @@
 | 0 | Extract host-agnostic MCP-verification + command-composition primitives | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | BespokeHost protocol + registry; port kimi-desktop as first implementation | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Rewire entry points to the registry; offer the handshake to the generic host path | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Extension recipe doc + CHANGELOG + cascade + close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Extension recipe doc + CHANGELOG + cascade + close-out | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -30,6 +30,12 @@ bespoke-host-framework: src/clauderizer/bespoke_hosts.py: BespokeHost base class
 
 ```
 entry-points-rewired: init/doctor/status/uninstall now iterate bespoke_hosts.all_hosts() (NOT the raw registry — all_hosts() lazily imports the host impl modules so bootstrap is import-order-independent; a raw-dict iteration left the registry EMPTY in the real CLI, masked by conftest's autouse import → lesson #1). cli.py cmd_status: self_heal each; cmd_doctor: generic loop (self_heal→report→handshake→version-skew→unservable warn) using host.id/host.servers_key/heal['unservable']; scaffold/init.py + uninstall.py: generic wire/guide and remove_registration. O-01 resolved: doctor --deep opt-in handshakes registered HOST_EMITTERS hosts (presence-only by default, L-07). kimidesktop.unservable_reason now gates on _is_windows_side alone (matches old ungated doctor UNC warn). Live-verified: doctor byte-identical (registered/handshake/version-skew/UNC, exit 3), status wipe→restore. Suite 886→888.
+```
+
+### Phase 3 Outputs
+
+```
+docs-and-closeout: docs/CROSS-HOST.md: "Adding a bespoke auto-write host (D-056)" 4-step recipe (subclass BespokeHost → register + all_hosts import → inherit lifecycle → test); pinned by tests/test_bespoke_hosts.py::test_extension_recipe_names_the_real_api (L-55). CHANGELOG 1.10.0 entry gained a framework bullet (no version bump — folds into unreleased 1.10.0). Cascades resolved: subsys.scaffold-01 (3 deps), subsys.mcp-server-01 (2 deps) — all no-change-needed (behavior-preserving). Suite 889 passed, 5 skipped.
 ```
 
 ## Corrections Log

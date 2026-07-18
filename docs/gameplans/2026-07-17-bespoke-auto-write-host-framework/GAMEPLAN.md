@@ -1,7 +1,7 @@
 # bespoke-auto-write-host-framework Gameplan
 
 > Created: 2026-07-17
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -88,7 +88,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] A concise 'how to add a bespoke auto-write host' recipe exists (names the BespokeHost members + shared primitives to reuse), and a doc-content test pins it
-- [ ] CHANGELOG's unreleased 1.10.0 entry mentions the framework; no new version bump
-- [ ] cascade over D-056 / subsys.scaffold / subsys.mcp-server resolved
-- [ ] The D-055 kimi-desktop acceptance criteria re-verified live (byte-identical composition, self-heal, handshake, UNC guidance); full suite green; gameplan closed with a post-mortem
+- [x] A concise 'how to add a bespoke auto-write host' recipe exists (names the BespokeHost members + shared primitives to reuse), and a doc-content test pins it
+- [x] CHANGELOG's unreleased 1.10.0 entry mentions the framework; no new version bump
+- [x] cascade over D-056 / subsys.scaffold / subsys.mcp-server resolved
+- [x] The D-055 kimi-desktop acceptance criteria re-verified live (byte-identical composition, self-heal, handshake, UNC guidance); full suite green; gameplan closed with a post-mortem
