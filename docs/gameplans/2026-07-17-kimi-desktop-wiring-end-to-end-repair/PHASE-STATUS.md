@@ -12,7 +12,7 @@
 | 2 | Self-healing registration on every entry point | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Doctor MCP initialize-handshake smoke-test | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | WSL-hosted-repo UNC guidance instead of dead registration | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Docs + release close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Docs + release close-out | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-5-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -46,6 +46,13 @@ handshake-smoke-test: kimidesktop.handshake_probe(entry, cwd, platform, mnt_root
 
 ```
 unc-guidance-refinement: init.py + cli.py doctor UNC warnings refined: clarify the repo-agnostic Windows .exe entry STILL serves Windows-hosted repos ("still serves Windows-hosted repos"), only THIS WSL-hosted repo can't be served (UNC-cwd spawn limit). setup_guide() gained a "forward path (not yet automatic)" section naming --repo/CLAUDERIZER_REPO + serving over UNC from a Windows-safe cwd. 3 new tests (guide references --repo forward path; wire registration not-dead for the combo; doctor clarifies registration stands). Suite 869→872 passed. Note: full per-topology guide rewrite + persistence finding is Phase 5.
+```
+
+### Phase 5 Outputs
+
+```
+release-1.10.0: Version 1.9.1 → 1.10.0 (pyproject.toml + __init__.py; editable reinstalled to refresh dist-info). CHANGELOG 1.10.0 entry. setup_guide() rewritten per-topology + persistence finding + handshake mention. docs/CROSS-HOST.md corrected ("writes a bare uvx" → topology-aware .exe/self-heal/handshake). docs/TRUST.md: self-heal transparency note. Cascades resolved: subsys.mcp-server-01 (2 deps), subsys.scaffold-01 (3 deps) — all "no change needed" (additive/backward-compatible). Suite: 873 passed, 5 skipped.
+acceptance-criteria-evidence: AC1 (durable Windows-repo tools): composition byte-identical to user's verified-good C:\...\clauderizer-mcp.exe; live wipe→`clauderize status`→restored. AC2 (doctor fails on bad handshake): live both-directions — real exe→ok (serverInfo clauderizer), bogus exe→fail (exit 2). AC3 (WSL-repo guidance not dead reg): refined init/doctor warning + .exe entry still serves Windows repos; live doctor shows it. AC4 (Claude Code unchanged/green): .mcp.json + .claude/ untouched by branch (git-confirmed); SessionStart hook registered+launchable end-to-end at 1.10.0, MCP server launchable — all ✓.
 ```
 
 ## Corrections Log

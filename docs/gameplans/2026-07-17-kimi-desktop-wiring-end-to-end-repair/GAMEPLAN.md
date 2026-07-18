@@ -1,7 +1,7 @@
 # kimi-desktop-wiring-end-to-end-repair Gameplan
 
 > Created: 2026-07-17
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -122,7 +122,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 5.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] .clauderizer/kimi-desktop-mcp-setup.md and setup_guide() carry the persistence finding and the verified compositions per host topology
-- [ ] All four acceptance criteria from the request demonstrably hold (durable Windows-repo tools, doctor fails on broken handshake, WSL-repo guidance, Claude Code wiring unchanged/green)
-- [ ] Version bumped (minor), CHANGELOG updated, full test suite green
+- [x] .clauderizer/kimi-desktop-mcp-setup.md and setup_guide() carry the persistence finding and the verified compositions per host topology
+- [x] All four acceptance criteria from the request demonstrably hold (durable Windows-repo tools, doctor fails on broken handshake, WSL-repo guidance, Claude Code wiring unchanged/green)
+- [x] Version bumped (minor), CHANGELOG updated, full test suite green
 - [ ] cascade run over D-055 / subsys.scaffold / subsys.mcp-server resolved; gameplan closed with a post-mortem

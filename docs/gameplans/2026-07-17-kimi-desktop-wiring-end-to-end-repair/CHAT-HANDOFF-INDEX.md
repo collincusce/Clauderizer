@@ -1,7 +1,7 @@
 # Chat Handoff Index — kimi-desktop-wiring-end-to-end-repair
 
 > Last updated: 2026-07-17
-> Status: Phase 5 ready
+> Status: All 6 phases complete
 
 ## How This Works
 
@@ -34,7 +34,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 2 | Self-healing registration on every entry point | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Doctor MCP initialize-handshake smoke-test | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | WSL-hosted-repo UNC guidance instead of dead registration | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Docs + release close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Docs + release close-out | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -70,6 +70,12 @@ Refined the WSL-hosted-repo messaging so it reads as targeted guidance, not a de
 
 3 new tests: the guide references the `--repo` forward path; `wire()` for the WSL+Windows combo registers the launchable `.exe` (not a dead/bare-uvx entry) while flagging `windows_side`; doctor's combo warning clarifies the registration stands. Verified live: the real doctor prints the refined "THIS repo … the registered entry still serves Windows-hosted repos" guidance. Suite 869 → 872 passed, 5 skipped.
 
+### Phase 5 — completed 2026-07-17
+
+Docs + release close-out for the kimi-desktop wiring repair. `setup_guide()` was rewritten to be host-topology-specific: the Windows-hosted-repo composition (absolute `clauderizer-mcp.exe`, with the reason a bare `uvx` can't spawn there), the macOS/Linux `uvx` form, and the WSL-repo UNC guidance — plus a "Persistence" section documenting that the app regenerates its `mcp.json` and that clauderizer self-heals on `init`/`doctor`/`status`, and the doctor `initialize`-handshake smoke-test. The stale bare-uvx example is gone. The two reference docs that had drifted were corrected: `docs/CROSS-HOST.md` (the "writes a bare uvx" claim → the topology-aware `.exe`/self-heal/handshake behavior) and `docs/TRUST.md` (a transparency note that the kimi-desktop self-heal is the one write outside the repo — detected-only, idempotent, never from a hook, opt-out honored).
+
+Version bumped 1.9.1 → 1.10.0 (minor: new `--repo` surface, Windows-native composition, doctor handshake, self-heal — all backward-compatible), with a CHANGELOG entry; the editable install was reinstalled so dist-info matches (the 12 transient failures were exactly that stale-metadata parity check doing its job — L-23). All four acceptance criteria were demonstrably verified (evidence in the `acceptance-criteria-evidence` output), including AC4: `.mcp.json`/`.claude/` untouched by the branch and every Claude wiring check green at 1.10.0. Cascades over subsys.mcp-server and subsys.scaffold resolved (all dependents "no change needed" — additive/backward-compatible). Final suite: 873 passed, 5 skipped (from 840 at the gameplan's start; +33 tests). A real-machine bonus: the new version-skew advisory correctly flags that the user's Windows desktop pipx install is still 1.9.1 vs the 1.10.0 WSL engine — a `pipx upgrade clauderizer` on Windows after 1.10.0 ships will clear it.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -78,3 +84,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Process
 
 _(none yet)_
+
+**1.** A host that REGENERATES its own MCP config on context-switch and merges from no persistent source cannot bootstrap its own re-heal from within — once the entry is wiped the MCP server isn't loaded, so nothing on that host runs to re-register it. Durable registration must therefore ride EXTERNAL write-permitted entry points (other CLI runs on the same machine — init/doctor/status), made idempotent+atomic so re-applying is a safe no-op; never a hook (INVARIANT-06 keeps hooks read-only) nor the MCP read path (L-03). Corollary for VERIFYING such a registration (extends L-25): to prove a cross-OS command actually launches, spawn it the way the consumer will — a Windows `clauderizer-mcp.exe` registered for the desktop IS verifiable from WSL by translating the `C:\` command to its `/mnt/<drive>` interop path and completing the real MCP `initialize` handshake (asserting serverInfo.name), so it's a real green, not 'unverifiable'; reserve unverifiable for a target genuinely unreachable from the probing host (a wsl.exe shim with no interop). MCP stdio is newline-delimited JSON-RPC, not Content-Length framed. *(evidence: D-055 / gameplan 2026-07-17-kimi-desktop-wiring-end-to-end-repair: kimidesktop.self_heal on init/doctor/status; handshake_probe + _spawn_target /mnt translation (mcp_server.py, cli.py); live wipe→status→restore + real exe initialize handshake serverInfo clauderizer.)*
