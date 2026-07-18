@@ -1,7 +1,7 @@
 # Chat Handoff Index — kimi-desktop-serve-wsl-repo-via-repo-cwd-pin
 
 > Last updated: 2026-07-18
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Compose the WSL-serving pin (UNC --repo + Windows-safe cwd) | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Self-heal preserves + refreshes an existing --repo/cwd pin | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | init --serve-wsl-here trigger + init/doctor pinned messaging | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | init --serve-wsl-here trigger + init/doctor pinned messaging | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Docs + 1.11.0 release + cascade + close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -49,6 +49,12 @@ Correctness is anchored to reality, not just unit tests: composing a pin for `cl
 Made the WSL-serving pin durable — and a live check forced the design to be right. I read the live daimon config mid-phase and found it had been wiped to `{"mcpServers": {}}` by the app (its regenerate-on-switch behavior, O-01), taking the other agent's manual pin with it. That falsified the planned "self-heal preserves the existing `--repo`" approach: after an app-wipe there is no `--repo` left to read (recorded as correction C-01). So the pin target now lives in a durable per-user **sidecar** — `clauderizer-serve.json` beside the daimon `mcp.json`, which the app leaves alone when it regenerates the config. `compose_entry` sources the pin as `read_serve_pin(cfg) or _existing_repo_pin(cfg)` (sidecar first for cross-wipe durability, the existing `--repo` as a same-session fallback for a hand-applied pin), and `wire()`/`self_heal` recompose it keeping the repo while re-probing a fresh exe + cwd.
 
 Added `kimidesktop.serve_pin_path`/`read_serve_pin`/`write_serve_pin`/`clear_serve_pin` (atomic, via the framework's `_atomic_write_json`) and a generic `bespoke_hosts.read_entry` (read the current server entry). Verified the durability directly: an emptied `mcp.json` plus a sidecar makes `wire()` re-compose `{command: <fresh exe>, args:[--repo, UNC], cwd}` — the pin survives the wipe. Also verified a stale-exe pin is refreshed while the repo is preserved, and that an unpinned entry (no sidecar, no `--repo`) stays repo-agnostic. 5 new/updated tests; suite 897 → 902 passed, 5 skipped. The write path (`init --serve-wsl-here` composing the initial sidecar + pin) and the doctor reporting are Phase 2.
+
+### Phase 2 — completed 2026-07-18
+
+Shipped the opt-in trigger and the pinned messaging, then proved the whole feature live on the real machine. `clauderize init --serve-wsl-here` (a new flag on init) derives this repo's `\\wsl.localhost` UNC and writes the durable sidecar before the wire loop, guarded to the WSL-repo + Windows-desktop combo (windows_side daimon, `$WSL_DISTRO_NAME` set, repo not under `/mnt`); off-combo it's a clear no-op note. The framework gained generic `pinned_repo`/`clear_pin` hooks (KimiDesktopHost implements them from the sidecar); `unservable_reason` returns `None` when pinned (the pinned repo IS served, so the D-055 UNC guidance is suppressed); `doctor` prints "MCP registered, PINNED to serve <repo>" plus the single-repo tradeoff advisory ("serves <repo> for EVERY project opened, not the one you open"); and `uninstall` clears the sidecar.
+
+Live end-to-end on the reporting machine: applying the pin for `clauderizer-site` produced the exact entry the desktop agent had verified, the pinned command's `cz_status` returned clauderizer-site's real status over the UNC path (`host_profile: node`), the pin survived 2/2 app-wipe→`clauderize status` cycles (re-composed from the sidecar — the C-01 durability win), and `doctor` reported the pin + tradeoff with a green initialize handshake. The user's `clauderizer-site` is now pinned; a desktop restart gives it the full `cz_*` toolset. 4 new tests (flag writes the sidecar, off-combo no-op, doctor reports the pin, uninstall clears it); suite 902 → 906 passed, 5 skipped.
 
 ## Accumulated Lessons
 

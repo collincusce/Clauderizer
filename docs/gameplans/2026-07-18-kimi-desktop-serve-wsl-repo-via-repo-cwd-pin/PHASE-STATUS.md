@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Compose the WSL-serving pin (UNC --repo + Windows-safe cwd) | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Self-heal preserves + refreshes an existing --repo/cwd pin | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | init --serve-wsl-here trigger + init/doctor pinned messaging | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | init --serve-wsl-here trigger + init/doctor pinned messaging | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Docs + 1.11.0 release + cascade + close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
@@ -24,6 +24,12 @@ pin-compose-primitives: winhost.wsl_repo_to_unc(repo_root, distro) → \\wsl.loc
 
 ```
 durable-pin-sidecar: Pin durability via a sidecar (C-01): kimidesktop.SERVE_PIN_FILE = "clauderizer-serve.json" beside the daimon mcp.json (survives the app's regenerate-to-{} wipe). Helpers: serve_pin_path/read_serve_pin/write_serve_pin/clear_serve_pin (write via bespoke_hosts._atomic_write_json). KimiDesktopHost.compose_entry: pin = read_serve_pin(cfg) or _existing_repo_pin(cfg,servers_key) → server_entry(pin=...); so self-heal recomposes the pin (fresh exe + cwd) even after an app-wipe (sidecar), or preserves a hand-applied --repo same-session. bespoke_hosts.read_entry added (read current server entry). Verified: emptied mcp.json + sidecar → wire re-composes {command: <fresh exe>, args:[--repo, UNC], cwd}. Suite 897→902.
+```
+
+### Phase 2 Outputs
+
+```
+serve-wsl-here-live-verified: `clauderize init --serve-wsl-here` (init.py serve_wsl_here param + cli flag): writes the sidecar (UNC of this repo) before the wire loop, guarded to the WSL-repo+Windows-desktop combo (windows_side, $WSL_DISTRO_NAME set, root not under /mnt), else a "had no effect" note. BespokeHost.pinned_repo/clear_pin hooks; KimiDesktopHost overrides (pinned_repo = sidecar or existing --repo; unservable_reason returns None when pinned). doctor: prints "MCP registered, PINNED to serve <repo>" + a tradeoff advisory ("serves <repo> for EVERY project opened"). uninstall clears the sidecar. LIVE-VERIFIED on the real machine: applied the pin for clauderizer-site → live mcp.json is the exact pinned entry → the pinned command's cz_status returns clauderizer-site's status over UNC (host_profile node) → durable across 2/2 app-wipe→status cycles → doctor reports PINNED + tradeoff + green handshake. 4 tests; suite 902→906.
 ```
 
 ## Corrections Log

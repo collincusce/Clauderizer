@@ -68,6 +68,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             session_host=args.session_host,
             host_target=args.host,
             spawn_test=not args.no_spawn_test,
+            serve_wsl_here=getattr(args, "serve_wsl_here", False),
         )
     except (WiringRefused, hosts.SessionHostError, hosttargets.HostTargetError) as exc:
         print(f"✗ init refused: {exc}")
@@ -415,7 +416,16 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             warn(host.id, f"app detected but no launchable command to register — "
                           f"{'; '.join(heal['warnings'])}")
         elif _host_mcp_registered(cfg, host.servers_key):
-            print(f"✓ {host.id}: MCP registered ({cfg})")
+            # Opt-in WSL-serving pin (D-057): report WHICH repo the desktop serves so the
+            # single-repo tradeoff is never silent.
+            pinned = host.pinned_repo(cfg)
+            if pinned:
+                print(f"✓ {host.id}: MCP registered, PINNED to serve {pinned} ({cfg})")
+                warn(f"{host.id} pin", f"the desktop serves {pinned} for EVERY project "
+                     "opened in the app (opt-in WSL override, D-057) — not the project you open. "
+                     "Unpin via `clauderize uninstall`.")
+            else:
+                print(f"✓ {host.id}: MCP registered ({cfg})")
             # Spawn the composed command from a non-repo cwd (the way the app does) and
             # complete an MCP initialize handshake asserting serverInfo.name=='clauderizer'.
             # Fails loudly on MSYS-mangled / UNC / vanished commands; unverifiable (never
@@ -833,6 +843,12 @@ def build_parser() -> argparse.ArgumentParser:
     pi.add_argument("--no-spawn-test", action="store_true",
                     help="skip the pre-write launch probes (escape hatch for sandboxes "
                          "that cannot spawn; the probes are the mis-wiring guard)")
+    pi.add_argument("--serve-wsl-here", action="store_true", dest="serve_wsl_here",
+                    help="opt-in (kimi-desktop, D-057): pin the Windows desktop app to "
+                         "serve THIS WSL-hosted repo (via --repo + a Windows-safe cwd). "
+                         "The desktop then serves this one repo for every project opened; "
+                         "no-op off the WSL-repo + Windows-desktop combo. Unpin via "
+                         "`clauderize uninstall`.")
     pi.add_argument("-v", "--verbose", action="store_true")
     pi.set_defaults(func=cmd_init)
 

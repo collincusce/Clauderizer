@@ -173,6 +173,7 @@ def init(
     session_host: str | None = None,
     host_target: str | None = None,
     spawn_test: bool = True,
+    serve_wsl_here: bool = False,
 ) -> InitReport:
     root = root.resolve()
     paths = resolve(root)
@@ -413,6 +414,31 @@ def init(
     # can't serve THIS repo (unservable), it drops the host's setup guide so a
     # spawn-broken agent can READ its way out (file tools still work — D-054).
     from .. import bespoke_hosts
+
+    # Opt-in WSL-serving pin (D-057): --serve-wsl-here pins the kimi-desktop daimon to
+    # serve THIS WSL repo (--repo <UNC> + a Windows-safe cwd), recorded in a durable
+    # sidecar so self-heal re-applies it after the app wipes its mcp.json (C-01). Written
+    # BEFORE the wire loop so the host composes the pin. A no-op (with a note) off the
+    # WSL-repo + Windows-desktop combo.
+    if serve_wsl_here:
+        from .. import kimidesktop, winhost
+        desk_cfg = kimidesktop.detect_config()
+        distro = os.environ.get("WSL_DISTRO_NAME", "")
+        if (desk_cfg is not None and distro
+                and kimidesktop._is_windows_side(desk_cfg, kimidesktop.WSL_USERS_DIR)
+                and not str(root).startswith("/mnt/")):
+            unc = winhost.wsl_repo_to_unc(root, distro)
+            sidecar = kimidesktop.write_serve_pin(desk_cfg, unc)
+            report.note("kimi-desktop serve-pin", sidecar, True)
+            report.warnings.append(
+                f"kimi-desktop: PINNED to serve this repo ({unc}). The desktop will serve "
+                "THIS repo for every project you open in the app (opt-in override, D-057) — "
+                "restart the app / open a new session to pick it up. To unpin: run "
+                "`clauderize uninstall` or delete the clauderizer-serve.json sidecar.")
+        else:
+            report.warnings.append(
+                "kimi-desktop: --serve-wsl-here had no effect — it applies only to a "
+                "WSL-hosted repo opened in the Windows desktop app (nothing to pin here).")
 
     for host in bespoke_hosts.all_hosts().values():
         desk = host.wire()

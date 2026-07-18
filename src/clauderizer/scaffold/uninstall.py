@@ -190,8 +190,11 @@ def uninstall(root: Path, *, host: str | None = None) -> UninstallReport:
     from .. import bespoke_hosts
     for host in bespoke_hosts.all_hosts().values():
         cfg = host.detect_config()
-        if cfg is not None and host.remove_registration(cfg):
-            report.note(f"{host.id} MCP registration ({cfg})")
+        if cfg is not None:
+            if host.remove_registration(cfg):
+                report.note(f"{host.id} MCP registration ({cfg})")
+            if host.clear_pin(cfg):                # opt-in serve-pin sidecar (D-057)
+                report.note(f"{host.id} serve-pin sidecar")
     for host_id, rel in hosttargets.NATIVE_INSTRUCTIONS.items():
         if writer.remove_marker_block(root / rel, "clauderizer"):
             report.note(f"{rel} floor block")

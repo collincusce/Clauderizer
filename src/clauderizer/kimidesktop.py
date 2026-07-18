@@ -262,7 +262,19 @@ class KimiDesktopHost(BespokeHost):
         return server_entry(cfg, in_wsl=in_wsl, windows_side=windows_side, platform=platform,
                             home=home, users_dir=users_dir, exists=exists, which=which, pin=pin)
 
+    def pinned_repo(self, cfg):
+        # An opt-in WSL-serving pin (D-057) sourced from the sidecar (durable) or the
+        # current entry's --repo (same-session).
+        return read_serve_pin(cfg) or _existing_repo_pin(cfg, self.servers_key)
+
+    def clear_pin(self, cfg):
+        return clear_serve_pin(cfg)
+
     def unservable_reason(self, cfg, *, in_wsl, users_dir):
+        # When pinned (D-057), the desktop serves the pinned repo — the UNC 'unservable'
+        # guidance no longer applies (doctor reports which repo the pin serves instead).
+        if self.pinned_repo(cfg):
+            return None
         # A ``/mnt/.../Users`` config is a Windows-side daimon seen from WSL — only
         # possible under WSL, so ``_is_windows_side`` alone is the signal (the repo is
         # WSL-hosted, the app is on Windows, UNC-cwd spawn limit applies — D-054).

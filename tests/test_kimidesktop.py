@@ -502,6 +502,59 @@ def test_doctor_flags_version_skew_as_advisory(empty_python_repo, monkeypatch, t
     assert rc != 2                                              # advisory, not drift
 
 
+# --- D-057 Phase 2: init --serve-wsl-here + pinned doctor/uninstall --------------
+
+def test_init_serve_wsl_here_writes_pin_sidecar(empty_python_repo, monkeypatch, tmp_path):
+    from clauderizer import winhost
+    from clauderizer.scaffold.init import init
+    users = tmp_path / "mnt" / "c" / "Users"
+    cfg = (users / "rafaj" / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text('{"mcpServers": {}}', encoding="utf-8")
+    monkeypatch.setattr(kd._HOST, "detect_config", lambda **kw: cfg)
+    monkeypatch.setattr(kd, "detect_config", lambda **kw: cfg)     # module fn in init's pin block
+    monkeypatch.setattr(kd, "_is_windows_side", lambda *a, **k: True)
+    monkeypatch.setenv("WSL_DISTRO_NAME", "Ubuntu")
+    init(empty_python_repo, spawn_test=False, serve_wsl_here=True)
+    assert kd.read_serve_pin(cfg) == winhost.wsl_repo_to_unc(empty_python_repo, "Ubuntu")
+
+
+def test_init_serve_wsl_here_noop_off_combo(empty_python_repo, monkeypatch):
+    from clauderizer.scaffold.init import init
+    monkeypatch.setattr(kd, "detect_config", lambda **kw: None)     # app not detected
+    monkeypatch.setattr(kd._HOST, "detect_config", lambda **kw: None)
+    rep = init(empty_python_repo, spawn_test=False, serve_wsl_here=True)
+    assert any("had no effect" in w for w in rep.warnings)
+
+
+def test_doctor_reports_pinned_repo(empty_python_repo, monkeypatch, tmp_path, capsys):
+    from clauderizer import cli, mcp_probe
+    from clauderizer.scaffold.init import init
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    kd.write_serve_pin(cfg, r"\\wsl.localhost\Ubuntu\home\ccusce\clauderizer-site")
+    monkeypatch.setattr(mcp_probe, "handshake_probe", lambda *a, **k: {
+        "status": "ok", "detail": "ok", "server_name": "clauderizer", "server_version": None})
+    monkeypatch.chdir(empty_python_repo)
+    cli.main(["doctor"])
+    out = capsys.readouterr().out
+    assert "PINNED to serve" in out and "clauderizer-site" in out
+    assert "EVERY project" in out                                  # the tradeoff, surfaced
+
+
+def test_uninstall_clears_serve_pin(empty_python_repo, monkeypatch, tmp_path):
+    from clauderizer.scaffold.init import init
+    from clauderizer.scaffold.uninstall import uninstall
+    cfg = tmp_path / "daimon" / "home" / "mcp.json"
+    _detected(monkeypatch, cfg)
+    init(empty_python_repo, spawn_test=False)
+    kd.write_serve_pin(cfg, r"\\wsl.localhost\Ubuntu\home\me\p")
+    assert kd.read_serve_pin(cfg) is not None
+    uninstall(empty_python_repo)
+    assert kd.read_serve_pin(cfg) is None                          # sidecar cleared
+
+
 # --- 1.9.1: the WSL/UNC agent-recovery playbook (D-054) --------------------------
 
 def test_setup_guide_carries_recovery_playbook():

@@ -72,10 +72,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] `clauderize init --serve-wsl-here` from a WSL repo on a Windows desktop writes the pinned daimon entry (--repo <this repo UNC> + Windows-safe cwd)
-- [ ] The flag is a clear no-op off the WSL-repo+Windows-desktop combo (native/Windows-hosted repo) — never writes a bogus pin
-- [ ] For the pinned repo, init/doctor no longer emit the D-055 'unservable' UNC guidance; doctor handshakes the pinned command and REPORTS which repo it serves + the single-repo tradeoff
-- [ ] Tests cover: flag composes the pin, flag no-ops off-combo, doctor reports the pinned repo; full suite green
+- [x] `clauderize init --serve-wsl-here` from a WSL repo on a Windows desktop writes the pinned daimon entry (--repo <this repo UNC> + Windows-safe cwd)
+- [x] The flag is a clear no-op off the WSL-repo+Windows-desktop combo (native/Windows-hosted repo) — never writes a bogus pin
+- [x] For the pinned repo, init/doctor no longer emit the D-055 'unservable' UNC guidance; doctor handshakes the pinned command and REPORTS which repo it serves + the single-repo tradeoff
+- [x] Tests cover: flag composes the pin, flag no-ops off-combo, doctor reports the pinned repo; full suite green
 
 ### Phase 3: Docs + 1.11.0 release + cascade + close-out
 

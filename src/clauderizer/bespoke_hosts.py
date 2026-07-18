@@ -138,6 +138,16 @@ class BespokeHost:
         instead of pretending the registration serves it. Default: always servable."""
         return None
 
+    def pinned_repo(self, cfg: Path) -> str | None:
+        """The repo this host is pinned to serve (an opt-in override, D-057), or ``None``
+        for the repo-agnostic default. Lets doctor report the single-repo tradeoff."""
+        return None
+
+    def clear_pin(self, cfg: Path) -> bool:
+        """Remove any opt-in pin state for this host (uninstall). ``True`` if something
+        was removed. Default: nothing to clear."""
+        return False
+
     # --- shared lifecycle: inherited ---------------------------------------------
     def detect_config(self, *, home: Path | None = None, platform: str | None = None,
                       environ: dict | None = None, in_wsl: bool | None = None,
