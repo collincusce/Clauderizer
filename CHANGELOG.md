@@ -2,6 +2,40 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.10.0] — 2026-07-17
+
+End-to-end repair of the **Kimi Work desktop (daimon runtime)** MCP wiring, verified
+live on Windows 11 + WSL2 (gameplan `2026-07-17-kimi-desktop-wiring-end-to-end-repair`,
+D-055 — supersedes the bare-`uvx`-for-Windows clause of D-053).
+
+- **Windows-native command composition.** The daimon entry no longer composes a bare
+  `uvx` for a Windows host (the app bundles `uv.exe` but **not** `uvx.exe`, so it can
+  never spawn). `init` now probes for a Windows-native `clauderizer-mcp.exe` (pipx
+  venv `Scripts`, `.local\bin` / uv tool dir) and registers its **absolute path** with
+  `args: []`. From WSL it stats the `/mnt/c` mirror and registers the translated `C:\`
+  spelling. No `clauderizer-mcp.exe`? It drops the setup guide instead of a dead entry.
+- **Self-healing registration.** The app regenerates its runtime `mcp.json` on project
+  switch and merges from no persistent source, so `init`, `doctor`, and `status` now
+  **re-apply** the entry (idempotent — a no-op when current). Not from any hook
+  (INVARIANT-06) nor the MCP read path (L-03). `CLAUDERIZER_NO_KIMI_DESKTOP=1` still
+  opts out everywhere.
+- **`doctor` smoke-tests the command end-to-end.** It spawns the composed command from
+  a non-repo cwd, completes an MCP `initialize` handshake, and asserts
+  `serverInfo.name == "clauderizer"` — so a broken command fails loudly instead of
+  looking registered. Fails on a bad handshake; honestly `unverifiable` for a target
+  this host can't reach (never a false green).
+- **`clauderizer-mcp --repo <path>` / `$CLAUDERIZER_REPO`.** Repo discovery is now
+  decoupled from the process cwd, so a host that can't spawn with the repo as its cwd
+  (a Windows desktop serving a `\\wsl.localhost` UNC repo) can still point the server
+  at the right repo. Precedence: `--repo` > `$CLAUDERIZER_REPO` > cwd.
+- **Sharper WSL-repo guidance.** For a WSL-hosted repo opened on the Windows desktop,
+  `init`/`doctor` clarify that the registered `.exe` still serves *Windows-hosted*
+  repos and only *this* WSL repo can't be served (UNC-cwd spawn limit, D-054), and the
+  guide names `--repo` as the forward path. Docs updated (setup guide per-topology +
+  persistence finding, TRUST, CROSS-HOST).
+
+Claude Code wiring (`.mcp.json`, `.claude/settings.json` hooks) is unchanged.
+
 ## [1.9.1] — 2026-07-17
 
 A **read-your-way-out playbook** for Kimi Work desktop sessions on a WSL repo, plus

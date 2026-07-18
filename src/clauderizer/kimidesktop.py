@@ -469,27 +469,66 @@ so the MCP server is the *only* way it gets the Clauderizer tools and status.
 
 `clauderize init` auto-registers the server there when it can detect the app; this
 guide is for when it could not (the app wasn't installed yet, or on a path we did
-not probe). Add the `clauderizer` server to the runtime-home `mcp.json`:
+not probe). The runtime-home `mcp.json` lives at:
 
 - **Windows:** `%APPDATA%\\{suffix.replace('/', chr(92))}`
 - **macOS:** `~/Library/Application Support/{suffix}`
 - **Linux:** `~/.config/{suffix}`
-- **Repo in WSL, app on Windows:** the file is under
-  `/mnt/c/Users/<you>/AppData/Roaming/{suffix}` — and the command must run the
-  server back inside WSL (see the wsl.exe form below).
+- **Repo in WSL, app on Windows:** `/mnt/c/Users/<you>/AppData/Roaming/{suffix}`
+  (the app runs on Windows, so the command must be a **Windows-native** one).
 
-```json
-{{
-  "mcpServers": {{
-    "clauderizer": {{ "command": "uvx", "args": ["--from", "clauderizer[mcp]", "clauderizer-mcp"] }}
+### The command is host-topology-specific
+
+The entry is **repo-agnostic** — the server discovers whichever repo you open from
+the app's working directory, so one entry covers every repo (never a `cd <repo>`
+wrapper). What the `command` must be depends on where the app runs:
+
+- **Windows-hosted repo (app on Windows).** The app bundles `uv.exe` but **not**
+  `uvx.exe`, so a bare `uvx` can never spawn. Use the **absolute path** to a
+  Windows-native `clauderizer-mcp.exe` (install with `pipx install "clauderizer[mcp]"`
+  or `uv tool install "clauderizer[mcp]"`):
+
+  ```json
+  {{
+    "mcpServers": {{
+      "clauderizer": {{
+        "command": "C:\\\\Users\\\\<you>\\\\pipx\\\\venvs\\\\clauderizer\\\\Scripts\\\\clauderizer-mcp.exe",
+        "args": []
+      }}
+    }}
   }}
-}}
-```
+  ```
 
-This entry is **repo-agnostic** — the server serves whichever repo you open in the
-app (it reads the app's working directory), so one entry covers every repo. If
-`uvx` is not on the desktop runtime's PATH, use its absolute path as `command`.
-You can override `CLAUDERIZER_NO_KIMI_DESKTOP=1` to skip this auto-registration.
+- **macOS / Linux (app and repo on the same OS).** Use the absolute path to `uvx`
+  (a desktop runtime's PATH is often thin), or to `clauderizer-mcp`:
+
+  ```json
+  {{
+    "mcpServers": {{
+      "clauderizer": {{ "command": "/usr/bin/uvx", "args": ["--from", "clauderizer[mcp]", "clauderizer-mcp"] }}
+    }}
+  }}
+  ```
+
+- **WSL-hosted repo, app on Windows.** The desktop can serve any *Windows-hosted*
+  repo via the `.exe` entry above, but it **cannot** serve a repo that lives only in
+  WSL — see the UNC section below. Do not register a WSL/`wsl.exe` command here.
+
+You can set `CLAUDERIZER_NO_KIMI_DESKTOP=1` to skip this auto-registration entirely.
+
+### Persistence: the app regenerates this file
+
+The desktop app **regenerates its runtime `mcp.json` on project/session switch** and
+merges from **no** persistent user-level source (verified: neither `daimon-share/
+config.toml` nor `daimon/config.json` carry MCP keys). So a hand-edit — or a one-shot
+`clauderize init` — is **temporary**; the app can wipe it (leaving an `mcp.json.bak-*`)
+when you open a different project. Clauderizer works around this by **self-healing**:
+every `clauderize init`, `doctor`, and `status` re-applies the entry (idempotent — a
+no-op when already current). So the durable fix is to run one of those from a WSL/OS
+shell on the machine, and clauderizer re-applies the registration for the next
+desktop session. `clauderize doctor` also **smoke-tests** the entry end-to-end (spawns
+it and completes an MCP `initialize` handshake, asserting `serverInfo.name` is
+`clauderizer`) — so a broken command fails loudly instead of looking registered.
 
 MCP servers load at **session start** — restart the desktop app (or open a new
 session) after editing. Preserve any other servers already in the file.
@@ -501,8 +540,9 @@ desktop app, every shell command fails with `spawn …bash.exe ENOENT`, and the
 `cz_*` MCP tools never appear — the cause is **not** a missing shell. Your repo
 lives in WSL, so the app sees it as a `\\\\wsl.localhost\\...` **UNC path**, and
 **Windows cannot start a process with a UNC working directory** (`cmd.exe` itself
-says *"UNC paths are not supported"*). So both the shell and the `uvx` MCP server
-fail to spawn. A wsl.exe-wrapped command does **not** help — it dies on the same
+says *"UNC paths are not supported"*). So both the shell and the MCP server (even the
+Windows-native `clauderizer-mcp.exe`) fail to spawn — the cwd, not the command, is
+what's rejected. A wsl.exe-wrapped command does **not** help — it dies on the same
 UNC cwd. The bundled bash is fine; only process *spawning* is blocked.
 
 **How to keep working right now** (file access still works over UNC):

@@ -447,6 +447,17 @@ def test_setup_guide_carries_recovery_playbook():
     assert "Windows filesystem" in g and "Kimi Code CLI" in g   # both permanent fixes
 
 
+def test_setup_guide_carries_persistence_and_topology():
+    # D-055 Phase 5: the guide documents the persistence finding, the per-topology
+    # compositions, and the doctor smoke-test (a doc claim needs a test — L-55).
+    g = kd.setup_guide()
+    assert "regenerates its runtime" in g                # persistence finding
+    assert "clauderizer-mcp.exe" in g                    # Windows-hosted composition
+    assert "self-heal" in g.lower()                      # the durable workaround
+    assert "initialize" in g and "serverInfo" in g       # doctor end-to-end smoke-test
+    assert "uv.exe" in g and "not" in g                  # why bare uvx can't spawn on Windows
+
+
 def test_setup_guide_references_repo_forward_path():
     # D-055 Phase 4: the guide names --repo / CLAUDERIZER_REPO as the forward path to
     # serving a UNC repo from a Windows-safe cwd.

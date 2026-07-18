@@ -111,6 +111,16 @@ lock file (`.clauderizer/write.lock`). The skill tools keep that contract:
 from your local skill directories and proposes — it never executes a skill or
 writes; `cz_register_skill` / `cz_obsolete_skill` write only to `docs/SKILLS.md`.
 
+**The kimi-desktop self-heal** — the one write that lands **outside your repo**.
+The Kimi Work desktop app (D-053/D-055) reads MCP servers only from a per-user
+runtime config it **regenerates on project switch**, so `init`, `doctor`, and
+`status` re-apply the `clauderizer` entry to that per-user `mcp.json` (a
+non-destructive, idempotent merge — a no-op when already current). It is
+**detected-only** (never creates the app's directories), never runs from a hook
+(INVARIANT-06 keeps hooks read-only) or the MCP read path, and is fully disabled by
+`CLAUDERIZER_NO_KIMI_DESKTOP=1`. `doctor` additionally spawns the composed command
+and completes an MCP `initialize` handshake to prove it launches.
+
 **Nothing else executes.** No daemon, no scheduler, no network calls at
 runtime (the engine's only network user is `clauderize release-check`,
 a maintainer command that queries PyPI/GitHub read-only when *you* run it).
