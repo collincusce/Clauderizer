@@ -43,6 +43,14 @@ D-055 — supersedes the bare-`uvx`-for-Windows clause of D-053).
   --deep` opts into the handshake for the project-config auto-write hosts too. No
   behavior change for kimi-desktop.
 
+Also fixed (surfaced by the Windows CI matrix while shipping this release):
+
+- **Windows write-lock contention.** `_acquire_file` caught only `FileExistsError`, but
+  Windows raises `PermissionError` (EACCES) for an `O_EXCL` create under contention — so a
+  concurrent writer could error instead of retrying and waiting its turn. It now treats a
+  `PermissionError` *while the lock file exists* as contention (a genuine ACL failure with
+  no lock present still surfaces).
+
 Claude Code wiring (`.mcp.json`, `.claude/settings.json` hooks) is unchanged.
 
 ## [1.9.1] — 2026-07-17

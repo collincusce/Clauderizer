@@ -156,7 +156,13 @@ def _acquire_file(lock_path: Path, *, deadline: float, stale_timeout: float,
     while True:
         try:
             fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
+        except (FileExistsError, PermissionError) as exc:
+            # POSIX raises FileExistsError for an O_EXCL create on an existing path;
+            # Windows raises PermissionError (EACCES) for the same contention (another
+            # process holds / is mid-creating the lock). A PermissionError with NO lock
+            # file present is a genuine ACL failure (e.g. a read-only dir) — surface it.
+            if isinstance(exc, PermissionError) and not lock_path.exists():
+                raise
             if _try_takeover(lock_path, stale_timeout):
                 continue
             if time.monotonic() >= deadline:
