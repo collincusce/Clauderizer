@@ -122,6 +122,58 @@ def test_win32_native_falls_back_to_which(tmp_path):
     assert entry == {"command": r"C:\tools\clauderizer-mcp.exe", "args": []}
 
 
+def test_server_entry_pinned_wsl_serving(tmp_path):
+    # D-057: with a pin (UNC), compose {command: exe, args:[--repo, UNC], cwd: win_base}.
+    users = tmp_path / "mnt" / "c" / "Users"
+    cfg = (users / "rafaj" / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    exe = users / "rafaj" / "pipx" / "venvs" / "clauderizer" / "Scripts" / "clauderizer-mcp.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("", encoding="utf-8")
+    unc = r"\\wsl.localhost\Ubuntu\home\ccusce\clauderizer-site"
+    entry, warns = kd.server_entry(cfg, in_wsl=True, windows_side=True, platform="linux",
+                                   home=tmp_path / "linuxhome", users_dir=users, pin=unc)
+    assert entry == {
+        "command": r"C:\Users\rafaj\pipx\venvs\clauderizer\Scripts\clauderizer-mcp.exe",
+        "args": ["--repo", unc], "cwd": r"C:\Users\rafaj"}
+    assert warns == []
+
+
+def test_server_entry_unpinned_byte_identical(tmp_path):
+    # No pin → the repo-agnostic entry is unchanged (no cwd, args:[]) — L-41/D-055 intact.
+    users = tmp_path / "mnt" / "c" / "Users"
+    cfg = (users / "rafaj" / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    exe = users / "rafaj" / "pipx" / "venvs" / "clauderizer" / "Scripts" / "clauderizer-mcp.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("", encoding="utf-8")
+    entry, _ = kd.server_entry(cfg, in_wsl=True, windows_side=True, platform="linux",
+                               home=tmp_path / "linuxhome", users_dir=users)
+    assert entry == {"command": r"C:\Users\rafaj\pipx\venvs\clauderizer\Scripts\clauderizer-mcp.exe",
+                     "args": []}
+    assert "cwd" not in entry
+
+
+def test_server_entry_pin_win32_native(tmp_path):
+    home = tmp_path / "winhome"
+    cfg = (home / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    exe = home / "pipx" / "venvs" / "clauderizer" / "Scripts" / "clauderizer-mcp.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("", encoding="utf-8")
+    unc = r"\\wsl.localhost\Ubuntu\home\me\p"
+    entry, _ = kd.server_entry(cfg, in_wsl=False, windows_side=False, platform="win32",
+                               home=home, users_dir=tmp_path / "mnt" / "c" / "Users", pin=unc)
+    assert entry == {"command": str(exe), "args": ["--repo", unc], "cwd": str(home)}
+
+
+def test_server_entry_pin_ignored_on_non_windows(tmp_path):
+    # A pin on a macOS/Linux daimon host is ignored (that host uses uvx, no UNC problem).
+    home = tmp_path / "home"
+    cfg = (home / ".config").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    entry, _ = kd.server_entry(cfg, in_wsl=False, platform="linux",
+                               which=lambda n: "/usr/bin/uvx", pin=r"\\wsl.localhost\U\x")
+    assert entry == {"command": "/usr/bin/uvx",
+                     "args": ["--from", "clauderizer[mcp]", "clauderizer-mcp"]}
+
+
 def test_win32_native_unregistrable_without_exe(tmp_path):
     home = tmp_path / "winhome"
     cfg = (home / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)

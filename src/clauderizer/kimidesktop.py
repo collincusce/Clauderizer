@@ -116,6 +116,7 @@ def server_entry(cfg: Path, *, in_wsl: bool, windows_side: bool | None = None,
                  users_dir: Path = WSL_USERS_DIR,
                  exists: Callable[[Path], bool] | None = None,
                  which: Callable[[str], str | None] = shutil.which,
+                 pin: str | None = None,
                  ) -> tuple[dict | None, list[str]]:
     """The ``mcpServers['clauderizer']`` entry (or ``None``) + any warnings.
 
@@ -142,19 +143,30 @@ def server_entry(cfg: Path, *, in_wsl: bool, windows_side: bool | None = None,
         windows_side = _is_windows_side(cfg, users_dir)
     windows_host = platform == "win32" or (in_wsl and windows_side)
     if windows_host:
+        exe: str | None = None
         for stat_path, command in winhost.win_exe_candidates(
                 cfg=cfg, platform=platform, home=home, users_dir=users_dir):
             if exists(stat_path):
-                return ({"command": command, "args": []}, [])
-        if platform == "win32":                   # last resort: PATH / uv tool dir
-            found = which(winhost.WIN_EXE) or which("clauderizer-mcp")
-            if found:
-                return ({"command": found, "args": []}, [])
-        return (None,
-                [f"no {winhost.WIN_EXE} found for the Windows desktop (probed pipx venv "
-                 "Scripts, .local\\bin / uv tool dir) — install clauderizer on Windows "
-                 "(e.g. `pipx install \"clauderizer[mcp]\"`), then re-run `clauderize init`. "
-                 "Wrote the setup guide instead of a command that cannot spawn"])
+                exe = command
+                break
+        if exe is None and platform == "win32":   # last resort: PATH / uv tool dir
+            exe = which(winhost.WIN_EXE) or which("clauderizer-mcp")
+        if exe is None:
+            return (None,
+                    [f"no {winhost.WIN_EXE} found for the Windows desktop (probed pipx venv "
+                     "Scripts, .local\\bin / uv tool dir) — install clauderizer on Windows "
+                     "(e.g. `pipx install \"clauderizer[mcp]\"`), then re-run `clauderize init`. "
+                     "Wrote the setup guide instead of a command that cannot spawn"])
+        if pin:
+            # Opt-in WSL-serving pin (D-057): spawn the exe from a Windows-safe cwd and
+            # serve the pinned UNC repo via --repo (file I/O over UNC works; only the
+            # process cwd may not be UNC). A single-repo pin in the per-user file.
+            cwd = winhost.windows_safe_cwd(cfg, platform=platform, home=home, users_dir=users_dir)
+            entry = {"command": exe, "args": ["--repo", pin]}
+            if cwd:
+                entry["cwd"] = cwd
+            return (entry, [])
+        return ({"command": exe, "args": []}, [])
     uvx = which("uvx")
     if uvx is None:
         return ({"command": "uvx", "args": list(_ARGS)},

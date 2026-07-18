@@ -35,6 +35,33 @@ def test_windows_profile_from_cfg_none_when_outside_users(tmp_path):
     assert wh.windows_profile_from_cfg(outside, users) is None
 
 
+def test_wsl_repo_to_unc():
+    # D-057: a WSL repo root → its \\wsl.localhost\<distro>\<path> UNC form.
+    assert wh.wsl_repo_to_unc("/home/ccusce/clauderizer-site", "Ubuntu") == \
+        r"\\wsl.localhost\Ubuntu\home\ccusce\clauderizer-site"
+    assert wh.wsl_repo_to_unc(PurePosixPath("/home/me/p"), "Debian") == \
+        r"\\wsl.localhost\Debian\home\me\p"
+
+
+def test_windows_safe_cwd_win32(tmp_path):
+    home = tmp_path / "winhome"
+    assert wh.windows_safe_cwd(tmp_path / "unused", platform="win32",
+                               home=home, users_dir=tmp_path) == str(home)
+
+
+def test_windows_safe_cwd_wsl_derives_win_base(tmp_path):
+    users = tmp_path / "mnt" / "c" / "Users"
+    cfg = users / "rafaj" / "AppData" / "Roaming" / "app" / "mcp.json"
+    assert wh.windows_safe_cwd(cfg, platform="linux", home=tmp_path, users_dir=users) == \
+        r"C:\Users\rafaj"
+
+
+def test_windows_safe_cwd_none_when_cfg_outside_users(tmp_path):
+    users = tmp_path / "mnt" / "c" / "Users"
+    outside = tmp_path / "elsewhere" / "mcp.json"
+    assert wh.windows_safe_cwd(outside, platform="linux", home=tmp_path, users_dir=users) is None
+
+
 def test_win_exe_candidates_native_win32(tmp_path):
     home = tmp_path / "winhome"
     cands = wh.win_exe_candidates(cfg=tmp_path / "unused", platform="win32",

@@ -66,6 +66,28 @@ def windows_profile_from_cfg(cfg: Path, users_dir: Path) -> tuple[Path, str] | N
     return mnt_base, win_base
 
 
+def wsl_repo_to_unc(repo_root: Path | str, distro: str,
+                    *, host: str = "wsl.localhost") -> str:
+    """A WSL repo root (``/home/me/proj``) → its Windows UNC path
+    (``\\\\wsl.localhost\\<distro>\\home\\me\\proj``). Windows can't set a UNC path as a
+    process CWD (D-054), but a process spawned from a Windows-safe cwd CAN read it via
+    ``--repo`` (file I/O over UNC works) — so this is the pin target (D-057)."""
+    rel = str(repo_root).lstrip("/").replace("/", "\\")
+    return f"\\\\{host}\\{distro}\\{rel}"
+
+
+def windows_safe_cwd(cfg: Path, *, platform: str, home: Path,
+                     users_dir: Path) -> str | None:
+    """A Windows-safe working directory for the daimon to spawn the pinned server from
+    (never a UNC path): the ``<DRIVE>:\\Users\\<user>`` profile. From WSL this is the
+    ``win_base`` derived from the config path; on native Windows it is ``home``
+    (``%USERPROFILE%``). ``None`` when it can't be derived."""
+    if platform == "win32":
+        return str(home)
+    prof = windows_profile_from_cfg(cfg, users_dir)
+    return prof[1] if prof else None
+
+
 def win_exe_candidates(*, cfg: Path, platform: str, home: Path,
                        users_dir: Path) -> list[tuple[Path, str]]:
     """``(stat_path, command_str)`` candidates for a Windows-native

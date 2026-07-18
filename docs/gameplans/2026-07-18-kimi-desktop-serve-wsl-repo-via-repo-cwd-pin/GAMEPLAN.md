@@ -1,7 +1,7 @@
 # kimi-desktop-serve-wsl-repo-via-repo-cwd-pin Gameplan
 
 > Created: 2026-07-18
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -42,10 +42,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] A pure helper composes the WSL repo's UNC path (\\wsl.localhost\<distro>\<repo-path>) from the repo root + $WSL_DISTRO_NAME, and the Windows-safe cwd (win_base) via winhost
-- [ ] server_entry/compose_entry can produce the pinned entry {command: clauderizer-mcp.exe, args:[--repo, <UNC>], cwd: <win_base>} when a pin is requested
-- [ ] The non-pinned path is byte-identical to today (repo-agnostic .exe / uvx / unregistrable); no default behavior change
-- [ ] New tests cover the UNC + cwd derivation and the pinned-entry composition per topology; full suite green (>= 889 passed)
+- [x] A pure helper composes the WSL repo's UNC path (\\wsl.localhost\<distro>\<repo-path>) from the repo root + $WSL_DISTRO_NAME, and the Windows-safe cwd (win_base) via winhost
+- [x] server_entry/compose_entry can produce the pinned entry {command: clauderizer-mcp.exe, args:[--repo, <UNC>], cwd: <win_base>} when a pin is requested
+- [x] The non-pinned path is byte-identical to today (repo-agnostic .exe / uvx / unregistrable); no default behavior change
+- [x] New tests cover the UNC + cwd derivation and the pinned-entry composition per topology; full suite green (>= 889 passed)
 
 ### Phase 1: Self-heal preserves + refreshes an existing --repo/cwd pin
 
