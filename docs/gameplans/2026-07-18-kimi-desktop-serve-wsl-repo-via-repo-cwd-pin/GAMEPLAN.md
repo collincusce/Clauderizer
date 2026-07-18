@@ -1,7 +1,7 @@
 # kimi-desktop-serve-wsl-repo-via-repo-cwd-pin Gameplan
 
 > Created: 2026-07-18
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -87,7 +87,7 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] kimi-desktop setup guide + CROSS-HOST.md document the pin (recipe + the single-repo tradeoff + that it's opt-in and self-heal-preserving); doc-content test pins the claim
-- [ ] CHANGELOG 1.11.0 entry; version bumped 1.10.0 → 1.11.0 (pyproject + __init__), editable reinstalled
-- [ ] cascade over D-057 / subsys.scaffold / subsys.mcp-server resolved; full suite green
-- [ ] gameplan closed with a post-mortem; 1.11.0 published to PyPI via the L-51 ritual (CI matrix green, release-check exit 0, tag==source, uvx --refresh verifies)
+- [x] kimi-desktop setup guide + CROSS-HOST.md document the pin (recipe + the single-repo tradeoff + that it's opt-in and self-heal-preserving); doc-content test pins the claim
+- [x] CHANGELOG 1.11.0 entry; version bumped 1.10.0 → 1.11.0 (pyproject + __init__), editable reinstalled
+- [x] cascade over D-057 / subsys.scaffold / subsys.mcp-server resolved; full suite green
+- [x] gameplan closed with a post-mortem; 1.11.0 published to PyPI via the L-51 ritual (CI matrix green, release-check exit 0, tag==source, uvx --refresh verifies)

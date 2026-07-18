@@ -1,7 +1,7 @@
 # Chat Handoff Index — kimi-desktop-serve-wsl-repo-via-repo-cwd-pin
 
 > Last updated: 2026-07-18
-> Status: Phase 3 ready
+> Status: All 4 phases complete
 
 ## How This Works
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Compose the WSL-serving pin (UNC --repo + Windows-safe cwd) | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Self-heal preserves + refreshes an existing --repo/cwd pin | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | init --serve-wsl-here trigger + init/doctor pinned messaging | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Docs + 1.11.0 release + cascade + close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Docs + 1.11.0 release + cascade + close-out | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-3-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -56,6 +56,12 @@ Shipped the opt-in trigger and the pinned messaging, then proved the whole featu
 
 Live end-to-end on the reporting machine: applying the pin for `clauderizer-site` produced the exact entry the desktop agent had verified, the pinned command's `cz_status` returned clauderizer-site's real status over the UNC path (`host_profile: node`), the pin survived 2/2 app-wipe→`clauderize status` cycles (re-composed from the sidecar — the C-01 durability win), and `doctor` reported the pin + tradeoff with a green initialize handshake. The user's `clauderizer-site` is now pinned; a desktop restart gives it the full `cz_*` toolset. 4 new tests (flag writes the sidecar, off-combo no-op, doctor reports the pin, uninstall clears it); suite 902 → 906 passed, 5 skipped.
 
+### Phase 3 — completed 2026-07-18
+
+Documented the opt-in pin and shipped 1.11.0. `setup_guide()` now presents `clauderize init --serve-wsl-here` as the recommended fix for a WSL repo on the Windows desktop (replacing the D-055 "forward path (not yet automatic)" prose), with the override shape, the durable sidecar, the single-repo tradeoff, and the unpin path; `CROSS-HOST.md` and the README carry the same, and a doc-content test pins the claim (L-55). A latent f-string brace bug in the guide's JSON example (single `{}` → runtime `NameError`) was caught by the suite and fixed. Version bumped 1.10.0 → 1.11.0 with a CHANGELOG entry; cascades over `subsys.scaffold`/`subsys.mcp-server` resolved (additive/opt-in).
+
+1.11.0 was published to PyPI via the full L-51 ritual: push → CI matrix green on all 9 cells (ubuntu/macos/windows × 3.11–3.13) → `release-check` exit 0 (v1.11.0 unclaimed across all four registries) → tag → GitHub Release → Trusted-Publishing workflow success → verified fresh (`uvx --refresh --from clauderizer==1.11.0` → clauderizer 1.11.0; PyPI index latest 1.11.0; the transient 1.10.0 read was CDN propagation lag that cleared in seconds). Final suite: 907 passed, 5 skipped (from 889 at the gameplan's start; +18 tests).
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -64,3 +70,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Process
 
 _(none yet)_
+
+**1.** Durable per-host OVERRIDE state must NOT live only in a config the host regenerates. When a host wipes/regenerates its own config on context-switch (kimi-desktop's mcp.json → {}, O-01), any override you wrote there (a --repo pin, a custom cwd) is gone — and self-heal that reads the override BACK from the current config finds nothing and reverts to the default. Fix: record the override in a durable SIDECAR the host leaves alone (a clauderizer-owned file beside the config that the host's regeneration doesn't touch), and have self-heal RE-COMPOSE the override from the sidecar (re-probing volatile bits like an exe path). Reading the override from the live config is only a same-session fallback, never durability. Corollary (extends L-50): before building on a hypothesized host capability, VERIFY it against the host's actual source + a live probe — the daimon 'honors a per-server cwd' hypothesis was confirmed by grepping the app bundle's config normalizer AND a live initialize+cz_status handshake serving a real WSL repo over UNC, not assumed; and the tempting-but-absent alternative (an in-WSL 'executor' value) was ruled out by reading the bundle's validated executor set (shell/bash/local/native/kaos), not guessed. *(evidence: D-057: kimidesktop.clauderizer-serve.json sidecar + read_serve_pin/write_serve_pin; compose_entry pin = read_serve_pin(cfg) or _existing_repo_pin(cfg); live-verified durable across 2/2 app-wipe→status cycles; daimon cwd-honor confirmed in bundle c-UL5Q755D.js + a live cz_status over UNC.)* (promoted 2026-07-18: L-61)

@@ -10,7 +10,7 @@
 | 0 | Compose the WSL-serving pin (UNC --repo + Windows-safe cwd) | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Self-heal preserves + refreshes an existing --repo/cwd pin | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | init --serve-wsl-here trigger + init/doctor pinned messaging | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Docs + 1.11.0 release + cascade + close-out | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Docs + 1.11.0 release + cascade + close-out | ✅ COMPLETE | 2026-07-18 | 2026-07-18 | handoffs/PHASE-3-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -30,6 +30,12 @@ durable-pin-sidecar: Pin durability via a sidecar (C-01): kimidesktop.SERVE_PIN_
 
 ```
 serve-wsl-here-live-verified: `clauderize init --serve-wsl-here` (init.py serve_wsl_here param + cli flag): writes the sidecar (UNC of this repo) before the wire loop, guarded to the WSL-repo+Windows-desktop combo (windows_side, $WSL_DISTRO_NAME set, root not under /mnt), else a "had no effect" note. BespokeHost.pinned_repo/clear_pin hooks; KimiDesktopHost overrides (pinned_repo = sidecar or existing --repo; unservable_reason returns None when pinned). doctor: prints "MCP registered, PINNED to serve <repo>" + a tradeoff advisory ("serves <repo> for EVERY project opened"). uninstall clears the sidecar. LIVE-VERIFIED on the real machine: applied the pin for clauderizer-site → live mcp.json is the exact pinned entry → the pinned command's cz_status returns clauderizer-site's status over UNC (host_profile node) → durable across 2/2 app-wipe→status cycles → doctor reports PINNED + tradeoff + green handshake. 4 tests; suite 902→906.
+```
+
+### Phase 3 Outputs
+
+```
+release-1.11.0: 1.11.0 published to PyPI via the L-51 ritual: pushed 386ebeb → CI matrix all 9 cells green (ubuntu/macos/windows × 3.11-3.13) → release-check exit 0 (v1.11.0 unclaimed across 4 registries) → tag v1.11.0 → GitHub Release → Publish-to-PyPI workflow success (Trusted Publishing) → verified fresh (uvx --refresh --from clauderizer==1.11.0 → clauderizer 1.11.0; PyPI index latest 1.11.0). Docs: setup_guide pin recipe, CROSS-HOST + README, CHANGELOG 1.11.0. Cascades resolved (scaffold, mcp-server — additive). Suite 907 passed, 5 skipped.
 ```
 
 ## Corrections Log
