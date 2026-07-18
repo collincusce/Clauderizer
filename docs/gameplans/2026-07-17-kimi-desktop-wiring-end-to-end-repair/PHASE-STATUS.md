@@ -8,7 +8,7 @@
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | --repo / CLAUDERIZER_REPO repo decoupling in clauderizer-mcp | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Windows-native command composition (clauderizer-mcp.exe) | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Windows-native command composition (clauderizer-mcp.exe) | ✅ COMPLETE | 2026-07-17 | 2026-07-17 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Self-healing registration on every entry point | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Doctor MCP initialize-handshake smoke-test | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | WSL-hosted-repo UNC guidance instead of dead registration | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
@@ -21,6 +21,13 @@
 ```
 repo-override-surface: clauderizer-mcp `--repo <path>` and `$CLAUDERIZER_REPO` both resolve the served repo; precedence --repo > env > cwd. Impl: ops.repo_ctx() reads $CLAUDERIZER_REPO (src/clauderizer/ops.py:35), mcp_server._parse_repo + main() export the flag into env (src/clauderizer/mcp_server.py). Non-clauderized override raises RuntimeError naming CLAUDERIZER_REPO + `clauderize init`.
 test-baseline-after-p0: 847 passed, 5 skipped (was 840). New file tests/test_repo_override.py (7 tests). End-to-end drive: from /tmp, CLAUDERIZER_REPO=/home/ccusce/Clauderizer → repo_ctx resolves root correctly, exit 0.
+```
+
+### Phase 1 Outputs
+
+```
+windows-exe-composition: kimidesktop.server_entry now returns (dict|None, warnings). Windows host (win32 OR in_wsl+windows_side) probes _WIN_EXE_SUBPATHS = pipx/venvs/clauderizer/Scripts + .local/bin (the latter doubles as uv tool bin) for clauderizer-mcp.exe. From WSL: _windows_profile_from_cfg derives (mnt_base,/mnt/c/Users/<user>; win_base, <DRIVE>:\Users\<user>) from the cfg path (drive = users_dir.parts[-2]); registers translated C:\ command. win32-native falls back to which(). No .exe → entry None, status 'unregistrable', guide dropped, NEVER bare uvx. Non-Windows uvx path unchanged. wire() gained exists= inject + 'unregistrable' status; init.py routes failed|unregistrable → guide.
+real-machine-verification: Read-only compose against the live env (WSL_DISTRO_NAME=Ubuntu): detect_config → /mnt/c/Users/rafaj/AppData/Roaming/kimi-desktop/.../mcp.json; server_entry → {"command":"C:\\Users\\rafaj\\pipx\\venvs\\clauderizer\\Scripts\\clauderizer-mcp.exe","args":[]}, zero warnings — byte-identical to the user's verified-good hand-fixed entry. Real exe present at /mnt/c/Users/rafaj/pipx/venvs/clauderizer/Scripts/clauderizer-mcp.exe (+ .local/bin symlink). Suite 847→852 passed, 5 skipped.
 ```
 
 ## Corrections Log

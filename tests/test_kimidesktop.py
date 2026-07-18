@@ -55,19 +55,83 @@ def test_wire_not_detected_when_app_absent(tmp_path):
     assert res["status"] == "not_detected" and res["path"] is None
 
 
-def test_wsl_windows_side_writes_bare_uvx_repo_agnostic(tmp_path):
-    # repo in WSL, app on Windows: the command runs on Windows, so a WSL-absolute
-    # path would be wrong — write a bare 'uvx' (repo-agnostic, no cd) + a loud warning.
-    users = tmp_path / "mnt-c-Users"
-    cfg = (users / "me" / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+# --- D-055 Phase 1: Windows-native command composition (clauderizer-mcp.exe) -----
+# A Windows desktop host (native win32, or WSL init detecting a /mnt/c Windows-side
+# config) must register the ABSOLUTE path to a Windows-native clauderizer-mcp.exe —
+# never a bare 'uvx' (uvx.exe is not bundled and can never spawn there).
+
+def test_wsl_windows_side_registers_translated_exe(tmp_path):
+    # repo in WSL, app on Windows: probe the /mnt/c mirror for the exe, register the
+    # translated C:\ spelling (repo-agnostic, no cd). Never a WSL path, never bare uvx.
+    users = tmp_path / "mnt" / "c" / "Users"
+    cfg = (users / "rafaj" / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    _make_home(users, cfg)
+    exe = users / "rafaj" / "pipx" / "venvs" / "clauderizer" / "Scripts" / "clauderizer-mcp.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("", encoding="utf-8")                        # the /mnt/c mirror of the exe
+    res = kd.wire(home=tmp_path / "linuxhome", platform="linux",
+                  environ={"WSL_DISTRO_NAME": "Ubuntu"}, in_wsl=True, users_dir=users,
+                  which=lambda n: "/home/me/.local/bin/uvx")     # WSL uvx must NOT be used
+    assert res["status"] == "wired" and res["windows_side"] is True
+    entry = json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]["clauderizer"]
+    assert entry == {"command": r"C:\Users\rafaj\pipx\venvs\clauderizer\Scripts\clauderizer-mcp.exe",
+                     "args": []}
+
+
+def test_wsl_windows_side_unregistrable_without_exe(tmp_path):
+    # No clauderizer-mcp.exe on the Windows side → unregistrable (caller drops the
+    # guide); the config is NOT touched, and NO bare uvx is ever written.
+    users = tmp_path / "mnt" / "c" / "Users"
+    cfg = (users / "rafaj" / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
     _make_home(users, cfg)
     res = kd.wire(home=tmp_path / "linuxhome", platform="linux",
                   environ={"WSL_DISTRO_NAME": "Ubuntu"}, in_wsl=True, users_dir=users,
-                  which=lambda n: "/home/me/.local/bin/uvx")   # WSL uvx — must NOT be used
-    assert res["status"] == "wired" and res["path"] == cfg      # picked the Windows-side config
+                  which=lambda n: "/home/me/.local/bin/uvx")
+    assert res["status"] == "unregistrable" and res["entry"] is None
+    assert res["windows_side"] is True
+    assert "clauderizer" not in json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]
+    assert any("clauderizer-mcp.exe" in w for w in res["warnings"])
+    assert not any("uvx" in w for w in res["warnings"])         # never suggests bare uvx for Windows
+
+
+def test_win32_native_registers_exe(tmp_path):
+    home = tmp_path / "winhome"
+    cfg = (home / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    _make_home(home, cfg)
+    exe = home / "pipx" / "venvs" / "clauderizer" / "Scripts" / "clauderizer-mcp.exe"
+    exe.parent.mkdir(parents=True)
+    exe.write_text("", encoding="utf-8")
+    res = kd.wire(home=home, platform="win32",
+                  environ={"APPDATA": str(home / "AppData" / "Roaming")},
+                  in_wsl=False, which=lambda n: None)
+    assert res["status"] == "wired"
     entry = json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]["clauderizer"]
-    assert entry == {"command": "uvx", "args": ["--from", "clauderizer[mcp]", "clauderizer-mcp"]}
-    assert any("Windows PATH" in w for w in res["warnings"])
+    assert entry == {"command": str(exe), "args": []}           # native: stat path == command
+
+
+def test_win32_native_falls_back_to_which(tmp_path):
+    # No exe in the probed per-user dirs, but one is on PATH / in the uv tool dir.
+    home = tmp_path / "winhome"
+    cfg = (home / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    _make_home(home, cfg)
+    res = kd.wire(home=home, platform="win32",
+                  environ={"APPDATA": str(home / "AppData" / "Roaming")}, in_wsl=False,
+                  which=lambda n: r"C:\tools\clauderizer-mcp.exe" if "clauderizer-mcp" in n else None)
+    assert res["status"] == "wired"
+    entry = json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]["clauderizer"]
+    assert entry == {"command": r"C:\tools\clauderizer-mcp.exe", "args": []}
+
+
+def test_win32_native_unregistrable_without_exe(tmp_path):
+    home = tmp_path / "winhome"
+    cfg = (home / "AppData" / "Roaming").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
+    _make_home(home, cfg)
+    res = kd.wire(home=home, platform="win32",
+                  environ={"APPDATA": str(home / "AppData" / "Roaming")},
+                  in_wsl=False, which=lambda n: None)
+    assert res["status"] == "unregistrable" and res["entry"] is None
+    assert "clauderizer" not in json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]
+    assert any("clauderizer-mcp.exe" in w for w in res["warnings"])
 
 
 def test_wire_warns_when_uvx_missing(tmp_path):
@@ -105,7 +169,8 @@ def test_merge_is_idempotent(tmp_path):
     home = tmp_path / "home"
     cfg = (home / ".config").joinpath(*kd.DAIMON_SUFFIX, kd.MCP_JSON)
     _make_home(home, cfg)
-    entry, _ = kd.server_entry(cfg, in_wsl=False, which=lambda n: "/usr/bin/uvx")
+    entry, _ = kd.server_entry(cfg, in_wsl=False, platform="linux",
+                               which=lambda n: "/usr/bin/uvx")
     _, first = kd.merge_entry(cfg, entry)
     _, second = kd.merge_entry(cfg, entry)
     assert first is True and second is False                     # second run = no write
@@ -126,6 +191,12 @@ def _detected(monkeypatch, cfg):
     cfg.parent.mkdir(parents=True, exist_ok=True)
     cfg.write_text('{"mcpServers": {}}', encoding="utf-8")
     monkeypatch.setattr(kd, "detect_config", lambda **kw: cfg)
+    # Deterministic composition regardless of the CI host OS: init() calls wire()
+    # with the real platform, so pin server_entry here (per-platform composition is
+    # unit-tested separately). Keeps these init/doctor/uninstall plumbing tests green
+    # on the Windows CI leg (L-23) where no clauderizer-mcp.exe exists.
+    monkeypatch.setattr(kd, "server_entry",
+                        lambda *a, **k: ({"command": "clauderizer-mcp", "args": []}, []))
 
 
 def test_init_autowrites_desktop_when_detected(empty_python_repo, monkeypatch, tmp_path):
@@ -142,6 +213,20 @@ def test_init_is_silent_noop_when_desktop_absent(empty_python_repo, monkeypatch)
     init(empty_python_repo, spawn_test=False)                    # no crash
     # no guide littered into a repo whose user doesn't have the app
     assert not (empty_python_repo / ".clauderizer" / "kimi-desktop-mcp-setup.md").exists()
+
+
+def test_init_drops_guide_on_unregistrable(empty_python_repo, monkeypatch):
+    # App detected on a Windows host but no clauderizer-mcp.exe → init drops the
+    # setup guide (agent can read its way out) instead of a dead/bare-uvx entry.
+    from clauderizer.scaffold.init import init
+    monkeypatch.setattr(kd, "wire", lambda **kw: {
+        "status": "unregistrable",
+        "path": "/mnt/c/Users/rafaj/AppData/Roaming/.../mcp.json",
+        "entry": None, "windows_side": True,
+        "warnings": ["no clauderizer-mcp.exe found for the Windows desktop"]})
+    init(empty_python_repo, spawn_test=False)
+    guide = empty_python_repo / ".clauderizer" / "kimi-desktop-mcp-setup.md"
+    assert guide.is_file()
 
 
 def test_uninstall_removes_desktop_registration(empty_python_repo, monkeypatch, tmp_path):

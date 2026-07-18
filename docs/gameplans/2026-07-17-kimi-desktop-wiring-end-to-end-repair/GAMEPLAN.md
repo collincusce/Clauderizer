@@ -59,11 +59,11 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] server_entry probes for clauderizer-mcp.exe in %USERPROFILE%\pipx\venvs\clauderizer\Scripts, %USERPROFILE%\.local\bin, and the uv tool dir; registers the absolute path with args:[]
-- [ ] From WSL detecting a /mnt/c Windows-side config, probes the /mnt/c mirror and registers the translated C:\ path (user derived from the config path)
-- [ ] No Windows topology composes a bare `uvx` or a wsl.exe-through-WSL command for the repo-agnostic entry
-- [ ] When no .exe is found, writes a loud warning + guide (never a silent broken entry); native macOS/Linux path is unchanged
-- [ ] New/updated tests assert the composed entry per topology (win32-native, WSL->Windows, no-exe fallback, native); full suite green
+- [x] server_entry probes for clauderizer-mcp.exe in %USERPROFILE%\pipx\venvs\clauderizer\Scripts, %USERPROFILE%\.local\bin, and the uv tool dir; registers the absolute path with args:[]
+- [x] From WSL detecting a /mnt/c Windows-side config, probes the /mnt/c mirror and registers the translated C:\ path (user derived from the config path)
+- [x] No Windows topology composes a bare `uvx` or a wsl.exe-through-WSL command for the repo-agnostic entry
+- [x] When no .exe is found, writes a loud warning + guide (never a silent broken entry); native macOS/Linux path is unchanged
+- [x] New/updated tests assert the composed entry per topology (win32-native, WSL->Windows, no-exe fallback, native); full suite green
 
 ### Phase 2: Self-healing registration on every entry point
 

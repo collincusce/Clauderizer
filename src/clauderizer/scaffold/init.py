@@ -429,7 +429,10 @@ def init(
                 "it cannot spawn the MCP server or shell with a UNC (\\\\wsl.localhost) cwd. "
                 "Put the repo on the Windows filesystem, or use Kimi Code CLI in WSL. "
                 "See .clauderizer/kimi-desktop-mcp-setup.md")
-    elif desk["status"] == "failed":
+    elif desk["status"] in ("failed", "unregistrable"):
+        # Detected but no launchable command (no clauderizer-mcp.exe on a Windows
+        # host, or the config was unwritable): drop the guide so the agent can read
+        # its way to a working setup — never a dead/bare-uvx entry (D-055).
         guide = root / ".clauderizer" / "kimi-desktop-mcp-setup.md"
         report.note("kimi-desktop guide",
                     guide, _rewrite_if_diff(guide, kimidesktop.setup_guide()))

@@ -119,30 +119,107 @@ def _is_windows_side(cfg: Path, users_dir: Path) -> bool:
 
 _ARGS = ["--from", "clauderizer[mcp]", "clauderizer-mcp"]
 
+# The Windows-native console script the daimon runtime must launch. kimi-desktop
+# bundles uv.exe but NOT uvx.exe (verified 2026-07-17), so a bare ``uvx`` can never
+# spawn on Windows — the absolute path to this .exe is the verified-good command
+# (MCP initialize returns serverInfo clauderizer). D-055.
+_WIN_EXE = "clauderizer-mcp.exe"
+
+# Per-user roots under the Windows profile that hold clauderizer-mcp.exe, in
+# priority order. ``.local\\bin`` doubles as uv's tool-bin dir (uv installs tool
+# launchers there on every platform), so these two cover pipx AND uv tool installs.
+_WIN_EXE_SUBPATHS = (
+    ("pipx", "venvs", "clauderizer", "Scripts"),
+    (".local", "bin"),
+)
+
+
+def _windows_profile_from_cfg(cfg: Path, users_dir: Path) -> tuple[Path, str] | None:
+    """From a WSL-mounted Windows config path, derive ``(mnt_base, win_base)``:
+    the ``/mnt/<drive>/Users/<user>`` directory THIS WSL host can stat, and the
+    ``<DRIVE>:\\Users\\<user>`` spelling Windows will actually launch. ``None`` when
+    ``cfg`` is not under the mounted Users dir."""
+    try:
+        rel = cfg.relative_to(users_dir)          # <user>/AppData/Roaming/...
+    except ValueError:
+        return None
+    if not rel.parts:
+        return None
+    user = rel.parts[0]
+    mnt_base = users_dir / user                   # /mnt/c/Users/<user>
+    # users_dir ends in .../<drive>/Users → the drive is the segment before 'Users'
+    drive = users_dir.parts[-2] if len(users_dir.parts) >= 2 else "c"
+    win_base = f"{drive.upper()}:\\Users\\{user}"
+    return mnt_base, win_base
+
+
+def _win_exe_candidates(*, cfg: Path, platform: str, home: Path,
+                        users_dir: Path) -> list[tuple[Path, str]]:
+    """``(stat_path, command_str)`` candidates for a Windows-native
+    clauderizer-mcp.exe, in priority order. ``stat_path`` is what the CURRENT host
+    can check (a ``/mnt/c`` mirror from WSL, or a native Windows path); ``command_str``
+    is the Windows-spelled absolute path to register."""
+    out: list[tuple[Path, str]] = []
+    if platform == "win32":                       # native Windows: stat == command
+        for sub in _WIN_EXE_SUBPATHS:
+            p = home.joinpath(*sub, _WIN_EXE)
+            out.append((p, str(p)))
+        return out
+    prof = _windows_profile_from_cfg(cfg, users_dir)   # WSL → Windows-side config
+    if prof is None:
+        return out
+    mnt_base, win_base = prof
+    for sub in _WIN_EXE_SUBPATHS:
+        stat_path = mnt_base.joinpath(*sub, _WIN_EXE)
+        command = win_base + "\\" + "\\".join(sub) + "\\" + _WIN_EXE
+        out.append((stat_path, command))
+    return out
+
 
 def server_entry(cfg: Path, *, in_wsl: bool, windows_side: bool | None = None,
-                 which: Callable[[str], str | None] = shutil.which) -> tuple[dict, list[str]]:
-    """The ``mcpServers['clauderizer']`` entry + any warnings.
+                 platform: str | None = None, home: Path | None = None,
+                 users_dir: Path = WSL_USERS_DIR,
+                 exists: Callable[[Path], bool] | None = None,
+                 which: Callable[[str], str | None] = shutil.which,
+                 ) -> tuple[dict | None, list[str]]:
+    """The ``mcpServers['clauderizer']`` entry (or ``None``) + any warnings.
 
-    The entry is **repo-agnostic** on purpose: the daimon config is one per-user
-    file shared by every repo the desktop app opens, so the server must discover
-    the *open* repo from the app's working directory rather than be pinned to one
-    (this is the user-verified working shape). So it is always
-    ``uvx --from clauderizer[mcp] clauderizer-mcp`` — never a ``cd <repo>`` wrapper.
+    The entry is **repo-agnostic** on purpose (L-58): the daimon config is one
+    per-user file shared by every repo the desktop app opens, so the server must
+    discover the *open* repo from the app's working directory — never a ``cd <repo>``
+    wrapper. Composition is host-topology-aware (D-055):
 
-    - **same-OS** (init and app on one OS): resolve ``uvx`` to an absolute path when
-      possible (a desktop runtime's PATH is often thin);
-    - **WSL init → Windows-side config**: the command runs on *Windows*, so a
-      WSL-absolute path would be wrong — write a bare ``uvx`` and warn that uvx.exe
-      must be on the Windows PATH.
+    - **Windows host** (init on win32, or WSL init detecting a ``/mnt/c`` Windows-side
+      config): the command runs on Windows, where a bare ``uvx`` can never spawn
+      (uv.exe is bundled, uvx.exe is not). Probe for a Windows-native
+      ``clauderizer-mcp.exe`` (pipx Scripts, ``.local\\bin`` / uv tool dir) and register
+      its **absolute** path with ``args: []``. From WSL, probe the ``/mnt/c`` mirror
+      and register the translated ``C:\\`` spelling. If none is found, return
+      ``(None, warning)`` — the caller drops the setup guide; we NEVER write a bare
+      ``uvx`` for Windows.
+    - **same-OS macOS/Linux**: resolve ``uvx`` to an absolute path when possible
+      (a desktop runtime's PATH is often thin), else a bare ``uvx``.
     """
+    platform = platform or sys.platform
+    home = home or Path.home()
+    exists = exists or (lambda p: Path(p).is_file())
     if windows_side is None:
-        windows_side = str(cfg).startswith("/mnt/")
-    if in_wsl and windows_side:
-        return ({"command": "uvx", "args": list(_ARGS)},
-                ["the Kimi desktop runs on Windows — wrote a bare 'uvx'; ensure uvx.exe "
-                 "is on the Windows PATH, and open the repo in the app (the server reads "
-                 "the open repo from its working directory)"])
+        windows_side = _is_windows_side(cfg, users_dir)
+    windows_host = platform == "win32" or (in_wsl and windows_side)
+    if windows_host:
+        for stat_path, command in _win_exe_candidates(
+                cfg=cfg, platform=platform, home=home, users_dir=users_dir):
+            if exists(stat_path):
+                return ({"command": command, "args": []}, [])
+        if platform == "win32":                   # last resort: PATH / uv tool dir
+            found = which(_WIN_EXE) or which("clauderizer-mcp")
+            if found:
+                return ({"command": found, "args": []}, [])
+        return (None,
+                [f"no {_WIN_EXE} found for the Windows desktop (probed pipx venv "
+                 "Scripts, .local\\bin / uv tool dir) — install clauderizer on Windows "
+                 "(e.g. `pipx install \"clauderizer[mcp]\"`), then re-run `clauderize init`. "
+                 "Wrote the setup guide instead of a command that cannot spawn"])
     uvx = which("uvx")
     if uvx is None:
         return ({"command": "uvx", "args": list(_ARGS)},
@@ -200,11 +277,15 @@ def remove_entry(cfg: Path) -> bool:
 def wire(*, home: Path | None = None, platform: str | None = None,
          environ: dict | None = None, in_wsl: bool | None = None,
          users_dir: Path = WSL_USERS_DIR,
+         exists: Callable[[Path], bool] | None = None,
          which: Callable[[str], str | None] = shutil.which) -> dict:
     """Detect the daimon host and, if present, auto-write the clauderizer server
-    (repo-agnostic). Returns ``{"status": "wired"|"not_detected"|"failed", "path",
-    "entry", "changed", "warnings"}``. Never raises on a detected-but-unwritable
-    config — reports it as a warning so doctor/init surface it loudly, not die."""
+    (repo-agnostic). Returns ``{"status": "wired"|"not_detected"|"unregistrable"|
+    "failed", "path", "entry", "changed", "windows_side", "warnings"}``. Never raises
+    on a detected-but-unwritable config — reports it as a warning so doctor/init
+    surface it loudly, not die. ``unregistrable`` = the app is installed but no
+    launchable command could be composed (e.g. Windows host with no
+    clauderizer-mcp.exe); the caller drops the setup guide instead of a dead entry."""
     environ = environ if environ is not None else os.environ
     if in_wsl is None:
         in_wsl = bool(environ.get("WSL_DISTRO_NAME"))
@@ -213,7 +294,12 @@ def wire(*, home: Path | None = None, platform: str | None = None,
     if cfg is None:
         return {"status": "not_detected", "path": None, "entry": None, "warnings": []}
     windows_side = in_wsl and _is_windows_side(cfg, users_dir)
-    entry, warnings = server_entry(cfg, in_wsl=in_wsl, windows_side=windows_side, which=which)
+    entry, warnings = server_entry(cfg, in_wsl=in_wsl, windows_side=windows_side,
+                                   platform=platform, home=home, users_dir=users_dir,
+                                   exists=exists, which=which)
+    if entry is None:
+        return {"status": "unregistrable", "path": cfg, "entry": None,
+                "windows_side": windows_side, "warnings": warnings}
     try:
         _, changed = merge_entry(cfg, entry)
     except OSError as exc:
