@@ -1,7 +1,7 @@
 # phasekeep-contract-asks Gameplan
 
 > Created: 2026-07-19
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -59,7 +59,7 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] clauderize release-check exits 0 at version 1.12.0 before tagging; GitHub release published; PyPI serves 1.12.0
-- [ ] A fresh install outside the dev venv (uvx --from clauderizer or pip) reports clauderize --version 1.12.0 on this host
-- [ ] Scripted write-then-read against a scratch repo (released engine) shows the revision bump and schema_version on every output
-- [ ] PhaseKeep O-03 poll benchmark recorded against the released revision artifact: 10 projects at 1s intervals, steady-state poller CPU under 2% of one core, p95 read latency under 50ms native
+- [x] clauderize release-check exits 0 at version 1.12.0 before tagging; GitHub release published; PyPI serves 1.12.0
+- [x] A fresh install outside the dev venv (uvx --from clauderizer or pip) reports clauderize --version 1.12.0 on this host
+- [x] Scripted write-then-read against a scratch repo (released engine) shows the revision bump and schema_version on every output
+- [x] PhaseKeep O-03 poll benchmark recorded against the released revision artifact: 10 projects at 1s intervals, steady-state poller CPU under 2% of one core, p95 read latency under 50ms native
