@@ -42,12 +42,12 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Every ops-registry result and CLI --json output carries schema_version (contract 1.0), and ops --list --json emits the machine-readable op enumeration
-- [ ] Monotonic revision exists: .clauderizer/revision.json (epoch + counter, atomic temp+rename) bumped by every memory write including cascade-report writes and focus flips, surfaced in status --json; a write-then-read test proves the bump
-- [ ] New read ops registered in REGISTRY + TOOL_NAMES with parity tests green: cz_list_open_items, cz_list_decisions, cz_list_invariants, cz_list_findings, cz_list_lessons, cz_list_corrections, cz_list_amendments, cz_phase_detail, cz_list_cascade_reports, cz_docs_index, cz_doc, cz_assignments; cz_graph_query emits structured depends_on pins alongside the string form
-- [ ] Assignment provisional shape lands (revisitable at PhaseKeep m3): gameplan-level Assignee blockquote header, per-phase Assigned line, manager role in config; cz_assign write op + assignment read surfaces
-- [ ] Init marker-block regression covered: tests assert user content after the managed block survives re-init and half-present markers do not destroy content; any found bug fixed
-- [ ] Full pytest suite green including the new tests
+- [x] Every ops-registry result and CLI --json output carries schema_version (contract 1.0), and ops --list --json emits the machine-readable op enumeration
+- [x] Monotonic revision exists: .clauderizer/revision.json (epoch + counter, atomic temp+rename) bumped by every memory write including cascade-report writes and focus flips, surfaced in status --json; a write-then-read test proves the bump
+- [x] New read ops registered in REGISTRY + TOOL_NAMES with parity tests green: cz_list_open_items, cz_list_decisions, cz_list_invariants, cz_list_findings, cz_list_lessons, cz_list_corrections, cz_list_amendments, cz_phase_detail, cz_list_cascade_reports, cz_docs_index, cz_doc, cz_assignments; cz_graph_query emits structured depends_on pins alongside the string form
+- [x] Assignment provisional shape lands (revisitable at PhaseKeep m3): gameplan-level Assignee blockquote header, per-phase Assigned line, manager role in config; cz_assign write op + assignment read surfaces
+- [x] Init marker-block regression covered: tests assert user content after the managed block survives re-init and half-present markers do not destroy content; any found bug fixed
+- [x] Full pytest suite green including the new tests
 
 ### Phase 1: Release and Verify
 
