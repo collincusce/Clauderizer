@@ -1,0 +1,70 @@
+{
+  "ok": true,
+  "size": "standard",
+  "host_profile": "generic",
+  "active_gameplan": "2026-07-19-campaign-drive",
+  "phases": [
+    {
+      "number": "0",
+      "name": "Concept",
+      "status": "ready"
+    }
+  ],
+  "current_phase": null,
+  "next_phase": {
+    "number": "0",
+    "name": "Concept"
+  },
+  "baseline_tests": "0",
+  "pending_cascades": [],
+  "blockers": [],
+  "drift": [],
+  "open_items": [
+    "O-01"
+  ],
+  "memory": {
+    "active_lessons": 0,
+    "obsolete_lessons": 0,
+    "promoted_lessons": 0,
+    "project_lessons": 0,
+    "active_skills": 0,
+    "handoff_est_tokens": 348,
+    "warning": null
+  },
+  "focus": "2026-07-19-campaign-drive",
+  "portfolio": [
+    {
+      "id": "2026-07-19-campaign-drive",
+      "kind": "campaign",
+      "phase_label": "stage",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 1,
+      "phase": {
+        "number": "0",
+        "name": "Concept",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": true,
+      "assignee": "claude@native"
+    }
+  ],
+  "revision": {
+    "schema_version": "1.0",
+    "epoch": "7df46dbe705f8555",
+    "revision": 6
+  },
+  "pending_proposals": 1,
+  "kind": "campaign",
+  "deliverables": {
+    "total": 1,
+    "done": 0,
+    "done_label": "shipped"
+  },
+  "summary": "Gameplan 2026-07-19-campaign-drive: next ready stage 0/1 \u2014 \"Concept\".",
+  "next_action": "cz_next_phase_context, then cz_preflight.",
+  "engine_stale": false,
+  "schema_version": "1.0"
+}

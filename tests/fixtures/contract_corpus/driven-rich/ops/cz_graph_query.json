@@ -1,0 +1,237 @@
+{
+  "ok": true,
+  "entities": [
+    {
+      "id": "ext.clauderizer-engine",
+      "type": "external-service",
+      "version": "1.12.0",
+      "status": "active",
+      "depends_on": [],
+      "depends_on_pins": [],
+      "path": "/REPO/docs/datasources/clauderizer-engine.md"
+    },
+    {
+      "id": "gameplan.2026-07-19-m1-dashboard",
+      "type": "gameplan",
+      "version": null,
+      "status": null,
+      "depends_on": [
+        "subsys.contract-client",
+        "ext.clauderizer-engine"
+      ],
+      "depends_on_pins": [
+        {
+          "target": "subsys.contract-client",
+          "constraint": null
+        },
+        {
+          "target": "ext.clauderizer-engine",
+          "constraint": null
+        }
+      ],
+      "path": "/REPO/docs/entities/2026-07-19-m1-dashboard.md"
+    },
+    {
+      "id": "gameplan.2026-07-19-m2-terminal",
+      "type": "gameplan",
+      "version": null,
+      "status": null,
+      "depends_on": [
+        "subsys.server-core",
+        "subsys.frontend"
+      ],
+      "depends_on_pins": [
+        {
+          "target": "subsys.server-core",
+          "constraint": null
+        },
+        {
+          "target": "subsys.frontend",
+          "constraint": null
+        }
+      ],
+      "path": "/REPO/docs/entities/2026-07-19-m2-terminal.md"
+    },
+    {
+      "id": "gameplan.2026-07-19-m3-agent-sessions",
+      "type": "gameplan",
+      "version": null,
+      "status": null,
+      "depends_on": [
+        "subsys.pty",
+        "subsys.contract-client"
+      ],
+      "depends_on_pins": [
+        {
+          "target": "subsys.pty",
+          "constraint": null
+        },
+        {
+          "target": "subsys.contract-client",
+          "constraint": null
+        }
+      ],
+      "path": "/REPO/docs/entities/2026-07-19-m3-agent-sessions.md"
+    },
+    {
+      "id": "gameplan.2026-07-19-m35-installers",
+      "type": "gameplan",
+      "version": null,
+      "status": null,
+      "depends_on": [
+        "subsys.server-core",
+        "subsys.frontend",
+        "subsys.pty",
+        "subsys.dispatcher"
+      ],
+      "depends_on_pins": [
+        {
+          "target": "subsys.server-core",
+          "constraint": null
+        },
+        {
+          "target": "subsys.frontend",
+          "constraint": null
+        },
+        {
+          "target": "subsys.pty",
+          "constraint": null
+        },
+        {
+          "target": "subsys.dispatcher",
+          "constraint": null
+        }
+      ],
+      "path": "/REPO/docs/entities/2026-07-19-m35-installers.md"
+    },
+    {
+      "id": "gameplan.2026-07-19-m4-announcement",
+      "type": "gameplan",
+      "version": null,
+      "status": null,
+      "depends_on": [
+        "subsys.electron-shell"
+      ],
+      "depends_on_pins": [
+        {
+          "target": "subsys.electron-shell",
+          "constraint": null
+        }
+      ],
+      "path": "/REPO/docs/entities/2026-07-19-m4-announcement.md"
+    },
+    {
+      "id": "subsys.contract-client",
+      "type": "subsystem",
+      "version": null,
+      "status": "in_progress",
+      "depends_on": [
+        "ext.clauderizer-engine"
+      ],
+      "depends_on_pins": [
+        {
+          "target": "ext.clauderizer-engine",
+          "constraint": null
+        }
+      ],
+      "path": "/REPO/docs/subsystems/contract-client.md"
+    },
+    {
+      "id": "subsys.dispatcher",
+      "type": "subsystem",
+      "version": null,
+      "status": "planned",
+      "depends_on": [
+        "subsys.pty",
+        "subsys.contract-client"
+      ],
+      "depends_on_pins": [
+        {
+          "target": "subsys.pty",
+          "constraint": null
+        },
+        {
+          "target": "subsys.contract-client",
+          "constraint": null
+        }
+      ],
+      "path": "/REPO/docs/subsystems/dispatcher.md"
+    },
+    {
+      "id": "subsys.electron-shell",
+      "type": "subsystem",
+      "version": null,
+      "status": "planned",
+      "depends_on": [
+        "subsys.server-core",
+        "subsys.frontend",
+        "subsys.pty"
+      ],
+      "depends_on_pins": [
+        {
+          "target": "subsys.server-core",
+          "constraint": null
+        },
+        {
+          "target": "subsys.frontend",
+          "constraint": null
+        },
+        {
+          "target": "subsys.pty",
+          "constraint": null
+        }
+      ],
+      "path": "/REPO/docs/subsystems/electron-shell.md"
+    },
+    {
+      "id": "subsys.frontend",
+      "type": "subsystem",
+      "version": null,
+      "status": "planned",
+      "depends_on": [
+        "subsys.server-core"
+      ],
+      "depends_on_pins": [
+        {
+          "target": "subsys.server-core",
+          "constraint": null
+        }
+      ],
+      "path": "/REPO/docs/subsystems/frontend.md"
+    },
+    {
+      "id": "subsys.pty",
+      "type": "subsystem",
+      "version": null,
+      "status": "planned",
+      "depends_on": [
+        "subsys.server-core"
+      ],
+      "depends_on_pins": [
+        {
+          "target": "subsys.server-core",
+          "constraint": null
+        }
+      ],
+      "path": "/REPO/docs/subsystems/pty.md"
+    },
+    {
+      "id": "subsys.server-core",
+      "type": "subsystem",
+      "version": null,
+      "status": "planned",
+      "depends_on": [
+        "subsys.contract-client"
+      ],
+      "depends_on_pins": [
+        {
+          "target": "subsys.contract-client",
+          "constraint": null
+        }
+      ],
+      "path": "/REPO/docs/subsystems/server-core.md"
+    }
+  ],
+  "pin_violations": [],
+  "schema_version": "1.0"
+}

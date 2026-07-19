@@ -1,0 +1,13 @@
+{
+  "manager": null,
+  "gameplans": [
+    {
+      "gameplan": "2026-07-19-test-drive",
+      "assignee": "claude@native",
+      "phases": []
+    }
+  ],
+  "ok": true,
+  "summary": "manager=(none); 1 gameplan(s)",
+  "schema_version": "1.0"
+}

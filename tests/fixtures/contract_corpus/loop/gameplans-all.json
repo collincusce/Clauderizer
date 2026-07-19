@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "focus": "2026-07-19-loop-drive",
+  "gameplans": [
+    {
+      "id": "2026-07-19-loop-drive",
+      "kind": "loop",
+      "phase_label": "iteration",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 1,
+      "phase": {
+        "number": "0",
+        "name": "Iterate",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": true,
+      "assignee": null
+    }
+  ],
+  "summary": "1 open gameplan(s), 0 closed; focus = 2026-07-19-loop-drive",
+  "schema_version": "1.0"
+}

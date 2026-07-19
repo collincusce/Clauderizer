@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "gameplans": [
+    {
+      "gameplan": "2026-07-19-campaign-drive",
+      "kind": "campaign",
+      "lifecycle": "planning",
+      "assignee": "claude@native",
+      "phases": [
+        {
+          "number": "0",
+          "name": "Concept",
+          "status": "ready",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-0-HANDOFF.md",
+          "goal": "_(one sentence.)_",
+          "assigned": "claude@native",
+          "exit_criteria": []
+        }
+      ]
+    }
+  ],
+  "summary": "1 gameplan(s)",
+  "schema_version": "1.0"
+}

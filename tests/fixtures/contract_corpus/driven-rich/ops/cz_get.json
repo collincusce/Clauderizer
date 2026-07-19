@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "id": "D-001",
+  "title": "Six-gameplan portfolio mapped to the proposal milestones",
+  "body": "**Context**: docs/phasekeep-proposal.md 1.0 (section 17) sequences PhaseKeep as milestones 0, 1, 2, 3, 3.5, 4, strictly value-ordered, no calendar dates. The repo needs a structure agents can execute autonomously session by session with durable memory.\n**Decision**: One driven gameplan per milestone: 2026-07-19-m0-read-contract, m1-dashboard, m2-terminal, m3-agent-sessions, m35-installers, m4-announcement. Executed strictly in that order; focus advances to the next gameplan when the previous one closes; cross-gameplan artifacts are declared with cz_consumes so cascade walks between them.\n**Consequences**: Each milestone gets its own closeable scope and post-mortem; a pause after any gameplan strands nothing (proposal 15.6). Later gameplans are amended in place when earlier execution surfaces changes, rather than re-planned from scratch.\n**Evidence**: docs/phasekeep-proposal.md section 17 (roadmap), section 15.6 (phase gating as bus-factor mitigation)\n**Status**: active (2026-07-19)",
+  "status": "active",
+  "anchor": "docs/DECISIONS.md:13",
+  "kind": "decision",
+  "schema_version": "1.0"
+}

@@ -1,0 +1,49 @@
+{
+  "ok": true,
+  "docs": [
+    {
+      "name": "ARCHITECTURE.md",
+      "title": "Architecture",
+      "bytes": 350,
+      "mtime": 1784454429
+    },
+    {
+      "name": "DECISIONS.md",
+      "title": "Decisions",
+      "bytes": 479,
+      "mtime": 1784454429
+    },
+    {
+      "name": "HARDENING.md",
+      "title": "Hardening",
+      "bytes": 247,
+      "mtime": 1784454429
+    },
+    {
+      "name": "INVARIANTS.md",
+      "title": "Invariants",
+      "bytes": 142,
+      "mtime": 1784454429
+    },
+    {
+      "name": "TESTING.md",
+      "title": "Testing",
+      "bytes": 207,
+      "mtime": 1784454429
+    },
+    {
+      "name": "VISION.md",
+      "title": "Vision",
+      "bytes": 192,
+      "mtime": 1784454429
+    },
+    {
+      "name": "gameplans/GAMEPLAN-PROCEDURE.md",
+      "title": "Gameplan Procedure",
+      "bytes": 70282,
+      "mtime": 1784454429
+    }
+  ],
+  "summary": "7 doc(s)",
+  "schema_version": "1.0"
+}

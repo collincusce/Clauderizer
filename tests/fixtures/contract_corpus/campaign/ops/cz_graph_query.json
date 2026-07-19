@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "entities": [
+    {
+      "id": "deliv.flagship-film",
+      "type": "deliverable",
+      "version": null,
+      "status": "in_production",
+      "depends_on": [],
+      "depends_on_pins": [],
+      "path": "/REPO/docs/entities/flagship-film.md"
+    }
+  ],
+  "pin_violations": [],
+  "schema_version": "1.0"
+}

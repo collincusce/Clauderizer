@@ -1,0 +1,157 @@
+{
+  "ok": true,
+  "findings": [
+    {
+      "id": "H-01",
+      "title": "Scope creep toward orchestration (self-inflicted, highest risk)",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-02",
+      "title": "Localhost server that spawns shells is an RCE surface (DNS rebinding, CSRF, foreign origins)",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-03",
+      "title": "WSL2 9p boundary silently swallows inotify events",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-04",
+      "title": "node-pty native builds: the install-failure generator, doubled by the Electron ABI",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-05",
+      "title": "Secrets transit PTY streams (credentials, tokens, keys on screen)",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-06",
+      "title": "Contract drift between the UI and engine repos",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-07",
+      "title": "ConPTY quirks on native Windows terminals",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-08",
+      "title": "Unattended dispatched sessions run with full ambient authority",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-09",
+      "title": "Torn or mid-write reads while agents mutate memory",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-10",
+      "title": "npx version caching distorts bug triage",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-11",
+      "title": "Signing, notarization, and updater pipeline rot",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-12",
+      "title": "Single-maintainer bus factor and attention competition",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-13",
+      "title": "Two instances supervising one tmux session namespace",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-14",
+      "title": "Electron maintenance treadmill",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "H-15",
+      "title": "Session reuse approaches the compaction cliff by design",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    }
+  ],
+  "summary": "15 finding(s)",
+  "schema_version": "1.0"
+}

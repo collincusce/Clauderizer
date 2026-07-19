@@ -1,0 +1,344 @@
+{
+  "ok": true,
+  "reports": [
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "report": "2026-07-19-ext.clauderizer-engine-01.md",
+      "trigger": "ext.clauderizer-engine version 1.11.0 -> 1.12.0 (contract release: schema_version 1.0, revision signal, 14 new ops)",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m1-dashboard",
+          "kind": "direct",
+          "status": "None",
+          "needs_review": false,
+          "verdict": "no change needed — 1.12.0 is the planned arrival of m1's data dependencies (listing verbs, revision signal, schema_version); m1 plan text already assumes them post-m0"
+        },
+        {
+          "entity": "subsys.contract-client",
+          "kind": "direct",
+          "status": "in_progress",
+          "needs_review": false,
+          "verdict": "no change needed to plan — Phase 3 builds it against exactly this released surface; the version.js minimum gate will pin >=1.12.0 when the client lands"
+        },
+        {
+          "entity": "gameplan.2026-07-19-m2-terminal",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive; revision signal now real for the live-populate demo"
+        },
+        {
+          "entity": "gameplan.2026-07-19-m3-agent-sessions",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — assignment field now exists in the provisional O-02 shape m3 expects to render/edit"
+        },
+        {
+          "entity": "gameplan.2026-07-19-m35-installers",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive"
+        },
+        {
+          "entity": "gameplan.2026-07-19-m4-announcement",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive"
+        },
+        {
+          "entity": "subsys.dispatcher",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive"
+        },
+        {
+          "entity": "subsys.electron-shell",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive"
+        },
+        {
+          "entity": "subsys.frontend",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive"
+        },
+        {
+          "entity": "subsys.pty",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive"
+        },
+        {
+          "entity": "subsys.server-core",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive"
+        }
+      ],
+      "updates_applied": "ext.clauderizer-engine frontmatter version -> 1.12.0 (the tracked capture of the consumed release); no dependent plan text needed edits — the release IS the dependency every dependent was scheduled against",
+      "updates_deferred": null
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "report": "2026-07-19-subsys.contract-client-01.md",
+      "trigger": "subsys.contract-client status planned -> in_progress",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m1-dashboard",
+          "kind": "direct",
+          "status": "None",
+          "needs_review": false,
+          "verdict": "no change needed — forward progression only; m1 consumes the finished contract client and its own start already gates on m0 Phase 1's portfolio reconciliation pass"
+        },
+        {
+          "entity": "gameplan.2026-07-19-m3-agent-sessions",
+          "kind": "direct",
+          "status": "None",
+          "needs_review": false,
+          "verdict": "no change needed — same forward progression; m3 consumes released contract behavior, unaffected by first helper code landing"
+        },
+        {
+          "entity": "subsys.dispatcher",
+          "kind": "direct",
+          "status": "planned",
+          "needs_review": false,
+          "verdict": "no change needed — depends on the contract client's eventual read surface, which is unchanged by version.js landing"
+        },
+        {
+          "entity": "subsys.server-core",
+          "kind": "direct",
+          "status": "planned",
+          "needs_review": false,
+          "verdict": "no change needed — will consume the contract client module when m1 builds it; no interface promised yet, none broken"
+        },
+        {
+          "entity": "gameplan.2026-07-19-m2-terminal",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive flag only, upstream verdicts are all no-change"
+        },
+        {
+          "entity": "gameplan.2026-07-19-m35-installers",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive flag only"
+        },
+        {
+          "entity": "gameplan.2026-07-19-m4-announcement",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive flag only"
+        },
+        {
+          "entity": "subsys.electron-shell",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive flag only"
+        },
+        {
+          "entity": "subsys.frontend",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive flag only"
+        },
+        {
+          "entity": "subsys.pty",
+          "kind": "transitive",
+          "status": null,
+          "needs_review": false,
+          "verdict": "flagged via upstream; checked: no change needed — transitive flag only"
+        }
+      ],
+      "updates_applied": "none — planned -> in_progress is the expected forward progression (first contract-client code, src/contract/version.js, landed in Phase 0); no dependent interface or plan text required edits",
+      "updates_deferred": null
+    },
+    {
+      "gameplan": "2026-07-19-m1-dashboard",
+      "report": "2026-07-19-ext.clauderizer-engine-01.md",
+      "trigger": "ext.clauderizer-engine version 1.11.0 -> 1.12.0 (contract release: schema_version 1.0, revision signal, 14 new ops) (cross-gameplan)",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m1-dashboard",
+          "kind": "direct",
+          "status": null,
+          "needs_review": false,
+          "verdict": "no change needed — 1.12.0 delivers m1's planned data dependencies"
+        }
+      ],
+      "updates_applied": "none — same verdicts as the m0 report copy",
+      "updates_deferred": null
+    },
+    {
+      "gameplan": "2026-07-19-m1-dashboard",
+      "report": "2026-07-19-subsys.contract-client-01.md",
+      "trigger": "subsys.contract-client status planned -> in_progress (cross-gameplan)",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m1-dashboard",
+          "kind": "direct",
+          "status": null,
+          "needs_review": false,
+          "verdict": "no change needed — forward progression of subsys.contract-client (planned -> in_progress, first helper code); m1's plan text unaffected"
+        }
+      ],
+      "updates_applied": "none — same verdicts as the m0 copy of this report; benign status progression",
+      "updates_deferred": null
+    },
+    {
+      "gameplan": "2026-07-19-m2-terminal",
+      "report": "2026-07-19-ext.clauderizer-engine-01.md",
+      "trigger": "ext.clauderizer-engine version 1.11.0 -> 1.12.0 (contract release: schema_version 1.0, revision signal, 14 new ops) (cross-gameplan)",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m2-terminal",
+          "kind": "direct",
+          "status": null,
+          "needs_review": false,
+          "verdict": "no change needed — revision signal (needed by the live-populate demo) now shipped in 1.12.0"
+        }
+      ],
+      "updates_applied": "none — same verdicts as the m0 report copy",
+      "updates_deferred": null
+    },
+    {
+      "gameplan": "2026-07-19-m2-terminal",
+      "report": "2026-07-19-subsys.contract-client-01.md",
+      "trigger": "subsys.contract-client status planned -> in_progress (cross-gameplan)",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m2-terminal",
+          "kind": "direct",
+          "status": null,
+          "needs_review": false,
+          "verdict": "no change needed — benign forward progression of subsys.contract-client (planned -> in_progress)"
+        }
+      ],
+      "updates_applied": "none — same benign status progression as the m0 copy",
+      "updates_deferred": null
+    },
+    {
+      "gameplan": "2026-07-19-m3-agent-sessions",
+      "report": "2026-07-19-ext.clauderizer-engine-01.md",
+      "trigger": "ext.clauderizer-engine version 1.11.0 -> 1.12.0 (contract release: schema_version 1.0, revision signal, 14 new ops) (cross-gameplan)",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m3-agent-sessions",
+          "kind": "direct",
+          "status": null,
+          "needs_review": false,
+          "verdict": "no change needed — the assignment field m3 renders/edits now exists in the O-02 provisional shape"
+        }
+      ],
+      "updates_applied": "none — same verdicts as the m0 report copy",
+      "updates_deferred": null
+    },
+    {
+      "gameplan": "2026-07-19-m3-agent-sessions",
+      "report": "2026-07-19-subsys.contract-client-01.md",
+      "trigger": "subsys.contract-client status planned -> in_progress (cross-gameplan)",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m3-agent-sessions",
+          "kind": "direct",
+          "status": null,
+          "needs_review": false,
+          "verdict": "no change needed — benign forward progression of subsys.contract-client (planned -> in_progress)"
+        }
+      ],
+      "updates_applied": "none — same benign status progression as the m0 copy",
+      "updates_deferred": null
+    },
+    {
+      "gameplan": "2026-07-19-m35-installers",
+      "report": "2026-07-19-ext.clauderizer-engine-01.md",
+      "trigger": "ext.clauderizer-engine version 1.11.0 -> 1.12.0 (contract release: schema_version 1.0, revision signal, 14 new ops) (cross-gameplan)",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m35-installers",
+          "kind": "direct",
+          "status": null,
+          "needs_review": false,
+          "verdict": "no change needed — transitive; note the O-03 wsl.exe-interop benchmark leg lands here with the first Windows-side consumer"
+        }
+      ],
+      "updates_applied": "none — same verdicts as the m0 report copy",
+      "updates_deferred": null
+    },
+    {
+      "gameplan": "2026-07-19-m35-installers",
+      "report": "2026-07-19-subsys.contract-client-01.md",
+      "trigger": "subsys.contract-client status planned -> in_progress (cross-gameplan)",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m35-installers",
+          "kind": "direct",
+          "status": null,
+          "needs_review": false,
+          "verdict": "no change needed — benign forward progression of subsys.contract-client (planned -> in_progress)"
+        }
+      ],
+      "updates_applied": "none — same benign status progression as the m0 copy",
+      "updates_deferred": null
+    },
+    {
+      "gameplan": "2026-07-19-m4-announcement",
+      "report": "2026-07-19-ext.clauderizer-engine-01.md",
+      "trigger": "ext.clauderizer-engine version 1.11.0 -> 1.12.0 (contract release: schema_version 1.0, revision signal, 14 new ops) (cross-gameplan)",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m4-announcement",
+          "kind": "direct",
+          "status": null,
+          "needs_review": false,
+          "verdict": "no change needed — transitive; the announced contract is now the released 1.12.0 surface"
+        }
+      ],
+      "updates_applied": "none — same verdicts as the m0 report copy",
+      "updates_deferred": null
+    },
+    {
+      "gameplan": "2026-07-19-m4-announcement",
+      "report": "2026-07-19-subsys.contract-client-01.md",
+      "trigger": "subsys.contract-client status planned -> in_progress (cross-gameplan)",
+      "pending": false,
+      "dependents": [
+        {
+          "entity": "gameplan.2026-07-19-m4-announcement",
+          "kind": "direct",
+          "status": null,
+          "needs_review": false,
+          "verdict": "no change needed — benign forward progression of subsys.contract-client (planned -> in_progress)"
+        }
+      ],
+      "updates_applied": "none — same benign status progression as the m0 copy",
+      "updates_deferred": null
+    }
+  ],
+  "summary": "12 cascade report(s)",
+  "schema_version": "1.0"
+}

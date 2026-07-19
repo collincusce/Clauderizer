@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "corrections": [
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "C-01",
+      "heading": "Phase 0",
+      "phase": "0",
+      "gameplan_said": "Task tables and the README referenced open items by a global sequence (O-03 through O-08) spanning all six gameplans - e.g. m0 task 0.4 cited O-07 for the license item, m35 task 2.1 cited O-06 for cert procurement.",
+      "actually": "O-NN numbering is per-gameplan: each gameplan's list restarts at O-01. The real IDs were m4's O-01 (DNS + license), m1's O-01 (discovery), m3's O-01/O-02 (tmux, templates), m35's O-01 (signing). Eight references were dangling; all corrected to gameplan-local IDs.",
+      "why": "The planning batch authored every open item in one pass and referenced them by their position in that batch instead of reading back the per-gameplan IDs the engine assigned. Found by an external review (Kimi, 2026-07-19) - exactly the class of drift the reconciliation strip is being built to surface.",
+      "lesson": "Open-item IDs are per-gameplan: a bare O-NN is only unambiguous inside its own gameplan. Cross-gameplan references must be qualified (m4's O-01), and any batch that writes then references tracked IDs must read the assigned IDs back instead of assuming sequence."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "C-02",
+      "heading": "Phase 3",
+      "phase": "3",
+      "gameplan_said": "COVERAGE.md §4 (written in Phase 1) claimed doctor exit 0 was \"verified live\" on this repo, citing captures/doctor.txt.",
+      "actually": "The Phase 1 capture MANIFEST records doctor exit 3 for that very run. On this host a healthy repo reports 3 (ok-but-unverifiable): two session-host-of-record checks are inherently unverifiable from a bare CLI here — under every wiring shape probed (full 12-host, minimal claude-code-only, uvx or PATH engine). Exit 0 requires an environment where every check verifies; it has never been observed on this box.",
+      "why": "The Phase 0 probe read `clauderize doctor | tail -25; echo exit=$?` — the $? captured tail's exit, not doctor's. Phase 1 then wrote the audit prose from that memory instead of from the MANIFEST field sitting next to it. Phase 3's fixture harness asserted expected exit codes and caught the lie immediately.",
+      "lesson": "Never read an exit code through a pipeline — `cmd | tail; echo $?` reports the LAST pipe stage. Capture status codes from un-piped invocations (or PIPESTATUS), and when an audit doc states an observed value, cite the machine-recorded field (MANIFEST exit), not session memory of a shell probe."
+    }
+  ],
+  "summary": "2 correction(s)",
+  "schema_version": "1.0"
+}

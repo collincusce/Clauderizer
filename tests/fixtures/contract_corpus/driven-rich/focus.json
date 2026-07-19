@@ -1,0 +1,110 @@
+{
+  "ok": true,
+  "focus": "2026-07-19-m0-read-contract",
+  "gameplans": [
+    {
+      "id": "2026-07-19-m0-read-contract",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "executing",
+      "open": true,
+      "total_phases": 4,
+      "phase": {
+        "number": "3",
+        "name": "Fixture Corpus and Contract Client",
+        "state": "in_progress"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": true,
+      "assignee": null
+    },
+    {
+      "id": "2026-07-19-m1-dashboard",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 7,
+      "phase": {
+        "number": "0",
+        "name": "Server Core and State Reads",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": false,
+      "assignee": null
+    },
+    {
+      "id": "2026-07-19-m2-terminal",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 4,
+      "phase": {
+        "number": "0",
+        "name": "PTY Subsystem and Flow Control",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": false,
+      "assignee": null
+    },
+    {
+      "id": "2026-07-19-m3-agent-sessions",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 7,
+      "phase": {
+        "number": "0",
+        "name": "Agent Profiles and Discovery",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": false,
+      "assignee": null
+    },
+    {
+      "id": "2026-07-19-m35-installers",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 4,
+      "phase": {
+        "number": "0",
+        "name": "Electron Shell and IPC Transport",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": false,
+      "assignee": null
+    },
+    {
+      "id": "2026-07-19-m4-announcement",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 3,
+      "phase": {
+        "number": "0",
+        "name": "Site and README",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": false,
+      "assignee": null
+    }
+  ],
+  "summary": "focus = 2026-07-19-m0-read-contract; 6 open gameplan(s)",
+  "schema_version": "1.0"
+}

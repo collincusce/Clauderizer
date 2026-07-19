@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "focus": "2026-07-19-campaign-drive",
+  "gameplans": [
+    {
+      "id": "2026-07-19-campaign-drive",
+      "kind": "campaign",
+      "phase_label": "stage",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 1,
+      "phase": {
+        "number": "0",
+        "name": "Concept",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": true,
+      "assignee": "claude@native"
+    }
+  ],
+  "summary": "focus = 2026-07-19-campaign-drive; 1 open gameplan(s)",
+  "schema_version": "1.0"
+}

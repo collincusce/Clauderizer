@@ -1,0 +1,991 @@
+{
+  "ok": true,
+  "gameplans": [
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "kind": "driven",
+      "lifecycle": "executing",
+      "assignee": null,
+      "phases": [
+        {
+          "number": "0",
+          "name": "Bootstrap",
+          "status": "complete",
+          "started": "2026-07-19",
+          "completed": "2026-07-19",
+          "handoff": "handoffs/PHASE-0-HANDOFF.md",
+          "goal": "Stand up the PhaseKeep repo for autonomous execution: Node ESM scaffold with a real node:test suite, cz_preflight wired to the npm scripts, VISION/ARCHITECTURE seeded from the proposal, everything committed on main.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": true,
+              "text": "Node project scaffolded: package.json with ESM + engines >=24, `npm test` runs a node:test suite with at least one real test, `npm run build` (or lint/typecheck stand-in) exits 0"
+            },
+            {
+              "checked": true,
+              "text": "cz_preflight runs green with the tests/build gates wired to the npm scripts (no unwired-gate hints for tests/build)"
+            },
+            {
+              "checked": true,
+              "text": "docs/VISION.md and docs/ARCHITECTURE.md seeded from the proposal — cz_onboard no longer lists them as scaffold placeholders"
+            },
+            {
+              "checked": true,
+              "text": "Initial commits on main: (1) clauderized scaffold + proposal, (2) gameplan portfolio + seeded memory; working tree clean afterward"
+            }
+          ]
+        },
+        {
+          "number": "1",
+          "name": "Coverage Audit",
+          "status": "complete",
+          "started": "2026-07-19",
+          "completed": "2026-07-19",
+          "handoff": "handoffs/PHASE-1-HANDOFF.md",
+          "goal": "Map every Phase-1 view data need (proposal §8.1: portfolio/gameplans, open items, invariants/decisions, graph+cascade, lessons/corrections, docs, reconciliation strip) to the installed clauderizer v1.11.0 JSON/ops surface; produce a committed gap matrix; file every gap as an open item; resolve the CLI-vs-MCP transport question (§16.4).",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": true,
+              "text": "docs/contract/COVERAGE.md committed, mapping every proposal 8.1 view (portfolio/gameplans incl. campaign detail, open items, invariants/decisions incl. approvals, graph+cascade+consumes, lessons/corrections+gauge, docs, reconciliation strip) plus exit-criteria state and baseline to concrete verbs/fields of the installed surface"
+            },
+            {
+              "checked": true,
+              "text": "Every gap (data reachable only via digest prose, cz_get on known IDs, or not at all) has an O-NN open item naming the missing listing verb or field"
+            },
+            {
+              "checked": true,
+              "text": "Schema-version and revision-signal presence/absence in current outputs verified and documented with captured output"
+            },
+            {
+              "checked": true,
+              "text": "clauderize doctor exit-code contract (0/1/2/3) and ops --list/--schema introspection audited as consumed contract surfaces alongside the read verbs"
+            },
+            {
+              "checked": true,
+              "text": "Raw capture set committed under docs/contract/captures/ as audit evidence"
+            },
+            {
+              "checked": true,
+              "text": "CLI-vs-MCP transport question (16.4) resolved as a recorded decision citing audit evidence"
+            },
+            {
+              "checked": true,
+              "text": "Portfolio reconciliation pass recorded: m1-m4 gameplans reviewed against the audit findings with amendments or explicit no-change verdicts per gameplan - they are provisional until this pass (D-001), and m1 Phase 0 does not start before it"
+            }
+          ]
+        },
+        {
+          "number": "2",
+          "name": "Engine Asks",
+          "status": "complete",
+          "started": "2026-07-19",
+          "completed": "2026-07-19",
+          "handoff": "handoffs/PHASE-2-HANDOFF.md",
+          "goal": "Implement the audited contract gaps in /HOME/Clauderizer under that repo's own memory (D-003): monotonic status revision signal, explicit schema version field, missing listing verbs, and the assignment field on phases/gameplans (deciding its shape, proposal 16.7); cut a release and install it here.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": true,
+              "text": "Installed clauderize --version reports a release newer than 1.11.0 (real release consumed via pip/uvx, not a dev checkout)"
+            },
+            {
+              "checked": true,
+              "text": "clauderize status --json carries an explicit schema version field and a monotonic revision that bumps on any engine write - verified by a scripted write-then-read against a scratch repo"
+            },
+            {
+              "checked": true,
+              "text": "The revision read path is near-free and MEASURED (O-03): a dedicated fast verb or blessed single-value contract artifact; with 10 projects polled at 1s intervals, steady-state poller CPU stays under 2% of one core on the Tier-1 box and p95 single-poll latency under 50ms native / 250ms through wsl.exe interop - numbers recorded via cz_add_output, revisable only with measurements attached"
+            },
+            {
+              "checked": true,
+              "text": "Every coverage-audit gap has its listing verb/field present in ops --list and reachable via CLI and MCP both"
+            },
+            {
+              "checked": true,
+              "text": "Assignment field on phases and gameplans is readable and writable through the ops registry as a minimal provisional shape (16.7), explicitly marked revisitable when m3 builds its first consumer"
+            },
+            {
+              "checked": true,
+              "text": "All engine-ask open items in this gameplan resolved; engine-side work tracked in the Clauderizer repo's own memory per D-003"
+            }
+          ]
+        },
+        {
+          "number": "3",
+          "name": "Fixture Corpus and Contract Client",
+          "status": "in_progress",
+          "started": "2026-07-19",
+          "completed": null,
+          "handoff": "handoffs/PHASE-3-HANDOFF.md",
+          "goal": "Capture real JSON outputs from live clauderized repos into a committed fixture corpus, build the pure contract-client module (spawn, parse, validate, degrade) against fixtures alone, and land the same corpus in the engine repo's CI (proposal 15.5).",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Committed fixture corpus covers status, gameplans, focus, and every listing verb, including malformed/truncated/mid-write cases and a schema-version-mismatch case, captured from real repos of each kind (driven, loop, campaign)"
+            },
+            {
+              "checked": false,
+              "text": "Contract client module passes its full fixture suite offline (engine uninstalled or PATH-hidden): spawn abstraction, parse, validate, view models"
+            },
+            {
+              "checked": false,
+              "text": "Spawn abstraction owns the acquisition ladder (clauderize on PATH, then uvx --from clauderizer) and the minimum-version gate; both paths tested"
+            },
+            {
+              "checked": false,
+              "text": "Schema-version mismatch produces the explicit degrade message naming emitted version, supported version, and fix - tested"
+            },
+            {
+              "checked": false,
+              "text": "The same corpus runs in the Clauderizer repo's CI so contract breaks fail engine CI before release (15.5)"
+            },
+            {
+              "checked": false,
+              "text": "npm test green; baseline test count recorded via cz_add_output; Milestone 0 success met: UI developable against fixtures alone"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "gameplan": "2026-07-19-m1-dashboard",
+      "kind": "driven",
+      "lifecycle": "planning",
+      "assignee": null,
+      "phases": [
+        {
+          "number": "0",
+          "name": "Server Core and State Reads",
+          "status": "ready",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-0-HANDOFF.md",
+          "goal": "Build the tab-mode server core: project roots via args plus config, clauderize --json reads with the uvx fallback, per-project snapshot cache, revision-polling primary with same-side fs.watch and WSL boundary detection, last-known-good resilience, and the engine-missing degrade message.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Tab-mode server starts on 127.0.0.1, accepts project roots via args plus config file, serves per-project state snapshots built from clauderize --json spawns with the uvx fallback form"
+            },
+            {
+              "checked": false,
+              "text": "Change detection per D-004: revision-signal polling primary; fs.watch on docs/ only for same-side roots with WSL cross-boundary detection choosing stat-polling, active mode surfaced per project"
+            },
+            {
+              "checked": false,
+              "text": "Malformed or partial reads keep the last-known-good snapshot with a staleness flag - fixture-tested, never a crash or blank"
+            },
+            {
+              "checked": false,
+              "text": "Missing or too-old engine yields the named degrade message with the fix (clauderizer >= x.y required, found z) - tested with PATH manipulation"
+            },
+            {
+              "checked": false,
+              "text": "The core's transport seam is proven by a second implementation: an in-process/test transport drives the same core API as the WS path, keeping D-006's transport-agnostic claim honest before Electron exists"
+            },
+            {
+              "checked": false,
+              "text": "A state change made by an agent in a real repo is visible in the pushed snapshot within 2s (watch) / 3s (poll)"
+            }
+          ]
+        },
+        {
+          "number": "1",
+          "name": "Security Baseline",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-1-HANDOFF.md",
+          "goal": "Land the full section-11 control set before any further surface grows: token lifecycle, WS handshake auth, Host/Origin validation, CSP, sanitized markdown (D-007).",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Per-start crypto-random token >=128 bits; tokenized URL printed once; frontend stores it in sessionStorage and strips it via history.replaceState; subsequent HTTP carries it in a header"
+            },
+            {
+              "checked": false,
+              "text": "WS handshake authenticates via Sec-WebSocket-Protocol or authenticated first frame before any channel is serviced; unauthenticated connections closed silently"
+            },
+            {
+              "checked": false,
+              "text": "Every HTTP request validates Host and every WS upgrade validates Origin against 127.0.0.1:<port>; failures dropped before any handler"
+            },
+            {
+              "checked": false,
+              "text": "CSP prohibits inline script and restricts connect-src to own origin; markdown renders sanitized with no raw-HTML passthrough"
+            },
+            {
+              "checked": false,
+              "text": "Automated tests cover missing token, wrong token, foreign Origin, forged Host (rebinding shape), and confirm no bytes flow pre-auth"
+            }
+          ]
+        },
+        {
+          "number": "2",
+          "name": "Frontend Foundation and Brand",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-2-HANDOFF.md",
+          "goal": "Preact publish-time-built static frontend with WS client, channel envelope, reconnect, command palette, cache-first sub-second paint; and the original PhaseKeep brand identity (proposal 7.3) recorded in docs/BRANDING.md with assets.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Preact bundle built at publish time and served as static assets; npx startup performs no compilation"
+            },
+            {
+              "checked": false,
+              "text": "WS client with reconnect/backoff speaks the channel envelope ({ch: state | pty:<id>}) shared with future PTY channels"
+            },
+            {
+              "checked": false,
+              "text": "Command palette core interaction works: project switch, view navigation, gameplan jump"
+            },
+            {
+              "checked": false,
+              "text": "Dashboard paints from cached snapshot in under 1 second from open, then revalidates with the staleness flag covering the gap - measured"
+            },
+            {
+              "checked": false,
+              "text": "PhaseKeep brand identity (palette, typography, logotype, iconography, interaction voice) committed to docs/BRANDING.md with assets and applied to the app shell; no Clauderizer co-branding per proposal 15.2; agents draft candidate directions, the operator chooses"
+            },
+            {
+              "checked": false,
+              "text": "APPROVAL: docs/BRANDING.md — the operator signs off the PhaseKeep brand identity (recorded via cz_approve_gate so later edits read stale)",
+              "kind": "approval",
+              "artifact": "docs/BRANDING.md",
+              "state": "unapproved",
+              "detail": "approval for 'docs/BRANDING.md' not recorded — record it with cz_approve_gate"
+            },
+            {
+              "checked": false,
+              "text": "Plain-english vocabulary hint layer exists (D-012): popover component plus term content in the clauderizer.com register sourced from the glossary, ready for every view to apply"
+            }
+          ]
+        },
+        {
+          "number": "3",
+          "name": "Core Views",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-3-HANDOFF.md",
+          "goal": "Portfolio and gameplan detail, Open Items, Invariants and Decisions - the proposal 8.1 core three - rendered from contract snapshots with campaign vocabulary, supersession chains, and approval staleness.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Portfolio view renders every open gameplan with kind, focus marker, phase progress, baseline, and a pending-cascade badge; campaign-kind gameplans render in their kind vocabulary"
+            },
+            {
+              "checked": false,
+              "text": "Gameplan detail renders phases with exit-criteria state including completed-with-unchecked-criteria surfaced loudly, decisions, amendments, current handoff, and a light phase/task progress board (D-013)"
+            },
+            {
+              "checked": false,
+              "text": "Campaign-kind gameplan detail renders the deliverable lifecycle board (deliverables against the kind's lifecycle statuses)"
+            },
+            {
+              "checked": false,
+              "text": "Open Items view lists all tracked unknowns with stable IDs, filterable by gameplan, age, and resolution state"
+            },
+            {
+              "checked": false,
+              "text": "Invariants view shows scope and audience; Decisions view renders supersession chains as chains; approval states show content-hash staleness"
+            },
+            {
+              "checked": false,
+              "text": "Domain terms in the core views carry their plain-english hints (D-012)"
+            },
+            {
+              "checked": false,
+              "text": "All views are pure renders of contract snapshots with fixture tests"
+            }
+          ]
+        },
+        {
+          "number": "4",
+          "name": "Graph, Lessons, and Docs Views",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-4-HANDOFF.md",
+          "goal": "The in-milestone fast-follows: dependency DAG with cascade overlay and cz_consumes edges, Lessons with curation state and memory gauge, Corrections, and rendered Docs with open-in-editor.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Graph view renders entities, depends_on edges with semver pins, cascade results overlaid (what changed, what was flagged, verdicts), and cz_consumes cross-gameplan edges"
+            },
+            {
+              "checked": false,
+              "text": "Lessons view shows curation state (active, consolidated, promoted, obsoleted) and the memory gauge including the current handoff-size estimate (orientation cost, D-017); Corrections log renders"
+            },
+            {
+              "checked": false,
+              "text": "Docs view renders sanitized markdown for canonical documents with an index sidebar and an open-in-$EDITOR affordance that never grows an editor"
+            },
+            {
+              "checked": false,
+              "text": "All new views fixture-tested; malformed-fixture fuzz keeps every view on last-known-good"
+            }
+          ]
+        },
+        {
+          "number": "5",
+          "name": "Multi-Project, Reconciliation Strip, and Scaffold Writes",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-5-HANDOFF.md",
+          "goal": "Project switcher and add-project with consent-gated init and engine acquisition; the reconciliation strip with one-op fix buttons; the empty-gameplan scaffold path (the m1 half of D-010); instance records.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Project switcher keeps which-repo-am-I-looking-at unmistakable; multiple real projects driven daily"
+            },
+            {
+              "checked": false,
+              "text": "Add-project flow: import or create, consent screen naming the engine footprint before clauderize init, engine acquisition ladder (PATH, then uvx/pipx spawn, then one screen naming the missing prerequisite), doctor check surfaced"
+            },
+            {
+              "checked": false,
+              "text": "Reconciliation strip surfaces never-closed complete gameplans, phases transitioned with unchecked criteria, and open items lingering on finished work"
+            },
+            {
+              "checked": false,
+              "text": "One-op fix buttons (check criterion, resolve item) execute through the ops registry under its advisory lock - the only writes, per the write-classes invariant"
+            },
+            {
+              "checked": false,
+              "text": "React-to-state generalization (D-011): surfaced conditions carry their shaped reaction - one-op buttons include advisory report generation (invoke cz_cascade on a pending cascade); judgment-shaped reactions render their dispatch button (staged in m1, live with m3)"
+            },
+            {
+              "checked": false,
+              "text": "Empty-gameplan scaffold path works and its criteria-less phases appear honestly in the reconciliation strip"
+            },
+            {
+              "checked": false,
+              "text": "Instance record (port, PID, roots) written under config; second startup covering the same roots detects and offers the existing URL"
+            }
+          ]
+        },
+        {
+          "number": "6",
+          "name": "Daily-Driver Hardening",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-6-HANDOFF.md",
+          "goal": "Meet and measure the proposal 8.4 exit criteria in real daily use across multiple projects: freshness targets, malformed-state resilience, and the operator actually abandoning manual file-opening.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Proposal 8.4 met: dashboard runs against real projects daily; agent-made changes visible within 2s same-side / 3s polled - measured and recorded via cz_add_output"
+            },
+            {
+              "checked": false,
+              "text": "Malformed-state fuzz suite passes: no input blanks the view or crashes the server"
+            },
+            {
+              "checked": false,
+              "text": "Vocabulary-hint sweep passes: every domain term across all shipped views carries its plain-english hint (D-012)"
+            },
+            {
+              "checked": false,
+              "text": "Operator attestation recorded in the phase handoff: memory files no longer opened in an editor to answer what-is-pending"
+            },
+            {
+              "checked": false,
+              "text": "Baseline test count recorded; docs/TESTING.md updated with the fixture-and-pure-function discipline"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "gameplan": "2026-07-19-m2-terminal",
+      "kind": "driven",
+      "lifecycle": "planning",
+      "assignee": null,
+      "phases": [
+        {
+          "number": "0",
+          "name": "PTY Subsystem and Flow Control",
+          "status": "ready",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-0-HANDOFF.md",
+          "goal": "Build the PTY subsystem on the authenticated socket: lazy node-pty load with the honest degrade path, binary WS frames on pty:<id> channels, per-channel backpressure with acknowledged watermarks, resize plumbing; scrollback in memory only.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "node-pty loads lazily; a broken native build degrades to dashboard-works-terminals-unavailable with the named fix (proposal 15.3) - tested by breaking the build"
+            },
+            {
+              "checked": false,
+              "text": "PTY spawn, resize, and kill work over dedicated binary WS channels tagged by the channel envelope"
+            },
+            {
+              "checked": false,
+              "text": "Per-channel backpressure: server pauses PTY reads when the client's acknowledged watermark falls behind; cat of a huge file neither wedges the socket nor grows server memory unboundedly - tested"
+            },
+            {
+              "checked": false,
+              "text": "Scrollback lives in browser/xterm.js memory only; server never persists PTY bytes (invariant honored in code review)"
+            }
+          ]
+        },
+        {
+          "number": "1",
+          "name": "Tabs and Shell Matrix",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-1-HANDOFF.md",
+          "goal": "Terminal tabs with the full proposal 9.1 shell matrix: per-tab shell choice, per-tab cwd defaulting to the active project root, WSL distro enumeration with UTF-16LE decoding, and interop rows both directions.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Tabs with per-tab shell choice per the 9.1 matrix: $SHELL on Linux/macOS; PowerShell, cmd, and per-distro WSL on Windows; powershell.exe/cmd.exe interop when the core runs inside WSL"
+            },
+            {
+              "checked": false,
+              "text": "wsl -l enumeration decodes UTF-16LE correctly - unit-tested against captured raw bytes"
+            },
+            {
+              "checked": false,
+              "text": "Per-tab working directory defaults to the active project root and is overridable"
+            },
+            {
+              "checked": false,
+              "text": "Interactive TUIs (vim, htop) usable in a WSL tab from the Windows-host browser"
+            }
+          ]
+        },
+        {
+          "number": "2",
+          "name": "ConPTY Validation",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-2-HANDOFF.md",
+          "goal": "Exercise PowerShell and cmd through ConPTY on the real Windows host early (proposal 9.2): document quirks rather than heroically work around them, treat unsolved correctness issues as upstream bugs.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "PowerShell and cmd exercised through ConPTY on the real Windows host early in the phase, not last"
+            },
+            {
+              "checked": false,
+              "text": "Known cosmetic ConPTY quirks documented in docs/ with the upstream-bug policy; no local heroics for unsolved upstream correctness issues"
+            },
+            {
+              "checked": false,
+              "text": "A Windows host shows PowerShell and WSL tabs side by side (proposal 9.4)"
+            },
+            {
+              "checked": false,
+              "text": "Docs state the fallback position explicitly: native Windows tabs fully supported, WSL tabs the recommended primary Windows experience"
+            },
+            {
+              "checked": false,
+              "text": "Proposal 9.4 overall: daily shell work happens in the UI without missing a native terminal; large outputs do not wedge the socket"
+            }
+          ]
+        },
+        {
+          "number": "3",
+          "name": "Terminal-First Gameplan Creation",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-3-HANDOFF.md",
+          "goal": "The D-010 flow and designated demo scene: plus-button opens a pty with the planning prompt staged for the assigned agent while the portfolio pane populates live beside it off the revision signal.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Portfolio plus-button (primary path) launches the assigned/manager agent in a pty in the repo with the planning prompt staged, and the creation conversation runs in that terminal - the operator's click is the explicit trigger, the UI never starts a planning session silently, and the operator can take over the pty at any point"
+            },
+            {
+              "checked": false,
+              "text": "Portfolio pane populates live beside the terminal during a real planning conversation, driven by the revision signal - the D-010 demo scene works end to end"
+            },
+            {
+              "checked": false,
+              "text": "Vocabulary chips beside the terminal input stage operative phrases with one-line plain-english hints; chips never execute - the operator sends (D-012, un-parked Appendix B)"
+            },
+            {
+              "checked": false,
+              "text": "Secondary empty-gameplan option still scaffolds bare structure through the ops registry"
+            },
+            {
+              "checked": false,
+              "text": "Live-populate latency during a write burst feels immediate (revision-signal path, not watch), verified against a real planning session"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "gameplan": "2026-07-19-m3-agent-sessions",
+      "kind": "driven",
+      "lifecycle": "planning",
+      "assignee": null,
+      "phases": [
+        {
+          "number": "0",
+          "name": "Agent Profiles and Discovery",
+          "status": "ready",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-0-HANDOFF.md",
+          "goal": "Agents as data: TOML profiles (command, host, cwd policy, env), discovery probing which and versions natively and per WSL distro with operator-confirmed proposals, and an agent list composing discovery presence with clauderize doctor wiring status.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Agent profiles load as TOML data (command, host, working-directory policy, env additions, optional env allowlist); adding an agent is a new file, not a release"
+            },
+            {
+              "checked": false,
+              "text": "(agent, host) identity honored: the same tool on both sides of the WSL boundary is two agents"
+            },
+            {
+              "checked": false,
+              "text": "Discovery probes which natively and per enumerated distro via wsl.exe (plus reverse interop from tab-mode-in-WSL), captures versions, proposes profiles; operator confirms before anything is saved"
+            },
+            {
+              "checked": false,
+              "text": "Agent list shows discovery result and clauderize doctor wiring status side by side (compose, not compete)"
+            }
+          ]
+        },
+        {
+          "number": "1",
+          "name": "tmux Substrate Prototype",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-1-HANDOFF.md",
+          "goal": "Prototype tmux control mode (-CC) versus plain attach early because it shapes the session registry (proposal 13.5, 16.6); decide, record the decision, and build the metadata-only registry with restart reattachment.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "tmux control mode versus plain attach prototyped both ways; decision recorded as a D-NNN with evidence; open item resolved"
+            },
+            {
+              "checked": false,
+              "text": "Generated session naming scheme distinguishes PhaseKeep-managed sessions"
+            },
+            {
+              "checked": false,
+              "text": "Session registry: metadata-only JSON, atomic writes, under XDG config; never scrollback"
+            },
+            {
+              "checked": false,
+              "text": "Server restart re-binds live tmux sessions by enumeration plus registry match; browser refresh loses nothing - both tested"
+            },
+            {
+              "checked": false,
+              "text": "Instance policy graduates for session management (proposal 7.2): a second instance detects an existing session-managing daemon over the same namespace and defers instead of competing - tested with two concurrent starts; an flock on the journal/registry directory backs the check so a racing second dispatcher fails loudly (D-019)"
+            }
+          ]
+        },
+        {
+          "number": "2",
+          "name": "Sessions v1",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-2-HANDOFF.md",
+          "goal": "Agent sessions as supervised PTYs with metadata (proposal 13.2): launch, observe across projects, attach, reattach, terminate, post-exit inspection, gameplan cross-links, and the per-session media output gallery.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Launch a session from a profile into a project with gameplan/phase context attached; sessions view shows all sessions across projects with liveness and age"
+            },
+            {
+              "checked": false,
+              "text": "Any session attaches to a terminal pane; reattach works after browser refresh and server restart; graceful terminate signals then escalates"
+            },
+            {
+              "checked": false,
+              "text": "Checkpoint button on a live session sends the staged memory-sync prompt into the pty on the operator's explicit click (D-016); the dashboard reflects the agent's resulting writes via the revision signal - input only, no output ever read"
+            },
+            {
+              "checked": false,
+              "text": "An exited session's terminal state stays inspectable until dismissed"
+            },
+            {
+              "checked": false,
+              "text": "Gameplans show their linked live sessions; sessions link back to their gameplan"
+            },
+            {
+              "checked": false,
+              "text": "Per-session gallery renders media files landing in the session outputs directory; the directory is a per-profile data convention (declared in the profile, exported to the session, e.g. as an env var the agent may use) - cooperation-optional, degrading to an empty gallery, never an agent-specific code path (INVARIANT-08); no counterfeit interactive MCP widgets (proposal 13.2)"
+            }
+          ]
+        },
+        {
+          "number": "3",
+          "name": "Assignments and the Manager Role",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-3-HANDOFF.md",
+          "goal": "Assignments as Clauderizer state rendered and edited through the ops registry (proposal 13.3), plus the manager as a reassignable per-project role dispatched fresh per repo, never a roving resident.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Phase and gameplan assignments render from Clauderizer memory (the m0 assignment field) and edit through the ops registry; no UI-local assignment state"
+            },
+            {
+              "checked": false,
+              "text": "Assignments ship with the repo: visible in diffs, survive the UI, readable by agents"
+            },
+            {
+              "checked": false,
+              "text": "Manager role assignable and reassignable per project; manager dispatches run as fresh per-repo sessions that end - no roving resident session"
+            }
+          ]
+        },
+        {
+          "number": "4",
+          "name": "Dispatcher Launch Rung and Reconciliation",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-4-HANDOFF.md",
+          "goal": "The crash-only dispatcher core (proposal 13.4): click-to-launch with staged prompts, every wake recomputing desired state from contract reads plus assignments plus flags, and the reconciliation strip's dispatch-manager button.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Launch rung: one click spawns the assigned agent in the repo with the do-next-phase or manager-hygiene prompt staged"
+            },
+            {
+              "checked": false,
+              "text": "Crash-only: on every wake (server start, browser reattach, timer, session end, change signal) the dispatcher recomputes what should run from contract reads plus assignments plus continuation flags; it holds no authoritative state"
+            },
+            {
+              "checked": false,
+              "text": "Kill the server mid-flight and restart: the dispatcher converges to the same decisions - tested"
+            },
+            {
+              "checked": false,
+              "text": "Reconciliation strip ritual findings gain the dispatch-manager button; checkbox findings keep their one-op buttons"
+            }
+          ]
+        },
+        {
+          "number": "5",
+          "name": "Continue Rung, Budgets, and Chain-Breakers",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-5-HANDOFF.md",
+          "goal": "Auto-continue under the absolute completion rule (D-008), per-(phase,agent) attempt counters, time-and-count budgets, the standing-condition dispatch gate, and the append-only JSONL event journal.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Continue fires only when the session process exited AND the phase transitioned per contract reads; exit-without-transition is recorded as a stall (D-008) - integration-tested with a deterministic stall"
+            },
+            {
+              "checked": false,
+              "text": "Kill-complete semantics per D-014: a session terminated by budget/wall-clock whose phase transition is observed counts as a completion, never a stall; the attempt counter does not increment and the journal records the case distinctly"
+            },
+            {
+              "checked": false,
+              "text": "Attempt counter per (phase, agent) stops the chain at max attempts; an attempt is a prompt delivered to a live process and journaled (D-019) - a crash before launch consumes nothing; counters are reconstructed from the journal on wake so a restart cannot reset them"
+            },
+            {
+              "checked": false,
+              "text": "Wall-clock and session-count budgets enforced from pty lifecycle alone; the continue rung dispatches only run-to-completion profiles (D-014) pending the O-04 successor decision"
+            },
+            {
+              "checked": false,
+              "text": "Dispatcher declines dispatch while a standing condition is tripped or the counter is exhausted; manual launch is never blocked"
+            },
+            {
+              "checked": false,
+              "text": "The journal is a write-ahead log, not just history (D-019): intents fsynced with idempotency keys and a boot epoch before action, committed/aborted after; append-only JSONL under XDG; tmux enumeration is ground truth on wake and the journal replays intent"
+            },
+            {
+              "checked": false,
+              "text": "Replay rules tested: uncommitted reap finishes idempotently; uncommitted reuse quarantines (never auto-reaped, never dispatched over, surfaced); uncommitted dispatch with no live session consumes no attempt"
+            },
+            {
+              "checked": false,
+              "text": "Quiescence probes per D-020: process-group I/O/CPU deltas from /proc with the W_idle flat window; dispatch-time baseline snapshot in the registry entry with session dirt computed as the delta; unpushed commits journaled as advisory, never a reap blocker; native Windows documented as time-only quiescence"
+            },
+            {
+              "checked": false,
+              "text": "Shadow mode before spine (D-020): the conjunction runs advisory-first journaling would_reap/would_inject with per-decision evidence objects; enforcement flips only via an explicit O-04 resolution citing the calibration journal"
+            },
+            {
+              "checked": false,
+              "text": "No push notifications exist: chain-breaks, trips, and completions render in the UI only (the UI is the pager; the morning reconciliation pass is the newspaper)"
+            }
+          ]
+        },
+        {
+          "number": "6",
+          "name": "Loops and Orphans",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-6-HANDOFF.md",
+          "goal": "The loops rung behind its own opt-in for loop-kind gameplans, orphan session surfacing with adopt/kill, global concurrency caps, and the proposal 13.6 Tier-1 verification pass.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Loops rung crank works for loop-kind gameplans behind its own per-gameplan opt-in, honoring max-sessions-per-day and the global concurrency cap"
+            },
+            {
+              "checked": false,
+              "text": "Orphans (tmux sessions matching the scheme without registry entries, and vice versa) surface with adopt and kill actions; never silently ignored, never counted as managed attempts"
+            },
+            {
+              "checked": false,
+              "text": "Proposal 13.6 verified on Tier 1: server restart loses zero live sessions and zero journal history; no session exists without appearing in the sessions view"
+            },
+            {
+              "checked": false,
+              "text": "Multiple concurrent agents across multiple repos run through the UI daily; README documents the loop-authority sentence"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "gameplan": "2026-07-19-m35-installers",
+      "kind": "driven",
+      "lifecycle": "planning",
+      "assignee": null,
+      "phases": [
+        {
+          "number": "0",
+          "name": "Electron Shell and IPC Transport",
+          "status": "ready",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-0-HANDOFF.md",
+          "goal": "Wrap the identical server core in an Electron shell speaking IPC with the loopback listener off by default and a single-instance lock; prove the m1 security controls dormant-not-deleted by enabling the listener and passing the full suite.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Electron app boots the identical server core in-process; renderer speaks IPC; loopback listener off by default in app mode and enableable for tab parity"
+            },
+            {
+              "checked": false,
+              "text": "Single-instance lock: second launch focuses the first"
+            },
+            {
+              "checked": false,
+              "text": "Tray presence: the app minimizes to / lives in the system tray, keeping sessions and watchers alive with the window closed"
+            },
+            {
+              "checked": false,
+              "text": "Security controls verified dormant-not-deleted: enabling the listener in app mode passes the full m1 security test suite"
+            },
+            {
+              "checked": false,
+              "text": "Tab-mode npx channel still works from the same codebase"
+            }
+          ]
+        },
+        {
+          "number": "1",
+          "name": "Packaging Matrix",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-1-HANDOFF.md",
+          "goal": "electron-builder producing the three-OS installer set with node-pty rebuilt against both ABIs (Electron in-app, Node for the npx channel), both artifacts smoke-tested in CI (proposal 15.3).",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "electron-builder produces NSIS/MSI, dmg, and AppImage plus deb/rpm artifacts in CI"
+            },
+            {
+              "checked": false,
+              "text": "node-pty ships rebuilt against the Electron ABI in the app and the Node ABI in the npm package; both artifacts built and smoke-tested in CI (proposal 15.3)"
+            },
+            {
+              "checked": false,
+              "text": "npx phasekeep boots from the published package with prebuilt static assets; startup banner prints the running version"
+            },
+            {
+              "checked": false,
+              "text": "engines field plus startup check yields the human-readable Node-version error"
+            }
+          ]
+        },
+        {
+          "number": "2",
+          "name": "Signing, Notarization, and Auto-Update",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-2-HANDOFF.md",
+          "goal": "Windows signing identity and Apple notarization wired into CI as recurring obligations accepted with eyes open (proposal 12.4), electron-updater against GitHub Releases, update check disableable.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Windows artifacts signed (Azure Trusted Signing or OV/EV) and macOS notarized, both in CI - the human procurement open item resolved first"
+            },
+            {
+              "checked": false,
+              "text": "Fresh default-config Windows and macOS VMs install without SmartScreen/Gatekeeper unknown-publisher blocks"
+            },
+            {
+              "checked": false,
+              "text": "electron-updater against GitHub Releases updates N-1 to N in a real test; update check disableable; no other outbound calls (telemetry invariant)"
+            },
+            {
+              "checked": false,
+              "text": "Release pipeline documented end to end: tag to signed artifacts to release to auto-update"
+            }
+          ]
+        },
+        {
+          "number": "3",
+          "name": "Windows First-Run and WSL Bootstrap",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-3-HANDOFF.md",
+          "goal": "The proposal 12.2 out-of-box flow: detect WSL, enumerate distros, consent-gated uv/uvx plus engine bootstrap per distro, honest native-only degrade, and the stranger test on all three OSes.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "First run on Windows detects WSL, enumerates distros decoding UTF-16LE, and per enabled distro offers consent-gated uv/uvx plus engine bootstrap"
+            },
+            {
+              "checked": false,
+              "text": "Machines without WSL run native-only with the persistence limitation stated plainly and a link to (never an execution of) wsl --install"
+            },
+            {
+              "checked": false,
+              "text": "WSL-side repos refresh via revision-signal polling through per-command wsl.exe spawns (proposal 12.2); doctor duties reduced to interop-responds plus engine-runs-per-distro"
+            },
+            {
+              "checked": false,
+              "text": "Interop-created tmux agent sessions inside a distro survive the Windows app closing entirely and are readopted on next launch - tested"
+            },
+            {
+              "checked": false,
+              "text": "Milestone 3.5 stranger test: on each OS, download to rendered dashboard on a real repo without touching a terminal, showing a signed publisher"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "gameplan": "2026-07-19-m4-announcement",
+      "kind": "driven",
+      "lifecycle": "planning",
+      "assignee": null,
+      "phases": [
+        {
+          "number": "0",
+          "name": "Site and README",
+          "status": "ready",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-0-HANDOFF.md",
+          "goal": "Ship the public face: both domains live with the brand, README with tier policy and the authority sentence, license and NOTICE attribution correct, repository public with issue templates and triage labels ready.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "phasekeep.com and phasekeep.dev live with the Milestone 1 brand"
+            },
+            {
+              "checked": false,
+              "text": "README carries the tier policy, the blunt loop-mode authority sentence, the zero-telemetry statement, keep-repos-on-ext4 WSL guidance, and the npx @latest convention with the version-banner triage note (15.3)"
+            },
+            {
+              "checked": false,
+              "text": "License confirmed Apache-2.0 (16.9); NOTICE bundle and about screen attribute Clauderizer correctly; concealment boundary per 15.2 honored (engine named at consent and attribution surfaces, backgrounded elsewhere)"
+            },
+            {
+              "checked": false,
+              "text": "Repository public with issue templates and tier-policy labels"
+            }
+          ]
+        },
+        {
+          "number": "1",
+          "name": "Demo and Polish",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-1-HANDOFF.md",
+          "goal": "Record the designated split-screen demo (planning conversation populating the portfolio live, then the dashboard with live sessions) and run a first-run quality pass on all three OSes.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "The designated split-screen demo recorded: a real planning conversation in the terminal populating the portfolio live, then the dashboard with live agent sessions"
+            },
+            {
+              "checked": false,
+              "text": "First-run quality pass on all three OSes with fixes applied"
+            },
+            {
+              "checked": false,
+              "text": "Site and README embed the demo; screenshots current"
+            }
+          ]
+        },
+        {
+          "number": "2",
+          "name": "Launch",
+          "status": "not_started",
+          "started": null,
+          "completed": null,
+          "handoff": "handoffs/PHASE-2-HANDOFF.md",
+          "goal": "Show HN and X thread out (human action), issue templates and tier-policy triage ready, success measured as external issues being feature requests rather than install failures.",
+          "assigned": null,
+          "exit_criteria": [
+            {
+              "checked": false,
+              "text": "Show HN post and X thread published (human action)"
+            },
+            {
+              "checked": false,
+              "text": "First-week triage rhythm running; issues labeled against the tier policy"
+            },
+            {
+              "checked": false,
+              "text": "Success signal tracked per proposal 18: external issues are feature requests rather than install failures; at least one external contract consumer watched for over six months"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "summary": "6 gameplan(s)",
+  "schema_version": "1.0"
+}

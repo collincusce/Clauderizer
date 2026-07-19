@@ -1,0 +1,164 @@
+{
+  "ok": true,
+  "size": "standard",
+  "host_profile": "node",
+  "active_gameplan": "2026-07-19-m0-read-contract",
+  "phases": [
+    {
+      "number": "0",
+      "name": "Bootstrap",
+      "status": "complete"
+    },
+    {
+      "number": "1",
+      "name": "Coverage Audit",
+      "status": "complete"
+    },
+    {
+      "number": "2",
+      "name": "Engine Asks",
+      "status": "complete"
+    },
+    {
+      "number": "3",
+      "name": "Fixture Corpus and Contract Client",
+      "status": "in_progress"
+    }
+  ],
+  "current_phase": {
+    "number": "3",
+    "name": "Fixture Corpus and Contract Client"
+  },
+  "next_phase": null,
+  "baseline_tests": "5",
+  "pending_cascades": [],
+  "blockers": [],
+  "drift": [
+    "5 entities still 'planned' while 3 phase(s) complete (subsys.dispatcher, subsys.electron-shell, subsys.frontend\u2026) \u2014 cz_transition_status to reconcile."
+  ],
+  "open_items": [],
+  "memory": {
+    "active_lessons": 7,
+    "obsolete_lessons": 0,
+    "promoted_lessons": 0,
+    "project_lessons": 0,
+    "active_skills": 0,
+    "handoff_est_tokens": 4671,
+    "warning": null
+  },
+  "focus": "2026-07-19-m0-read-contract",
+  "portfolio": [
+    {
+      "id": "2026-07-19-m0-read-contract",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "executing",
+      "open": true,
+      "total_phases": 4,
+      "phase": {
+        "number": "3",
+        "name": "Fixture Corpus and Contract Client",
+        "state": "in_progress"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": true,
+      "assignee": null
+    },
+    {
+      "id": "2026-07-19-m1-dashboard",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 7,
+      "phase": {
+        "number": "0",
+        "name": "Server Core and State Reads",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": false,
+      "assignee": null
+    },
+    {
+      "id": "2026-07-19-m2-terminal",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 4,
+      "phase": {
+        "number": "0",
+        "name": "PTY Subsystem and Flow Control",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": false,
+      "assignee": null
+    },
+    {
+      "id": "2026-07-19-m3-agent-sessions",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 7,
+      "phase": {
+        "number": "0",
+        "name": "Agent Profiles and Discovery",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": false,
+      "assignee": null
+    },
+    {
+      "id": "2026-07-19-m35-installers",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 4,
+      "phase": {
+        "number": "0",
+        "name": "Electron Shell and IPC Transport",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": false,
+      "assignee": null
+    },
+    {
+      "id": "2026-07-19-m4-announcement",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 3,
+      "phase": {
+        "number": "0",
+        "name": "Site and README",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": false,
+      "assignee": null
+    }
+  ],
+  "revision": {
+    "schema_version": "1.0",
+    "epoch": "e1c66499d70ba25e",
+    "revision": 1
+  },
+  "kind": "driven",
+  "summary": "Gameplan 2026-07-19-m0-read-contract: phase 3/4 IN PROGRESS \u2014 \"Fixture Corpus and Contract Client\".",
+  "next_action": "cz_preflight, then execute the phase tasks.",
+  "engine_stale": false,
+  "schema_version": "1.0"
+}

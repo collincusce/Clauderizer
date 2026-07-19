@@ -1,0 +1,44 @@
+# exit=2
+✓ config.toml present
+✓ procedure shipped
+✓ CLAUDE.md stanza
+✓ enabled hosts (12): claude-code, cursor, copilot, continue, zed, gemini-cli, cline, amp, grok, kimi, codex, windsurf  [multi-host default]
+✓ session agent detected this process: claude-code
+✓ .mcp.json registers clauderizer
+✓ session host of record: native
+✓ MCP server launchable for session host — uvx
+✓ SessionStart hook registered
+✓ SessionStart hook launchable for session host — /bin/sh
+✓ AGENTS.md floor present
+✓ cursor: MCP config present (.cursor/mcp.json)
+✓ copilot: MCP config present (.vscode/mcp.json)
+✓ continue: MCP config present (.continue/mcpServers/clauderizer.json)
+✓ continue native floor present
+✓ zed: MCP config present (.zed/settings.json)
+✓ gemini-cli: MCP config present (.gemini/settings.json)
+✓ gemini-cli native floor present
+✓ cline: MCP config present (.cline/mcp.json)
+✓ amp: MCP config present (.amp/settings.json)
+✓ grok: MCP config present (.mcp.json)
+✓ grok: governance hooks present (.grok/hooks/clauderizer.json)
+  note: grok Hook→ctx=no — floor + P7 bootstrap; needs /hooks-trust
+✓ kimi: MCP config present (.kimi-code/mcp.json)
+✓ codex: guide-only setup present (codex-mcp-setup.md)
+    configure: TOML is guide-only — merge the portable command from `.clauderizer/codex-mcp-setup.md` into `.codex/config.toml`.
+✓ windsurf: guide-only setup present (windsurf-mcp-setup.md)
+    configure: MCP config is global — see `.clauderizer/windsurf-mcp-setup.md` (never auto-edited, D-031).
+✓ kimi-desktop: MCP registered, PINNED to serve \\wsl.localhost\DISTRO\home\USER\clauderizer-site (/mnt/c/Users/USER/AppData/Roaming/kimi-desktop/daimon-share/daimon/runtime/kimi-code/home/mcp.json)
+? kimi-desktop pin — the desktop serves \\wsl.localhost\DISTRO\home\USER\clauderizer-site for EVERY project opened in the app (opt-in WSL override, D-057) — not the project you open. Unpin via `clauderize uninstall`.
+✓ kimi-desktop MCP initialize handshake — initialize → serverInfo clauderizer 1.11.0
+? kimi-desktop MCP version — the host serves clauderizer 1.11.0 but this engine is 1.12.0 — update that install (e.g. `pipx upgrade clauderizer`)
+✓ hook wrapper present
+? hook wrapper freshness — wrapper template predates this engine (missing the repo anchor or later template fixes) — re-run `clauderize init`
+✓ index cache present
+✓ abstract index fresh
+✓ profile.lock.toml parses
+✓ engine metadata matches source version
+✓ procedure version compatible
+✓ corpus modernized to procedure v1.7.0
+✗ active gameplan 2026-07-19-test-drive on disk
+
+Drift detected — re-run `clauderize init` to repair.

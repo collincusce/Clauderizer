@@ -1,0 +1,38 @@
+{
+  "manager": null,
+  "gameplans": [
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "assignee": null,
+      "phases": []
+    },
+    {
+      "gameplan": "2026-07-19-m1-dashboard",
+      "assignee": null,
+      "phases": []
+    },
+    {
+      "gameplan": "2026-07-19-m2-terminal",
+      "assignee": null,
+      "phases": []
+    },
+    {
+      "gameplan": "2026-07-19-m3-agent-sessions",
+      "assignee": null,
+      "phases": []
+    },
+    {
+      "gameplan": "2026-07-19-m35-installers",
+      "assignee": null,
+      "phases": []
+    },
+    {
+      "gameplan": "2026-07-19-m4-announcement",
+      "assignee": null,
+      "phases": []
+    }
+  ],
+  "ok": true,
+  "summary": "manager=(none); 6 gameplan(s)",
+  "schema_version": "1.0"
+}

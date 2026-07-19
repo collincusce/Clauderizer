@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "items": [
+    {
+      "gameplan": "2026-07-19-campaign-drive",
+      "id": "O-01",
+      "phase": "0",
+      "text": "Which platform premieres the flagship?",
+      "resolved": false,
+      "resolved_date": null,
+      "resolution": null
+    }
+  ],
+  "summary": "1 open item(s)",
+  "schema_version": "1.0"
+}

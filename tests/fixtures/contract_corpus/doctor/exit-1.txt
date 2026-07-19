@@ -1,0 +1,2 @@
+# exit=1
+✗ Not a clauderized repo (no .clauderizer/config.toml). Run `clauderize init`.

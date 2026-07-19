@@ -1,0 +1,91 @@
+{
+  "ok": true,
+  "docs": [
+    {
+      "name": "ARCHITECTURE.md",
+      "title": "Architecture",
+      "bytes": 5527,
+      "mtime": 1784451179
+    },
+    {
+      "name": "DECISIONS.md",
+      "title": "Decisions",
+      "bytes": 35079,
+      "mtime": 1784452262
+    },
+    {
+      "name": "GLOSSARY.md",
+      "title": "Glossary",
+      "bytes": 8241,
+      "mtime": 1784450403
+    },
+    {
+      "name": "HARDENING.md",
+      "title": "Hardening",
+      "bytes": 9028,
+      "mtime": 1784445873
+    },
+    {
+      "name": "INVARIANTS.md",
+      "title": "Invariants",
+      "bytes": 7634,
+      "mtime": 1784451145
+    },
+    {
+      "name": "SECURITY.md",
+      "title": "Security",
+      "bytes": 3404,
+      "mtime": 1784445857
+    },
+    {
+      "name": "TESTING.md",
+      "title": "Testing",
+      "bytes": 2949,
+      "mtime": 1784442403
+    },
+    {
+      "name": "VISION.md",
+      "title": "Vision",
+      "bytes": 9138,
+      "mtime": 1784451179
+    },
+    {
+      "name": "phasekeep-proposal.md",
+      "title": "PhaseKeep: A Local-First Observability and Session Console for Multi-Agent Memory",
+      "bytes": 87940,
+      "mtime": 1784440359
+    },
+    {
+      "name": "gameplans/GAMEPLAN-PROCEDURE.md",
+      "title": "Gameplan Procedure",
+      "bytes": 70282,
+      "mtime": 1784440448
+    },
+    {
+      "name": "gameplans/2026-07-19-m0-read-contract/handoffs/PHASE-0-HANDOFF.md",
+      "title": "Phase 0 Handoff",
+      "bytes": 4840,
+      "mtime": 1784441524
+    },
+    {
+      "name": "gameplans/2026-07-19-m0-read-contract/handoffs/PHASE-1-HANDOFF.md",
+      "title": "Phase 1 Handoff",
+      "bytes": 7884,
+      "mtime": 1784451802
+    },
+    {
+      "name": "gameplans/2026-07-19-m0-read-contract/handoffs/PHASE-2-HANDOFF.md",
+      "title": "Phase 2 Handoff",
+      "bytes": 8893,
+      "mtime": 1784452437
+    },
+    {
+      "name": "gameplans/2026-07-19-m0-read-contract/handoffs/PHASE-3-HANDOFF.md",
+      "title": "Phase 3 Handoff",
+      "bytes": 10677,
+      "mtime": 1784454809
+    }
+  ],
+  "summary": "14 doc(s)",
+  "schema_version": "1.0"
+}

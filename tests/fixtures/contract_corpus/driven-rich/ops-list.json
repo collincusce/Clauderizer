@@ -1,0 +1,952 @@
+{
+  "ok": true,
+  "schema_version": "1.0",
+  "ops": [
+    {
+      "op": "cz_status",
+      "writes": false,
+      "summary": "Current state: active gameplan, phase table, baseline tests, pending cascades, blockers",
+      "required": [],
+      "optional": []
+    },
+    {
+      "op": "cz_next_phase_context",
+      "writes": false,
+      "summary": "Assemble everything the next/current phase session needs in one call (read-only: returns the handoff text without writing a file)",
+      "required": [],
+      "optional": [
+        {
+          "name": "audience",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_gameplans",
+      "writes": false,
+      "summary": "List gameplans as a portfolio \u2014 the multi-axis view across concurrent gameplans",
+      "required": [],
+      "optional": [
+        {
+          "name": "include_closed",
+          "default": false
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_graph_query",
+      "writes": false,
+      "summary": "Query the Project DAG",
+      "required": [],
+      "optional": [
+        {
+          "name": "entity_id",
+          "default": ""
+        },
+        {
+          "name": "kind",
+          "default": "lookup"
+        },
+        {
+          "name": "transitive",
+          "default": false
+        }
+      ]
+    },
+    {
+      "op": "cz_get",
+      "writes": false,
+      "summary": "Fetch one corpus entry's full body by id \u2014 the addressable read that makes loading a whole corpus file unnecessary",
+      "required": [
+        "id"
+      ],
+      "optional": [
+        {
+          "name": "kind",
+          "default": "auto"
+        }
+      ]
+    },
+    {
+      "op": "cz_preflight",
+      "writes": true,
+      "summary": "Run the pre-flight checks (git state + host test/build commands) for real",
+      "required": [],
+      "optional": []
+    },
+    {
+      "op": "cz_cascade",
+      "writes": true,
+      "summary": "Walk the DAG forward from a changed entity and write a cascade report",
+      "required": [
+        "entity_id",
+        "transition"
+      ],
+      "optional": [
+        {
+          "name": "dry_run",
+          "default": false
+        }
+      ]
+    },
+    {
+      "op": "cz_resolve_cascade",
+      "writes": true,
+      "summary": "Record the verdicts for a cascade report's \"needs review\" dependents",
+      "required": [],
+      "optional": [
+        {
+          "name": "verdicts",
+          "default": null
+        },
+        {
+          "name": "updates_applied",
+          "default": ""
+        },
+        {
+          "name": "updates_deferred",
+          "default": ""
+        },
+        {
+          "name": "report",
+          "default": ""
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_write_handoff",
+      "writes": true,
+      "summary": "Assemble the cumulative, self-contained handoff for a phase",
+      "required": [
+        "phase_n"
+      ],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_upsert_entity",
+      "writes": true,
+      "summary": "Create or update a tracked entity doc with valid frontmatter",
+      "required": [
+        "id",
+        "type"
+      ],
+      "optional": [
+        {
+          "name": "version",
+          "default": ""
+        },
+        {
+          "name": "status",
+          "default": ""
+        },
+        {
+          "name": "depends_on",
+          "default": null
+        },
+        {
+          "name": "fields",
+          "default": null
+        }
+      ]
+    },
+    {
+      "op": "cz_consumes",
+      "writes": true,
+      "summary": "Declare that a gameplan CONSUMES tracked entities produced elsewhere \u2014 the cross-gameplan dependency edge (D10)",
+      "required": [
+        "consumes"
+      ],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_transition_status",
+      "writes": true,
+      "summary": "Transition an entity's status; fires cascade automatically when enabled",
+      "required": [
+        "id",
+        "to_status"
+      ],
+      "optional": [
+        {
+          "name": "run_cascade",
+          "default": true
+        }
+      ]
+    },
+    {
+      "op": "cz_add_decision",
+      "writes": true,
+      "summary": "Append an ADR (D-NNN project-wide, or D-k gameplan-internal)",
+      "required": [
+        "title",
+        "context",
+        "decision",
+        "consequences"
+      ],
+      "optional": [
+        {
+          "name": "scope",
+          "default": "project"
+        },
+        {
+          "name": "supersedes",
+          "default": ""
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        },
+        {
+          "name": "evidence",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_add_invariant",
+      "writes": true,
+      "summary": "Append an invariant (INVARIANT-NN) \u2014 project-wide by default",
+      "required": [
+        "text"
+      ],
+      "optional": [
+        {
+          "name": "introduced_by",
+          "default": ""
+        },
+        {
+          "name": "scope",
+          "default": "project"
+        },
+        {
+          "name": "audience",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_add_finding",
+      "writes": true,
+      "summary": "Append a security finding (H-NN) to the append-only HARDENING risk tracker (a.k.a",
+      "required": [
+        "title",
+        "severity",
+        "impact"
+      ],
+      "optional": [
+        {
+          "name": "affected",
+          "default": ""
+        },
+        {
+          "name": "invariant",
+          "default": ""
+        },
+        {
+          "name": "preconditions",
+          "default": ""
+        },
+        {
+          "name": "root_cause",
+          "default": ""
+        },
+        {
+          "name": "reproduction",
+          "default": ""
+        },
+        {
+          "name": "recommendation",
+          "default": ""
+        },
+        {
+          "name": "regression_tests",
+          "default": ""
+        },
+        {
+          "name": "status",
+          "default": "open"
+        }
+      ]
+    },
+    {
+      "op": "cz_resolve_finding",
+      "writes": true,
+      "summary": "Update a finding's status + dated resolution note in HARDENING (append-only)",
+      "required": [
+        "finding_id"
+      ],
+      "optional": [
+        {
+          "name": "status",
+          "default": "resolved"
+        },
+        {
+          "name": "note",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_add_lesson",
+      "writes": true,
+      "summary": "Add an accumulated lesson (rolls into every future handoff)",
+      "required": [
+        "text"
+      ],
+      "optional": [
+        {
+          "name": "category",
+          "default": "Process"
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        },
+        {
+          "name": "evidence",
+          "default": ""
+        },
+        {
+          "name": "audience",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_obsolete_lesson",
+      "writes": true,
+      "summary": "Mark a lesson obsolete so future handoffs stop carrying it",
+      "required": [
+        "number"
+      ],
+      "optional": [
+        {
+          "name": "reason",
+          "default": ""
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_consolidate_lessons",
+      "writes": true,
+      "summary": "Synthesize several overlapping lessons into one (anti-bloat)",
+      "required": [
+        "numbers",
+        "text"
+      ],
+      "optional": [
+        {
+          "name": "category",
+          "default": "Process"
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_promote_lesson",
+      "writes": true,
+      "summary": "Promote a gameplan lesson into the project-level docs/LESSONS.md",
+      "required": [
+        "number"
+      ],
+      "optional": [
+        {
+          "name": "text",
+          "default": ""
+        },
+        {
+          "name": "category",
+          "default": ""
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_register_skill",
+      "writes": true,
+      "summary": "Register an Agent Skill into docs/SKILLS.md so the project is skill-aware",
+      "required": [
+        "name",
+        "description"
+      ],
+      "optional": [
+        {
+          "name": "source",
+          "default": ""
+        },
+        {
+          "name": "category",
+          "default": "General"
+        }
+      ]
+    },
+    {
+      "op": "cz_obsolete_skill",
+      "writes": true,
+      "summary": "Mark a registered skill (S-NN) obsolete in docs/SKILLS.md \u2014 never delete",
+      "required": [
+        "skill_id"
+      ],
+      "optional": [
+        {
+          "name": "reason",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_add_correction",
+      "writes": true,
+      "summary": "Record a divergence from the gameplan (C-NN); optionally promote a lesson",
+      "required": [
+        "phase",
+        "gameplan_said",
+        "actually",
+        "why"
+      ],
+      "optional": [
+        {
+          "name": "lesson",
+          "default": ""
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_add_output",
+      "writes": true,
+      "summary": "Record a concrete value a phase produced into the Outputs Registry",
+      "required": [
+        "phase",
+        "key",
+        "value"
+      ],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_add_phase_summary",
+      "writes": true,
+      "summary": "Record the 1\u20132 paragraph completion summary for a finished phase",
+      "required": [
+        "phase",
+        "text"
+      ],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_create_gameplan",
+      "writes": true,
+      "summary": "Scaffold a new gameplan directory and (by default) make it the focus",
+      "required": [
+        "name"
+      ],
+      "optional": [
+        {
+          "name": "first_phase",
+          "default": ""
+        },
+        {
+          "name": "kind",
+          "default": "driven"
+        },
+        {
+          "name": "focus",
+          "default": true
+        }
+      ]
+    },
+    {
+      "op": "cz_focus",
+      "writes": true,
+      "summary": "Switch focus \u2014 the default-target gameplan for cz_status / do-phase / handoff / preflight when no gameplan_id is given \u2014 to `gameplan_id`",
+      "required": [],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_add_phase",
+      "writes": true,
+      "summary": "Add a phase to a gameplan (appends a section + status rows)",
+      "required": [
+        "name",
+        "goal"
+      ],
+      "optional": [
+        {
+          "name": "depends_on_phases",
+          "default": null
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_transition_phase",
+      "writes": true,
+      "summary": "Advance a phase's lifecycle status so cz_status reflects reality",
+      "required": [
+        "phase_n",
+        "to_status"
+      ],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_add_amendment",
+      "writes": true,
+      "summary": "Record a first-class amendment (A-NNN) to a started gameplan",
+      "required": [
+        "title",
+        "affected_sections",
+        "affected_phases",
+        "triggered_by",
+        "what",
+        "why"
+      ],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_add_open_item",
+      "writes": true,
+      "summary": "Record a blocker or cross-phase question as an auto-numbered open item (O-NN)",
+      "required": [
+        "text"
+      ],
+      "optional": [
+        {
+          "name": "phase",
+          "default": ""
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_resolve_open_item",
+      "writes": true,
+      "summary": "Mark an open item (O-NN) resolved in place \u2014 never deleted (append-only)",
+      "required": [
+        "id",
+        "resolution"
+      ],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_set_exit_criteria",
+      "writes": true,
+      "summary": "Author or replace a phase's exit criteria as machine-checkable - [ ] items",
+      "required": [
+        "phase",
+        "criteria"
+      ],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_check_exit_criterion",
+      "writes": true,
+      "summary": "Check (or uncheck) one of a phase's exit criteria, matched by substring",
+      "required": [
+        "phase",
+        "criterion"
+      ],
+      "optional": [
+        {
+          "name": "checked",
+          "default": true
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_approve_gate",
+      "writes": true,
+      "summary": "Record a human approval on an APPROVAL exit criterion, bound to the artifact's content hash",
+      "required": [
+        "phase",
+        "criterion"
+      ],
+      "optional": [
+        {
+          "name": "note",
+          "default": ""
+        },
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_modernize",
+      "writes": true,
+      "summary": "Report \u2014 and with apply=true, perform \u2014 the corpus-modernization pass",
+      "required": [],
+      "optional": [
+        {
+          "name": "apply",
+          "default": false
+        }
+      ]
+    },
+    {
+      "op": "cz_dismiss_proposal",
+      "writes": true,
+      "summary": "Dismiss an advisory modernize proposal by its ``id`` \u2014 it will NOT re-surface (in cz_modernize or the session digest) until it materially ch",
+      "required": [
+        "proposal_id"
+      ],
+      "optional": []
+    },
+    {
+      "op": "cz_defer_proposal",
+      "writes": true,
+      "summary": "Snooze an advisory modernize proposal by its ``id`` for ``days`` days (default 7); it re-surfaces after that",
+      "required": [
+        "proposal_id"
+      ],
+      "optional": [
+        {
+          "name": "days",
+          "default": 7
+        }
+      ]
+    },
+    {
+      "op": "cz_onboard",
+      "writes": false,
+      "summary": "Assemble the onboarding bundle for an existing project \u2014 read-only",
+      "required": [],
+      "optional": []
+    },
+    {
+      "op": "cz_analyze",
+      "writes": false,
+      "summary": "Surface the existing decisions/invariants most relevant to `text`, the one-hop graph neighbors `text` touches but has not connected, AND the",
+      "required": [
+        "text"
+      ],
+      "optional": [
+        {
+          "name": "k",
+          "default": 5
+        }
+      ]
+    },
+    {
+      "op": "cz_critique",
+      "writes": false,
+      "summary": "Self-critique gate: surface a reference-free Coverage / Coherence / Grounding / Self-enhancement / Authority rubric for `target` \u2014 a phase n",
+      "required": [],
+      "optional": [
+        {
+          "name": "target",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_audit",
+      "writes": false,
+      "summary": "Work/release self-audit gate: after a gameplan, audit the WORK PRODUCT and release-readiness \u2014 distinct from cz_critique, which audits memor",
+      "required": [],
+      "optional": []
+    },
+    {
+      "op": "cz_mine_failures",
+      "writes": false,
+      "summary": "Mine Claude Code session transcripts for failure\u2192fix patterns and PROPOSE draft corrections/lessons (the Headroom `headroom learn` analog)",
+      "required": [],
+      "optional": [
+        {
+          "name": "transcripts_dir",
+          "default": ""
+        },
+        {
+          "name": "max_proposals",
+          "default": 40
+        }
+      ]
+    },
+    {
+      "op": "cz_corpus_health",
+      "writes": false,
+      "summary": "Surface a deterministic health snapshot of the lesson corpus + telemetry",
+      "required": [],
+      "optional": []
+    },
+    {
+      "op": "cz_lesson_health",
+      "writes": false,
+      "summary": "Surface per-lesson empirical health from telemetry: utility (fraction of a lesson's resolved surfacings that preceded a passing phase), fail",
+      "required": [],
+      "optional": []
+    },
+    {
+      "op": "cz_curate",
+      "writes": false,
+      "summary": "PROPOSE a corpus-maintenance batch from telemetry-derived health, read-only like cz_mine_failures: consolidate redundant lessons, obsolete n",
+      "required": [],
+      "optional": []
+    },
+    {
+      "op": "cz_loop_step",
+      "writes": false,
+      "summary": "Run one iteration of a loop gameplan (read-only): the convergence metric (corpus_health), the curator's proposals, a `converged` flag, and a",
+      "required": [],
+      "optional": []
+    },
+    {
+      "op": "cz_discover_skills",
+      "writes": false,
+      "summary": "PROPOSE Agent Skills present in this project's environment but not yet registered in docs/SKILLS.md \u2014 read-only, like cz_curate / cz_mine_fa",
+      "required": [],
+      "optional": []
+    },
+    {
+      "op": "cz_list_open_items",
+      "writes": false,
+      "summary": "List every tracked open item (O-NN) as a full record across the portfolio",
+      "required": [],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        },
+        {
+          "name": "include_resolved",
+          "default": true
+        }
+      ]
+    },
+    {
+      "op": "cz_list_decisions",
+      "writes": false,
+      "summary": "List the project decision log (D-NNN) with supersession links both ways",
+      "required": [],
+      "optional": [
+        {
+          "name": "include_bodies",
+          "default": false
+        }
+      ]
+    },
+    {
+      "op": "cz_list_invariants",
+      "writes": false,
+      "summary": "List the invariant register (INVARIANT-NN) with scope and audience tags",
+      "required": [],
+      "optional": [
+        {
+          "name": "include_bodies",
+          "default": false
+        }
+      ]
+    },
+    {
+      "op": "cz_list_findings",
+      "writes": false,
+      "summary": "List the hardening/risk register (H-NN) with lifecycle status",
+      "required": [],
+      "optional": [
+        {
+          "name": "include_bodies",
+          "default": false
+        }
+      ]
+    },
+    {
+      "op": "cz_list_lessons",
+      "writes": false,
+      "summary": "List the lesson corpus with curation state (active/obsolete/promoted)",
+      "required": [],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_list_corrections",
+      "writes": false,
+      "summary": "List the correction log (C-NN) as structured records, portfolio-wide by default",
+      "required": [],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_list_amendments",
+      "writes": false,
+      "summary": "List gameplan amendments (A-NNN) as structured records",
+      "required": [],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_phase_detail",
+      "writes": false,
+      "summary": "Every gameplan's full phase table with exit-criteria state, approvals, dates, handoff path, goal, and assignment",
+      "required": [],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_list_cascade_reports",
+      "writes": false,
+      "summary": "List cascade reports as data: trigger, per-dependent verdicts, pending state",
+      "required": [],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        },
+        {
+          "name": "include_resolved",
+          "default": true
+        }
+      ]
+    },
+    {
+      "op": "cz_docs_index",
+      "writes": false,
+      "summary": "Index the canonical documents: docs/*.md, the procedure, every handoff and post-mortem \u2014 names are the ids cz_doc accepts",
+      "required": [],
+      "optional": []
+    },
+    {
+      "op": "cz_doc",
+      "writes": false,
+      "summary": "One canonical document's body, frontmatter-stripped \u2014 the front-door doc read (external clients never parse repo files; INVARIANT-01 on thei",
+      "required": [
+        "name"
+      ],
+      "optional": []
+    },
+    {
+      "op": "cz_assignments",
+      "writes": false,
+      "summary": "The assignment surface in one read: manager role, per-gameplan default assignees, per-phase overrides (O-02 provisional shape)",
+      "required": [],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        }
+      ]
+    },
+    {
+      "op": "cz_revision",
+      "writes": false,
+      "summary": "The monotonic memory revision (epoch + counter) \u2014 the change signal",
+      "required": [],
+      "optional": []
+    },
+    {
+      "op": "cz_assign",
+      "writes": true,
+      "summary": "Record an assignment: gameplan default, phase override, or the manager role",
+      "required": [],
+      "optional": [
+        {
+          "name": "gameplan_id",
+          "default": ""
+        },
+        {
+          "name": "phase",
+          "default": ""
+        },
+        {
+          "name": "assignee",
+          "default": ""
+        },
+        {
+          "name": "role",
+          "default": ""
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "gameplan": {
+    "id": "2026-07-19-campaign-drive",
+    "kind": "campaign",
+    "phase_label": "stage",
+    "lifecycle": "planning",
+    "open": true,
+    "total_phases": 1,
+    "phase": {
+      "number": "0",
+      "name": "Concept",
+      "state": "ready"
+    },
+    "blockers": [],
+    "pending_cascades": 0,
+    "is_focus": true,
+    "assignee": "claude@native"
+  },
+  "deliverables": [
+    {
+      "id": "deliv.flagship-film",
+      "status": "in_production",
+      "version": ""
+    }
+  ],
+  "lifecycle": [
+    "concept",
+    "spec-approved",
+    "produced",
+    "assembled",
+    "qa",
+    "shipped"
+  ],
+  "matrix_md": "| deliverable | concept | spec-approved | produced | assembled | qa | shipped |\n|---|---|---|---|---|---|---|\n| deliv.flagship-film (in_production) |  |  |  |  |  |  |",
+  "summary": "2026-07-19-campaign-drive: 1 deliverable(s) across concept → spec-approved → produced → assembled → qa → shipped",
+  "schema_version": "1.0"
+}

@@ -1,0 +1,232 @@
+{
+  "ok": true,
+  "items": [
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-01",
+      "phase": "1",
+      "text": "CLI vs MCP transport (proposal 16.4): is any Phase-1 view datum reachable only via MCP resources or cz_get? Resolve during the Coverage Audit and record the transport decision.",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "D-022 (2026-07-19): CLI --json only for Milestone 1. Audit evidence (COVERAGE.md §5, captures/mcp/): MCP tools mirror the same shared ops registry; MCP-only surfaces are prose or raw frontmattered markdown, unusable under INVARIANT-01; no Phase-1 datum is MCP-only. Registry-landed Phase-2 asks reach both transports automatically."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-02",
+      "phase": "2",
+      "text": "Assignment field shape (proposal 16.7): does assignment live on phases, on gameplans with phase overrides, or both, and how does the manager role serialize? Clauderizer-side design decision during Engine Asks.",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: provisional shape shipped (proposal 16.7) — gameplan default via \"> Assignee:\" blockquote header, per-phase override via \"**Assigned**:\" line, manager role in config.toml [assignment]; cz_assign writes, cz_assignments/cz_phase_detail/portfolio cards read. Explicitly revisitable when m3 builds the first consumer. Verified by scripted write-then-read on the released engine (revision 3->4 on assign)."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-03",
+      "phase": "2",
+      "text": "Revision poll cost (review finding): sustained 1-2s polling currently means a Python process spawn (plus wsl.exe interop on Windows) per project per tick, and status --json may rebuild state from Markdown each call. The engine ask must include a near-free revision read - a dedicated fast verb or a blessed single-value artifact defined as contract surface (INVARIANT-01 requires it be part of the versioned contract, not a private file) - and the choice must be benchmarked against many-project daily use.",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: .clauderizer/revision.json is the blessed single-value contract artifact ({schema_version, epoch, revision}, atomic replace, bumped by every engine write incl. cascade reports/handoffs/focus flips; epoch re-mints on recreation so pollers key on (epoch, revision)). MEASURED (scripts/bench-revision-poll.js, 10 projects @1s for 60s): CPU 0.24% of one core (<2% target), p95 1.23ms (<50ms target), p99 1.82ms. wsl.exe interop leg deferred with reason: the artifact read eliminates the per-poll process spawn the 250ms budget priced; measurable only from a Windows-side consumer (m3.5)."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-04",
+      "phase": "2",
+      "text": "Engine bug found during Phase 0: re-running `clauderize init` on an already-clauderized repo truncated CLAUDE.md — it regenerated its managed Clauderizer block but deleted all user/project content after it (the entire PhaseKeep section), contradicting the README's \"reruns preserve your CLAUDE.md text\". Also rewired hook.sh from the released uvx engine to the dev venv path (auto-compose picked the checkout). Both restored from git here. Fix upstream during the Phase 2 engine trip (D-003): preserve non-managed CLAUDE.md content on re-init; consider honoring the existing run-cmd on rerun.",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: root-caused and fixed upstream. The truncation happened because project content lived INSIDE the managed marker block (end marker at EOF), so the replace deleted it. upsert_marker_block is now lossless — H1-headed foreign content moves below the block under a visible banner, init prints a breadcrumb; regression tests cover content after the block, content inside the block, and half-present markers (engine tests/test_marker_recovery.py incl. an end-to-end init rerun)."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-05",
+      "phase": "2",
+      "text": "GAP (schema versioning, §6.2): no --json or ops output carries a schema version field — verified against captures/status.json, gameplans.json, focus.json, and all 48 ops --schema outputs. Ask: an explicit schema_version on every JSON payload plus the 6.2 compatibility rules (additive=minor, breaking=major, clients ignore unknown fields, degrade explicitly on major mismatch).",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: schema_version \"1.0\" on every ops-registry result and every --json CLI verb (status/gameplans/focus route through the stamped dispatch; ops --list --json and batch envelopes stamped too). §6.2 compat rules documented in the engine's contract.py and CHANGELOG. Verified live on the released engine (scratch-repo captures)."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-06",
+      "phase": "2",
+      "text": "GAP (Open Items view, §8.1): open items are reachable only as bare ID strings (status.open_items = [\"O-01\",...]); cz_get rejects O-NN ids (\"expected a D-/INVARIANT-/H-/L- id\"). Ask: an open-items listing verb returning full records — id, text, phase tag, resolution state + resolution text, dates, gameplan — across the portfolio, filterable by gameplan/state.",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: cz_list_open_items — full records (gameplan, id, phase tag, marker-stripped text, resolved, resolved_date, resolution), portfolio-wide, filterable by gameplan_id/include_resolved. Verified live on the released engine."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-07",
+      "phase": "2",
+      "text": "GAP (Invariants and Decisions view, §8.1): no enumeration of the decision log — cz_get D-NNN works only with a known id; nothing lists ids, so supersession chains cannot be rendered as chains. Ask: a decisions listing verb (id, title, status, dates, supersedes/superseded_by, scope project|gameplan).",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: cz_list_decisions — id, title, status, date, scope, audience, supersedes AND superseded_by (chains renderable as chains), optional bodies. Round-trip tested against cz_add_decision's supersession back-ref."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-08",
+      "phase": "2",
+      "text": "GAP (Invariants and Decisions view, §8.1): no enumeration of invariants — same by-known-id-only limitation as decisions. Ask: an invariants listing verb (id, text, status incl. superseded-by links, scoping project/gameplan, audience tags, introduced-by decision).",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: cz_list_invariants — scope (project/gameplan:<id>) and audience from the single-sourced parsers, supersession links, optional bodies."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-09",
+      "phase": "2",
+      "text": "GAP (Lessons and Corrections view, §8.1): no lesson-corpus listing — status.memory carries counts only (active/obsolete/promoted/project); cz_lesson_health scores project lessons but does not return the corpus; L- ids work in cz_get only if known. Ask: a lessons listing verb with body, category, curation state (active/consolidated/promoted/obsoleted), evidence, audience, and per-gameplan vs project scope.",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: cz_list_lessons — project L-NN corpus plus gameplan accumulated lessons (focus by default), each with origin, category, curation state (active/obsolete/promoted + detail), audience, evidence tag, from-gameplan tag. cz_list_findings additionally covers the H-NN register the audit folded in here."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-10",
+      "phase": "2",
+      "text": "GAP (Lessons and Corrections view, §8.1): the correction log (C-NN) has no read at all — not in any --json output, rejected by cz_get. Ask: a corrections listing verb (id, phase, gameplan-said/actually/why, lesson link, gameplan).",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: cz_list_corrections — C-NN records (phase, gameplan_said, actually, why, lesson) parsed from the same PHASE-STATUS.md grammar add_correction writes; portfolio-wide, round-trip tested."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-11",
+      "phase": "2",
+      "text": "GAP (gameplan drill-in + reconciliation strip, §8.1): no phase-detail read. status --json carries the full phase table for the ACTIVE gameplan only; gameplans --json gives other gameplans just current-phase + total_phases; exit-criteria checked/unchecked state and approval state (cz_approve_gate's record, incl. content-hash staleness) appear in no JSON output. The reconciliation strip cannot compute \"all phases complete but never closed\" or \"completed with criteria unchecked\" portfolio-wide without this. Ask: a phase-detail verb per gameplan returning every phase (number, name, status, dates, exit criteria with checked state, approvals with staleness, handoff path).",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: cz_phase_detail — every gameplan (not just focus): full phase table with normalized status, Started/Completed dates, handoff path, goal, assignment (override or gameplan default), and per-criterion exit-criteria state incl. computed approval satisfaction with content-hash staleness (approved/stale/missing/unapproved). Staleness round-trip tested (edit-after-approve flips to stale)."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-12",
+      "phase": "2",
+      "text": "GAP (Graph view cascade overlay, §8.1): cascade reports are unreadable through the contract — pending_cascades is a count in gameplans --json and id strings in status --json; report contents (trigger, flagged dependents, verdicts, resolution state) exist only as Markdown under _cascade-reports/. Ask: a cascade-report listing/read verb (pending + resolved, with per-dependent verdicts) so the graph view can overlay cascade state.",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: cz_list_cascade_reports — trigger, per-dependent records (entity, direct/transitive, needs_review, verdict), updates_applied/deferred text, and the same pending predicate the digest/preflight share. Pending→resolved lifecycle round-trip tested."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-13",
+      "phase": "2",
+      "text": "GAP (gameplan drill-in, §8.1): amendments (A-NNN) have no read — cz_add_amendment writes them but no output lists them. Ask: amendments included in the phase-detail/gameplan-detail read or their own listing verb (id, title, affected sections/phases, triggered-by, what/why, date).",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: cz_list_amendments — A-NNN records (title, date, affected sections/phases, triggered_by, what, why) from add_amendment's bullet grammar, round-trip tested."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-14",
+      "phase": "2",
+      "text": "GAP (Docs view, §8.1 vs INVARIANT-01): no contract-blessed way to fetch canonical doc bodies (VISION, ARCHITECTURE, handoffs, post-mortems). cz_get serves single corpus entries (D-/INVARIANT-/H-/L-) only; clauderizer://entity/{id} returns raw markdown WITH frontmatter, which PhaseKeep must not parse. Ask: a doc-content read verb (id or well-known name -> body without engine frontmatter, plus an index/listing), so the Docs view renders through the front door.",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: cz_docs_index (docs/*.md + procedure + every handoff and post-mortem, with title/bytes/mtime) and cz_doc (frontmatter-stripped body by docs/-relative name, path-escape refused). The Docs view renders through the front door."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-15",
+      "phase": "2",
+      "text": "GAP (ops introspection as consumed surface, exit criterion 4): ops --list is text-only ([read ]/[write] columns; the Phase 1 capture script had to regex it and initially mis-parsed wrapped description text). ops --schema <op> is JSON per-op but enumeration is not. Ask: ops --list --json (name, writes flag, summary, required/optional) so introspection is machine-consumable end to end.",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: clauderize ops --list --json — full machine-readable enumeration (op, writes, summary, required, optional) stamped with schema_version; 62 ops verified on the released engine."
+    },
+    {
+      "gameplan": "2026-07-19-m0-read-contract",
+      "id": "O-16",
+      "phase": "2",
+      "text": "GAP (Graph view edge pins, §8.1): cz_graph_query emits depends_on as bare ids and a pin_violations[] check result, but the pin SPECS themselves (semver ranges on edges) are stripped, so the graph view cannot label edges with their pins. Ask: depends_on entries carry the declared pin (id + range) in graph output.",
+      "resolved": true,
+      "resolved_date": "2026-07-19",
+      "resolution": "1.12.0: cz_graph_query entities carry depends_on_pins [{target, constraint}] beside the target@constraint strings — additive, cache-safe, tested for string/struct agreement."
+    },
+    {
+      "gameplan": "2026-07-19-m1-dashboard",
+      "id": "O-01",
+      "phase": "0",
+      "text": "Multi-project discovery (proposal 16.5): explicit roots plus a config file is the leaning; directory scanning rejected as convenient-and-creepy. Confirm the exact config shape at Server Core.",
+      "resolved": false,
+      "resolved_date": null,
+      "resolution": null
+    },
+    {
+      "gameplan": "2026-07-19-m3-agent-sessions",
+      "id": "O-01",
+      "phase": "1",
+      "text": "tmux control mode (-CC) versus plain attach inside a PTY (proposal 16.6): prototype both early; the choice shapes the session registry.",
+      "resolved": false,
+      "resolved_date": null,
+      "resolution": null
+    },
+    {
+      "gameplan": "2026-07-19-m3-agent-sessions",
+      "id": "O-02",
+      "phase": "0",
+      "text": "Agent launch templates (proposal 16.8): survey real agent invocations across current projects (Claude Code in clauderized repos primary) to fix the profile schema's template variables.",
+      "resolved": false,
+      "resolved_date": null,
+      "resolution": null
+    },
+    {
+      "gameplan": "2026-07-19-m3-agent-sessions",
+      "id": "O-03",
+      "phase": "0",
+      "text": "Run-to-completion survey (D-014): which of the supported hosts offer a one-shot invocation mode (claude -p et al.), what flags/templates each needs, and how the profile mode field serializes. Shapes the profile schema together with O-02; interactive-only agents stay manual-launch.",
+      "resolved": false,
+      "resolved_date": null,
+      "resolution": null
+    },
+    {
+      "gameplan": "2026-07-19-m3-agent-sessions",
+      "id": "O-04",
+      "phase": "5",
+      "text": "State-quiescence reap prototype (D-016): can continue safely include interactive sessions via transition-observed + revision-quiet grace window + graceful terminate (kill-complete)? Known edges: the close-out tail after the last memory write (a git commit is not revision-visible unless the revision rides HEAD), grace-window tuning, double-dispatch protection while a reap is pending. Also explore host-side stop/turn hooks firing memory-sync nudges automatically (engine-side wiring ask per D-003 if adopted). Decide by end of m3 Phase 5; adopting the reap requires a successor decision to D-014.",
+      "resolved": false,
+      "resolved_date": null,
+      "resolution": null
+    },
+    {
+      "gameplan": "2026-07-19-m35-installers",
+      "id": "O-01",
+      "phase": "2",
+      "text": "HUMAN ACTION: procure the Windows code-signing identity (Azure Trusted Signing or OV/EV certificate) and Apple Developer membership before the Signing phase; recurring costs accepted per proposal 12.4.",
+      "resolved": false,
+      "resolved_date": null,
+      "resolution": null
+    },
+    {
+      "gameplan": "2026-07-19-m4-announcement",
+      "id": "O-01",
+      "phase": "0",
+      "text": "HUMAN ACTION: DNS/hosting access for phasekeep.com and phasekeep.dev, and final Apache-2.0 confirmation (proposal 16.9) before the repository goes public.",
+      "resolved": false,
+      "resolved_date": null,
+      "resolution": null
+    },
+    {
+      "gameplan": "2026-07-19-m4-announcement",
+      "id": "O-02",
+      "phase": "2",
+      "text": "HUMAN ACTION: publish the Show HN post and X thread at launch; agents prepare drafts only.",
+      "resolved": false,
+      "resolved_date": null,
+      "resolution": null
+    },
+    {
+      "gameplan": "2026-07-19-m4-announcement",
+      "id": "O-03",
+      "phase": "0",
+      "text": "Pre-public scrub (raised by m0 Phase 1): docs/contract/captures/ commits raw audit evidence containing local absolute paths and the Windows-side username (doctor.txt lists /mnt/c/Users/USER/... and WSL UNC paths; MANIFEST/status embed /HOME). Before the repo goes public, either scrub/regenerate captures with neutralized paths or accept-and-note; the m0 Phase 3 fixture corpus should already prefer scrubbed scratch repos.",
+      "resolved": false,
+      "resolved_date": null,
+      "resolution": null
+    }
+  ],
+  "summary": "25 open item(s)",
+  "schema_version": "1.0"
+}

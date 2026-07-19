@@ -1,0 +1,227 @@
+{
+  "ok": true,
+  "decisions": [
+    {
+      "id": "D-001",
+      "title": "Six-gameplan portfolio mapped to the proposal milestones",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-002",
+      "title": "The proposal document is the specification of record",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-003",
+      "title": "Engine-side work executes in the Clauderizer repo under its own memory",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-004",
+      "title": "All reads via the versioned JSON contract; CLI --json is the primary transport",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-005",
+      "title": "Stack: Node >=24 ESM core, Preact publish-time-built frontend, dependency austerity",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-006",
+      "title": "Electron app primary, npx tab mode secondary, one transport-agnostic core",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-007",
+      "title": "Security baseline ships inside Milestone 1, before any RCE-shaped surface",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-008",
+      "title": "The fence: no interpretation of agent output; completion is process exit plus state transition",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-009",
+      "title": "tmux is the persistence substrate; Windows persistence requires WSL",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-010",
+      "title": "Terminal-first gameplan creation is sequenced into m2, after the PTY subsystem exists",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-011",
+      "title": "React-to-state: every surfaced condition carries its reaction, split by shape",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-012",
+      "title": "Vocabulary education is core UX: hints everywhere from m1, chips at m2 (un-parks Appendix B)",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-013",
+      "title": "Product identity: project management meets workflow management at best-in-class console quality; operator-first, teach-ready",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-014",
+      "title": "Completion semantics for REPL agents: dispatch requires run-to-completion modes; a budget-kill with an observed transition is a completion",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-015",
+      "title": "Dispatch cost posture: fresh sessions are the accepted cost; PhaseKeep never models provider caching",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-016",
+      "title": "Interactive sessions close the loop by input and state, never by reading output: checkpoint button now, state-quiescence reap as an m3 prototype",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-017",
+      "title": "Session reuse for immediate continuation: max_phases_per_session, fresh by default, never idle keep-alive",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-018",
+      "title": "Telemetry adapters are enrichment-only: numeric fields from host-local surfaces, never content, never load-bearing",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-019",
+      "title": "Quiescence is a conjunction, and the journal is a write-ahead log",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-020",
+      "title": "Quiescence probes are measured, baselined at dispatch, and shadow-calibrated before they enforce",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-021",
+      "title": "Quiescence signal admission: host-uniform signals define idle; per-profile signals are veto-only",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "D-022",
+      "title": "Transport resolved: CLI --json only for Milestone 1; MCP adds nothing Phase-1-needed (closes §16.4 / m0 O-01)",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": "2026-07-19",
+      "supersedes": null,
+      "superseded_by": null
+    }
+  ],
+  "summary": "22 decision(s)",
+  "schema_version": "1.0"
+}

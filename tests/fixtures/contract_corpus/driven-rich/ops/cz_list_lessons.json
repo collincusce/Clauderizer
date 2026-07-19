@@ -1,0 +1,91 @@
+{
+  "ok": true,
+  "lessons": [
+    {
+      "id": "1",
+      "origin": "gameplan",
+      "category": "Process",
+      "state": "active",
+      "state_detail": null,
+      "audience": null,
+      "evidence": null,
+      "from_gameplan": null,
+      "text": "Open-item IDs are per-gameplan: a bare O-NN is only unambiguous inside its own gameplan. Cross-gameplan references must be qualified (m4's O-01), and any batch that writes then references tracked IDs must read the assigned IDs back instead of assuming sequence.",
+      "gameplan": "2026-07-19-m0-read-contract"
+    },
+    {
+      "id": "2",
+      "origin": "gameplan",
+      "category": "Process",
+      "state": "active",
+      "state_detail": null,
+      "audience": null,
+      "evidence": "Kimi review round 4 (2026-07-19); the D-014..D-020 dispatcher thread reaching criteria level pre-code only because each claim is falsifiable in shadow mode before enforcement",
+      "from_gameplan": null,
+      "text": "Pre-code decisions are well-posed hypotheses, not conclusions. Every load-bearing mechanism must ship with its falsification plan - shadow journals, evidence objects, machine-checkable exit criteria - and the calibration or verification data gets the final vote. Memory that carries its own test procedure is what separates surfaced memory from archaeology; a decision without one is folklore with a number. *(evidence: Kimi review round 4 (2026-07-19); the D-014..D-020 dispatcher thread reaching criteria level pre-code only because each claim is falsifiable in shadow mode before enforcement)*",
+      "gameplan": "2026-07-19-m0-read-contract"
+    },
+    {
+      "id": "3",
+      "origin": "gameplan",
+      "category": "Process",
+      "state": "active",
+      "state_detail": null,
+      "audience": null,
+      "evidence": "Kimi reviews rounds 1-4 (2026-07-19): eight findings plus drift became C-01 and D-014..D-021; Grok review queued next",
+      "from_gameplan": null,
+      "text": "Cross-model adversarial review works, and here it was the product thesis running on itself: a second model reviewing this repo's memory found drift the drafting model's own passes missed (the dangling O-NN references, recorded as C-01), and the loop - one model drafts, another attacks, the author dispositions, memory tracks all of it - is a small-scale preview of the heterogeneous fleet PhaseKeep supervises. Worth scheduling an external-model review at each gameplan close-out, not only at planning; rotate the reviewing model to vary the blind spots. *(evidence: Kimi reviews rounds 1-4 (2026-07-19): eight findings plus drift became C-01 and D-014..D-021; Grok review queued next)*",
+      "gameplan": "2026-07-19-m0-read-contract"
+    },
+    {
+      "id": "4",
+      "origin": "gameplan",
+      "category": "Process",
+      "state": "active",
+      "state_detail": null,
+      "audience": null,
+      "evidence": "Phase 0 (2026-07-19): init rerun diff showed CLAUDE.md -73 lines and hook.sh engine-path swap; restored via git checkout; O-04 filed for the upstream fix",
+      "from_gameplan": null,
+      "text": "Engine-invoked regeneration is not idempotent in practice: a `clauderize init` rerun on this wired repo truncated CLAUDE.md (deleted all project content after the managed block) and silently rewired hook.sh to the dev venv. After ANY engine-invoked file regeneration, `git diff` the touched files before committing — the clean-tree preflight makes this cheap, and git checkout is the undo. The documented editable override (profile.lock.toml) is the safe wiring path; rerunning init is not. *(evidence: Phase 0 (2026-07-19): init rerun diff showed CLAUDE.md -73 lines and hook.sh engine-path swap; restored via git checkout; O-04 filed for the upstream fix)*",
+      "gameplan": "2026-07-19-m0-read-contract"
+    },
+    {
+      "id": "5",
+      "origin": "gameplan",
+      "category": "Process",
+      "state": "active",
+      "state_detail": null,
+      "audience": null,
+      "evidence": "Phase 1 (2026-07-19): captures/probes/read-ops-probe.json results n=5..7 (cz_get refusals); COVERAGE.md §2 matrix; O-05..O-16",
+      "from_gameplan": null,
+      "text": "Contract audits should probe negative cases, not just happy paths: feeding cz_get the id families it does NOT serve returned \"expected a D-/INVARIANT-/H-/L- id\" — the error message itself documented the exact contract boundary, more precisely than any doc. Map a read surface by (1) capturing every verb's real output, (2) deliberately requesting out-of-family ids/args and recording the refusals, (3) diffing the write-op registry against read verbs — every write op without a corresponding read is a candidate gap (at 1.11.0: 33 write ops vs 15 read ops was the smoking gun for 12 filed gaps). *(evidence: Phase 1 (2026-07-19): captures/probes/read-ops-probe.json results n=5..7 (cz_get refusals); COVERAGE.md §2 matrix; O-05..O-16)*",
+      "gameplan": "2026-07-19-m0-read-contract"
+    },
+    {
+      "id": "6",
+      "origin": "gameplan",
+      "category": "Process",
+      "state": "active",
+      "state_detail": null,
+      "audience": null,
+      "evidence": "Phase 2 (2026-07-19): engine gameplan phasekeep-contract-asks created with focus=true (stole focus from the curator loop), completed, focus restored via cz_focus before leaving; memory commits 07cc2ce pushed",
+      "from_gameplan": null,
+      "text": "Cross-repo phases need a focus etiquette: when D-003-style work executes in another repo's memory, create the gameplan there, work it, and before leaving restore that repo's previous focus pointer — the host repo's operator returns to the gameplan THEY were driving, not yours. Same for close-out: complete your phases and push the memory commits so the other repo's history is self-explanatory without this session's context. *(evidence: Phase 2 (2026-07-19): engine gameplan phasekeep-contract-asks created with focus=true (stole focus from the curator loop), completed, focus restored via cz_focus before leaving; memory commits 07cc2ce pushed)*",
+      "gameplan": "2026-07-19-m0-read-contract"
+    },
+    {
+      "id": "7",
+      "origin": "gameplan",
+      "category": "Process",
+      "state": "active",
+      "state_detail": null,
+      "audience": null,
+      "evidence": null,
+      "from_gameplan": null,
+      "text": "Never read an exit code through a pipeline — `cmd | tail; echo $?` reports the LAST pipe stage. Capture status codes from un-piped invocations (or PIPESTATUS), and when an audit doc states an observed value, cite the machine-recorded field (MANIFEST exit), not session memory of a shell probe.",
+      "gameplan": "2026-07-19-m0-read-contract"
+    }
+  ],
+  "summary": "7 lesson(s)",
+  "schema_version": "1.0"
+}

@@ -1,0 +1,107 @@
+{
+  "ok": true,
+  "invariants": [
+    {
+      "id": "INVARIANT-01",
+      "title": "PhaseKeep never parses a target project's docs/ Markdown and never reads .clauderizer/index.json. Every Clauderizer state read goes through the versioned JSON/ops contract and is schema-version-checked, with explicit degradation on mismatch (name the emitted version, the supported version, and the fix) instead of rendering partial or wrong data.",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "INVARIANT-02",
+      "title": "No PhaseKeep feature interprets agent output: nothing parses, scores, or reacts to PTY content. The only completion signal for dispatch is process exit plus a Clauderizer state transition read from the contract; process exit without transition is a stall, never a completion.",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "INVARIANT-03",
+      "title": "The server binds 127.0.0.1 only and no --host flag exists in any channel. Every HTTP request validates the Host header, every WebSocket upgrade validates Origin, and no channel (state or PTY) is serviced before token authentication; failures are dropped before any handler runs. The remote-access story is an SSH tunnel.",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "INVARIANT-04",
+      "title": "Zero telemetry, ever: PhaseKeep sends no usage data. The sole sanctioned outbound call is the installer channel's auto-update check (version metadata and binaries only, disableable); the npx channel phones nothing. Stated in the README.",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "INVARIANT-05",
+      "title": "PTY payload bytes are never written to disk by PhaseKeep in v1: no scrollback persistence (memory and tmux only), no PTY payloads in server logs, no document contents in state-snapshot logs. The dispatch event journal records metadata only (attempts, exits, chain-breaks, condition trips). Any future session-recording feature is opt-in per session with an explicit on-disk-plaintext warning.",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "INVARIANT-06",
+      "title": "UI-originated writes to Clauderizer memory are limited to three form-shaped classes: one-op reconciliation fixes (check an exit criterion, resolve an open item), gameplan/phase scaffolding from the create flow, and assignment edits. All flow through the ops registry or MCP under its advisory lock, never through files. Everything judgment-shaped (close-outs, curation, planning) is dispatched agent work, never UI-authored logic.",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "INVARIANT-07",
+      "title": "All state parsing and transformation is pure functions over contract JSON with fixture-based tests; the transport shell (HTTP/WS/IPC wiring, process spawning) stays thin. Every writer PhaseKeep owns uses atomic replace (temp file plus rename) so readers see old-or-new, never torn.",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "INVARIANT-08",
+      "title": "The UI supports agents; Clauderizer defines what an agent is. An agent is an (agent, host) pair drawn from Clauderizer's supported-host matrix, defined as a TOML data profile (command, host, cwd policy, env additions, optional env allowlist). No agent-specific code paths, no modeling of inference backends.",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "INVARIANT-09",
+      "title": "No safety theater: dispatched sessions run with the operator's full ambient authority, the README states this in one blunt sentence, and the UI never labels anything sandboxed or contained that is not. Per-profile env allowlists exist as optional operator-supplied data only.",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    },
+    {
+      "id": "INVARIANT-10",
+      "title": "UI-originated writes to Clauderizer memory are limited to form-shaped classes, always through the ops registry or MCP under its advisory lock, never through files: (1) one-op mechanical actions - reconciliation fixes (check an exit criterion, resolve an open item) and advisory report generation such as invoking cz_cascade, which requests analysis and never records verdicts; (2) gameplan/phase scaffolding from the create flow; (3) assignment edits. Everything judgment-shaped - verdicts, close-outs, curation, planning - is dispatched agent work, never UI-authored logic. Supersedes INVARIANT-06, folding in the D-011 class-1 reading so the invariant body and active policy match.",
+      "status": "active",
+      "scope": "project",
+      "audience": null,
+      "date": null,
+      "supersedes": null,
+      "superseded_by": null
+    }
+  ],
+  "summary": "10 invariant(s)",
+  "schema_version": "1.0"
+}

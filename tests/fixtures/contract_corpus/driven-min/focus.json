@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "focus": "2026-07-19-test-drive",
+  "gameplans": [
+    {
+      "id": "2026-07-19-test-drive",
+      "kind": "driven",
+      "phase_label": "phase",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 1,
+      "phase": {
+        "number": "0",
+        "name": "Bootstrap",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": true,
+      "assignee": "claude@native"
+    }
+  ],
+  "summary": "focus = 2026-07-19-test-drive; 1 open gameplan(s)",
+  "schema_version": "1.0"
+}

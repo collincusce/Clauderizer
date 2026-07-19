@@ -1,0 +1,63 @@
+{
+  "ok": true,
+  "size": "standard",
+  "host_profile": "generic",
+  "active_gameplan": "2026-07-19-loop-drive",
+  "phases": [
+    {
+      "number": "0",
+      "name": "Iterate",
+      "status": "ready"
+    }
+  ],
+  "current_phase": null,
+  "next_phase": {
+    "number": "0",
+    "name": "Iterate"
+  },
+  "baseline_tests": "0",
+  "pending_cascades": [],
+  "blockers": [],
+  "drift": [],
+  "open_items": [],
+  "memory": {
+    "active_lessons": 0,
+    "obsolete_lessons": 0,
+    "promoted_lessons": 0,
+    "project_lessons": 0,
+    "active_skills": 0,
+    "handoff_est_tokens": 348,
+    "warning": null
+  },
+  "focus": "2026-07-19-loop-drive",
+  "portfolio": [
+    {
+      "id": "2026-07-19-loop-drive",
+      "kind": "loop",
+      "phase_label": "iteration",
+      "lifecycle": "planning",
+      "open": true,
+      "total_phases": 1,
+      "phase": {
+        "number": "0",
+        "name": "Iterate",
+        "state": "ready"
+      },
+      "blockers": [],
+      "pending_cascades": 0,
+      "is_focus": true,
+      "assignee": null
+    }
+  ],
+  "revision": {
+    "schema_version": "1.0",
+    "epoch": "270728d590a9d6df",
+    "revision": 3
+  },
+  "pending_proposals": 1,
+  "kind": "loop",
+  "summary": "Gameplan 2026-07-19-loop-drive: next ready iteration 0/1 \u2014 \"Iterate\".",
+  "next_action": "cz_next_phase_context, then cz_preflight.",
+  "engine_stale": false,
+  "schema_version": "1.0"
+}
