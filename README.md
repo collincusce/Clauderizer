@@ -53,7 +53,7 @@ hope:
 | 🎛️ **Configurable** | A real `pet` / `standard` / `saas` size dial and host-language profiles — *data*, not prose advice. |
 | 🤖 **Agentic** | Cascade, pre-flight, and handoff assembly are real tool calls — not instructions the agent has to remember to run. |
 | 📦 **Drop-in** | One command clauderizes any repo, in any language. |
-| 🧩 **Host-portable** | One install wires **every** supported agent by default (Claude Code, Cursor, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp, Continue, Zed, kimi, Grok Build TUI). `--host` is an optional scope filter — multi-AI repos need no re-init per tool. |
+| 🧩 **Host-portable** | One install wires **every** supported agent by default (Claude Code, Cursor, Copilot, Codex, Gemini CLI, Windsurf, Cline, Amp, Continue, Zed, kimi, Grok Build TUI — plus the Kimi Work desktop app, auto-detected). `--host` is an optional scope filter — multi-AI repos need no re-init per tool. |
 
 > **Markdown is the source of truth.** The graph index is a disposable cache rebuilt from the
 > markdown on demand — if they ever disagree, markdown wins. No database, no lock-in: your
@@ -266,7 +266,7 @@ Then, as always:
 ## Working with gameplans (how you actually drive it)
 
 **You talk to the agent in plain English; Claude does the tool calls.** You almost never
-invoke a `cz_*` tool yourself — the six skills `init` installs auto-trigger on what you say
+invoke a `cz_*` tool yourself — the eight skills `init` installs auto-trigger on what you say
 (and also work as slash commands, e.g. `/clauderizer-do-phase`). The only thing that's fully
 automatic is the **SessionStart hook**: every session opens with the current status already in
 context, so the agent knows where things stand before you type a word.
@@ -531,18 +531,19 @@ clauderize uninstall [--host <name>]   # reverse the full footprint (MCP config 
 ## MCP surface
 
 **Read** · `cz_status` · `cz_next_phase_context` · `cz_gameplans` · `cz_graph_query` · `cz_get`
-**Rituals** · `cz_preflight` · `cz_cascade` · `cz_resolve_cascade` · `cz_write_handoff`
+**Rituals** · `cz_preflight` · `cz_cascade` · `cz_resolve_cascade` · `cz_write_handoff` · `cz_onboard`
 **Mutations** · `cz_create_gameplan` · `cz_focus` · `cz_add_phase` · `cz_transition_phase` · `cz_add_amendment`
 · `cz_add_decision` · `cz_add_invariant` · `cz_add_finding` · `cz_resolve_finding` · `cz_add_lesson`
 · `cz_obsolete_lesson` · `cz_consolidate_lessons` · `cz_promote_lesson`
 · `cz_add_correction` · `cz_add_output` · `cz_add_phase_summary`
-· `cz_upsert_entity` · `cz_consumes` · `cz_transition_status`
+· `cz_upsert_entity` · `cz_consumes` · `cz_transition_status` · `cz_approve_gate`
 **Discipline & analysis** (advisory — they surface findings for you to act on, never changing anything on their own) · `cz_analyze` · `cz_critique` · `cz_audit` · `cz_mine_failures` · `cz_corpus_health` · `cz_lesson_health` · `cz_curate` · `cz_loop_step` · `cz_add_open_item` · `cz_resolve_open_item` · `cz_set_exit_criteria` · `cz_check_exit_criterion`
 **Skills** (Clauderizer finds the skills your project already has and proposes them — you confirm; never auto-added) · `cz_register_skill` · `cz_obsolete_skill` · `cz_discover_skills`
+**Modernize** (advisory upgrade proposals from `clauderize upgrade` — you triage each: act, dismiss, or defer) · `cz_modernize` · `cz_dismiss_proposal` · `cz_defer_proposal`
 **Resources** · `clauderizer://status` · `clauderizer://procedure` · `clauderizer://entity/{id}`
 **Prompts** · `cz-status` · `cz-next-phase` — surface as slash commands (e.g. `/cz-status`) on prompt-capable hosts
 
-In total: **42 tools + 3 resources + 2 prompts**.
+In total: **48 tools + 3 resources + 2 prompts**.
 
 The tools are deliberately separate and self-describing rather than one generic `mutate` — that's
 the whole point of going MCP-native: an agent dropped into the repo *discovers* the workflow from

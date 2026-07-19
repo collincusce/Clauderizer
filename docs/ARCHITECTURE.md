@@ -6,7 +6,16 @@ Project DAG; this doc is the prose overview.
 
 ## Subsystems
 
-_(Describe each subsystem. Create tracked entity docs with `cz_upsert_entity`.)_
+Eight tracked subsystems, each with a full entity doc in `docs/subsystems/`:
+
+- **[markdown-core](subsystems/markdown-core.md)** — the stdlib-only base of the DAG: parse, edit, and serialize Clauderizer's markdown; `writer.py` is the single idempotent write path every mutation routes through.
+- **[graph](subsystems/graph.md)** — the long-lived Project DAG of frontmatter-tracked entities with `depends_on` semver pins; answers "what depends on this?"; derived from the markdown, never authoritative.
+- **[mutations](subsystems/mutations.md)** — the single graph-aware write path behind every `cz_add_*` / `cz_upsert_*` / `cz_transition_*` tool: ID auto-numbering, append-only memory, the cross-process write lock.
+- **[mcp-server](subsystems/mcp-server.md)** — exposes the whole `cz_*` tool surface (plus resources and prompts) over MCP; thin wrappers over `ops.py`.
+- **[rituals](subsystems/rituals.md)** — pre-flight, cascade, handoff assembly, the status digest, critique/audit: real engine functions that run and report, not conventions the agent is trusted to honor.
+- **[scaffold](subsystems/scaffold.md)** — `init` / `doctor` / `uninstall` / `upgrade` and the self-healing host wiring.
+- **[profiles](subsystems/profiles.md)** — the **language** axis: per-language TOML data (test/build/lint/typecheck commands + baseline regex), never engine code.
+- **[kinds](subsystems/kinds.md)** — the **gameplan-kind** axis: vocabulary + phase template + preflight skin; orthogonal to and composed with profiles.
 
 ## Capabilities
 
@@ -204,7 +213,8 @@ sanctioned exception to "global config → guide-only", D-031, justified by UX).
 hosts share a small framework so a new one is an *implementation, not a re-implementation*:
 
 - **`bespoke_hosts.py`** — the `BespokeHost` base (a host supplies only the variable
-  parts: `candidate_configs`, `compose_entry`, `setup_guide`, optional `unservable_reason`;
+  parts: `candidate_configs`, `compose_entry`, `setup_guide`, optional `unservable_reason`
+  and the serve-pin pair `pinned_repo` / `clear_pin` (D-057);
   `id` / `opt_out_env` / `servers_key`) over the shared lifecycle it inherits
   (`detect_config` → non-destructive/atomic/idempotent `merge_entry` → `wire` →
   `self_heal` → `remove_registration`), plus the `BESPOKE_HOSTS` registry and an

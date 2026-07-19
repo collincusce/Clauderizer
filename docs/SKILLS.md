@@ -21,3 +21,7 @@
 **S-05.** clauderizer-new-gameplan — Plan a new multi-phase gameplan from a goal. Use when the user wants to start a new initiative, project, or large feature and needs it broken into phases with decisions and exit criteria. *(source: .claude/skills/clauderizer-new-gameplan)*
 
 **S-06.** clauderizer-record — Quickly capture a decision, invariant, lesson, correction, or risk into the right place. Use when the user says "remember that…", "we decided…", "note that…", or "that was a mistake, the right way is…". *(source: .claude/skills/clauderizer-record)*
+
+**S-07.** clauderizer-onboard — Seed a freshly clauderized project's memory from its existing documentation. Use right after `clauderize init` on a repo that already has a README or design docs, when init or `clauderize upgrade` suggests onboarding, or when VISION/ARCHITECTURE are still scaffold placeholders. *(source: .claude/skills/clauderizer-onboard)*
+
+**S-08.** clauderizer-modernize — Triage the advisory upgrade proposals cz_modernize surfaces — walk each one with the user to handle, dismiss, or defer. Use when the session digest says "N upgrade proposals awaiting triage", after `clauderize upgrade`, or when the user asks to finish/action a modernization. *(source: .claude/skills/clauderizer-modernize)*

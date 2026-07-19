@@ -26,7 +26,7 @@ these docs claim. Several disciplines are enforced *by tests themselves*:
 ## Runner & Baseline
 
 - **Runner:** `pytest` (from the python profile — `pytest -q`).
-- **Baseline:** **403 tests** (399 passing, 4 skipped) as of 0.14.0. The suite runs — and
+- **Baseline:** **912 tests** (907 passing, 5 skipped) as of 1.11.0. The suite runs — and
   passes — on every push across the CI matrix (ubuntu / macos / windows × py3.11–3.13), with
   the native win32 cmd wrapper executed for real, not simulated. Per-release counts are
   recorded in the [CHANGELOG](../CHANGELOG.md); treat that as the source of truth over any

@@ -86,8 +86,9 @@ still don't appear and *every* shell command also fails, your repo lives in
 WSL while the app runs on Windows: the app spawns with a `\\wsl.localhost`
 **UNC** working directory Windows cannot use, so neither the shell nor the MCP
 server can launch **for that repo**. The registered entry still serves
-*Windows-hosted* repos — clone the repo onto the Windows filesystem, or use
-Kimi Code CLI inside WSL. The full agent playbook is written to
+*Windows-hosted* repos — pin the desktop to serve this WSL repo with
+`clauderize init --serve-wsl-here` (run inside the WSL repo — D-057), clone
+the repo onto the Windows filesystem, or use Kimi Code CLI inside WSL. The full agent playbook is written to
 `.clauderizer/kimi-desktop-mcp-setup.md` (readable with file tools even when
 spawning is blocked — D-054).
 

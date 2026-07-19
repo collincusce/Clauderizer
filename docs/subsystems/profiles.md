@@ -4,7 +4,7 @@ type: subsystem
 version: 0.3.0
 status: completed
 depends_on:
-last_verified: 2026-06-20
+last_verified: 2026-07-19
 ---
 
 # Profiles
@@ -54,7 +54,7 @@ Five files ship in `src/clauderizer/profiles/`:
 
 `load_for_repo(name, lock_path)` loads the packaged profile, then **overlays** `.clauderizer/profile.lock.toml`. The lock is written once by `init` and preserved across re-runs; edit it to pin `test`/`build`/`lint`/`typecheck` or the baseline regex for a non-standard repo. Only non-empty lock values override packaged defaults; a missing lock — or one that fails to parse — falls back to the packaged profile (the parse error is surfaced by `doctor`, not silently fatal).
 
-**0.4.0 escaping fix**: lock values are emitted as valid TOML basic strings with backslashes and quotes escaped. Regex baselines carry backslashes (`(\d+) passed`); emitting them raw produced an unparseable lock that `load_for_repo` then **silently ignored** (falling back to defaults). `to_lock_toml()` now escapes every value, with a round-trip regression test across all packaged profiles.
+**Escaping fix (engine 0.4.0)**: lock values are emitted as valid TOML basic strings with backslashes and quotes escaped. Regex baselines carry backslashes (`(\d+) passed`); emitting them raw produced an unparseable lock that `load_for_repo` then **silently ignored** (falling back to defaults). `to_lock_toml()` now escapes every value, with a round-trip regression test across all packaged profiles.
 
 ## DAG position
 

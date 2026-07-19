@@ -34,6 +34,10 @@
 
 ## 1.0 readiness gates (O4)
 
+> **Historical.** 1.0.0 shipped 2026-06-22 and `pyproject.toml` now declares
+> `Development Status :: 5 - Production/Stable`; the gates below are kept as
+> the record of what the 1.0 sign-off required.
+
 1.0 means strangers can trust a cold install. Every gate is a check that
 exists (or is named here as owed), not a vibe:
 
@@ -73,6 +77,9 @@ exists (or is named here as owed), not a vibe:
 When all seven hold, `release-check` + this list is the 1.0 sign-off.
 
 ## Beta gates (D-012)
+
+> **Historical.** Superseded by the 1.0 release (2026-06-22) — the classifier
+> has moved past Beta to Production/Stable.
 
 Beta (`Development Status :: 4 - Beta`) is an **evidence claim, not a feature
 claim**: every current proof runs on one machine, one repo, one profile until

@@ -81,7 +81,9 @@ memory.
 footprint** in one step — the `clauderizer` MCP key from `.mcp.json` and every
 per-host config, the clauderizer hooks + wrapper from `.claude/settings.json`,
 the `CLAUDE.md`/`AGENTS.md` marker stanzas and native-instructions floors, the
-`clauderizer-*` skills, and the `.clauderizer/` directory — each removal
+`clauderizer-*` skills, the bespoke hosts' per-user MCP registrations
+(kimi-desktop, including any `clauderizer-serve.json` serve-pin sidecar), and
+the `.clauderizer/` directory — each removal
 key/marker-scoped so other servers, foreign hooks, and your own content survive.
 `--host <name>` scopes it to one host. Your `docs/` memory is never touched:
 
