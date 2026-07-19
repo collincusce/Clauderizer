@@ -455,6 +455,8 @@ def gameplan_card(gdir: Path, focus_id: str | None,
         phase = None
     gid = gdir.name
     kind_name = gameplan_kind(gdir)
+    from .. import listing
+
     return {
         "id": gid,
         "kind": kind_name,
@@ -466,6 +468,7 @@ def gameplan_card(gdir: Path, focus_id: str | None,
         "blockers": [r.name for r in rows if r.status == "blocked"],
         "pending_cascades": len(pending_cascades(gdir / "_cascade-reports")),
         "is_focus": gid == focus_id,
+        "assignee": listing.gameplan_assignee(gdir),
     }
 
 
@@ -573,6 +576,12 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
     # so a single-gameplan repo renders byte-identically to before (D6 golden gate).
     bundle["focus"] = gid
     bundle["portfolio"] = portfolio(paths, config)
+    # The monotonic memory revision (O-03): pollers read .clauderizer/revision.json
+    # directly (the near-free path); riding it in status keeps one full read
+    # coherent — state and the revision it corresponds to, in the same payload.
+    from .. import revision as _revision
+
+    bundle["revision"] = _revision.read(paths.clauderizer_dir)
     # Modernization staleness (D-042): the LIGHT check only — a version-string
     # compare against the config stamp, read-only and hook-safe. The full
     # detector suite (probes, pairwise scans) lives in cz_modernize.

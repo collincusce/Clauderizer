@@ -38,6 +38,7 @@ _MODELED_KEYS: dict[str, set[str]] = {
     "modules": {"enabled"},
     "active_gameplan": {"id"},
     "focus": {"id"},
+    "assignment": {"manager"},
 }
 _KNOWN_SECTIONS = set(_MODELED_KEYS) | {"rituals"}
 
@@ -145,6 +146,11 @@ class Config:
     # (these ride in every handoff across ALL gameplans, O2).
     active_lessons_warn: int = 12
     project_lessons_warn: int = 20
+    # [assignment] manager — the distinguished per-project role assignment
+    # (agent@host) responsible for hygiene rituals, per the PhaseKeep m0 ask
+    # (O-02, proposal 13.3). Provisional shape, revisitable when the first
+    # external consumer (PhaseKeep m3) lands. None = no manager recorded.
+    manager: str | None = None
     # Any config keys/sections this engine version does NOT model, captured on
     # load and re-emitted by to_toml so a rewrite never silently DROPS a field
     # the engine doesn't recognize. Forward/cross-version safe: a newer config
@@ -233,6 +239,8 @@ class Config:
                 # never silently replaced by a default (L-04).
                 active_lessons_warn=int(memory.get("active_lessons_warn", 12)),
                 project_lessons_warn=int(memory.get("project_lessons_warn", 20)),
+                manager=(str(raw.get("assignment", {}).get("manager"))
+                         if raw.get("assignment", {}).get("manager") else None),
                 extra=extra,
             )
         except (tomllib.TOMLDecodeError, UnicodeDecodeError, ValueError) as exc:
@@ -290,6 +298,12 @@ class Config:
         # carried, so a rewrite still never drops an unrecognized field.
         lines += ["", "[focus]", f'id = "{self.focus or ""}"',
                   *ex("focus"), *ex("active_gameplan"), ""]
+        # [assignment] only once a manager is recorded (or extras captured), so
+        # configs that never touch assignment rewrite byte-identically.
+        if self.manager or self.extra.get("assignment"):
+            lines += ["[assignment]",
+                      *([f'manager = "{self.manager}"'] if self.manager else []),
+                      *ex("assignment"), ""]
         # unknown WHOLE sections, preserved verbatim (forward/cross-version safe).
         for section, body in self.extra.items():
             if section in _KNOWN_SECTIONS:

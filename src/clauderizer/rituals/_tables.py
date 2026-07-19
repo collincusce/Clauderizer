@@ -37,6 +37,61 @@ class PhaseRow:
     raw_status: str
 
 
+@dataclass
+class FullPhaseRow(PhaseRow):
+    """A phase row with the tracker table's remaining cells (O-11): the
+    Started / Completed / Handoff columns, ``None`` when the cell is an em-dash
+    placeholder or the table predates the column."""
+
+    started: str | None = None
+    completed: str | None = None
+    handoff: str | None = None
+
+
+def _cell_or_none(cells: list[str], i: int) -> str | None:
+    if i >= len(cells):
+        return None
+    v = cells[i].strip()
+    return v if v and v not in ("—", "-", "–") else None
+
+
+def parse_phase_table_full(text: str) -> list[FullPhaseRow]:
+    """``parse_phase_table`` plus the date/handoff cells, same row detection."""
+    out: list[FullPhaseRow] = []
+    for heading in ("Phase Status Table", "Phase Status"):
+        sec = sections.get_section(text, heading)
+        if sec:
+            rows = _full_rows_from_table(sec)
+            if rows:
+                return rows
+    return _full_rows_from_table(text)
+
+
+def _full_rows_from_table(text: str) -> list[FullPhaseRow]:
+    rows: list[FullPhaseRow] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        num = cells[0]
+        if not re.match(r"^\d+[A-Za-z]?$", num):
+            continue
+        raw_status = cells[2]
+        rows.append(FullPhaseRow(
+            number=num,
+            name=cells[1],
+            status=_normalize_status(raw_status),
+            raw_status=raw_status,
+            started=_cell_or_none(cells, 3),
+            completed=_cell_or_none(cells, 4),
+            handoff=_cell_or_none(cells, 5),
+        ))
+    return rows
+
+
 def parse_phase_table(text: str) -> list[PhaseRow]:
     """Parse a phase-status markdown table from a handoff-index / status doc.
 

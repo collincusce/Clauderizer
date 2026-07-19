@@ -17,7 +17,7 @@ from pathlib import Path
 from .. import assets, hosts, hosttargets
 from ..config import Config, merge_missing
 from ..graph import abstract_index, index
-from ..markdown import writer
+from ..markdown import sections, writer
 from ..paths import RepoPaths, resolve
 from ..profiles import detect
 
@@ -325,16 +325,23 @@ def init(
         _rewrite_if_diff(paths.config_file, config.to_toml())
         report.note("gameplan", r["dir"], bool(r["files_changed"]))
 
-    # 8. CLAUDE.md stanza (marker block; preserves the rest)
+    # 8. CLAUDE.md stanza (marker block; preserves the rest — content found
+    # INSIDE the markers that is plainly not the stanza gets moved out below
+    # the block, never deleted; surface that loudly when it happens).
     stanza = assets.template_text("claude_stanza.md")
-    changed = writer.upsert_marker_block(paths.claude_md, "clauderizer", stanza)
-    report.note("CLAUDE.md", paths.claude_md, changed)
-
-    # 8b. AGENTS.md stanza — the SAME host-agnostic marker block, so kimi
-    # (KIMI_AGENTS_MD) and any other AGENTS.md-aware harness get Clauderizer too
-    # (D2). One source stanza for both files means they cannot drift (L-16).
-    changed = writer.upsert_marker_block(paths.agents_md, "clauderizer", stanza)
-    report.note("AGENTS.md", paths.agents_md, changed)
+    for label, target in (("CLAUDE.md", paths.claude_md),
+                          ("AGENTS.md", paths.agents_md)):
+        # 8b: AGENTS.md gets the SAME host-agnostic marker block, so kimi
+        # (KIMI_AGENTS_MD) and any other AGENTS.md-aware harness get Clauderizer
+        # too (D2). One source stanza for both files: they cannot drift (L-16).
+        had_banner = (target.exists() and
+                      sections.RECOVERY_BANNER in target.read_text(encoding="utf-8"))
+        changed = writer.upsert_marker_block(target, "clauderizer", stanza)
+        report.note(label, target, changed)
+        if (changed and not had_banner and target.exists()
+                and sections.RECOVERY_BANNER in target.read_text(encoding="utf-8")):
+            print(f"  ! {label}: found project content inside the managed block — "
+                  f"moved it below the block (review and relocate or delete)")
 
     # 9. install skills (engine-owned: refresh)
     for skill_dir in assets.skill_dirs():

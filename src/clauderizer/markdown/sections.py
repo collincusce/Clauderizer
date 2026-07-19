@@ -145,19 +145,58 @@ def has_marker_block(text: str, name: str) -> bool:
     return start in text and end in text
 
 
+RECOVERY_BANNER = "<!-- moved out of the clauderizer-managed block by clauderize init -->"
+
+# Foreign content inside the managed block starts at the first H1 heading: the
+# stanza is engine prose under an H2 and never contains one, while a project
+# section pasted inside the markers (the observed field failure: an entire
+# project overview living before the end marker) always does. Deterministic —
+# no similarity heuristics — and upgrade-safe: replacing an older stanza whose
+# wording changed recovers nothing, because old stanzas contain no H1 either.
+_FOREIGN_START_RE = re.compile(r"^# ", re.M)
+
+
+def split_foreign_interior(interior: str) -> tuple[str, str]:
+    """``(engine_part, foreign_part)`` of a managed block's interior.
+
+    ``foreign_part`` is everything from the first H1 line onward (plus an
+    immediately preceding ``---`` separator); empty when the interior holds
+    only engine content."""
+    m = _FOREIGN_START_RE.search(interior)
+    if not m:
+        return interior, ""
+    cut = m.start()
+    head = interior[:cut]
+    trimmed = head.rstrip()
+    if trimmed.endswith("---"):
+        cut -= len(head) - head.rfind("---")
+        head = interior[:cut]
+    return head, interior[cut:]
+
+
 def upsert_marker_block(text: str, name: str, content: str) -> str:
-    """Insert or replace a marker-delimited block, preserving everything else.
+    """Insert or replace a marker-delimited block, losing nothing.
 
     Idempotent. If the markers exist, only the content between them changes;
-    text outside the markers is byte-preserved.
+    text outside the markers is byte-preserved. Content that plainly is not
+    the engine's (an H1-headed section living INSIDE the markers — the way a
+    project overview ends up truncated by a naive replace) is moved out below
+    the block under :data:`RECOVERY_BANNER` instead of being deleted.
     """
     start, end = _markers(name)
     block = f"{start}\n{content.rstrip(chr(10))}\n{end}"
     if has_marker_block(text, name):
         pattern = re.compile(
-            re.escape(start) + r".*?" + re.escape(end), re.DOTALL
+            re.escape(start) + r"\n?(.*?)\n?" + re.escape(end), re.DOTALL
         )
-        return pattern.sub(lambda _: block, text, count=1)
+        m = pattern.search(text)
+        _engine, foreign = split_foreign_interior(m.group(1))
+        replacement = block
+        if foreign.strip():
+            replacement = (
+                f"{block}\n\n{RECOVERY_BANNER}\n\n{foreign.strip(chr(10))}"
+            )
+        return text[:m.start()] + replacement + text[m.end():]
     prefix = text.rstrip("\n")
     if prefix:
         return f"{prefix}\n\n{block}\n"

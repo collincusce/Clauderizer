@@ -16,13 +16,14 @@ callers inherit it identically. Read ops never lock (L-03).
 
 from __future__ import annotations
 
+import functools
 import inspect
 import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from . import mutations
+from . import contract, listing, mutations, revision
 from .config import Config
 from .graph import cascade as cascade_mod
 from .graph import index, query
@@ -459,6 +460,7 @@ def cz_create_gameplan(name: str, first_phase: str = "",
         if focus:
             config.focus = result["gameplan_id"]
             paths.config_file.write_text(config.to_toml(), encoding="utf-8")
+            revision.bump(paths.clauderizer_dir)
     result["focused"] = focus
     result["kind"] = kind
     return result
@@ -491,6 +493,7 @@ def cz_focus(gameplan_id: str = "") -> dict:
     with write_lock(paths.write_lock_file):
         config.focus = gameplan_id
         paths.config_file.write_text(config.to_toml(), encoding="utf-8")
+        revision.bump(paths.clauderizer_dir)
     result = {"ok": True, "focus": gameplan_id, "previous_focus": prev,
               "summary": f"focus {prev or '(none)'} -> {gameplan_id}"}
     if not card["open"]:
@@ -1130,6 +1133,163 @@ def cz_discover_skills() -> dict:
     return skill_discovery.discover(paths)
 
 
+# --- listing reads (PhaseKeep m0 asks O-02..O-16; see listing.py) ---------------
+
+
+def cz_list_open_items(gameplan_id: str = "", include_resolved: bool = True) -> dict:
+    """List every tracked open item (O-NN) as a full record across the portfolio.
+
+    Fields: gameplan, id, phase tag, text (markers stripped), resolved,
+    resolved_date, resolution. Filter with gameplan_id / include_resolved=False.
+    """
+    paths, _config = repo_ctx()
+    items = listing.open_items(paths, gameplan_id, include_resolved)
+    return {"ok": True, "items": items,
+            "summary": f"{len(items)} open item(s)"}
+
+
+def cz_list_decisions(include_bodies: bool = False) -> dict:
+    """List the project decision log (D-NNN) with supersession links both ways.
+
+    Renders chains as chains: each record carries supersedes / superseded_by /
+    status / date / scope. Bodies on request (include_bodies=True); cz_get
+    fetches one by id.
+    """
+    paths, _config = repo_ctx()
+    entries = listing.decisions(paths, include_bodies)
+    return {"ok": True, "decisions": entries,
+            "summary": f"{len(entries)} decision(s)"}
+
+
+def cz_list_invariants(include_bodies: bool = False) -> dict:
+    """List the invariant register (INVARIANT-NN) with scope and audience tags."""
+    paths, _config = repo_ctx()
+    entries = listing.invariants(paths, include_bodies)
+    return {"ok": True, "invariants": entries,
+            "summary": f"{len(entries)} invariant(s)"}
+
+
+def cz_list_findings(include_bodies: bool = False) -> dict:
+    """List the hardening/risk register (H-NN) with lifecycle status."""
+    paths, _config = repo_ctx()
+    entries = listing.findings(paths, include_bodies)
+    return {"ok": True, "findings": entries,
+            "summary": f"{len(entries)} finding(s)"}
+
+
+def cz_list_lessons(gameplan_id: str = "") -> dict:
+    """List the lesson corpus with curation state (active/obsolete/promoted).
+
+    Project lessons (L-NN) plus the focus gameplan's accumulated lessons
+    (pass gameplan_id for another gameplan's). Each record carries origin,
+    category, state, audience, and evidence.
+    """
+    paths, config = repo_ctx()
+    entries = listing.lessons(paths, config, gameplan_id)
+    return {"ok": True, "lessons": entries,
+            "summary": f"{len(entries)} lesson(s)"}
+
+
+def cz_list_corrections(gameplan_id: str = "") -> dict:
+    """List the correction log (C-NN) as structured records, portfolio-wide by default."""
+    paths, _config = repo_ctx()
+    entries = listing.corrections(paths, gameplan_id)
+    return {"ok": True, "corrections": entries,
+            "summary": f"{len(entries)} correction(s)"}
+
+
+def cz_list_amendments(gameplan_id: str = "") -> dict:
+    """List gameplan amendments (A-NNN) as structured records."""
+    paths, _config = repo_ctx()
+    entries = listing.amendments(paths, gameplan_id)
+    return {"ok": True, "amendments": entries,
+            "summary": f"{len(entries)} amendment(s)"}
+
+
+def cz_phase_detail(gameplan_id: str = "") -> dict:
+    """Every gameplan's full phase table with exit-criteria state, approvals,
+    dates, handoff path, goal, and assignment.
+
+    The read behind gameplan drill-in and reconciliation views: per-criterion
+    checked state, computed approval satisfaction (stale/missing/unapproved/
+    approved via content hash), and Started/Completed cells — for EVERY
+    gameplan, not just the focus. Filter with gameplan_id.
+    """
+    paths, config = repo_ctx()
+    gameplans = listing.phase_detail(paths, config, gameplan_id)
+    return {"ok": True, "gameplans": gameplans,
+            "summary": f"{len(gameplans)} gameplan(s)"}
+
+
+def cz_list_cascade_reports(gameplan_id: str = "", include_resolved: bool = True) -> dict:
+    """List cascade reports as data: trigger, per-dependent verdicts, pending state.
+
+    The graph view's cascade overlay: what changed, what was flagged, what
+    verdict each dependent received — same pending predicate as the digest.
+    """
+    paths, _config = repo_ctx()
+    reports = listing.cascade_reports(paths, gameplan_id, include_resolved)
+    return {"ok": True, "reports": reports,
+            "summary": f"{len(reports)} cascade report(s)"}
+
+
+def cz_docs_index() -> dict:
+    """Index the canonical documents: docs/*.md, the procedure, every handoff
+    and post-mortem — names are the ids cz_doc accepts."""
+    paths, _config = repo_ctx()
+    docs = listing.docs_index(paths)
+    return {"ok": True, "docs": docs, "summary": f"{len(docs)} doc(s)"}
+
+
+def cz_doc(name: str) -> dict:
+    """One canonical document's body, frontmatter-stripped — the front-door doc
+    read (external clients never parse repo files; INVARIANT-01 on their side)."""
+    paths, _config = repo_ctx()
+    return listing.doc(paths, name)
+
+
+def cz_assignments(gameplan_id: str = "") -> dict:
+    """The assignment surface in one read: manager role, per-gameplan default
+    assignees, per-phase overrides (O-02 provisional shape)."""
+    paths, config = repo_ctx()
+    result = listing.assignments(paths, config, gameplan_id)
+    result["ok"] = True
+    result["summary"] = (f"manager={result['manager'] or '(none)'}; "
+                         f"{len(result['gameplans'])} gameplan(s)")
+    return result
+
+
+def cz_assign(gameplan_id: str = "", phase: str = "", assignee: str = "",
+              role: str = "") -> dict:
+    """Record an assignment: gameplan default, phase override, or the manager role.
+
+    Forms: role='manager' + assignee sets the per-project manager (config);
+    gameplan_id + assignee sets the gameplan default (> Assignee: header);
+    gameplan_id + phase + assignee sets a phase override (**Assigned**: line).
+    Empty assignee clears the target. Provisional shape (proposal 16.7),
+    revisitable when PhaseKeep m3 builds the first consumer.
+    """
+    paths, config = repo_ctx()
+    gid = gameplan_id or (config.active_gameplan if not role else "")
+    return mutations.assign(paths, gameplan_id=gid or "", phase=phase,
+                            assignee=assignee, role=role)
+
+
+def cz_revision() -> dict:
+    """The monotonic memory revision (epoch + counter) — the change signal.
+
+    The near-free poll path is reading .clauderizer/revision.json directly
+    (blessed contract surface); this op is the transport-uniform read for
+    clients already speaking the registry.
+    """
+    paths, _config = repo_ctx()
+    rec = revision.read(paths.clauderizer_dir)
+    return {"ok": True,
+            "revision": rec,
+            "summary": (f"revision {rec['revision']} (epoch {rec['epoch']})"
+                        if rec else "no revision recorded yet (no writes since upgrade)")}
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -1191,7 +1351,48 @@ REGISTRY: dict[str, Op] = {
     "cz_curate": Op(cz_curate, writes=False),
     "cz_loop_step": Op(cz_loop_step, writes=False),
     "cz_discover_skills": Op(cz_discover_skills, writes=False),
+    "cz_list_open_items": Op(cz_list_open_items, writes=False),
+    "cz_list_decisions": Op(cz_list_decisions, writes=False),
+    "cz_list_invariants": Op(cz_list_invariants, writes=False),
+    "cz_list_findings": Op(cz_list_findings, writes=False),
+    "cz_list_lessons": Op(cz_list_lessons, writes=False),
+    "cz_list_corrections": Op(cz_list_corrections, writes=False),
+    "cz_list_amendments": Op(cz_list_amendments, writes=False),
+    "cz_phase_detail": Op(cz_phase_detail, writes=False),
+    "cz_list_cascade_reports": Op(cz_list_cascade_reports, writes=False),
+    "cz_docs_index": Op(cz_docs_index, writes=False),
+    "cz_doc": Op(cz_doc, writes=False),
+    "cz_assignments": Op(cz_assignments, writes=False),
+    "cz_revision": Op(cz_revision, writes=False),
+    "cz_assign": Op(cz_assign, writes=True),
 }
+
+# Every op result carries the external contract version (O-05): stamped here,
+# at the single dispatch table both transports share, so the CLI ops runner,
+# the MCP server, and direct Python callers of REGISTRY entries emit identical
+# payloads. functools.wraps keeps each op's signature/docstring visible to
+# op_schema and the MCP layer (both follow __wrapped__).
+
+
+def _stamped(fn: Callable[..., dict]) -> Callable[..., dict]:
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        return contract.stamp(fn(*args, **kwargs))
+    return wrapper
+
+
+REGISTRY = {name: Op(_stamped(spec.fn), spec.writes) for name, spec in REGISTRY.items()}
+
+
+def run_op(name: str, **kwargs) -> dict:
+    """Execute one registered op through the stamped dispatch table.
+
+    The blessed entry point for in-process callers (the CLI verbs): module-level
+    functions like ``cz_status`` are the UNSTAMPED originals, so calling them
+    directly would emit payloads without ``schema_version`` and silently fork
+    the contract surface.
+    """
+    return REGISTRY[name].fn(**kwargs)
 
 
 # --- introspection: the no-MCP discoverability surface (F4) ----------------------

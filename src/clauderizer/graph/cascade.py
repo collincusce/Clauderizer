@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import query
+from .. import revision
 from .index import Graph
 
 # Statuses that make an entity a SHAKY foundation: its dependents may rest on
@@ -170,6 +171,7 @@ def fanout_cross_gameplan(
         path.write_text(
             _cross_ref_report(entity_id, transition, focus_gid or "(none)", other_gid, now),
             encoding="utf-8")
+        revision.bump_for(path)
         written.append(str(path))
     return written
 
@@ -221,6 +223,7 @@ def run(
     if not dry_run:
         reports_dir.mkdir(parents=True, exist_ok=True)
         path.write_text(report_md, encoding="utf-8")
+        revision.bump_for(path)
         written = True
     return {
         "ok": True,

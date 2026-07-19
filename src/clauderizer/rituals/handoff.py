@@ -19,7 +19,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from .. import analyze
+from .. import analyze, revision
 from ..config import Config
 from ..graph.abstract_index import parse_audience, parse_lesson_line
 from ..markdown import lesson_state, sections, skill_state
@@ -564,6 +564,7 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *,
     if write:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(text, encoding="utf-8")
+        revision.bump_for(out_path)
         summary = (f"wrote handoff for phase {phase_n} ({mode}): "
                    f"{lessons_count} lessons rolled up")
     else:

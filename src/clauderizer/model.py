@@ -78,6 +78,12 @@ class Entity:
             "version": self.version,
             "status": self.status,
             "depends_on": [str(p) for p in self.depends_on],
+            # Structured edges (O-16): clients label graph edges with their pin
+            # without re-parsing the `target@constraint` string form above.
+            "depends_on_pins": [
+                {"target": p.target, "constraint": p.constraint}
+                for p in self.depends_on
+            ],
             "path": str(self.path),
         }
 

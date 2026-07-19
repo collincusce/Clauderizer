@@ -2,6 +2,53 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.12.0] — 2026-07-19
+
+**The external read contract** (gameplan `2026-07-19-phasekeep-contract-asks`):
+the JSON surface external clients consume — driven by the PhaseKeep coverage
+audit (its m0 gameplan, O-02..O-16), which found 33 write ops against 15 reads
+and every append-only register write-only. All additions are additive (contract
+schema `1.0`).
+
+- **`schema_version` on every payload** (O-05): every ops-registry result —
+  CLI `ops` batches, MCP tools, and the `status`/`gameplans`/`focus` `--json`
+  verbs, which now route through the same stamped dispatch — carries
+  `"schema_version": "1.0"`. Compatibility rules: additive → minor, breaking →
+  major; clients ignore unknown fields and degrade explicitly on a major
+  mismatch.
+- **Monotonic memory revision** (O-03): `.clauderizer/revision.json`
+  (`{schema_version, epoch, revision}`, atomic replace) — blessed CONTRACT
+  SURFACE, the near-free poll target. Bumped by every memory write (markdown
+  mutations, cascade reports, handoffs, focus flips) at the byte-writer choke
+  points; no-op rewrites never bump. `epoch` re-mints on file recreation so
+  pollers key on `(epoch, revision)`. Rides in `status --json` as `revision`;
+  `cz_revision` is the transport-uniform read.
+- **Eleven listing reads** (O-06..O-14): `cz_list_open_items` (full records:
+  text, phase tag, resolution + date), `cz_list_decisions` /
+  `cz_list_invariants` / `cz_list_findings` (supersession links both ways,
+  scope, audience), `cz_list_lessons` (curation state incl. obsolete/promoted,
+  category, evidence), `cz_list_corrections`, `cz_list_amendments`,
+  `cz_phase_detail` (every gameplan's phase table with per-criterion
+  exit-criteria state, computed approval staleness, dates, goal, assignment),
+  `cz_list_cascade_reports` (per-dependent verdicts + the shared pending
+  predicate), `cz_docs_index` + `cz_doc` (frontmatter-stripped canonical-doc
+  reads). One registry: CLI and MCP expose them identically.
+- **Assignments, provisional** (O-02, phasekeep proposal 13.3/16.7):
+  `cz_assign` / `cz_assignments` — gameplan default (`> Assignee:` header),
+  per-phase override (`**Assigned**:` line), and the per-project `manager`
+  role (`[assignment]` in config.toml). Deliberately minimal; revisitable when
+  the first external consumer lands.
+- **`ops --list --json`** (O-15): the machine-readable op enumeration (name,
+  writes flag, summary, required/optional) — introspection without regexing
+  column text.
+- **Structured graph pins** (O-16): `cz_graph_query` entities carry
+  `depends_on_pins` (`{target, constraint}`) beside the `target@constraint`
+  strings.
+- **Marker-block losslessness** (the PhaseKeep O-04 field failure): a re-init
+  no longer deletes project content found INSIDE the managed CLAUDE.md/AGENTS.md
+  block — an H1-headed section there is moved below the block under a visible
+  banner, and init says so. Regression-covered either side of the markers.
+
 ## [1.11.0] — 2026-07-18
 
 **Opt-in: serve a WSL-hosted repo from the Kimi Work desktop app** (gameplan

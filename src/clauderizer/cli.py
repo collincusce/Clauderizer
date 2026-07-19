@@ -112,11 +112,13 @@ def cmd_status(args: argparse.Namespace) -> int:
         _host.self_heal()
     # An explicit CLI ask evaluates standing conditions (D3), same as cz_status;
     # only the read-only hook path stays probe-free.
-    bundle = status_bundle.compute(paths, config, conditions=True)
     if args.json:
-        print(json.dumps(bundle, indent=2))
-    else:
-        print(status_bundle.render_digest(bundle, tools=TOOL_NAMES))
+        from . import ops
+
+        print(json.dumps(ops.run_op("cz_status"), indent=2))
+        return 0
+    bundle = status_bundle.compute(paths, config, conditions=True)
+    print(status_bundle.render_digest(bundle, tools=TOOL_NAMES))
     return 0
 
 
@@ -125,7 +127,7 @@ def cmd_gameplans(args: argparse.Namespace) -> int:
     from . import ops
 
     try:
-        res = ops.cz_gameplans(include_closed=args.all)
+        res = ops.run_op("cz_gameplans", include_closed=args.all)
     except Exception as exc:  # not-a-repo and friends — report, don't traceback
         print(f"Error: {exc}")
         return 1
@@ -152,7 +154,7 @@ def cmd_focus(args: argparse.Namespace) -> int:
     from . import ops
 
     try:
-        res = ops.cz_focus(gameplan_id=args.gameplan_id or "")
+        res = ops.run_op("cz_focus", gameplan_id=args.gameplan_id or "")
     except Exception as exc:
         print(f"Error: {exc}")
         return 1
@@ -620,6 +622,14 @@ def cmd_ops(args: argparse.Namespace) -> int:
     from . import ops
 
     if getattr(args, "list_ops", False):
+        if getattr(args, "json", False):
+            from .contract import CONTRACT_SCHEMA_VERSION
+
+            payload = {"ok": True,
+                       "schema_version": CONTRACT_SCHEMA_VERSION,
+                       "ops": [ops.op_schema(e["op"]) for e in ops.list_ops()]}
+            print(json.dumps(payload, indent=2))
+            return 0
         for entry in ops.list_ops():
             tag = "write" if entry["writes"] else "read "
             needs = ("  needs: " + ", ".join(entry["required"])) if entry["required"] else ""
@@ -900,6 +910,8 @@ def build_parser() -> argparse.ArgumentParser:
     po.add_argument("file", nargs="?", help="JSON file of [{op, args}, ...], or '-' for stdin")
     po.add_argument("--list", action="store_true", dest="list_ops",
                     help="list every op (name, read/write, summary, required args), then exit")
+    po.add_argument("--json", action="store_true",
+                    help="with --list: emit the full machine-readable op enumeration")
     po.add_argument("--schema", metavar="OP", default=None,
                     help="print one op's required + optional args as JSON, then exit")
     po.set_defaults(func=cmd_ops)

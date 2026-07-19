@@ -1635,3 +1635,110 @@ def transition_status(
             casc["cross_gameplan_refs"] = cross
             result["files_changed"].extend(cross)
     return result
+
+
+# --- assignment (PhaseKeep m0 ask O-02, proposal 13.3) ------------------------
+#
+# Assignments are PROJECT STATE, not UI state: which (agent, host) is expected
+# to execute a gameplan or phase, plus the one distinguished per-project
+# "manager" role for hygiene rituals. Provisional minimal shape, explicitly
+# revisitable when the first external consumer (PhaseKeep m3) lands:
+#   gameplan default -> "> Assignee: claude@native" blockquote header
+#   phase override   -> "**Assigned**: claude@native" line in the phase block
+#   manager role     -> [assignment] manager in .clauderizer/config.toml
+
+_ASSIGNED_LINE = re.compile(r"^\*\*Assigned\*\*\s*:.*$", re.M)
+
+
+def _upsert_phase_assigned(text: str, phase: str, assignee: str) -> str | None:
+    """GAMEPLAN.md text with the phase's ``**Assigned**:`` line set (or removed
+    for an empty assignee); ``None`` when the phase block is not found."""
+    lines = text.splitlines()
+    head = re.compile(rf"^###\s+Phase\s+{re.escape(str(phase))}\b")
+    start = next((i for i, ln in enumerate(lines) if head.match(ln.strip())), None)
+    if start is None:
+        return None
+    end = next((j for j in range(start + 1, len(lines))
+                if lines[j].startswith("### ")), len(lines))
+    block = lines[start:end]
+    idx = next((i for i, ln in enumerate(block)
+                if _ASSIGNED_LINE.match(ln.strip())), None)
+    if idx is not None:
+        if assignee:
+            block[idx] = f"**Assigned**: {assignee}"
+        else:
+            del block[idx]
+    elif assignee:
+        # Insert after the last of the **Goal**/**Depends on** header lines when
+        # present, else right under the heading.
+        anchor = 0
+        for i, ln in enumerate(block):
+            s = ln.strip()
+            if s.startswith("**Goal**") or s.startswith("**Depends on**"):
+                anchor = i
+        insert_at = anchor + 1 if anchor else 1
+        block.insert(insert_at, f"**Assigned**: {assignee}")
+    return "\n".join(lines[:start] + block + lines[end:]) + ("\n" if text.endswith("\n") else "")
+
+
+@_locked
+def assign(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str = "",
+    phase: str = "",
+    assignee: str = "",
+    role: str = "",
+) -> dict:
+    """Record an assignment (empty ``assignee`` clears it)."""
+    from . import revision
+
+    if role and role != "manager":
+        return {"ok": False, "error": f"unknown role {role!r} — only 'manager' exists"}
+    if role == "manager":
+        config = Config.load(paths.config_file)
+        config.manager = assignee or None
+        paths.config_file.write_text(config.to_toml(), encoding="utf-8")
+        revision.bump(paths.clauderizer_dir)
+        return {"ok": True, "role": "manager", "assignee": assignee or None,
+                "files_changed": [str(paths.config_file)],
+                "summary": (f"manager = {assignee}" if assignee else "manager cleared")}
+
+    err = _require_gameplan(paths, gameplan_id)
+    if err:
+        return err
+    gp = paths.gameplan_dir(gameplan_id) / "GAMEPLAN.md"
+    if phase:
+        new_text = _upsert_phase_assigned(writer.full_text(gp), phase, assignee)
+        if new_text is None:
+            return {"ok": False,
+                    "error": f"no Phase {phase} block in {gameplan_id}/GAMEPLAN.md"}
+        changed = writer.replace_text(gp, new_text)
+        target = f"phase {phase}"
+    else:
+        if assignee:
+            changed = writer.set_blockquote_field(gp, "Assignee", assignee)
+            if not changed:
+                # No "> Assignee:" header yet — add it after the last header line
+                # of the leading blockquote.
+                text = writer.full_text(gp)
+                lines = text.splitlines()
+                last_bq = max((i for i, ln in enumerate(lines[:15])
+                               if ln.startswith("> ")), default=None)
+                if last_bq is None:
+                    return {"ok": False,
+                            "error": f"{gameplan_id}/GAMEPLAN.md has no header "
+                                     "blockquote to carry an Assignee line"}
+                lines.insert(last_bq + 1, f"> Assignee: {assignee}")
+                changed = writer.replace_text(
+                    gp, "\n".join(lines) + ("\n" if text.endswith("\n") else ""))
+        else:
+            text = writer.full_text(gp)
+            new_text = re.sub(r"^>\s*Assignee:.*\n", "", text, count=1, flags=re.M)
+            changed = writer.replace_text(gp, new_text)
+        target = "gameplan"
+    return {"ok": True, "gameplan": gameplan_id, "target": target,
+            "assignee": assignee or None, "changed": changed,
+            "files_changed": [str(gp)] if changed else [],
+            "summary": (f"{gameplan_id} {target} assigned to {assignee}" if assignee
+                        else f"{gameplan_id} {target} assignment cleared")}

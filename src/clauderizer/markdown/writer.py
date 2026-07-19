@@ -43,6 +43,12 @@ def _write_if_changed(path: Path, new_text: str) -> bool:
     refuse_if_symlink(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(new_text, encoding="utf-8")
+    # Every real markdown change bumps the repo's monotonic revision (O-03) —
+    # this choke point is why external pollers can trust the counter. No-ops
+    # (old == new) return above and never bump, keeping idempotency observable.
+    from .. import revision
+
+    revision.bump_for(path)
     return True
 
 
@@ -192,3 +198,10 @@ def body_of(path: Path) -> str:
 
 def full_text(path: Path) -> str:
     return _read(path)
+
+
+def replace_text(path: Path, text: str) -> bool:
+    """Replace a document's full text through the sanctioned path (symlink
+    refusal, idempotency signal, revision bump) — for the rare mutation whose
+    edit shape no section/table helper models."""
+    return _write_if_changed(path, text)
