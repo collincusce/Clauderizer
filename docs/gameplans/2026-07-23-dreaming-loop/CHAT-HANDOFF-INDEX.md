@@ -1,7 +1,7 @@
 # Chat Handoff Index — dreaming-loop
 
 > Last updated: 2026-07-24
-> Status: Phase 5 of 6 in progress
+> Status: All 6 phases complete
 
 ## How This Works
 
@@ -34,7 +34,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 2 | cz_dream — ripeness-gated dream assembly | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Durable dream proposals & unified triage | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The dreaming ritual: skill, loop integration & headless recipe | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Dogfood, eval & ship 1.13.0 | 🟡 IN PROGRESS | 2026-07-24 | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Dogfood, eval & ship 1.13.0 | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -70,6 +70,12 @@ The dreaming ritual is now a first-class, host-portable workflow. The clauderize
 
 The L-21 sweep earned its keep: README's MCP surface had silently drifted FOURTEEN tools behind (the whole 1.12.0 listing-reads contract never landed there). Fixed with a new Listing group + the Dreaming group, count corrected 48→66, and the seam made executable — a test now diffs README's backticked tool names against TOOL_NAMES and pins the count line, so this drift class is dead. Suite exit 0 at 998 collected. The live repo closed the phase with its journal at exactly the ripeness floor: loop_step reports dream ripe, 10 unconsumed — Phase 5's dogfood dream has a real corpus waiting.
 
+### Phase 5 — completed 2026-07-24
+
+The eval phase turned into the strongest possible dogfood: the loop ran end-to-end on its own build's real notes and caught two of its own defects in the process. Twelve organic notes (avg 51 tok) ripened into a 2053-token bundle of 8 clusters; judgment staged 4 proposals; triage accepted 3 into tracked memory (gameplan lesson #1 on executable doc seams, correction C-01 on the missed-transition drift, a CROSS-HOST live-skill-reload note) and dismissed the transcript-arm duplicate — ~1,051 tokens per accepted proposal, loop back to rest with the watermark consuming all reviewed notes. The A-002 comparator answered the founding question with data: the 4.6M-token raw transcript corpus, mined deterministically, produced 31 failure-shaped candidates and ZERO unique durable memories (its one durable hit duplicated a note; detector-C's zero correction-recall reconfirmed D-023), while telemetry-only cz_curate proposed only never-surfaced-lesson obsoletions — zero class overlap. Notes, transcripts-as-failure-miner, and telemetry are three complementary signals; notes own the semantic layer.
+
+Mid-eval the loop's own artifacts exposed two real defects — the phase-default fallback matched a computed "ready" status tables never store (two notes landed phase-less after a skipped transition, itself recorded as C-01), and the digest gauge counted consumed notes ("11 awaiting" right after a dream consumed 11) — both fixed and test-pinned, plus the stale-editable-install version guard fired exactly as designed during release prep. A-003 records the honest measured basis (one build session across five phase contexts; ongoing cadence delegated to the standing-curator loop). Shipped: 1.13.0 single-sourced, suite exit 0 at 1000 collected, origin/main pushed, release-check exit 0 — tag/Release/PyPI deliberately left as the user's irreversible step. O-01/O-02/O-03 all resolved; feat.dream-loop active with its cascade clean.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -79,4 +85,4 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 
 _(none yet)_
 
-**1.** When a doc enumerates a code-owned surface (tool lists, version headers, shipped-artifact claims), make the seam EXECUTABLE: a test diffing the doc against the source of truth. README's MCP surface had silently drifted 14 tools behind by 1.12.0; the new test (README backticked names vs TOOL_NAMES + pinned count) and the procedure-version parity test kill the whole drift class that prose sweeps (L-21) only catch once. Dream-sourced: dreamprop:cded8bdd9f36. *(evidence: tests/test_dreams.py::test_readme_mcp_surface_pins_the_full_tool_list; README 48->66 fix in P4)*
+**1.** When a doc enumerates a code-owned surface (tool lists, version headers, shipped-artifact claims), make the seam EXECUTABLE: a test diffing the doc against the source of truth. README's MCP surface had silently drifted 14 tools behind by 1.12.0; the new test (README backticked names vs TOOL_NAMES + pinned count) and the procedure-version parity test kill the whole drift class that prose sweeps (L-21) only catch once. Dream-sourced: dreamprop:cded8bdd9f36. *(evidence: tests/test_dreams.py::test_readme_mcp_surface_pins_the_full_tool_list; README 48->66 fix in P4)* (promoted 2026-07-24: L-62)

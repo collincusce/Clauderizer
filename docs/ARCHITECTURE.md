@@ -19,6 +19,22 @@ Eight tracked subsystems, each with a full entity doc in `docs/subsystems/`:
 
 ## Capabilities
 
+### The dreaming loop (D-058 / D-059, 1.13.0)
+
+The experiential layer of the self-improvement stack. `cz_add_dream` appends
+per-exchange 2–4-sentence notes (kind-tagged, PII-linted at write, content-hash
+deduped) to a local, gitignored, append-only journal — the signal only the
+responding agent can observe, complementing mechanical telemetry. `cz_dream`
+(read-only, deterministic) gates on triage-debt + ripeness, then clusters notes
+with the canonical tokenizer into a bounded bundle for the AGENT to judge;
+`cz_dream_propose` stages the judgment durably (proposals before watermark —
+crash-safe), and the proposals ride the same producer-agnostic dismiss/defer
+triage as modernize's, surfaced in the one session-start pending count. Only
+accepted, reviewed writes become tracked memory — that review is the PII
+boundary. Measured at ship: ~51 tok/note, ~2k-tok bundles, ~1k tok per accepted
+proposal vs a 4.6M-token raw transcript corpus whose deterministic slices
+yielded zero unique durable memories.
+
 ### Discipline gates (D-015 / D-016 / D-018 / D-019)
 
 Four always-on, advisory, judgment-based gates (no config flags; INVARIANT-05)

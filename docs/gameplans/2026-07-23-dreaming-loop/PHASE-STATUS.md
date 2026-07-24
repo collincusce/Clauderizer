@@ -12,7 +12,7 @@
 | 2 | cz_dream — ripeness-gated dream assembly | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Durable dream proposals & unified triage | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The dreaming ritual: skill, loop integration & headless recipe | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Dogfood, eval & ship 1.13.0 | 🟡 IN PROGRESS | 2026-07-24 | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Dogfood, eval & ship 1.13.0 | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-5-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -56,6 +56,15 @@ tests: 7 new (stage/consume/gate, kill-and-resume watermark ordering, nothing-du
 skill: clauderizer-dream (S-09): src/clauderizer/skills/clauderizer-dream/SKILL.md + installed .claude/skills copy + SKILLS.md registration — triage-first, then dream-if-ripe, one cz_dream_propose call with reviewed_note_ids, headless clauderize-ops variant documented in the skill itself
 loop + docs: cz_loop_step gains a quiet-when-empty dream block (blocked_on_triage/ripe/not_ripe + summary suffix); CROSS-HOST §5b (capture is hook-independent by construction), TRUST .clauderizer row lists the three local dream artifacts + PII boundary; README MCP surface gains Dreaming group AND the missing 1.12.0 listing group — count corrected 48→66, now test-pinned
 tests: 3 new (skill ships+registered, README surface pin against TOOL_NAMES, loop_step all four dream states) — suite exit 0 at 998 collected; live loop_step on this repo: dream ripe, 10 unconsumed
+```
+
+### Phase 5 Outputs
+
+```
+eval metrics: Capture: 12 notes / 5 phase contexts (2.0 per context, basis per A-003), avg 51 tok/note, journal ~1101 tok; kinds gap4/win4/correction1/friction1/surprise1/drift1. Dream: ripe at 11, bundle 2053 est_tokens, 8 clusters (+2 dropped, named). Yield: 4 staged -> 3 accepted / 1 dismissed => ~1051 tok per accepted (journal+bundle). Comparator arm B: 4,619k-tok raw transcript corpus; deterministic slices 31 candidates (6 in-window, all failure-shaped); unique durable accepted 0; overlap with notes arm = 1 (io-discipline, notes caught it first); detector-C corrections recall 0 (reconfirms D-023). Telemetry-only cz_curate baseline: 6 proposals, ALL never-surfaced-lesson obsoletions — zero class overlap with dream output (complementary, as D-058 hypothesized).
+accepted dream writes: dreamprop:cded8bdd9f36 -> gameplan lesson #1 (executable doc seams); dreamprop:985caf2461f5 -> correction C-01 (missed in_progress transition + dead fallback); dreamprop:6554b79522d5 -> CROSS-HOST live-skill-reload note; dreamprop:6ee4455aa7d4 [transcript-arm] dismissed (rule already machine-enforced by test_io_discipline)
+loop-caught defects: (1) cz_add_dream phase-default fallback matched computed "ready" which tables never store -> falls back to not_started now, test-pinned; (2) digest dream gauge counted the whole journal instead of unconsumed -> read "11 awaiting" right after a dream consumed 11; fixed to unconsumed_notes, test-pinned. Both found BY the loop's own artifacts during the eval.
+release: 1.13.0: pyproject + __version__ + CHANGELOG single-sourced (stale editable install caught by the release guard, refreshed); suite exit 0 at 1000 collected (baseline 948); origin/main pushed (81a99f4); release-check exit 0 all gates green. Tag + GitHub Release + PyPI deliberately NOT cut — the irreversible step is the user's call (L-51 also wants the CI matrix green first).
 ```
 
 ## Corrections Log

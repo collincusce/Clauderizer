@@ -1,7 +1,7 @@
 # dreaming-loop Gameplan
 
 > Created: 2026-07-23
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -154,9 +154,9 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 5.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] >= 5 real dogfood sessions on this repo with dream notes captured; capture rate, dreamer yield (proposals emitted vs accepted), and accepted-proposal delta vs telemetry-only cz_curate recorded as phase outputs — a negative result is recorded, not hidden (L-17/L-50)
-- [ ] Transcript-sampling comparator (A-002): one dogfood dreaming pass fed by deterministically pre-filtered transcript slices (learn.py-style selection) through the same proposal queue; accepted-proposal overlap/delta vs the notes-fed arm recorded — the notes-vs-transcripts question answered with data
-- [ ] Token-utilization outputs (A-002): notes per session, average note size, dream-bundle est_tokens, and tokens-per-accepted-proposal for both comparator arms recorded in the Outputs Registry
-- [ ] At least one dream-sourced proposal accepted into tracked memory via blessed writes, or the negative result plus scope reassessment is recorded as an output
-- [ ] release-check exit 0; version bumped to 1.13.0; post-mortem written with procedure improvements
-- [ ] Full suite green at >= baseline
+- [x] >= 5 real dogfood sessions on this repo with dream notes captured; capture rate, dreamer yield (proposals emitted vs accepted), and accepted-proposal delta vs telemetry-only cz_curate recorded as phase outputs — a negative result is recorded, not hidden (L-17/L-50)
+- [x] Transcript-sampling comparator (A-002): one dogfood dreaming pass fed by deterministically pre-filtered transcript slices (learn.py-style selection) through the same proposal queue; accepted-proposal overlap/delta vs the notes-fed arm recorded — the notes-vs-transcripts question answered with data
+- [x] Token-utilization outputs (A-002): notes per session, average note size, dream-bundle est_tokens, and tokens-per-accepted-proposal for both comparator arms recorded in the Outputs Registry
+- [x] At least one dream-sourced proposal accepted into tracked memory via blessed writes, or the negative result plus scope reassessment is recorded as an output
+- [x] release-check exit 0; version bumped to 1.13.0; post-mortem written with procedure improvements
+- [x] Full suite green at >= baseline
