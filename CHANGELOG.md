@@ -2,6 +2,51 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.13.0] — 2026-07-24
+
+**The dreaming loop** (gameplan `2026-07-23-dreaming-loop`, D-058/D-059):
+per-exchange experiential capture + an offline dreamer that distills the
+journal into staged, triaged memory proposals — transcripts are never
+retained (token cost + PII). Procedure bumped to **1.8.0** ("Dream Notes").
+
+- **`cz_add_dream`**: after each substantive exchange the agent leaves a 2–4
+  sentence note (`kind`: friction | gap | surprise | correction | drift | win,
+  plus `refs`) in gitignored, append-only `.clauderizer/dreams.jsonl`.
+  Validate-then-append: 600-char/4-sentence/8-ref caps and a PII deny-list
+  (emails, secret-token shapes, absolute home paths) — an append-only journal
+  cannot be redacted retroactively. Content-hash dedupe; `gameplan`/`phase`
+  default to the active gameplan's current phase. `init` now gitignores
+  `dreams.jsonl` AND `telemetry.jsonl` (pre-existing gap) in target repos.
+- **`cz_dream`** (read-only): two-condition gate — `blocked_on_triage` while
+  staged dream proposals sit untriaged (dreaming never piles onto unactioned
+  output), `not_ripe` under 10 unconsumed notes — then a BOUNDED bundle:
+  canonical-tokenizer clustering (dream threshold 0.25 vs the 0.40 lesson
+  near-dup), top-8 clusters / 3 exemplars with a named dropped tail,
+  corpus-health + lesson-signal + one-hop graph joins, self-reported
+  `est_tokens`. Deterministic given caller-fixed `today`.
+- **`cz_dream_propose` / `cz_handle_dream_proposal`**: judged proposals land
+  durably in `.clauderizer/proposals.dream.jsonl` (content-hash `dreamprop:`
+  ids — restaging is a no-op) and THEN the watermark consumes every reviewed
+  note (crash-safe ordering; kill-and-resume proven by test). Dream proposals
+  ride the SAME producer-agnostic triage as modernize's (one pending count,
+  one digest line — "(N dream)" only when present; dismiss/defer unchanged).
+- **Ritual & surfacing**: the CLAUDE/AGENTS stanza and GAMEPLAN-PROCEDURE
+  §"Dream Notes" teach the capture ritual; the digest gains a quiet-when-empty
+  `Dreams: N note(s) awaiting the dreamer.` gauge (unconsumed only); the
+  pre-compact reminder names `cz_add_dream`; `cz_loop_step` surfaces the dream
+  state for loop gameplans; the **clauderizer-dream** skill (S-09) drives
+  triage-first → dream-if-ripe → one staged batch, with the headless
+  `clauderize ops` variant inline. Dream capture depends on NO hook event —
+  it reaches every host (CROSS-HOST §5b).
+- **Dogfooded end-to-end in its own build**: 12 real notes → ripe dream →
+  4 staged → 3 accepted into tracked memory + 1 dismissed → loop at rest.
+  The loop caught two real defects mid-eval (a dead phase-default fallback;
+  the gauge counting consumed notes) — both fixed + test-pinned. Measured:
+  ~51 tok/note, ~2k-tok bundle, ~1,051 tok per accepted proposal vs a 4.6M-token
+  raw transcript corpus whose deterministic slices yielded 0 unique durable
+  memories (D-023's detector-C zero recall reconfirmed). README's MCP surface
+  (drifted 14 tools) corrected to 66 and now test-pinned against TOOL_NAMES.
+
 ## [1.12.0] — 2026-07-19
 
 **The external read contract** (gameplan `2026-07-19-phasekeep-contract-asks`):

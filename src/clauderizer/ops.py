@@ -1331,8 +1331,12 @@ def cz_add_dream(kind: str, note: str, refs: list[str] | None = None,
     ph = str(phase or "")
     if not ph and gid:
         rows = status_bundle._phase_rows(paths.gameplan_dir(gid))
+        # Fallback order mirrors the digest's "current phase": the in-progress
+        # row, else the first not-yet-started one. Tables never store "ready" —
+        # that state is computed — so match not_started (dogfood catch: two
+        # Phase-4 notes landed with phase="" when the transition was skipped).
         cur = (next((r for r in rows if r.status == "in_progress"), None)
-               or next((r for r in rows if r.status == "ready"), None))
+               or next((r for r in rows if r.status in ("ready", "not_started")), None))
         ph = cur.number if cur else ""
     return mutations.add_dream(paths, gameplan=gid, phase=ph, kind=kind,
                                note=note, refs=refs)

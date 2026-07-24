@@ -86,11 +86,14 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
         skills_active = sum(
             1 for ln in sbody.splitlines()
             if skill_state.SKILL_LINE_RE.search(ln) and skill_state.is_active(ln))
-    # Dream journal gauge (D-058): count only — quiet-when-empty at render, so
-    # repos without a journal (every golden fixture) see a byte-identical digest.
-    from ..dreams import read_notes
+    # Dream journal gauge (D-058): UNCONSUMED notes only (the watermark
+    # subtracts distilled ones — dogfood catch: the Phase-1 gauge counted the
+    # whole journal and read "11 awaiting" after a dream consumed all 11).
+    # Quiet-when-empty at render, so journal-less repos (every golden fixture)
+    # see a byte-identical digest.
+    from ..dreams import unconsumed_notes
 
-    dream_notes = len(read_notes(paths))
+    dream_notes = len(unconsumed_notes(paths))
     warn_active = (config.active_lessons_warn if config is not None
                    else ACTIVE_LESSONS_WARN)
     warn_project = (config.project_lessons_warn if config is not None

@@ -38,6 +38,15 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 - **What changed**: Phase 5 adds a comparator arm: one dogfood dreaming pass fed by deterministically pre-filtered transcript slices (learn.py-style selection) through the same proposal queue, with accepted-proposal overlap/delta and tokens-per-accepted-proposal recorded for both arms. Token-utilization outputs become explicit phase outputs: notes per session, average note size, dream-bundle est_tokens, and per-arm token cost.
 - **Why**: The original eval compared notes only against telemetry-only cz_curate, which cannot answer "should we have skipped the notes and mined transcripts instead" — D-023's detector-C zero recall suggests deterministic mining misses semantic signal, but that is a hypothesis to measure, not assume (L-50). Token accounting keeps the whole loop honest against D-027 trim-first. Phase unstarted; the Phase 5 session picks this up from the amended criteria.
 
+### A-003 — Phase 5 measured basis: one build-session across five phase contexts, not five calendar sessions
+
+- **Date**: 2026-07-24
+- **Affected sections in GAMEPLAN.md**: Phase 5 exit criterion 1 (dogfood sessions)
+- **Affected phases**: 5
+- **Triggered by**: L-50 honesty at close: the user directed "do all phases" in a single session (2026-07-24)
+- **What changed**: The ">= 5 real dogfood sessions" clause was measured as one continuous build session spanning five phase contexts (P0-P4), each contributing organic notes at phase boundaries: 12 notes total, 2.0 per phase context, all six kinds used organically except drift (probe only). The full cycle (capture -> ripe -> dream -> stage -> triage -> accepted tracked writes -> loop at rest) ran END-TO-END on real data within it. Ongoing multi-session accumulation is delegated to the standing-curator loop gameplan, whose iterations now surface dream state (P4).
+- **Why**: Session boundaries cannot be manufactured honestly inside one directed run; the criterion's intent — a real accumulated corpus exercising the whole loop with measured yield — was met and exceeded (two engine defects found by the loop itself mid-eval: the dead ready-fallback and the gauge counting consumed notes). Recording the basis rather than faking the count (L-50).
+
 ## Decisions
 
 ### D1 — Dreaming ships behind an empirical gate: dogfood metrics decide hardening, and a negative result is a recorded outcome
@@ -52,9 +61,9 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 **O-01.** _(phase 3)_ Dream-proposal persistence shape (Phase 3): dedicated .clauderizer/proposals.dream.jsonl vs generalizing status_bundle's pending_proposals into a multi-producer merge before filter_pending — decide when touching status_bundle.py:600-606; leaning generalized merge so the digest stays one line. _(resolved 2026-07-24: Decided in Phase 3: a dedicated append-only .clauderizer/proposals.dream.jsonl store (content-hash ids, terminal handled markers) whose pending set merges into status_bundle's ONE pending_proposals count through the producer-agnostic filter_pending — the digest stays one line, with a "(N dream)" tag only when dream proposals exist, and modernize-only wording is byte-unchanged.)_
 
-**O-02.** Should cz_curate and cz_mine_failures outputs also join the unified id+ledger proposal queue (they currently have no ids/ledger and can re-surface forever)? Likely a follow-on gameplan once Phase 3 proves the multi-producer merge point — tracked here so it is not silent scope creep.
+**O-02.** Should cz_curate and cz_mine_failures outputs also join the unified id+ledger proposal queue (they currently have no ids/ledger and can re-surface forever)? Likely a follow-on gameplan once Phase 3 proves the multi-producer merge point — tracked here so it is not silent scope creep. _(resolved 2026-07-24: Answered: yes — cz_curate and cz_mine_failures should join the unified id+ledger queue, and Phase 3 proved the exact merge pattern (producer-agnostic filter_pending into the single pending count with a producer tag). Scheduled as a candidate follow-on gameplan; deliberately out of this gameplan's scope. The P5 eval reinforced the need: curate's 6 obsoletion proposals currently re-derive with no dismiss memory.)_
 
-**O-03.** _(phase 5)_ Ripeness threshold default (~10 unconsumed notes) and note-kind vocabulary (friction/gap/surprise/correction/drift/win): set as constants in Phases 0/2, then validate both against real dogfood usage in Phase 5 — prune unused kinds, tune the threshold from measured cadence.
+**O-03.** _(phase 5)_ Ripeness threshold default (~10 unconsumed notes) and note-kind vocabulary (friction/gap/surprise/correction/drift/win): set as constants in Phases 0/2, then validate both against real dogfood usage in Phase 5 — prune unused kinds, tune the threshold from measured cadence. _(resolved 2026-07-24: Validated in the P5 dogfood: ripeness 10 produced one full clean cycle (11 consumed, bundle ~2k tok — keep the constant); kind usage gap 4 / win 4 / correction 1 / friction 1 / surprise 1 / drift 1(probe) — all six kinds earn their place, none pruned; CLUSTER_JACCARD 0.25 yielded honest singletons on a deliberately-diverse first corpus (precision over forced grouping) — revisit only if future corpora over-fragment recurring themes.)_
 
 ## Phase Breakdown
 

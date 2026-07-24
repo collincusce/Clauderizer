@@ -112,6 +112,11 @@ interactive session. Hooks only ever NUDGE (the quiet-when-empty `Dreams:`
 digest gauge, the pre-compact reminder) — read-only and exit-0 per
 INVARIANT-06, so hosts without those events lose nothing but the reminder.
 
+Verified live (2026-07-24): Claude Code picks up `.claude/skills/` changes
+without a session restart — the clauderizer-dream skill entered the running
+session's roster the moment its SKILL.md landed, so shipping a skill and
+dogfooding it in the same session is viable.
+
 ## 6. Zero-dependency format audit (O-04) — stdlib-only invariant holds
 
 | Format | Hosts | Stdlib-writable? | Policy |

@@ -1,7 +1,7 @@
 # Chat Handoff Index — dreaming-loop
 
 > Last updated: 2026-07-24
-> Status: Phase 5 ready
+> Status: Phase 5 of 6 in progress
 
 ## How This Works
 
@@ -34,7 +34,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 2 | cz_dream — ripeness-gated dream assembly | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Durable dream proposals & unified triage | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The dreaming ritual: skill, loop integration & headless recipe | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Dogfood, eval & ship 1.13.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Dogfood, eval & ship 1.13.0 | 🟡 IN PROGRESS | 2026-07-24 | — | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -78,3 +78,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Process
 
 _(none yet)_
+
+**1.** When a doc enumerates a code-owned surface (tool lists, version headers, shipped-artifact claims), make the seam EXECUTABLE: a test diffing the doc against the source of truth. README's MCP surface had silently drifted 14 tools behind by 1.12.0; the new test (README backticked names vs TOOL_NAMES + pinned count) and the procedure-version parity test kill the whole drift class that prose sweeps (L-21) only catch once. Dream-sourced: dreamprop:cded8bdd9f36. *(evidence: tests/test_dreams.py::test_readme_mcp_surface_pins_the_full_tool_list; README 48->66 fix in P4)*

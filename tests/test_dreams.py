@@ -570,3 +570,37 @@ def test_loop_step_surfaces_dream_state(temp_repo):
         blocked = ops.run_op("cz_loop_step")
         assert blocked["dream"]["state"] == "blocked_on_triage"
         assert "clauderizer-dream" in blocked["summary"]
+
+
+def test_op_phase_default_falls_back_to_first_unstarted_phase(temp_repo):
+    """Dogfood catch (P5): tables store not_started — "ready" is computed, so
+    the old fallback was dead code and a skipped in-progress transition made
+    notes land with phase=""."""
+    idx = (temp_repo / "docs" / "gameplans" / "2026-05-01-bootstrap"
+           / "CHAT-HANDOFF-INDEX.md")
+    text = idx.read_text(encoding="utf-8").replace("🟡 IN PROGRESS", "⬜ NOT STARTED")
+    idx.write_text(text, encoding="utf-8")
+    ps = (temp_repo / "docs" / "gameplans" / "2026-05-01-bootstrap"
+          / "PHASE-STATUS.md")
+    if ps.exists():
+        ps.write_text(ps.read_text(encoding="utf-8")
+                      .replace("🟡 IN PROGRESS", "⬜ NOT STARTED"), encoding="utf-8")
+    with _chdir(temp_repo):
+        res = ops.run_op("cz_add_dream", kind="drift",
+                         note="No phase is in progress yet this session.")
+    assert res["record"]["phase"] == "1"  # first unstarted row, not ""
+
+
+def test_digest_dream_gauge_counts_only_unconsumed(temp_repo):
+    """Dogfood catch (P5): the gauge must subtract watermark-consumed notes,
+    else it reads "N awaiting the dreamer" right after a dream consumed all N."""
+    from clauderizer.config import Config
+    from clauderizer.rituals import status_bundle as S
+    paths = resolve(temp_repo)
+    _seed(paths, 3)
+    ids = [n["id"] for n in dreams.read_notes(paths)]
+    mutations.stage_dream_proposals(paths, proposals=[], reviewed_note_ids=ids[:2],
+                                    today="2026-07-24")
+    with _chdir(temp_repo):
+        out = S.render_digest(S.compute(paths, Config.load(paths.config_file)))
+    assert "Dreams: 1 note(s) awaiting the dreamer." in out

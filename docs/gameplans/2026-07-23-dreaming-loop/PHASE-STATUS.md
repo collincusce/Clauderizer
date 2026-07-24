@@ -12,7 +12,7 @@
 | 2 | cz_dream — ripeness-gated dream assembly | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Durable dream proposals & unified triage | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The dreaming ritual: skill, loop integration & headless recipe | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Dogfood, eval & ship 1.13.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Dogfood, eval & ship 1.13.0 | 🟡 IN PROGRESS | 2026-07-24 | — | handoffs/PHASE-5-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -60,4 +60,9 @@ tests: 3 new (skill ships+registered, README surface pin against TOOL_NAMES, loo
 
 ## Corrections Log
 
-_(Every divergence from the gameplan, captured in real time, as C-NN entries.)_
+### C-01 — Phase 4
+
+**Phase**: 4
+**What gameplan said**: clauderizer-do-phase ritual: cz_transition_phase to in_progress when starting a phase, so notes/telemetry attribute correctly
+**What was actually correct**: Phase 4 ran start-to-finish without the in_progress transition; two dream notes landed with phase="" and the empty default exposed a dead engine fallback (phase tables store not_started - "ready" is a computed state the old fallback matched in vain)
+**Why**: Mid-flight momentum: after committing P3 the session went straight to P4 recon and code; nothing enforced the transition. The engine fallback now matches real table vocabulary (fixed + tested), and the phase-less notes remain in the journal as honest evidence. Dream-sourced: dreamprop:985caf2461f5.
