@@ -20,7 +20,23 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 ## Amendments
 
-_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+### A-001 — Re-dream guard and bounded dream bundle
+
+- **Date**: 2026-07-24
+- **Affected sections in GAMEPLAN.md**: Phase 2 exit criteria; cz_dream gate design (D-059 mechanics)
+- **Affected phases**: 2
+- **Triggered by**: User review of the proposed design (2026-07-24): "we shouldn't dream if a dream has already happened but no changes have been made" + "consider token utilization bloat"
+- **What changed**: cz_dream's gate gains a second condition: ripeness (unconsumed notes >= threshold) AND no previously emitted dream proposals still pending (untriaged) in the producer-agnostic ledger filter — while pending, cz_dream returns blocked_on_triage instead of a bundle, so dreaming never piles new proposals on top of unactioned ones. The dream bundle is explicitly bounded: top-K clusters, capped exemplar notes per cluster, ids+abstracts over full bodies (D-013), and the bundle reports its own est_tokens.
+- **Why**: Without the guard, every ripe session re-dreams and accumulates overlapping proposal batches nobody triaged — proposal spam plus wasted LLM judgment. Without bundle bounds, a large journal makes the dreaming session's input grow unbounded, violating the trim-first discipline (D-027). All phases are unstarted, so no mid-flight reconciliation: the Phase 2 session picks this up from the amended criteria.
+
+### A-002 — Phase 5 eval gains the transcript-sampling comparator and token-utilization outputs
+
+- **Date**: 2026-07-24
+- **Affected sections in GAMEPLAN.md**: Phase 5 exit criteria; D1 empirical gate scope
+- **Affected phases**: 5
+- **Triggered by**: User question (2026-07-24): "full transcript mining already exists — maybe we shouldn't do the notes?" — the strongest rival hypothesis to dream notes is transcript-sampling, not telemetry-only curation
+- **What changed**: Phase 5 adds a comparator arm: one dogfood dreaming pass fed by deterministically pre-filtered transcript slices (learn.py-style selection) through the same proposal queue, with accepted-proposal overlap/delta and tokens-per-accepted-proposal recorded for both arms. Token-utilization outputs become explicit phase outputs: notes per session, average note size, dream-bundle est_tokens, and per-arm token cost.
+- **Why**: The original eval compared notes only against telemetry-only cz_curate, which cannot answer "should we have skipped the notes and mined transcripts instead" — D-023's detector-C zero recall suggests deterministic mining misses semantic signal, but that is a hypothesis to measure, not assume (L-50). Token accounting keeps the whole loop honest against D-027 trim-first. Phase unstarted; the Phase 5 session picks this up from the amended criteria.
 
 ## Decisions
 
@@ -83,6 +99,8 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 **Exit criteria**:
 - [ ] cz_dream is registered writes=False and performs no writes (INVARIANT-05 parity test); below the ripeness threshold it returns not_ripe with counts, at/above it a clustered dream bundle joining corpus_health, lesson_health, and one-hop graph adjacency for referenced entities
+- [ ] Re-dream guard (A-001): while previously emitted dream proposals remain pending (untriaged) in the producer-agnostic ledger filter, cz_dream returns blocked_on_triage with the pending ids instead of a bundle; dreaming resumes once they are handled/dismissed/deferred — tests cover both sides
+- [ ] Bounded bundle (A-001): the bundle is capped (top-K clusters, max exemplar notes per cluster, ids+abstracts over full bodies per D-013) and reports its own est_tokens; a seeded oversized journal still yields a bundle within the cap — test enforced
 - [ ] Clustering uses analyze._tokens exclusively — the INVARIANT-09 single-tokenizer test is extended and passes
 - [ ] Same journal + caller-fixed today => byte-identical bundle across two calls (determinism test); contract-corpus payload captured
 - [ ] Full suite green at >= baseline
@@ -128,6 +146,8 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 **Exit criteria**:
 - [ ] >= 5 real dogfood sessions on this repo with dream notes captured; capture rate, dreamer yield (proposals emitted vs accepted), and accepted-proposal delta vs telemetry-only cz_curate recorded as phase outputs — a negative result is recorded, not hidden (L-17/L-50)
+- [ ] Transcript-sampling comparator (A-002): one dogfood dreaming pass fed by deterministically pre-filtered transcript slices (learn.py-style selection) through the same proposal queue; accepted-proposal overlap/delta vs the notes-fed arm recorded — the notes-vs-transcripts question answered with data
+- [ ] Token-utilization outputs (A-002): notes per session, average note size, dream-bundle est_tokens, and tokens-per-accepted-proposal for both comparator arms recorded in the Outputs Registry
 - [ ] At least one dream-sourced proposal accepted into tracked memory via blessed writes, or the negative result plus scope reassessment is recorded as an output
 - [ ] release-check exit 0; version bumped to 1.13.0; post-mortem written with procedure improvements
 - [ ] Full suite green at >= baseline
