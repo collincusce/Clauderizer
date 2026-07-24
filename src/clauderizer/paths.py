@@ -68,6 +68,13 @@ class RepoPaths:
         return self.clauderizer_dir / "telemetry.jsonl"
 
     @property
+    def dreams_file(self) -> Path:
+        """Append-only dream journal (experiential notes, D-058); see
+        ``dreams.py``. Local-only like telemetry.jsonl — gitignored, written
+        only by the blessed write-locked op, never a hook."""
+        return self.clauderizer_dir / "dreams.jsonl"
+
+    @property
     def procedure_file(self) -> Path:
         return self.gameplans / "GAMEPLAN-PROCEDURE.md"
 

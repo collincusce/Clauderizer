@@ -1,7 +1,7 @@
 # dreaming-loop Gameplan
 
 > Created: 2026-07-23
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -68,10 +68,10 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_add_dream appends a schema-valid, sort-keyed JSONL record to gitignored .clauderizer/dreams.jsonl under the H-05 write lock; the op result carries schema_version and a contract-corpus payload is captured
-- [ ] Write-time validation rejects oversize notes (> 4 sentences / ~600 chars) and PII patterns (emails, token shapes, absolute home paths) with a clear error and appends nothing on reject (INVARIANT-03: no retroactive redaction possible)
-- [ ] Re-submitting an identical note (same content hash) is a no-op — no duplicate journal line
-- [ ] Full suite green at >= 953 baseline; new tests cover round-trip, schema reject, PII reject, dedupe, and lock discipline
+- [x] cz_add_dream appends a schema-valid, sort-keyed JSONL record to gitignored .clauderizer/dreams.jsonl under the H-05 write lock; the op result carries schema_version and a contract-corpus payload is captured
+- [x] Write-time validation rejects oversize notes (> 4 sentences / ~600 chars) and PII patterns (emails, token shapes, absolute home paths) with a clear error and appends nothing on reject (INVARIANT-03: no retroactive redaction possible)
+- [x] Re-submitting an identical note (same content hash) is a no-op — no duplicate journal line
+- [x] Full suite green at >= 953 baseline; new tests cover round-trip, schema reject, PII reject, dedupe, and lock discipline
 
 ### Phase 1: Capture ritual & read-only nudges
 

@@ -13,7 +13,7 @@ import re
 from datetime import date as _date
 from pathlib import Path
 
-from . import assets
+from . import assets, dreams
 from .config import Config
 from .graph import cascade, index
 from .locking import write_lock
@@ -1742,3 +1742,19 @@ def assign(
             "files_changed": [str(gp)] if changed else [],
             "summary": (f"{gameplan_id} {target} assigned to {assignee}" if assignee
                         else f"{gameplan_id} {target} assignment cleared")}
+
+
+# --- dream journal (D-058) ------------------------------------------------------
+
+
+@_locked
+def add_dream(paths: RepoPaths, *, gameplan: str, phase: str, kind: str,
+              note: str, refs: list[str] | None = None,
+              today: str | None = None) -> dict:
+    """Validate-then-append one dream note to the local journal.
+
+    The lock spans the dedupe read AND the append (one read-modify-write,
+    H-05); all validation/append logic lives in ``dreams.add_note``.
+    """
+    return dreams.add_note(paths, gameplan=gameplan, phase=phase, kind=kind,
+                           note=note, refs=refs, today=today)

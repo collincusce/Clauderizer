@@ -484,6 +484,10 @@ def init(
     changed = _ensure_gitignore(gi, ".clauderizer/abstract_index.json") or changed
     # per-user proposal-triage ledger — personal "seen it" state, not team memory (D-052)
     changed = _ensure_gitignore(gi, ".clauderizer/proposals.local.toml") or changed
+    # Local-only journals: machine-local operational history (telemetry) and the
+    # PII-linted dream journal (D-058) — never committable in a target repo.
+    changed = _ensure_gitignore(gi, ".clauderizer/telemetry.jsonl") or changed
+    changed = _ensure_gitignore(gi, ".clauderizer/dreams.jsonl") or changed
     report.note(".gitignore", gi, changed)
     graph = index.build(paths.docs)
     index.write_cache(graph, paths.index_file, paths.docs)

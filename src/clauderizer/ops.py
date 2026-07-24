@@ -1290,6 +1290,34 @@ def cz_revision() -> dict:
                         if rec else "no revision recorded yet (no writes since upgrade)")}
 
 
+def cz_add_dream(kind: str, note: str, refs: list[str] | None = None,
+                 gameplan: str = "", phase: str = "") -> dict:
+    """Append one dream note — the per-exchange experiential capture (D-058).
+
+    After each substantive exchange, record 2-4 sentences of what only the
+    responding agent could observe. ``kind``: friction (something fought you),
+    gap (a memory/doc hole), surprise (an expectation violated), correction
+    (the user corrected course), drift (procedure/ritual drifted from the doc),
+    win (something worked notably well). ``refs`` names related ids (e.g.
+    ["D-058", "L-50", "feat.dream-loop"]). Notes are PII-free by construction —
+    no emails, secret tokens, or absolute home paths (the write REJECTS them;
+    use repo-relative paths and id references). The journal is local-only
+    (.clauderizer/dreams.jsonl — gitignored, append-only); the dreamer later
+    mines it into advisory proposals (D-059). ``gameplan``/``phase`` default to
+    the active gameplan's current phase. Duplicate content is a safe no-op.
+    """
+    paths, config = repo_ctx()
+    gid = gameplan or (config.active_gameplan or "")
+    ph = str(phase or "")
+    if not ph and gid:
+        rows = status_bundle._phase_rows(paths.gameplan_dir(gid))
+        cur = (next((r for r in rows if r.status == "in_progress"), None)
+               or next((r for r in rows if r.status == "ready"), None))
+        ph = cur.number if cur else ""
+    return mutations.add_dream(paths, gameplan=gid, phase=ph, kind=kind,
+                               note=note, refs=refs)
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -1365,6 +1393,7 @@ REGISTRY: dict[str, Op] = {
     "cz_assignments": Op(cz_assignments, writes=False),
     "cz_revision": Op(cz_revision, writes=False),
     "cz_assign": Op(cz_assign, writes=True),
+    "cz_add_dream": Op(cz_add_dream, writes=True),
 }
 
 # Every op result carries the external contract version (O-05): stamped here,

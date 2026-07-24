@@ -24,6 +24,10 @@ env/
 # whether to commit aggregates is a Phase 1 decision (empirical-self-improvement-loop).
 .clauderizer/telemetry.jsonl
 
+# Dream journal: append-only experiential notes (D-058) — local-only like
+# telemetry.jsonl, PII-linted at write time, mined by the dreamer (D-059).
+.clauderizer/dreams.jsonl
+
 # Dogfood wiring: machine-specific (this repo dogfoods its OWN editable engine,
 # so .mcp.json / the hook registration carry a local venv path + wsl.exe shim —
 # never committable, D-031/O-06). Each clone regenerates them with `clauderize
