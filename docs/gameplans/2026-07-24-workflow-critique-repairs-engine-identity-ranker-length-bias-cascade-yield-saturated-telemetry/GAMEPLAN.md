@@ -133,13 +133,16 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 5.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
+- [ ] TARGET IS 1.13.0, NOT 1.14.0 — the phase title still says 1.14.0 because no blessed op renames a phase; this criteria list is the authority. Source is already at 1.13.0 in all three local places; this gameplan FINISHES shipping it, it does not open a new minor
+- [ ] H-19 addressed: the close-out gate sweeps all FOUR registries (source, remote tags, GitHub Releases, PyPI) — not the three local sources that agree by construction; an unreachable registry reports unverified, never a false green
+- [ ] Version single-sourced across pyproject, the package __version__ and the top CHANGELOG entry — all three still 1.13.0, no bump
 - [ ] cz_audit run; every mechanical finding resolved or explicitly accepted with a reason, and the judgment checklist affirmed
-- [ ] Version single-sourced across pyproject, the package __version__ and the top CHANGELOG entry — 1.14.0 in all three (L-51 sweep 1)
-- [ ] Suite green on EVERY CI matrix leg before any tag exists — a green on one OS is a guess about the others (L-51 sweep 2)
-- [ ] origin/main holds the staged release commit BEFORE any tag or GitHub Release exists
+- [ ] Suite green on EVERY CI matrix leg BEFORE any tag exists — a green on one OS is a guess about the others (L-51 sweep 2)
+- [ ] origin/main holds the staged release commit BEFORE any tag or GitHub Release exists (a UI release tags the REMOTE head)
 - [ ] Verified from a CLEAN environment (fresh venv / cleared uv cache), not the working editable install (L-23)
-- [ ] 1.14.0 published to PyPI
-- [ ] PROOF the headline defect is closed: `uvx --from clauderizer[mcp] clauderizer-mcp` handshake returns serverInfo version 1.14.0 with the full 67-tool surface, and cz_add_dream is callable in a fresh Claude Code session
+- [ ] v1.13.0 tagged, GitHub Release cut, and 1.13.0 published to PyPI — closing the gap that has stood since commit 81a99f4 titled "ship 1.13.0"
+- [ ] PROOF the headline defect is closed: `uvx --from clauderizer[mcp] clauderizer-mcp` handshake returns serverInfo version 1.13.0 with the full 67-tool surface, and cz_add_dream is callable in a fresh Claude Code session
 - [ ] `clauderize doctor` green FOR THE RIGHT REASON — identity asserted, no skew — not green because the check is weak
-- [ ] README's MCP tool listing and count match TOOL_NAMES (the L-62 pin test still holds after any tool-surface change)
-- [ ] POST-MORTEM.md written, covering the four repairs, C-01's no-repair-path gap, and whether the D-060 handshake rule should be promoted to an invariant
+- [ ] README's MCP tool listing and count match TOOL_NAMES (the L-62 pin test still holds)
+- [ ] A write-time guard rejects tool-call markup in structured-write argument values (3 occurrences this session: D-062, H-19, and one call the schema caught) — no legitimate ADR/finding body contains a closing field tag
+- [ ] POST-MORTEM.md written, covering the four repairs, H-19, the no-repair-path gap behind C-01, the absent phase-rename op, and whether D-060's handshake rule should be promoted to an invariant
