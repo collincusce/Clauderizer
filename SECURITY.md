@@ -20,7 +20,19 @@ writes **outside** the repo: a *bespoke auto-write host* (e.g. the Kimi Work
 desktop, D-053/D-056) that reads MCP only from a per-user config the app owns
 gets that one `clauderizer` key merged into it — detected-only (never creating
 the app's dirs), non-destructive, and skipped entirely by
-`CLAUDERIZER_NO_KIMI_DESKTOP=1`. The full statement of what is
+`CLAUDERIZER_NO_KIMI_DESKTOP=1`.
+
+Two tools **read** outside the repo when an agent explicitly calls them (never
+from a hook, never automatically): `cz_discover_skills` reads `SKILL.md`
+frontmatter from your local skill directories, and `cz_mine_failures` reads
+your agent-harness session transcripts (by default
+`~/.claude/projects/<slug>/`, overridable with `CLAUDERIZER_TRANSCRIPTS_DIR`)
+and returns excerpts of your own prompts into the agent's context so it can
+propose corrections. Both are read-only and nothing leaves your machine, but
+anything an agent then records lands in committed markdown — so treat
+transcript mining as you would any tool that reads your history.
+
+The full statement of what is
 written per host, what executes when, under which contracts, and what
 happens when you clone a repo that already carries the wiring lives in
 **[docs/TRUST.md](docs/TRUST.md)** — behavioral claims there that disagree

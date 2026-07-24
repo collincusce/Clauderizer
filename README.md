@@ -234,10 +234,20 @@ uvx --from clauderizer clauderize doctor                 # confirm it's wired AN
 Because your project already has a language, pre-flight runs your **real** test/build/lint
 commands from the start (tweak them in `.clauderizer/profile.lock.toml` if your repo is
 non-standard). Commit this diff on its own branch/commit so adopting Clauderizer is a clean,
-reviewable change in your history. (One thing stays out of that commit: the host's MCP config —
-`.mcp.json` for Claude Code — is gitignored whenever it holds machine-specific paths, so it never
-breaks a teammate. Each clone just re-runs `clauderize init` to regenerate its own wiring, and
-`doctor` flags it if it's missing.)
+reviewable change in your history.
+
+**Before you commit, check three files.** Some wiring is specific to *your* machine — it contains
+the absolute path `init` was run from, which includes your username — so it shouldn't be shared:
+
+- `.mcp.json` — already handled: `init` gitignores it automatically whenever it holds a
+  machine-specific path.
+- `.clauderizer/hook.sh` (or `hook.cmd`) and `.claude/settings.json` — **not** handled yet
+  (fix landing in 1.14.0). If your repo is public or shared, add both to `.gitignore` before
+  your first commit.
+
+Everything else — your `docs/` memory, the stanzas, the portable config — is meant to be
+committed and shared. Each clone re-runs `clauderize init` to regenerate its own wiring, and
+`doctor` flags it if it's missing.
 
 **2. Open a Claude Code session.** The hook injects status (no gameplan yet).
 
@@ -326,8 +336,9 @@ structure, just over creative assets instead of code.
 The classifier says **Production/Stable**, and it earned it — every 1.0 readiness gate is
 public evidence, not vibes. The
 [1.0 gates](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md)
-the 1.0 readiness gates are satisfied with dated artifacts: releases are gated by `clauderize release-check`
-(a fresh four-registry sweep + push-ordering, exit 0 *before* any tag); the suite runs green
+the 1.0 readiness gates are satisfied with dated artifacts: every release runs `clauderize release-check`
+(a fresh four-registry sweep + push-ordering, exit 0 *before* any tag) as a required manual step —
+it is maintainer discipline, not a CI gate, and wiring it into CI is tracked as H-19; the suite runs green
 on ubuntu/macos/windows × py3.11–3.13 with the Windows wrapper *executed*, not simulated; the
 cold start is proven in a real fresh session (the SessionStart hook **and** the MCP transport
 firing cold, the live digest matching the tools); and the full loop is proven on a non-python
@@ -587,13 +598,22 @@ Three guards keep the wiring honest after that:
   it always spawns, and any engine failure prints
   `[Clauderizer] engine unreachable: … — run clauderize doctor` *into the session context*
   instead of dying silently.
-- **`clauderize doctor` verifies for the host of record**: it certifies the wiring through a
-  real round-trip spawned the way sessions spawn it, or honestly reports "unverifiable from
-  this host" (exit 3) — never a false green from the wrong side of the boundary.
-- **Identity, not just launchability**: the round-trip must come back claiming
-  `clauderizer <version>` — the same version as the doctor you're running. A stale pinned
-  engine (`uvx --from "clauderizer[mcp]==0.5.0"` *launches fine*) and a dead engine hiding
-  behind the always-exit-0 wrapper both fail loudly instead of certifying green.
+- **`clauderize doctor` verifies for the host of record**: on a split-host setup it certifies
+  the wiring through a real round-trip spawned the way sessions spawn it, or honestly reports
+  "unverifiable from this host" (exit 3) rather than guessing.
+- **Identity, not just launchability** — *where it applies today*: for split-host (Windows→WSL)
+  wiring and for auto-write hosts like the Kimi Work desktop, doctor completes a real MCP
+  handshake and checks that the server reports the version it should. A stale pinned engine
+  (`uvx --from "clauderizer[mcp]==0.5.0"` *launches fine*) fails loudly there instead of
+  certifying green.
+
+  **Known gap, landing in 1.14.0 (D-060):** for the ordinary portable wiring — the default
+  `.mcp.json` most people get — doctor currently only checks that the command *exists on your
+  PATH*, not that it starts and reports the right version. So if your installed engine is
+  behind the one your repo expects, doctor can still say ✓. If you want certainty today, run:
+  `uvx --from "clauderizer[mcp]" clauderizer-mcp --version` and compare it to
+  `clauderize --version`. Extending the handshake to every registered host is the first phase
+  of 1.14.0.
 
 ## Configurable two ways
 

@@ -130,7 +130,7 @@ dogfooding it in the same session is viable.
 
 ## 7. Verification strategy (D-032)
 
-- **Wiring contract (CI-gated, automatable):** emitted config is well-formed + path-safe; the MCP server launches; an in-process **host-simulator** (MCP client stub) reads the emitted config, connects, and round-trips `cz_status`.
+- **Wiring contract (CI-gated, automatable):** emitted config is valid JSON, carries a well-formed `clauderizer` entry (`command` present), is path-safe (no machine-specific absolute paths), and names `clauderizer-mcp` in its argv. **This is a static shape check** (`hosttargets.verify_emitted_wiring`) — it does **not** spawn the server, connect a client, or round-trip `cz_status`. A launch-and-handshake proof exists only for bespoke auto-write hosts, where `doctor` completes a real MCP `initialize` and asserts `serverInfo`. Extending that handshake to every emitted config is tracked for 1.14.0 (D-060); until then, treat a green wiring contract as "the config is well-formed", not "the server runs".
 - **Consumption proof (manual, pre-GA):** a real host actually reads the config and injects — irreducibly manual for the ~9 proprietary hosts; spot-check 2–3 representatives.
 - **Model-agnostic claim (static):** the shared surface emits no Claude-specific syntax (grep-gated); live multi-model smoke tests are a manual checklist, not CI.
 

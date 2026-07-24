@@ -1,11 +1,26 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.8.0
+**Procedure version**: 1.9.0
 **Last updated**: 2026-07-24
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.9.0** (2026-07-24): **Truth repair.** Corrections where this document had
+  drifted from the system it describes, found by a six-agent audit. "Execute a
+  Phase" no longer instructs reading every prior handoff — that contradicted the
+  cumulative-handoff design and this document's own anti-pattern #2, and cost a
+  large amount of context to recover information the current handoff already
+  carries. "Complete a Phase" and the coordinator checklist are now `cz_*` tool
+  calls rather than hand-edits of `PHASE-STATUS.md` / `CHAT-HANDOFF-INDEX.md`,
+  which the blessed-writes rule forbids and which corrupts the structures the
+  tools parse. References to `bin/cascade` and `bin/regen-graph` (tooling that
+  never existed) are replaced by `cz_cascade` / `cz_resolve_cascade`, and the
+  "write the cascade report by hand" recipe is removed. Phase-count guidance is
+  now 2–8 (measured across 47 real gameplans: median 5, max 14) instead of the
+  aspirational 5–25. The **Outputs Registry** and **Captured External Values**
+  sections now warn, at the instruction, that the file is committed to git and
+  must not carry credentials or account-scoped identifiers.
 - **v1.8.0** (2026-07-24): **Dream notes (experiential capture).** After each substantive exchange the agent leaves a 2–4 sentence `cz_add_dream` note (kinds: friction/gap/surprise/correction/drift/win, plus `refs` to related ids) in a local, gitignored, append-only journal — PII shapes are rejected at write time (an append-only journal cannot be redacted after the fact), duplicate content is a no-op, and gameplan/phase default to the active phase. The journal is the substrate the dreamer later distills into advisory proposals triaged at session start (D-058/D-059); full transcripts are never retained — the note is the deliberately tiny, PII-safe residue of the exchange. Capture is nudged (a quiet-when-empty `Dreams:` digest gauge, a pre-compact reminder), never enforced, and has no on/off switch (INVARIANT-05/D-015).
 - **v1.7.0** (2026-07-16): **Self-audit after every gameplan.** Closing a gameplan now runs a work/release self-audit (`cz_audit`) before the post-mortem — an advisory gate (INVARIANT-05) for the failure modes a green test suite does not catch. Mechanical signals: version single-sourcing (pyproject vs the package `__version__` vs the top CHANGELOG entry — a mismatch a stale editable install hides), an uncommitted working tree, unresolved cascades/open items. Judgment checklist: verify in a **clean environment** (not a stale editable install), re-audit every **consumer** of a changed entity (including untracked ones — uninstall, CLI, docs claims), and claim only what you **verified**. Distinct from `cz_critique` (which audits memory coherence); its findings feed the post-mortem's procedure-improvements. Born from a real miss: a version bumped in one place but not another, green locally on a stale venv, caught only by a clean install.
 - **v1.6.0** (2026-07-01): **Onboarding an existing project.** A repo that already has real documentation deserves seeded memory, not placeholder scaffolds sitting beside it. `cz_onboard` (read-only) lists the Clauderizer docs that are still scaffold placeholders and the repo's existing docs that likely hold project knowledge; the `clauderizer-onboard` skill walks the agent through reading those sources and seeding memory — prose docs rewritten directly, subsystems/features recorded as entities, decisions and rules recorded with provenance naming the source file. `clauderize init` says when onboarding applies, and already-initialized repos learn about it from `clauderize upgrade`. The engine detects and prompts; it never seeds anything itself.
@@ -177,10 +192,10 @@ This procedure solves that by writing everything down in a structured format tha
 | Level | What it is | Granularity | Document |
 |---|---|---|---|
 | **Gameplan** | A coherent project, plan, or initiative — soup to nuts | Days to months | `GAMEPLAN.md` per gameplan |
-| **Phase** | A session-sized chunk of a gameplan | 1–3 days of focused work | A row in the gameplan + a phase handoff doc |
+| **Phase** | A session-sized chunk of a gameplan | Often one session; sometimes several | A row in the gameplan + a phase handoff doc |
 | **Task** | A bite-sized unit within a phase | 30 min – 2 hours | A bullet in the phase's task table |
 
-A gameplan contains 5–25 phases. A phase contains 3–15 tasks. Sub-phases (`0A`, `0B`, `0C`) are allowed when one phase needs internal grouping but isn't worth splitting.
+A gameplan typically contains 2–8 phases; a phase contains 3–15 tasks. (Measured across 47 real gameplans in the reference project: median 5, mean 4.7, max 14 — earlier versions of this document claimed 5–25, which no gameplan ever reached.) Sub-phases (`0A`, `0B`, `0C`) are allowed when one phase needs internal grouping but isn't worth splitting.
 
 ### Two Dependency DAGs
 
@@ -626,8 +641,17 @@ the protocol doc stays compact.)
 ## Outputs Registry
 
 Concrete values produced by completed phases that subsequent phases need.
-Examples: AWS account IDs, ARNs, IAM role names, branch protection
-status, deployed Lambda names, Cognito pool IDs, captured env vars.
+
+> **This file is committed to git.** Record *non-sensitive* identifiers and
+> pointers only — a resource's name, a count, a path, a branch-protection
+> status, or where to fetch a value ("the role ARN is in `terraform output`").
+> Do **not** paste credentials, tokens, connection strings, or account-scoped
+> identifiers here. Anything committed stays in git history even after it is
+> deleted. Sensitive values belong in a gitignored sidecar, your secret
+> manager, or the deploy tooling that already owns them.
+
+Examples of what belongs here: baseline test counts, deployed resource
+*names*, branch protection status, generated file paths, entity ids.
 
 ### Phase 0 Outputs
 ```
@@ -653,9 +677,12 @@ Every divergence from the gameplan, captured in real-time.
 
 ### C2 — ...
 
-## Captured AWS / External Values
+## Captured External Values
 
-Real values from real systems. Don't invent these — capture them.
+Real values from real systems — capture them rather than inventing them, but
+capture the **non-sensitive** ones (see the warning above; this file is
+committed). For anything sensitive, record where the value lives, not the
+value.
 
 ```
 ACM cert ARN: arn:aws:acm:...
@@ -939,15 +966,16 @@ For each changed entity:
 
 Saved to: `docs/gameplans/<gameplan>/_cascade-reports/YYYY-MM-DD-<trigger>.md`
 
-### Manual Cascade (When Tooling Doesn't Exist Yet)
+### Running Cascade
 
-Until `bin/cascade` exists:
-1. `grep -rE 'depends_on:.*<id>' docs/` to find dependents.
-2. Open each, decide if affected, fix or document "no change needed."
-3. Write the cascade report by hand.
-4. Commit alongside the original change.
+`cz_cascade(entity_id, transition)` walks the graph and writes the report;
+you rule on each flagged dependent and record the verdicts with
+`cz_resolve_cascade`. **Never hand-write or hand-edit a cascade report** — the
+report is engine-owned, and an unresolved marker is what `cascade_hygiene`
+surfaces at pre-flight.
 
-This is acceptable indefinitely if the team is small and the cascade frequency is low (~1 per phase + decision changes ≈ 10–25 per gameplan). When it becomes burdensome, build the script.
+Without MCP, the same two operations run from a shell via
+`clauderize ops <file.json|->` (same op names, same argument shapes).
 
 ---
 
@@ -1051,7 +1079,7 @@ Documented from real post-mortems. Each has a specific prevention.
 
 ### 14. Cascade Tooling Debt as Drift (NEW from poe2.design session)
 **Symptom**: Cascade discipline is universal; tooling to automate it never gets built; manual cascade rots silently; graph diverges from reality.
-**Prevention**: Cascade is post-hoc and runs at phase boundaries (low frequency). Manual cascade reports are tractable until ~25/project. If frequency grows, prioritize building `bin/cascade` immediately.
+**Prevention**: Cascade is post-hoc and runs at phase boundaries (low frequency), and it is executed by `cz_cascade` / `cz_resolve_cascade` rather than by hand, so the discipline cannot rot into a chore nobody performs.
 
 ### 15. Frontmatter Inconsistency (NEW)
 **Symptom**: AI sessions write inconsistent frontmatter (missing fields, wrong types). Graph queries break.
@@ -1093,14 +1121,17 @@ After bootstrap, the project is ready for "do next phase" sessions.
 
 The phase session does this:
 
-1. Read in order:
-   - `CLAUDE.md` (auto-loaded; verify CRITICAL Rules section)
-   - `docs/gameplans/<id>/CHAT-HANDOFF-INDEX.md`
-   - All prior phase handoffs (sequentially)
-   - `docs/gameplans/<id>/handoffs/PHASE-N-HANDOFF.md` (the current phase)
-   - `docs/gameplans/<id>/GAMEPLAN.md`
-   - Any docs the handoff explicitly lists in Key Files You Must Read
-2. Run Pre-Flight Verification (7 checks). If any fails: STOP, report.
+1. Call `cz_next_phase_context`. It assembles the phase bundle — tasks, exit
+   criteria, governing invariants, relevant lessons, and a **Key Files You Must
+   Read** list — from canonical memory. Read the files it names, plus
+   `CLAUDE.md` (auto-loaded; verify CRITICAL Rules).
+   **Do not read prior phase handoffs.** Handoffs are cumulative and
+   self-contained by design: the current one already carries every lesson still
+   relevant (see "Self-Contained Handoffs" and anti-pattern #2). Prior handoffs
+   remain on disk as an audit trail, not as a reading list — re-reading them
+   costs a large amount of context to recover information you already have.
+2. Run Pre-Flight Verification (`cz_preflight`). If any enabled check fails:
+   STOP, report, do not write code.
 3. Execute the phase tasks.
 4. Run exit verification: full test suite, build/validate. Report final counts.
 
@@ -1108,14 +1139,28 @@ The phase session does this:
 
 The same phase session does this:
 
-1. Update `PHASE-STATUS.md`: mark phase complete, fill in Outputs Registry, document any corrections (`C1`, `C2`, ...).
-2. Update accumulated lessons in `CHAT-HANDOFF-INDEX.md` with anything new from this phase.
-3. Apply status transitions on touched entities (subsys / feature `planned → active → completed`). Cascade runs.
-4. Write `handoffs/PHASE-N+1-HANDOFF.md` with cumulative lessons. Self-contained.
-5. Update `CLAUDE.md` if any critical-rule context changed.
-6. Update affected named docs in `/docs/` (per the phase's "Docs to Update" section).
-7. Commit. Conventional commits.
-8. Push (or signal user to push, per project's auth model).
+**Every step below is a tool call, not a hand-edit.** `PHASE-STATUS.md`,
+`CHAT-HANDOFF-INDEX.md`, and the handoffs are engine-owned: editing them
+directly corrupts the structures the tools parse. Without MCP, the identical
+operations run via `clauderize ops <file.json|->`.
+
+1. `cz_check_exit_criterion` each criterion you met; `cz_resolve_open_item` any
+   the phase raised.
+2. `cz_transition_phase` the phase to `complete`. It surfaces whatever is still
+   unchecked or unresolved as advisories — never blocking.
+3. `cz_add_output` for each concrete value the phase produced (counts, paths,
+   ids) and `cz_add_phase_summary` for the recap.
+4. `cz_add_correction` for any divergence from the plan; `cz_add_lesson` for
+   anything generalizable; `cz_obsolete_lesson` for what this phase made
+   irrelevant.
+5. `cz_transition_status` on each touched subsystem/feature (this fires
+   cascade); `cz_resolve_cascade` to record the verdicts.
+6. `cz_write_handoff` for the next phase. Your own notes outside its marker
+   block survive regeneration.
+7. Update `CLAUDE.md` and the affected named docs in `docs/` — these are prose
+   documents you edit directly (they are not append-only logs).
+8. Run exit verification (the real test/build commands) and report the count.
+9. Commit. Conventional commits. Push, or signal the user to push.
 
 ### Procedure: Coordinate Across Phases
 
@@ -1150,7 +1195,7 @@ When the gameplan needs a structural change after Phase 0 has started:
 3. **Identify affected phases** by walking the gameplan DAG — any phase whose handoff references the section of `GAMEPLAN.md` being amended is affected.
 4. **Write the amendment entry** in the `## Amendments` section of `GAMEPLAN.md` (format above).
 5. **Update the gameplan body** to reflect the amendment. Both the body change and the amendment entry land in the same commit.
-6. **Run cascade**: `bin/cascade A-NNN` walks the gameplan DAG and outputs a cascade report listing affected phases.
+6. **Run cascade**: `cz_cascade` over the affected entities walks the graph and writes a report listing what may be affected; record each verdict with `cz_resolve_cascade`.
 7. **For each affected phase**:
    - **Unstarted (status: `ready` or `pending`)**: the cascade report notes the amendment; the next handoff written for that phase incorporates it.
    - **In progress (status: `in_progress`)**: amendment logged in `PHASE-STATUS.md` Corrections Log with cross-reference; the executing session reconciles mid-flight (either absorbs into current execution or defers to a follow-up).
@@ -1236,10 +1281,10 @@ When something changes (status, version, decision), do this:
 - [ ] Confirm test count matches actual output
 - [ ] Check stale references (test counts, file paths, status, version numbers)
 - [ ] Fix branch prefix if wrong
-- [ ] Update `CHAT-HANDOFF-INDEX.md` (status + completion summary)
-- [ ] Update `PHASE-STATUS.md` (outputs registry + corrections)
+- [ ] Record the completion summary (`cz_add_phase_summary`) and outputs
+      (`cz_add_output`) — never by editing the trackers directly
 - [ ] Review next phase's handoff for accuracy
-- [ ] Run cascade for any tracked-graph edits
+- [ ] Run `cz_cascade` for any tracked-graph edits, then `cz_resolve_cascade`
 - [ ] Generate next phase's prompt
 
 ### Phase Prompt Template
@@ -1247,14 +1292,12 @@ When something changes (status, version, decision), do this:
 ```
 Read these docs in order before doing anything else:
 
-1. CLAUDE.md (root)
-2. docs/gameplans/<id>/CHAT-HANDOFF-INDEX.md
-3. docs/gameplans/<id>/handoffs/PHASE-0-HANDOFF.md
-... (all prior handoffs in sequence)
-N. docs/gameplans/<id>/handoffs/PHASE-<current>-HANDOFF.md
-N+1. docs/gameplans/<id>/GAMEPLAN.md
+1. Call cz_next_phase_context and read the files it lists.
+2. CLAUDE.md (root) — verify the CRITICAL Rules section.
 
-Read ALL docs in this exact order before writing any code.
+Do NOT read prior phase handoffs: the current one is cumulative and
+self-contained. Read the bundle, then the files it names, before
+writing any code.
 Then run the Pre-Flight Verification checklist (7 checks)
 from the Phase <N> handoff doc — all checks must pass and
 be reported to me before you touch a single file.
@@ -1328,6 +1371,6 @@ This document synthesizes patterns from every project surveyed in `~/`:
 - **`lsatprep/CLAUDE.md`**: scale-down CLAUDE.md for solo / friend-project; explicit Destructive Actions list; explicit "skip product-grade polish" framing for non-product projects.
 - **`batman-neverland/CLAUDE.md`**: asset-registry pattern for generative projects; read-only `source-material/` directory; project-specific data-structure documentation in CLAUDE.md.
 - **`~/.claude/global-CLAUDE.md`** (global): working style, security baseline, communication preferences. Symlinked into projects when uncustomized, never copied.
-- **`poe2design/` design session (Apr–May 2026)**: two-DAG separation (project DAG + gameplan DAG), frontmatter for graph extraction, semver for entities, cascade-on-status-transition, AI-memory-first design philosophy as explicit framing, `bin/cascade` and `bin/regen-graph` as future tooling targets, scale-aware CLAUDE.md sizing matrix.
+- **`poe2design/` design session (Apr–May 2026)**: two-DAG separation (project DAG + gameplan DAG), frontmatter for graph extraction, semver for entities, cascade-on-status-transition, AI-memory-first design philosophy as explicit framing, `bin/cascade` and `bin/regen-graph` as future tooling targets (both superseded — that role is filled by `cz_cascade` / `cz_resolve_cascade` and the graph index; no `bin/` scripts were ever built), scale-aware CLAUDE.md sizing matrix.
 
 If you find this procedure missing something a real gameplan would have benefited from, write it up in your gameplan's POST-MORTEM under Procedure Improvements. The next version of this document is built from those.

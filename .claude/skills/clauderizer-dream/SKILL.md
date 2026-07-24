@@ -38,7 +38,12 @@ fresh eyes, which is the point of dreaming offline (D-059).
 
 4. **Never hand-edit** the journal, the proposal store, or the watermark —
    `.clauderizer/dreams.jsonl`, `proposals.dream.jsonl`, and
-   `dreams.watermark.json` are engine-owned, local-only, gitignored state
+   `dreams.watermark.json` are engine-owned, machine-local state. Only
+   `dreams.jsonl` is gitignored by `init` today; `proposals.dream.jsonl` and
+   `dreams.watermark.json` are committed unless you ignore them yourself
+   (fix landing in 1.14.0). That matters on a shared repo: the watermark
+   records which notes THIS machine has consumed, so a teammate who pulls it
+   can be told notes were already dreamed against a journal they do not have
    (notes and proposal details are PII-linted at write time; only accepted,
    reviewed writes ever become tracked memory).
 

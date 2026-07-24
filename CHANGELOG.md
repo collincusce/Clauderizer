@@ -2,6 +2,54 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [Unreleased] — toward 1.14.0
+
+**Documentation truth repair.** A six-agent audit of the engine found several
+places where the docs claimed behavior the code does not have. Those claims are
+corrected now, ahead of the code fixes they describe, because a false claim is
+worse than a missing feature — a reader who trusts it stops checking. Procedure
+bumped to **1.9.0**. No engine behavior changed in this entry.
+
+- **`docs/TRUST.md`** — the one-paragraph summary said `init` writes "into your
+  repo only"; it now states the bespoke auto-write host exception up front
+  instead of only 110 lines later. The local-only journal list was wrong:
+  `proposals.dream.jsonl` and `dreams.watermark.json` are **not** gitignored by
+  `init` today, and neither are `revision.json` or the hook wrapper — the gap is
+  named, with the manual workaround, rather than papered over. The "review the
+  wiring" note now says plainly which files carry your username. And
+  `clauderize release-check` is described as the **required manual step 3** of
+  the release ritual rather than a gate that "gates every release" — it is in no
+  CI workflow (H-19).
+- **`docs/TRUST.md` + `SECURITY.md`** — first disclosure that `cz_mine_failures`
+  reads agent-harness **session transcripts** from outside the repo (default
+  `~/.claude/projects/<slug>/`, overridable via `CLAUDERIZER_TRANSCRIPTS_DIR`)
+  and returns excerpts of your own prompts into agent context. Read-only,
+  explicitly invoked, never from a hook — but previously undocumented in both
+  files.
+- **`docs/CROSS-HOST.md` §7** — the wiring contract was described as launching
+  the server and round-tripping `cz_status` via a host-simulator. It is a static
+  shape check (valid JSON, well-formed entry, path-safe, names `clauderizer-mcp`).
+  Corrected to say so, and to point at where a real handshake proof does exist.
+- **`README.md`** — the identity-not-launchability claim now distinguishes where
+  it holds (split-host and auto-write hosts, via a real MCP handshake) from where
+  it does not yet (the ordinary portable `.mcp.json`, which is checked only for
+  presence on PATH — D-060), with a one-line command a reader can run to check
+  for themselves. The adoption section now tells you which three files carry
+  machine-specific paths before you make your first commit.
+- **`GAMEPLAN-PROCEDURE.md` → 1.9.0** — "Execute a Phase" no longer instructs
+  reading every prior handoff (it contradicted the cumulative-handoff design and
+  the document's own anti-pattern #2). "Complete a Phase" and the coordinator
+  checklist are now `cz_*` calls rather than hand-edits of the trackers, which
+  the blessed-writes rule forbids. `bin/cascade` / `bin/regen-graph` — tooling
+  that never existed — are replaced by `cz_cascade` / `cz_resolve_cascade`, and
+  the "write the cascade report by hand" recipe is gone. Phase-count guidance is
+  now 2–8 (measured: median 5 across 47 gameplans) rather than the aspirational
+  5–25. The **Outputs Registry** now warns *at the instruction* that the file is
+  committed to git and must not carry credentials or account-scoped identifiers.
+- **`clauderizer-dream` skill** (both the shipped template and the rendered
+  copy) — corrected the claim that the proposal store and watermark are
+  gitignored local-only state, and noted what that means on a shared repo.
+
 ## [1.13.0] — 2026-07-24
 
 **The dreaming loop** (gameplan `2026-07-23-dreaming-loop`, D-058/D-059):
