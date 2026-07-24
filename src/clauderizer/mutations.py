@@ -1776,3 +1776,12 @@ def handle_dream_proposal(paths: RepoPaths, *, proposal_id: str,
                           today: str | None = None) -> dict:
     """Blessed write for retiring a handled dream proposal (terminal marker)."""
     return dreams.mark_handled(paths, proposal_id=proposal_id, today=today)
+
+
+@_locked
+def register_dream_schedule(paths: RepoPaths, *, method: str, cadence: str = "",
+                            command: str = "",
+                            today: str | None = None) -> dict:
+    """Blessed write for the dream-schedule self-report (A-004)."""
+    return dreams.register_schedule(paths, method=method, cadence=cadence,
+                                    command=command, today=today)

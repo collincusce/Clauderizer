@@ -456,3 +456,103 @@ def mark_handled(paths: RepoPaths, *, proposal_id: str,
     _append(proposals_path(paths), {"id": pid, "handled": _today(today)})
     return {"ok": True, "id": pid, "changed": True,
             "summary": f"dream proposal {pid} marked handled"}
+
+
+# --- the dream schedule + the session-start plea (Phase 6, A-004) ------------------
+#
+# Capture is ambient, but nothing used to drive ADOPTION of the dreaming half:
+# a journal that never gets dreamed helps no one. The plea (rendered by the
+# status digest, INVARIANT-08) begs the user to schedule the loop — in plain
+# English, with exact commands — whenever notes accumulate with no schedule
+# registered and nothing already pending triage. Registration is a per-user,
+# gitignored self-report (the engine cannot see crontabs or host routines);
+# method="manual" is a legitimate quieting verdict in the D-052 ledger spirit —
+# a USER verdict, never a feature toggle: the loop, gauges, and skill stay
+# fully active either way.
+
+SCHEDULE_NAME = "dreams.schedule.toml"
+_SCHEDULE_FIELD_MAX = 200
+
+
+def schedule_path(paths: RepoPaths):
+    return paths.clauderizer_dir / SCHEDULE_NAME
+
+
+def schedule_info(paths: RepoPaths) -> dict | None:
+    """The registered dream schedule, or None. Missing/malformed reads as None
+    (the plea is best-effort advisory — never fatal)."""
+    p = schedule_path(paths)
+    if not p.exists():
+        return None
+    import tomllib
+    try:
+        with p.open("rb") as fh:
+            raw = tomllib.load(fh)
+    except (OSError, ValueError):  # TOMLDecodeError is a ValueError
+        return None
+    sched = raw.get("schedule") if isinstance(raw, dict) else None
+    if not isinstance(sched, dict) or not str(sched.get("method") or "").strip():
+        return None
+    return {k: str(sched.get(k) or "") for k in
+            ("method", "cadence", "command", "registered")}
+
+
+def register_schedule(paths: RepoPaths, *, method: str, cadence: str = "",
+                      command: str = "", today: str | None = None) -> dict:
+    """Record (or clear, with an empty method) the dream-schedule self-report.
+
+    Caller holds the H-05 lock (mutations.register_dream_schedule). The file is
+    per-user operational state like the triage ledger — rewritable, gitignored,
+    never memory."""
+    method = str(method or "").strip()
+    if not method:
+        existed = schedule_path(paths).exists()
+        if existed:
+            schedule_path(paths).unlink()
+        return {"ok": True, "registered": False, "cleared": existed,
+                "summary": ("dream schedule cleared — the session-start plea "
+                            "returns when notes accumulate" if existed
+                            else "no dream schedule was registered — nothing to clear")}
+    fields = {"method": method, "cadence": str(cadence or "").strip(),
+              "command": str(command or "").strip()}
+    for key, val in fields.items():
+        if len(val) > _SCHEDULE_FIELD_MAX:
+            return {"ok": False, "registered": False,
+                    "error": f"{key} is {len(val)} chars (max {_SCHEDULE_FIELD_MAX})",
+                    "summary": f"rejected: {key} too long"}
+    def _q(v: str) -> str:
+        # TOML basic-string escaping — a scheduled command legitimately carries
+        # double quotes (claude -p "/clauderizer-dream").
+        return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+    lines = [
+        "# Clauderizer dream-schedule self-report — per-user, gitignored (A-004).",
+        "# Records HOW the dreaming loop runs on this machine so the session-start",
+        '# plea retires. method="manual" means you run /clauderizer-dream yourself.',
+        "",
+        "[schedule]",
+        f"method = {_q(fields['method'])}",
+        f"cadence = {_q(fields['cadence'])}",
+        f"command = {_q(fields['command'])}",
+        f"registered = {_q(_today(today))}",
+    ]
+    schedule_path(paths).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return {"ok": True, "registered": True, "method": fields["method"],
+            "path": str(schedule_path(paths)),
+            "summary": (f"dream schedule registered ({fields['method']}"
+                        + (f", {fields['cadence']}" if fields["cadence"] else "")
+                        + ") — the session-start plea retires")}
+
+
+def plea_state(paths: RepoPaths, today: str | None = None) -> dict | None:
+    """The dream plea's render data, or None when it must stay quiet: quiet
+    when a schedule is registered, when the journal has nothing unconsumed,
+    or when staged proposals are pending (the triage line owns that state)."""
+    if schedule_info(paths) is not None:
+        return None
+    unconsumed = len(unconsumed_notes(paths))
+    if not unconsumed:
+        return None
+    if pending_proposals(paths, today):
+        return None
+    return {"unconsumed": unconsumed, "ripeness": RIPENESS_NOTES}

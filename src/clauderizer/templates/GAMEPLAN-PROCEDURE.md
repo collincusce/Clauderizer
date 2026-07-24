@@ -90,6 +90,15 @@ digest shows a quiet-when-empty `Dreams:` gauge and the pre-compact reminder
 includes `cz_add_dream` — never enforced, and there is no enable/disable
 switch (INVARIANT-05/D-015).
 
+Adoption has its own ritual (A-004): when notes accumulate with **no dream
+schedule registered** and nothing pending triage, the session-start digest
+carries a plain-English **plea** — what dreaming is, exact scheduling commands
+(a Claude Code routine or `cron` + `claude -p "/clauderizer-dream"`), and how
+to retire it: `cz_register_dream_schedule(method=..., cadence=...)`, a
+per-user gitignored self-report (`method="manual"` is a legitimate quieting
+verdict for hand-run loops — a D-052-style user verdict, never a feature
+toggle).
+
 ## Deliverables (campaign-style gameplans)
 
 A campaign's real execution units are its **deliverables** — a flagship film, a pillar short, a deck — each progressing independently. A kind may define their lifecycle in its TOML (`[lifecycle] statuses = [...]`; the shipped campaign kind uses `concept → spec-approved → produced → assembled → qa → shipped`), and each deliverable is recorded as a normal tracked entity:

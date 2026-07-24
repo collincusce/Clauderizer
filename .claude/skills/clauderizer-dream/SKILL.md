@@ -46,3 +46,13 @@ fresh eyes, which is the point of dreaming offline (D-059).
 via `clauderize ops <file.json|->` with the exact op names and args above — a
 cron or batch session can dream unattended and leave staged proposals for the
 next interactive session to triage.
+
+**Schedule it, then say so.** If the session-start digest carries the 🌙 plea
+(notes accumulating, no schedule registered), help the user set one up —
+a Claude Code daily routine running `/clauderizer-dream` in this repo, or
+`cron: 0 7 * * *  cd <repo> && claude -p "/clauderizer-dream"` — and then
+record it so the plea retires:
+`cz_register_dream_schedule(method="claude-code-routine"|"cron", cadence="daily 07:00", command="...")`.
+A user who prefers running it by hand records `method="manual"` — an honest
+verdict that quiets the plea while the loop, gauges, and this skill stay fully
+active. Clearing (`method=""`) revives the plea.

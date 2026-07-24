@@ -13,6 +13,7 @@
 | 3 | Durable dream proposals & unified triage | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The dreaming ritual: skill, loop integration & headless recipe | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Dogfood, eval & ship 1.13.0 | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-5-HANDOFF.md |
+| 6 | The schedule plea — beg, explain, instruct at session start | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-6-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -65,6 +66,14 @@ eval metrics: Capture: 12 notes / 5 phase contexts (2.0 per context, basis per A
 accepted dream writes: dreamprop:cded8bdd9f36 -> gameplan lesson #1 (executable doc seams); dreamprop:985caf2461f5 -> correction C-01 (missed in_progress transition + dead fallback); dreamprop:6554b79522d5 -> CROSS-HOST live-skill-reload note; dreamprop:6ee4455aa7d4 [transcript-arm] dismissed (rule already machine-enforced by test_io_discipline)
 loop-caught defects: (1) cz_add_dream phase-default fallback matched computed "ready" which tables never store -> falls back to not_started now, test-pinned; (2) digest dream gauge counted the whole journal instead of unconsumed -> read "11 awaiting" right after a dream consumed 11; fixed to unconsumed_notes, test-pinned. Both found BY the loop's own artifacts during the eval.
 release: 1.13.0: pyproject + __version__ + CHANGELOG single-sourced (stale editable install caught by the release guard, refreshed); suite exit 0 at 1000 collected (baseline 948); origin/main pushed (81a99f4); release-check exit 0 all gates green. Tag + GitHub Release + PyPI deliberately NOT cut — the irreversible step is the user's call (L-51 also wants the CI matrix green first).
+```
+
+### Phase 6 Outputs
+
+```
+the plea: 🌙 block inside the single digest, gated on (unconsumed > 0) AND (no schedule registered) AND (no pending dream proposals); plain-English what/why + review guarantee + three scheduling paths (Claude Code routine phrasing / cron + claude -p / run-now) + retirement instruction — key phrases test-pinned; live on this repo at close (2 notes waiting)
+schedule registry: cz_register_dream_schedule (tool #67) -> gitignored .clauderizer/dreams.schedule.toml (TOML-escaped writer — the round-trip test caught unescaped quotes in the canonical claude -p command before ship); method=manual quiets as a D-052-style verdict; empty method clears and revives the plea; init ensures the gitignore line
+tests: 7 new (plea renders with pinned phrases + single header, quiet on empty journal, register/retire/clear/revive, manual verdict keeps loop active, defers to triage line, op validation + stamp, init gitignore) — suite exit 0 at 1007 collected
 ```
 
 ## Corrections Log

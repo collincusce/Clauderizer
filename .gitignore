@@ -26,7 +26,10 @@ env/
 
 # Dream journal: append-only experiential notes (D-058) — local-only like
 # telemetry.jsonl, PII-linted at write time, mined by the dreamer (D-059).
+# The schedule file is the per-user self-report that retires the session-start
+# plea (A-004).
 .clauderizer/dreams.jsonl
+.clauderizer/dreams.schedule.toml
 
 # Dogfood wiring: machine-specific (this repo dogfoods its OWN editable engine,
 # so .mcp.json / the hook registration carry a local venv path + wsl.exe shim —

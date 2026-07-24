@@ -488,6 +488,7 @@ def init(
     # PII-linted dream journal (D-058) — never committable in a target repo.
     changed = _ensure_gitignore(gi, ".clauderizer/telemetry.jsonl") or changed
     changed = _ensure_gitignore(gi, ".clauderizer/dreams.jsonl") or changed
+    changed = _ensure_gitignore(gi, ".clauderizer/dreams.schedule.toml") or changed
     report.note(".gitignore", gi, changed)
     graph = index.build(paths.docs)
     index.write_cache(graph, paths.index_file, paths.docs)

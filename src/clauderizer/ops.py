@@ -1392,6 +1392,22 @@ def cz_handle_dream_proposal(proposal_id: str) -> dict:
     return mutations.handle_dream_proposal(paths, proposal_id=proposal_id)
 
 
+def cz_register_dream_schedule(method: str, cadence: str = "", command: str = "") -> dict:
+    """Record how the dreaming loop runs on this machine, retiring the
+    session-start plea (A-004). Call it right AFTER creating the real schedule:
+    ``method`` e.g. "claude-code-routine", "cron", or "manual" (a legitimate
+    "I run /clauderizer-dream myself" verdict — the loop, gauges, and skill
+    stay fully active); ``cadence`` e.g. "daily 07:00"; ``command`` the exact
+    scheduled command if any. Per-user, gitignored self-report
+    (.clauderizer/dreams.schedule.toml) — the engine cannot see crontabs or
+    host routines, so this is the honest detection substrate. An empty
+    ``method`` clears the record and the plea returns when notes accumulate.
+    """
+    paths, _config = repo_ctx()
+    return mutations.register_dream_schedule(paths, method=method,
+                                             cadence=cadence, command=command)
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -1471,6 +1487,7 @@ REGISTRY: dict[str, Op] = {
     "cz_dream": Op(cz_dream, writes=False),
     "cz_dream_propose": Op(cz_dream_propose, writes=True),
     "cz_handle_dream_proposal": Op(cz_handle_dream_proposal, writes=True),
+    "cz_register_dream_schedule": Op(cz_register_dream_schedule, writes=True),
 }
 
 # Every op result carries the external contract version (O-05): stamped here,

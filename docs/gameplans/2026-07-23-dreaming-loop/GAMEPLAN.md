@@ -47,6 +47,15 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 - **What changed**: The ">= 5 real dogfood sessions" clause was measured as one continuous build session spanning five phase contexts (P0-P4), each contributing organic notes at phase boundaries: 12 notes total, 2.0 per phase context, all six kinds used organically except drift (probe only). The full cycle (capture -> ripe -> dream -> stage -> triage -> accepted tracked writes -> loop at rest) ran END-TO-END on real data within it. Ongoing multi-session accumulation is delegated to the standing-curator loop gameplan, whose iterations now surface dream state (P4).
 - **Why**: Session boundaries cannot be manufactured honestly inside one directed run; the criterion's intent — a real accumulated corpus exercising the whole loop with measured yield — was met and exceeded (two engine defects found by the loop itself mid-eval: the dead ready-fallback and the gauge counting consumed notes). Recording the basis rather than faking the count (L-50).
 
+### A-004 — Post-close amendment: the session-start dream plea — beg, explain, instruct when no scheduled loop is detected
+
+- **Date**: 2026-07-24
+- **Affected sections in GAMEPLAN.md**: New Phase 6; status digest; dreams schedule registration; docs (README/skill/procedure/TRUST/CHANGELOG)
+- **Affected phases**: 6
+- **Triggered by**: User directive (2026-07-24), after 1.13.0 release-check but BEFORE the tag was cut: capture is ambient, but nothing drives adoption of the dreaming half — "beg people to run the dream loops... explain what this is in plain English... tell them exactly HOW to schedule... a ritual on every session start when no scheduled loop is detected."
+- **What changed**: A dream plea renders inside the ONE session-start digest (INVARIANT-08) when three conditions hold: unconsumed notes > 0, no dream schedule registered, and no dream proposals pending (the triage line owns that state). The plea explains the loop in plain English (auto-collected notes -> a short offline pass -> PROPOSED memory fixes the user approves/rejects; nothing changes without review), gives exact scheduling paths (Claude Code routine phrasing, a cron + claude -p line, or run /clauderizer-dream now), and names its own retirement: a new blessed write cz_register_dream_schedule records {method, cadence, command} to gitignored .clauderizer/dreams.schedule.toml — method="manual" is a legitimate quieting verdict (a D-052-style per-user verdict, NOT a feature toggle: the loop, gauges, and skill stay fully active). Empty method clears and the plea revives. Ships inside the still-untagged 1.13.0.
+- **Why**: Adoption is the loop's weakest link: capture is ambient and the machinery is built, but a user who never schedules or runs the dreamer accumulates a journal that helps no one. The D-027 trim-first tension is accepted deliberately per explicit user directive — mitigated by strict gating (quiet when scheduled, when empty, when triage already nags, and in every journal-less fixture, keeping goldens byte-identical) and by the plea being self-retiring.
+
 ## Decisions
 
 ### D1 — Dreaming ships behind an empirical gate: dogfood metrics decide hardening, and a negative result is a recorded outcome
@@ -159,4 +168,20 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 - [x] Token-utilization outputs (A-002): notes per session, average note size, dream-bundle est_tokens, and tokens-per-accepted-proposal for both comparator arms recorded in the Outputs Registry
 - [x] At least one dream-sourced proposal accepted into tracked memory via blessed writes, or the negative result plus scope reassessment is recorded as an output
 - [x] release-check exit 0; version bumped to 1.13.0; post-mortem written with procedure improvements
+- [x] Full suite green at >= baseline
+
+### Phase 6: The schedule plea — beg, explain, instruct at session start
+
+**Goal**: When dream notes accumulate with no registered dream schedule and nothing pending triage, the single session-start digest carries a plain-English plea explaining the dreaming loop, exact scheduling instructions, and its own retirement path via the new cz_register_dream_schedule blessed write (A-004).
+**Depends on**: 5.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 6.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [x] The dream plea renders ONLY when unconsumed notes > 0 AND no schedule is registered AND no dream proposals are pending (the triage line owns that state) — inside the single [Clauderizer] digest (INVARIANT-08); every journal-less fixture stays byte-identical (goldens untouched)
+- [x] The plea explains the loop in plain English (auto-collected notes -> short offline pass -> PROPOSED memory fixes the user approves/rejects; nothing changes without review) and gives exact scheduling paths: Claude Code routine phrasing, a cron + claude -p line, run-now via /clauderizer-dream — key phrases test-pinned so wording drift cannot silently drop the instructions
+- [x] cz_register_dream_schedule (writes=True, stamped, TOOL_NAMES parity) records method/cadence/command to gitignored .clauderizer/dreams.schedule.toml; empty method clears; method="manual" quiets the plea as a D-052-style per-user verdict while the loop/gauges/skill stay fully active; registration retires the plea and clearing revives it — all test-pinned; init gitignores the file in target repos; hooks stay read-only/exit-0
+- [x] Docs in lockstep: README Dreaming group + count (pin test forces it), clauderizer-dream skill gains the schedule/register step, GAMEPLAN-PROCEDURE Dream Notes + template byte-identical, TRUST local-file row, CHANGELOG 1.13.0 bullet (still untagged)
 - [x] Full suite green at >= baseline

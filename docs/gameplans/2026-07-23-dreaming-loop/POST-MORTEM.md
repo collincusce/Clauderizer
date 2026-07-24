@@ -1,8 +1,24 @@
 # Post-Mortem — 2026-07-23-dreaming-loop (1.13.0)
 
-> Closed: 2026-07-24 · 6/6 phases complete · suite 948 → 1000 collected, exit 0
-> · release-check exit 0 (tag/Release/PyPI deliberately left for the user after
-> the CI matrix greens 81a99f4)
+> Closed: 2026-07-24 · 7/7 phases complete (Phase 6 added post-close by A-004,
+> same day, inside the still-untagged 1.13.0) · suite 948 → 1007 collected,
+> exit 0 · release-check exit 0 (tag/Release/PyPI deliberately left for the
+> user after the CI matrix greens)
+
+## Addendum — Phase 6, the schedule plea (A-004)
+
+Reopened hours after close on a user directive: capture is ambient, but
+nothing drove adoption of the dreaming half. Shipped the 🌙 session-start plea
+(plain-English explanation + exact scheduling commands + self-retirement via
+cz_register_dream_schedule, a per-user gitignored self-report — the only
+portable "is a loop scheduled?" detection an engine without crontab/routine
+visibility can have; method="manual" quiets it as a D-052-style verdict).
+Strictly gated (quiet when scheduled, journal-empty, or triage already nags),
+so every golden stayed byte-identical; the D-027 always-on-cost tension is
+accepted deliberately per the directive and recorded in A-004. The round-trip
+test caught the TOML writer emitting the canonical claude -p command's quotes
+unescaped — one more loop-adjacent defect killed before ship, captured as a
+journal note for the next dream cycle.
 
 ## What shipped
 

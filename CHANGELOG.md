@@ -38,6 +38,15 @@ retained (token cost + PII). Procedure bumped to **1.8.0** ("Dream Notes").
   triage-first → dream-if-ripe → one staged batch, with the headless
   `clauderize ops` variant inline. Dream capture depends on NO hook event —
   it reaches every host (CROSS-HOST §5b).
+- **The adoption plea** (A-004): when notes accumulate with NO dream schedule
+  registered and nothing pending triage, the session-start digest carries a
+  plain-English plea — what dreaming is (auto-collected notes → a short
+  offline pass → proposed memory fixes you approve or reject; nothing changes
+  without review), exact scheduling paths (a Claude Code daily routine running
+  `/clauderizer-dream`, or `cron` + `claude -p`), and its own retirement:
+  `cz_register_dream_schedule` records {method, cadence, command} to a
+  per-user gitignored self-report (`method="manual"` quiets it for hand-run
+  loops — a D-052-style verdict, never a toggle; clearing revives the plea).
 - **Dogfooded end-to-end in its own build**: 12 real notes → ripe dream →
   4 staged → 3 accepted into tracked memory + 1 dismissed → loop at rest.
   The loop caught two real defects mid-eval (a dead phase-default fallback;

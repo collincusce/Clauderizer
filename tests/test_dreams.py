@@ -604,3 +604,87 @@ def test_digest_dream_gauge_counts_only_unconsumed(temp_repo):
     with _chdir(temp_repo):
         out = S.render_digest(S.compute(paths, Config.load(paths.config_file)))
     assert "Dreams: 1 note(s) awaiting the dreamer." in out
+
+
+# --- Phase 6: the schedule plea (A-004) --------------------------------------------
+
+
+def _digest(temp_repo):
+    from clauderizer.config import Config
+    from clauderizer.rituals import status_bundle as S
+    paths = resolve(temp_repo)
+    with _chdir(temp_repo):
+        return S.render_digest(S.compute(paths, Config.load(paths.config_file)))
+
+
+def test_plea_renders_with_notes_and_no_schedule(temp_repo):
+    paths = resolve(temp_repo)
+    _seed(paths, 2)
+    out = _digest(temp_repo)
+    assert "🌙 A plea:" in out and "2 dream note(s)" in out
+    # plain-English what/why + the review guarantee
+    assert "Nothing changes without your review" in out
+    # exact scheduling instructions, all three paths — test-pinned wording
+    assert "schedule a daily routine" in out
+    assert 'claude -p "/clauderizer-dream"' in out and "cron" in out
+    assert "/clauderizer-dream right now" in out
+    # the retirement path
+    assert "cz_register_dream_schedule" in out
+    assert out.count("[Clauderizer]") == 1          # INVARIANT-08: one digest
+
+
+def test_plea_quiet_on_empty_journal(temp_repo):
+    assert "🌙" not in _digest(temp_repo)           # fixtures/goldens unaffected
+
+
+def test_registration_retires_plea_and_clearing_revives(temp_repo):
+    paths = resolve(temp_repo)
+    _seed(paths, 2)
+    res = mutations.register_dream_schedule(
+        paths, method="cron", cadence="daily 07:00",
+        command='claude -p "/clauderizer-dream"', today="2026-07-24")
+    assert res["ok"] is True and res["registered"] is True
+    assert dreams.schedule_info(paths)["method"] == "cron"
+    assert "🌙" not in _digest(temp_repo)           # retired
+    cleared = mutations.register_dream_schedule(paths, method="")
+    assert cleared["cleared"] is True
+    assert "🌙" in _digest(temp_repo)               # revived
+
+
+def test_manual_method_is_a_quieting_verdict_loop_stays_active(temp_repo):
+    paths = resolve(temp_repo)
+    _seed(paths, 2)
+    mutations.register_dream_schedule(paths, method="manual", today="2026-07-24")
+    out = _digest(temp_repo)
+    assert "🌙" not in out                          # plea quiet
+    assert "Dreams: 2 note(s) awaiting the dreamer." in out  # gauge still live
+    assert dreams.assemble(paths, today="2026-07-24")["state"] == "not_ripe"
+
+
+def test_plea_defers_to_the_triage_line(temp_repo):
+    paths = resolve(temp_repo)
+    _seed(paths, 3)
+    ids = [n["id"] for n in dreams.read_notes(paths)]
+    _stage(paths, evidence=ids[:1], reviewed=None)
+    out = _digest(temp_repo)
+    assert "(1 dream)" in out and "awaiting triage" in out
+    assert "🌙" not in out                          # triage owns that state
+
+
+def test_register_schedule_op_registered_stamped_and_validated(temp_repo):
+    assert "cz_register_dream_schedule" in TOOL_NAMES
+    assert ops.REGISTRY["cz_register_dream_schedule"].writes is True
+    with _chdir(temp_repo):
+        res = ops.run_op("cz_register_dream_schedule", method="claude-code-routine",
+                         cadence="daily 07:00")
+        assert res["schema_version"] == contract.CONTRACT_SCHEMA_VERSION
+        assert res["registered"] is True
+        bad = ops.run_op("cz_register_dream_schedule", method="x" * 201)
+        assert bad["ok"] is False and "too long" in bad["summary"]
+
+
+def test_init_gitignores_the_schedule_file(empty_python_repo):
+    from clauderizer.scaffold.init import init
+    init(empty_python_repo, spawn_test=False)
+    gi = (empty_python_repo / ".gitignore").read_text(encoding="utf-8")
+    assert ".clauderizer/dreams.schedule.toml" in gi

@@ -71,4 +71,5 @@ TOOL_NAMES = [
     "cz_dream",
     "cz_dream_propose",
     "cz_handle_dream_proposal",
+    "cz_register_dream_schedule",
 ]

@@ -1,7 +1,7 @@
 # Chat Handoff Index — dreaming-loop
 
 > Last updated: 2026-07-24
-> Status: All 6 phases complete
+> Status: All 7 phases complete
 
 ## How This Works
 
@@ -35,6 +35,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 3 | Durable dream proposals & unified triage | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The dreaming ritual: skill, loop integration & headless recipe | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Dogfood, eval & ship 1.13.0 | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-5-HANDOFF.md |
+| 6 | The schedule plea — beg, explain, instruct at session start | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-6-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -75,6 +76,12 @@ The L-21 sweep earned its keep: README's MCP surface had silently drifted FOURTE
 The eval phase turned into the strongest possible dogfood: the loop ran end-to-end on its own build's real notes and caught two of its own defects in the process. Twelve organic notes (avg 51 tok) ripened into a 2053-token bundle of 8 clusters; judgment staged 4 proposals; triage accepted 3 into tracked memory (gameplan lesson #1 on executable doc seams, correction C-01 on the missed-transition drift, a CROSS-HOST live-skill-reload note) and dismissed the transcript-arm duplicate — ~1,051 tokens per accepted proposal, loop back to rest with the watermark consuming all reviewed notes. The A-002 comparator answered the founding question with data: the 4.6M-token raw transcript corpus, mined deterministically, produced 31 failure-shaped candidates and ZERO unique durable memories (its one durable hit duplicated a note; detector-C's zero correction-recall reconfirmed D-023), while telemetry-only cz_curate proposed only never-surfaced-lesson obsoletions — zero class overlap. Notes, transcripts-as-failure-miner, and telemetry are three complementary signals; notes own the semantic layer.
 
 Mid-eval the loop's own artifacts exposed two real defects — the phase-default fallback matched a computed "ready" status tables never store (two notes landed phase-less after a skipped transition, itself recorded as C-01), and the digest gauge counted consumed notes ("11 awaiting" right after a dream consumed 11) — both fixed and test-pinned, plus the stale-editable-install version guard fired exactly as designed during release prep. A-003 records the honest measured basis (one build session across five phase contexts; ongoing cadence delegated to the standing-curator loop). Shipped: 1.13.0 single-sourced, suite exit 0 at 1000 collected, origin/main pushed, release-check exit 0 — tag/Release/PyPI deliberately left as the user's irreversible step. O-01/O-02/O-03 all resolved; feat.dream-loop active with its cascade clean.
+
+### Phase 6 — completed 2026-07-24
+
+The adoption ritual the user ordered, built inside the still-untagged 1.13.0: when dream notes accumulate with no registered schedule and nothing already pending triage, the one session-start digest carries a plea — begging in plain English (auto-collected notes, a short offline pass, PROPOSED fixes you approve or reject, nothing changes without review), then exactly how to schedule (a Claude Code daily routine running /clauderizer-dream, a cron + claude -p line, or run it now with the live ripeness count), then how to retire the plea: cz_register_dream_schedule, a per-user gitignored self-report — because the engine cannot see crontabs or host routines, honest self-report is the only portable detection. method="manual" quiets it as a D-052-style user verdict while the loop, gauges, and skill stay fully active; clearing revives it. Every journal-less fixture stays byte-identical, so no golden moved; the D-027 tension is accepted deliberately per the user's explicit directive and recorded in A-004.
+
+The round-trip test caught a real writer bug before ship — the canonical scheduled command (claude -p "/clauderizer-dream") contains double quotes the naive TOML writer emitted unescaped, so schedule_info parsed None immediately after a successful register; captured as a dream note (kind=correction) and fixed with proper basic-string escaping. Docs in lockstep (README 67 tools via the pin test, skill schedule step, procedure + template byte-identical, TRUST row, CHANGELOG bullet). Suite exit 0 at 1007 collected; the plea is live on this repo at close — the user's next session opens with it.
 
 ## Accumulated Lessons
 

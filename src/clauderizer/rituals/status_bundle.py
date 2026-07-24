@@ -624,6 +624,11 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
         if _dp:
             bundle["pending_proposals"] = bundle.get("pending_proposals", 0) + len(_dp)
             bundle["pending_dream_proposals"] = len(_dp)
+        # The adoption plea (A-004): quiet when scheduled, when the journal has
+        # nothing unconsumed, or when the triage line above already nags.
+        _plea = _dreams.plea_state(paths)
+        if _plea:
+            bundle["dream_plea"] = _plea
     except Exception:
         pass
     if not gid:
@@ -810,6 +815,26 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
             lines.append(
                 f"⚙ {pp} upgrade proposal(s) awaiting triage — invoke the "
                 "clauderizer-modernize skill to handle/dismiss/defer them (cz_modernize).")
+    plea = bundle.get("dream_plea")
+    if plea:
+        n, ripe = plea.get("unconsumed", 0), plea.get("ripeness", 10)
+        lines.append(
+            f"🌙 A plea: {n} dream note(s) are waiting and NO dream loop is "
+            "scheduled.\n"
+            "   What this is: while you work, Clauderizer automatically collects "
+            "tiny notes about friction, gaps, surprises, and corrections. "
+            "Dreaming is a short offline pass that turns those notes into "
+            "PROPOSED memory fixes, surfaced here for your approval — sleep for "
+            "your project's memory. Nothing changes without your review.\n"
+            "   How to schedule it (pick one):\n"
+            "   • Claude Code: say \"schedule a daily routine for this repo "
+            "that runs /clauderizer-dream\"\n"
+            "   • any host, cron: 0 7 * * *  cd <this repo> && claude -p "
+            "\"/clauderizer-dream\"\n"
+            f"   • or run /clauderizer-dream right now (ripeness {n}/{ripe}).\n"
+            "   Then record it so this plea retires: cz_register_dream_schedule("
+            "method=\"claude-code-routine\"|\"cron\"|\"manual\", "
+            "cadence=\"daily 07:00\").")
     if bundle.get("blockers"):
         lines.append("Blocked: " + ", ".join(bundle["blockers"]))
     for warn in bundle.get("drift") or []:
