@@ -98,12 +98,12 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_dream is registered writes=False and performs no writes (INVARIANT-05 parity test); below the ripeness threshold it returns not_ripe with counts, at/above it a clustered dream bundle joining corpus_health, lesson_health, and one-hop graph adjacency for referenced entities
-- [ ] Re-dream guard (A-001): while previously emitted dream proposals remain pending (untriaged) in the producer-agnostic ledger filter, cz_dream returns blocked_on_triage with the pending ids instead of a bundle; dreaming resumes once they are handled/dismissed/deferred — tests cover both sides
-- [ ] Bounded bundle (A-001): the bundle is capped (top-K clusters, max exemplar notes per cluster, ids+abstracts over full bodies per D-013) and reports its own est_tokens; a seeded oversized journal still yields a bundle within the cap — test enforced
-- [ ] Clustering uses analyze._tokens exclusively — the INVARIANT-09 single-tokenizer test is extended and passes
-- [ ] Same journal + caller-fixed today => byte-identical bundle across two calls (determinism test); contract-corpus payload captured
-- [ ] Full suite green at >= baseline
+- [x] cz_dream is registered writes=False and performs no writes (INVARIANT-05 parity test); below the ripeness threshold it returns not_ripe with counts, at/above it a clustered dream bundle joining corpus_health, lesson_health, and one-hop graph adjacency for referenced entities
+- [x] Re-dream guard (A-001): while previously emitted dream proposals remain pending (untriaged) in the producer-agnostic ledger filter, cz_dream returns blocked_on_triage with the pending ids instead of a bundle; dreaming resumes once they are handled/dismissed/deferred — tests cover both sides
+- [x] Bounded bundle (A-001): the bundle is capped (top-K clusters, max exemplar notes per cluster, ids+abstracts over full bodies per D-013) and reports its own est_tokens; a seeded oversized journal still yields a bundle within the cap — test enforced
+- [x] Clustering uses analyze._tokens exclusively — the INVARIANT-09 single-tokenizer test is extended and passes
+- [x] Same journal + caller-fixed today => byte-identical bundle across two calls (determinism test); contract-corpus payload captured
+- [x] Full suite green at >= baseline
 
 ### Phase 3: Durable dream proposals & unified triage
 

@@ -68,4 +68,5 @@ TOOL_NAMES = [
     "cz_revision",
     "cz_assign",
     "cz_add_dream",
+    "cz_dream",
 ]

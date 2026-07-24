@@ -285,3 +285,122 @@ def test_procedure_doc_version_and_section_match_engine():
         text = (root / rel).read_text(encoding="utf-8")
         assert f"**Procedure version**: {PROCEDURE_VERSION}" in text[:400], rel
         assert "## Dream Notes (experiential capture)" in text, rel
+
+
+# --- Phase 2: cz_dream — ripeness-gated, bounded, deterministic assembly ----------
+
+
+def _seed(paths, n, topic="distinct"):
+    """n unique notes; topic='same' makes them lexically related."""
+    for i in range(n):
+        if topic == "same":
+            note = (f"The tokenizer documentation gap bit again in spot {i}. "
+                    f"Nothing points readers at the canonical splitter rule.")
+        else:
+            note = (f"Observation alpha{i} bravo{i} charlie{i} delta{i}. "
+                    f"Unique territory echo{i} foxtrot{i} golf{i}.")
+        r = _add(paths, note=note, kind="gap" if i % 2 else "friction",
+                 phase=str(i))
+        assert r["appended"] is True, r
+
+
+def test_dream_not_ripe_reports_counts(temp_repo):
+    paths = resolve(temp_repo)
+    _seed(paths, dreams.RIPENESS_NOTES - 1)
+    res = dreams.assemble(paths, today="2026-07-24")
+    assert res["state"] == "not_ripe"
+    assert res["unconsumed"] == dreams.RIPENESS_NOTES - 1
+    assert res["ripeness"] == dreams.RIPENESS_NOTES
+
+
+def test_dream_ripe_bundle_clusters_and_reports_weight(temp_repo):
+    paths = resolve(temp_repo)
+    _seed(paths, 4, topic="same")
+    _seed(paths, dreams.RIPENESS_NOTES - 4)
+    res = dreams.assemble(paths, today="2026-07-24")
+    assert res["state"] == "ripe"
+    assert res["clusters"], "ripe bundle must carry clusters"
+    # the four related notes grouped: some cluster holds all four ids
+    sizes = [c["size"] for c in res["clusters"]]
+    assert max(sizes) >= 4
+    top = res["clusters"][0]
+    assert len(top["exemplars"]) <= dreams.CLUSTER_MAX_EXEMPLARS
+    assert isinstance(res["est_tokens"], int) and res["est_tokens"] > 0
+    assert "corpus_health" in res and "lesson_flags" in res
+
+
+def test_dream_bundle_is_bounded_and_names_the_tail(temp_repo):
+    paths = resolve(temp_repo)
+    _seed(paths, 30)  # 30 lexically-disjoint notes -> 30 candidate clusters
+    res = dreams.assemble(paths, today="2026-07-24")
+    assert res["state"] == "ripe"
+    assert len(res["clusters"]) <= dreams.BUNDLE_MAX_CLUSTERS
+    assert res["clusters_dropped"] == 30 - dreams.BUNDLE_MAX_CLUSTERS  # no silent caps
+
+
+def test_dream_blocked_while_proposals_untriaged_and_resumes_after(temp_repo):
+    from clauderizer import proposals as P
+    from clauderizer.telemetry import _append
+    paths = resolve(temp_repo)
+    _seed(paths, dreams.RIPENESS_NOTES)
+    _append(dreams.proposals_path(paths),
+            {"id": "dream-prop:aaaa0000bbbb", "detail": "seeded", "created": "2026-07-24"})
+    blocked = dreams.assemble(paths, today="2026-07-24")
+    assert blocked["state"] == "blocked_on_triage"          # A-001, side 1
+    assert blocked["pending"] == ["dream-prop:aaaa0000bbbb"]
+    P.dismiss(paths, "dream-prop:aaaa0000bbbb")
+    resumed = dreams.assemble(paths, today="2026-07-24")
+    assert resumed["state"] == "ripe"                        # A-001, side 2
+
+
+def test_dream_handled_marker_unblocks_too(temp_repo):
+    from clauderizer.telemetry import _append
+    paths = resolve(temp_repo)
+    _seed(paths, dreams.RIPENESS_NOTES)
+    _append(dreams.proposals_path(paths),
+            {"id": "dream-prop:cccc1111dddd", "detail": "seeded", "created": "2026-07-24"})
+    _append(dreams.proposals_path(paths),
+            {"id": "dream-prop:cccc1111dddd", "handled": "2026-07-24"})
+    assert dreams.assemble(paths, today="2026-07-24")["state"] == "ripe"
+
+
+def test_dream_watermark_consumption_shrinks_unconsumed(temp_repo):
+    paths = resolve(temp_repo)
+    _seed(paths, dreams.RIPENESS_NOTES)
+    ids = [n["id"] for n in dreams.read_notes(paths)]
+    dreams.watermark_path(paths).write_text(
+        json.dumps({"consumed": ids[:6]}), encoding="utf-8")
+    res = dreams.assemble(paths, today="2026-07-24")
+    assert res["state"] == "not_ripe" and res["unconsumed"] == len(ids) - 6
+
+
+def test_dream_is_deterministic_and_read_only(temp_repo):
+    paths = resolve(temp_repo)
+    _seed(paths, dreams.RIPENESS_NOTES + 2)
+    skip = {"index.json", "write.lock"}
+    def snap():
+        return {str(p.relative_to(temp_repo)): p.read_bytes()
+                for p in sorted(temp_repo.rglob("*"))
+                if p.is_file() and p.name not in skip and ".git" not in p.parts}
+    before = snap()
+    a = dreams.assemble(paths, today="2026-07-24")
+    b = dreams.assemble(paths, today="2026-07-24")
+    assert json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
+    assert snap() == before  # INVARIANT-05: assembly writes nothing
+
+
+def test_dream_clustering_uses_the_canonical_tokenizer():
+    # INVARIANT-09: the clustering path imports analyze._tokens — no local fork
+    from pathlib import Path
+    src = Path(dreams.__file__).read_text(encoding="utf-8")
+    assert "from .analyze import _tokens" in src
+    assert "def _tokens" not in src
+
+
+def test_cz_dream_registered_read_only_and_stamped(temp_repo):
+    assert "cz_dream" in TOOL_NAMES and "cz_dream" in ops.REGISTRY
+    assert ops.REGISTRY["cz_dream"].writes is False
+    with _chdir(temp_repo):
+        res = ops.run_op("cz_dream")
+    assert res["schema_version"] == contract.CONTRACT_SCHEMA_VERSION
+    assert res["state"] == "not_ripe"  # fresh fixture: empty journal

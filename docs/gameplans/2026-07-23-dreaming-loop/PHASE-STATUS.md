@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Dream journal substrate & the blessed dream write | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Capture ritual & read-only nudges | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | cz_dream — ripeness-gated dream assembly | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | cz_dream — ripeness-gated dream assembly | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Durable dream proposals & unified triage | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The dreaming ritual: skill, loop integration & headless recipe | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Dogfood, eval & ship 1.13.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
@@ -32,6 +32,14 @@ adjacent gap closed: scaffold/init.py now _ensure_gitignore's .clauderizer/telem
 ritual surfaces: claude_stanza.md (source) + CLAUDE.md/AGENTS.md renders carry the cz_add_dream ritual bullet; GAMEPLAN-PROCEDURE.md v1.8.0 (+template synced, corpus stamped via clauderize upgrade) gains "## Dream Notes (experiential capture)"
 nudges: digest "Dreams: N note(s) awaiting the dreamer." (quiet-when-empty — golden digest proven byte-identical, no update needed, L-41); pre_compact reminder now names cz_add_dream; live repo digest shows Dreams: 4
 tests: 6 new (gauge both sides + single header, pre_compact mention, INVARIANT-06 read-only sweep with journal present, stanza/render seam pin, procedure version+section parity pin) — suite exit 0
+```
+
+### Phase 2 Outputs
+
+```
+cz_dream states: blocked_on_triage (pending ids) | not_ripe (unconsumed/ripeness) | ripe (bounded bundle). Constants in dreams.py: RIPENESS_NOTES=10, BUNDLE_MAX_CLUSTERS=8, CLUSTER_MAX_EXEMPLARS=3, CLUSTER_JACCARD=0.25 (canonical tokenizer, looser than lesson near-dup 0.40)
+read-side store contracts: .clauderizer/proposals.dream.jsonl (records {id,...}; terminal marker {"id","handled"}; filtered through producer-agnostic proposals.filter_pending) + .clauderizer/dreams.watermark.json {"consumed":[note ids]} — Phase 3 owns the writers
+tests: 9 new (not_ripe counts, ripe joins+weight, cap+named tail, guard both sides, handled-marker unblock, watermark shrink, determinism+read-only snapshot, tokenizer identity, registry/stamp) — suite exit 0 at 988 collected; live smoke: 6 notes -> not_ripe 6/10
 ```
 
 ## Corrections Log

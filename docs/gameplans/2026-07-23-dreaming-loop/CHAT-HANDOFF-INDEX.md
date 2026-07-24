@@ -1,7 +1,7 @@
 # Chat Handoff Index — dreaming-loop
 
 > Last updated: 2026-07-24
-> Status: Phase 2 ready
+> Status: Phase 3 ready
 
 ## How This Works
 
@@ -31,7 +31,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 |-------|------|--------|---------|-----------|---------|
 | 0 | Dream journal substrate & the blessed dream write | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Capture ritual & read-only nudges | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | cz_dream — ripeness-gated dream assembly | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | cz_dream — ripeness-gated dream assembly | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Durable dream proposals & unified triage | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The dreaming ritual: skill, loop integration & headless recipe | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Dogfood, eval & ship 1.13.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
@@ -51,6 +51,12 @@ Evidence: 20 new tests in tests/test_dreams.py (round-trip byte-determinism, all
 The capture ritual is now documented at every surface an agent reads: the single-source claude_stanza.md template (and both of this repo's rendered marker blocks) carries a terse cz_add_dream bullet with the kind vocabulary and no-PII guidance; GAMEPLAN-PROCEDURE.md gained a "Dream Notes (experiential capture)" section and a MINOR bump to 1.8.0 (changelog entry, template copy synced byte-identical, this corpus mechanically stamped via clauderize upgrade). Nudges stayed inside INVARIANT-06/D-027 bounds: the session digest gains one quiet-when-empty line ("Dreams: N note(s) awaiting the dreamer."), and the pre-compact reminder now names cz_add_dream alongside the other record-now ops. No per-turn UserPromptSubmit nudge — that would be noise against D-027.
 
 The exit criterion anticipated a deliberate golden-digest update; the quiet-when-empty design made that unnecessary (every fixture repo has no journal, so the golden stays byte-identical — the L-41 identity-default pattern) and positive/negative digest tests pin both sides instead, plus a single-header INVARIANT-08 assertion. The INVARIANT-06 sweep was extended to run all four handlers over a repo WITH a dream journal. Two seam tests close silent-drift channels found en route: stanza source + both renders must mention the ritual together (L-55), and both GAMEPLAN-PROCEDURE copies must carry PROCEDURE_VERSION and the new section. Suite exit 0; live dogfood digest shows Dreams: 4.
+
+### Phase 2 — completed 2026-07-24
+
+cz_dream ships as pure assembly with a two-condition gate, exactly per D-059+A-001: it returns blocked_on_triage (with pending ids) while any staged dream proposal sits untriaged in the producer-agnostic ledger filter — dreaming never piles onto unactioned output; not_ripe with unconsumed/ripeness counts below the 10-note floor; and otherwise a BOUNDED ripe bundle — greedy order-stable clustering over kind+note text using the canonical tokenizer at a dream-specific 0.25 Jaccard (deliberately looser than the 0.40 lesson near-dup threshold, single-sourced in dreams.py), top-8 clusters with at most 3 full-text exemplars each (ids beyond — D-013), a named clusters_dropped tail (no silent caps), corpus-health metrics, lesson_health entries carrying an advisory signal, one-hop graph adjacency for entity-shaped refs, a judgment prompt, and self-reported est_tokens (A-001). Deterministic given caller-fixed today; a snapshot test proves assembly writes nothing.
+
+Phase 3's read-side contracts got defined here by necessity: proposals.dream.jsonl (append-only records with content-hash ids; a terminal {"id","handled"} marker record retires one) and dreams.watermark.json ({"consumed":[ids]}), both tolerant of absence/corruption — O-01 stays open only for Phase 3 to confirm the writer + digest merge. The house io-discipline test caught a bare open() in a new test (encoding= must be pinned — recorded as a dream note of kind correction). The corpus-payload clause is satisfied the Phase 0 way: result key-set and schema_version pinned in-test; the external PhaseKeep corpus regenerates at release. Suite exit 0, 988 collected; live smoke on this repo: 6 notes → not_ripe 6/10.
 
 ## Accumulated Lessons
 

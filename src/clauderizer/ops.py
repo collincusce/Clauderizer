@@ -1318,6 +1318,25 @@ def cz_add_dream(kind: str, note: str, refs: list[str] | None = None,
                                note=note, refs=refs)
 
 
+def cz_dream(today: str = "") -> dict:
+    """Assemble the dream bundle — read-only, gated (D-059, A-001).
+
+    Returns one of three states. ``blocked_on_triage``: previously staged dream
+    proposals await triage — handle/dismiss/defer them first; dreaming never
+    piles new proposals onto unactioned ones. ``not_ripe``: fewer unconsumed
+    notes than the ripeness floor — keep capturing (cz_add_dream). ``ripe``: a
+    BOUNDED bundle (top clusters via the canonical tokenizer, exemplar-only
+    full text, corpus-health + lesson flags + one-hop graph adjacency for
+    entity refs, self-reported est_tokens) for the AGENT to judge into staged
+    proposals — the engine assembles, it never decides (INVARIANT-05). Pass
+    ``today`` (YYYY-MM-DD) only to pin determinism in tests/replays.
+    """
+    paths, _config = repo_ctx()
+    from . import dreams as _dreams
+
+    return _dreams.assemble(paths, today=today or None)
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -1394,6 +1413,7 @@ REGISTRY: dict[str, Op] = {
     "cz_revision": Op(cz_revision, writes=False),
     "cz_assign": Op(cz_assign, writes=True),
     "cz_add_dream": Op(cz_add_dream, writes=True),
+    "cz_dream": Op(cz_dream, writes=False),
 }
 
 # Every op result carries the external contract version (O-05): stamped here,

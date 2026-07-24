@@ -25,6 +25,7 @@ Constitution (mirrors telemetry.py):
 
 from __future__ import annotations
 
+import json
 import re
 
 from .paths import RepoPaths
@@ -148,3 +149,188 @@ def add_note(paths: RepoPaths, *, gameplan: str, phase: str, kind: str,
             "path": str(paths.dreams_file),
             "summary": f"dream note {nid} appended ({kind}, "
                        f"{len(existing) + 1} in journal)"}
+
+
+# --- the dreamer's assembly side (D-059, A-001) -----------------------------------
+#
+# Engine assembles, agent judges (INVARIANT-05): cz_dream never writes. The gate
+# has two conditions (A-001): no previously staged dream proposals may sit
+# untriaged (else dreaming just piles proposals on unactioned ones), and enough
+# unconsumed notes must have accumulated to be worth a distillation pass.
+
+# Dream only when this many unconsumed notes wait. A plain constant, tuned from
+# dogfood data in Phase 5 (O-03) — never a config on/off switch (D-015).
+RIPENESS_NOTES = 10
+# A-001: the bundle is bounded — top-K clusters, exemplar-only full text.
+BUNDLE_MAX_CLUSTERS = 8
+CLUSTER_MAX_EXEMPLARS = 3
+# Token-set Jaccard at/above which two notes belong to one cluster: RELATED
+# grouping, deliberately looser than the near-duplicate-LESSON threshold
+# (analyze._LESSON_DUP_JACCARD = 0.40). Same canonical tokenizer either way
+# (INVARIANT-09) — a different threshold for a different concept, single-sourced
+# here for any future dream-related overlap computation.
+CLUSTER_JACCARD = 0.25
+
+WATERMARK_NAME = "dreams.watermark.json"
+PROPOSALS_NAME = "proposals.dream.jsonl"
+
+
+def watermark_path(paths: RepoPaths):
+    return paths.clauderizer_dir / WATERMARK_NAME
+
+
+def proposals_path(paths: RepoPaths):
+    return paths.clauderizer_dir / PROPOSALS_NAME
+
+
+def consumed_ids(paths: RepoPaths) -> set[str]:
+    """Note ids already distilled into a durable proposal batch (the Phase 3
+    watermark, advanced only AFTER proposals are written — resumable by
+    construction). Absent/corrupt watermark reads as nothing consumed."""
+    p = watermark_path(paths)
+    if not p.exists():
+        return set()
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return set()
+    if not isinstance(data, dict):
+        return set()
+    return {str(x) for x in data.get("consumed", [])}
+
+
+def unconsumed_notes(paths: RepoPaths) -> list[dict]:
+    done = consumed_ids(paths)
+    return [n for n in read_notes(paths) if n.get("id") not in done]
+
+
+def read_proposals(paths: RepoPaths) -> list[dict]:
+    """Raw dream-proposal records in append order (jsonl, same substrate)."""
+    return read_events(proposals_path(paths))
+
+
+def pending_proposals(paths: RepoPaths, today: str | None = None) -> list[dict]:
+    """Dream proposals awaiting triage: not handled (terminal marker record),
+    not dismissed, not still-deferred — through the SAME producer-agnostic
+    ledger filter modernize proposals use (D-052/D-059)."""
+    from .proposals import filter_pending, load_ledger
+
+    records = read_proposals(paths)
+    handled = {str(r.get("id")) for r in records if r.get("handled")}
+    live, seen = [], set()
+    for r in records:
+        rid = str(r.get("id"))
+        if r.get("handled") or rid in handled or rid in seen:
+            continue
+        seen.add(rid)
+        live.append(r)
+    return filter_pending(live, load_ledger(paths), today)
+
+
+def _cluster(notes: list[dict]) -> list[dict]:
+    """Greedy, order-stable token-set clustering over kind + note text."""
+    from .analyze import _tokens  # THE tokenizer (INVARIANT-09)
+    from .telemetry import _jaccard
+
+    groups: list[dict] = []
+    for n in notes:
+        toks = _tokens(f"{n.get('kind', '')} {n.get('note', '')}")
+        target = None
+        for g in groups:
+            if _jaccard(toks, g["_tokens"]) >= CLUSTER_JACCARD:
+                target = g
+                break
+        if target is None:
+            groups.append({"_tokens": set(toks), "members": [n]})
+        else:
+            target["_tokens"] |= toks
+            target["members"].append(n)
+    groups.sort(key=lambda g: (-len(g["members"]), g["members"][0].get("id", "")))
+    out = []
+    for g in groups:
+        members = g["members"]
+        out.append({
+            "size": len(members),
+            "kinds": sorted({m.get("kind", "") for m in members}),
+            "note_ids": [m.get("id") for m in members],
+            # Full text only for the exemplars; the rest stay ids (D-013/A-001).
+            "exemplars": [
+                {k: m.get(k) for k in ("id", "date", "phase", "kind", "note", "refs")}
+                for m in members[:CLUSTER_MAX_EXEMPLARS]
+            ],
+        })
+    return out
+
+
+_ENTITY_REF = re.compile(r"^[a-z][a-z0-9_-]*\.[a-z0-9._-]+$")
+
+
+def _adjacency(paths: RepoPaths, notes: list[dict]) -> dict:
+    """One-hop graph neighborhood for entity-shaped refs across the notes."""
+    refs = sorted({r for n in notes for r in (n.get("refs") or [])
+                   if _ENTITY_REF.match(str(r))})[:8]
+    if not refs:
+        return {}
+    from .graph import index as _gindex
+    from .graph import query as _gquery
+
+    graph = _gindex.load_or_rebuild(paths.docs, paths.index_file)
+    out = {}
+    for r in refs:
+        if _gquery.lookup(graph, r) is None:
+            continue
+        out[r] = {"dependents": _gquery.dependents(graph, r),
+                  "dependencies": _gquery.dependencies(graph, r)}
+    return out
+
+
+def assemble(paths: RepoPaths, *, today: str | None = None) -> dict:
+    """The dream bundle — or the reason there isn't one. Read-only."""
+    from .telemetry import corpus_health, lesson_health
+
+    pending = pending_proposals(paths, today)
+    if pending:
+        ids = [str(p.get("id")) for p in pending]
+        return {"ok": True, "state": "blocked_on_triage", "pending": ids,
+                "summary": (f"{len(ids)} dream proposal(s) await triage — "
+                            f"handle/dismiss/defer them first (A-001); "
+                            f"dreaming never piles onto unactioned output")}
+    notes = unconsumed_notes(paths)
+    if len(notes) < RIPENESS_NOTES:
+        return {"ok": True, "state": "not_ripe",
+                "unconsumed": len(notes), "ripeness": RIPENESS_NOTES,
+                "summary": (f"{len(notes)}/{RIPENESS_NOTES} unconsumed notes — "
+                            f"not ripe; keep capturing (cz_add_dream)")}
+    clusters = _cluster(notes)
+    dropped = max(0, len(clusters) - BUNDLE_MAX_CLUSTERS)
+    health = corpus_health(paths, today=today)
+    lh = lesson_health(paths)
+    flags = [s for s in lh.get("scores", []) if s.get("signal")]
+    bundle = {
+        "ok": True,
+        "state": "ripe",
+        "unconsumed": len(notes),
+        "clusters": clusters[:BUNDLE_MAX_CLUSTERS],
+        "clusters_dropped": dropped,  # no silent caps — the tail is named
+        "corpus_health": {k: health.get(k) for k in
+                          ("active_lessons", "redundant_pairs", "never_surfaced",
+                           "pass_rate") if k in health},
+        "lesson_flags": flags,
+        "adjacent": _adjacency(paths, notes),
+        "prompt": (
+            "Judge each cluster: does it indicate a durable memory change — a "
+            "lesson, a correction, a decision, a doc/glossary gap, a procedure "
+            "drift? You decide; the engine only assembled (INVARIANT-05). Stage "
+            "one dream proposal per real signal for next-session triage "
+            "(Phase 3's blessed writer; until it ships, apply judgments "
+            "directly via cz_add_lesson / cz_add_correction / cz_add_decision) "
+            "and skip clusters with nothing durable. The consumption watermark "
+            "advances only when proposals are durably written."),
+    }
+    est = len(json.dumps(bundle, sort_keys=True, ensure_ascii=False)) // 4
+    bundle["est_tokens"] = est  # A-001: the bundle reports its own weight
+    bundle["summary"] = (f"ripe: {len(notes)} notes in "
+                         f"{len(bundle['clusters'])} cluster(s)"
+                         + (f" (+{dropped} dropped by cap)" if dropped else "")
+                         + f", ~{est} tok bundle")
+    return bundle
