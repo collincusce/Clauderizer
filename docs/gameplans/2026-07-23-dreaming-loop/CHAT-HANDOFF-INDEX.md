@@ -1,7 +1,7 @@
 # Chat Handoff Index — dreaming-loop
 
 > Last updated: 2026-07-24
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Dream journal substrate & the blessed dream write | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Capture ritual & read-only nudges | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | cz_dream — ripeness-gated dream assembly | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Durable dream proposals & unified triage | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Durable dream proposals & unified triage | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The dreaming ritual: skill, loop integration & headless recipe | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Dogfood, eval & ship 1.13.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
@@ -57,6 +57,12 @@ The exit criterion anticipated a deliberate golden-digest update; the quiet-when
 cz_dream ships as pure assembly with a two-condition gate, exactly per D-059+A-001: it returns blocked_on_triage (with pending ids) while any staged dream proposal sits untriaged in the producer-agnostic ledger filter — dreaming never piles onto unactioned output; not_ripe with unconsumed/ripeness counts below the 10-note floor; and otherwise a BOUNDED ripe bundle — greedy order-stable clustering over kind+note text using the canonical tokenizer at a dream-specific 0.25 Jaccard (deliberately looser than the 0.40 lesson near-dup threshold, single-sourced in dreams.py), top-8 clusters with at most 3 full-text exemplars each (ids beyond — D-013), a named clusters_dropped tail (no silent caps), corpus-health metrics, lesson_health entries carrying an advisory signal, one-hop graph adjacency for entity-shaped refs, a judgment prompt, and self-reported est_tokens (A-001). Deterministic given caller-fixed today; a snapshot test proves assembly writes nothing.
 
 Phase 3's read-side contracts got defined here by necessity: proposals.dream.jsonl (append-only records with content-hash ids; a terminal {"id","handled"} marker record retires one) and dreams.watermark.json ({"consumed":[ids]}), both tolerant of absence/corruption — O-01 stays open only for Phase 3 to confirm the writer + digest merge. The house io-discipline test caught a bare open() in a new test (encoding= must be pinned — recorded as a dream note of kind correction). The corpus-payload clause is satisfied the Phase 0 way: result key-set and schema_version pinned in-test; the external PhaseKeep corpus regenerates at release. Suite exit 0, 988 collected; live smoke on this repo: 6 notes → not_ripe 6/10.
+
+### Phase 3 — completed 2026-07-24
+
+The dreamer's output is now durable and triaged through the one existing pipeline. cz_dream_propose stages a judged batch into .clauderizer/proposals.dream.jsonl (append-only, content-hash dreamprop ids so restaging identical content is a no-op; details PII-linted with the shared deny-list since accepted writes become tracked memory) and THEN advances dreams.watermark.json over every reviewed note id — evidence ids always, plus the clusters judged not durable, so nothing re-ripens; the ordering is the resumability contract and the kill-and-resume test proves a crash between the two appends double-mines nothing and loses nothing. An empty batch with reviewed ids is a first-class "dreamed, found nothing durable" pass. cz_handle_dream_proposal retires a done proposal with a terminal marker; dismiss/defer needed ZERO changes — D-052's producer-agnostic ledger absorbed the second producer exactly as designed, only docstrings were generalized.
+
+status_bundle now folds dream pending into the single pending-proposals count with a producer tag, and the digest line says "(N dream)" plus what unblocks cz_dream — only when dream proposals exist; the modernize-only wording is byte-unchanged so every golden and existing digest test stayed green untouched. cz_dream's ripe prompt now names the real writer and the reviewed_note_ids contract (closing the Phase 2 friction note). O-01 resolved with this shape. Suite exit 0 at 995 collected; journal at 8 notes after this phase's two dogfood captures.
 
 ## Accumulated Lessons
 

@@ -913,11 +913,12 @@ def cz_modernize(apply: bool = False) -> dict:
 
 
 def cz_dismiss_proposal(proposal_id: str) -> dict:
-    """Dismiss an advisory modernize proposal by its ``id`` — it will NOT
-    re-surface (in cz_modernize or the session digest) until it materially
-    changes and hashes to a new id. Recorded in a per-user, gitignored ledger
-    (.clauderizer/proposals.local.toml); this is a personal "seen it", not a
-    team-wide gate off-switch (D-052). Get ids from cz_modernize."""
+    """Dismiss an advisory proposal (modernize or dream) by its ``id`` — it
+    will NOT re-surface (in cz_modernize/cz_dream or the session digest) until
+    it materially changes and hashes to a new id. Recorded in a per-user,
+    gitignored ledger (.clauderizer/proposals.local.toml); this is a personal
+    "seen it", not a team-wide gate off-switch (D-052/D-059). Get ids from
+    cz_modernize or cz_dream's blocked_on_triage state."""
     paths, _ = repo_ctx()
     from . import proposals as _proposals
 
@@ -925,9 +926,10 @@ def cz_dismiss_proposal(proposal_id: str) -> dict:
 
 
 def cz_defer_proposal(proposal_id: str, days: int = 7) -> dict:
-    """Snooze an advisory modernize proposal by its ``id`` for ``days`` days
-    (default 7); it re-surfaces after that. Per-user, gitignored ledger (D-052).
-    Get ids from cz_modernize."""
+    """Snooze an advisory proposal (modernize or dream) by its ``id`` for
+    ``days`` days (default 7); it re-surfaces after that — and a deferred dream
+    proposal stops gating cz_dream until then. Per-user, gitignored ledger
+    (D-052/D-059). Get ids from cz_modernize or cz_dream."""
     paths, _ = repo_ctx()
     from . import proposals as _proposals
 
@@ -1337,6 +1339,37 @@ def cz_dream(today: str = "") -> dict:
     return _dreams.assemble(paths, today=today or None)
 
 
+def cz_dream_propose(proposals: list[dict], reviewed_note_ids: list[str] | None = None) -> dict:
+    """Stage the dreamer's judged proposals durably and consume the mined notes.
+
+    ``proposals``: list of {detail (required, <=600 chars, PII-free),
+    op? (a blessed cz_* op the handler would run), args? (its arguments),
+    evidence? (the dream-note ids behind it)}. Each gets a stable content-hash
+    id (``dreamprop:<12-hex>``) — restaging identical content is a no-op, so an
+    interrupted dreaming pass is safe to re-run. ``reviewed_note_ids``: ALL note
+    ids the pass reviewed (the bundle clusters' note_ids), including clusters
+    judged not durable — they are consumed too so they never re-ripen; evidence
+    ids are always consumed. Proposals are appended BEFORE the watermark
+    advances (crash-safe ordering). Pass proposals=[] with reviewed_note_ids to
+    record a "dreamed, nothing durable" pass. Staged proposals surface in the
+    session-start pending count and gate cz_dream until triaged
+    (cz_handle_dream_proposal / cz_dismiss_proposal / cz_defer_proposal).
+    """
+    paths, _config = repo_ctx()
+    return mutations.stage_dream_proposals(paths, proposals=proposals,
+                                           reviewed_note_ids=reviewed_note_ids)
+
+
+def cz_handle_dream_proposal(proposal_id: str) -> dict:
+    """Mark a dream proposal handled AFTER doing its work via the normal blessed
+    writes (the suggested op/args, or your better judgment) — appends the
+    terminal marker so it leaves the pending set and stops gating cz_dream.
+    Dismiss/defer instead when the proposal should NOT be acted on
+    (cz_dismiss_proposal / cz_defer_proposal — same ledger as modernize)."""
+    paths, _config = repo_ctx()
+    return mutations.handle_dream_proposal(paths, proposal_id=proposal_id)
+
+
 # --- the registry ----------------------------------------------------------------
 
 
@@ -1414,6 +1447,8 @@ REGISTRY: dict[str, Op] = {
     "cz_assign": Op(cz_assign, writes=True),
     "cz_add_dream": Op(cz_add_dream, writes=True),
     "cz_dream": Op(cz_dream, writes=False),
+    "cz_dream_propose": Op(cz_dream_propose, writes=True),
+    "cz_handle_dream_proposal": Op(cz_handle_dream_proposal, writes=True),
 }
 
 # Every op result carries the external contract version (O-05): stamped here,

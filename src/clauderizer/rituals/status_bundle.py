@@ -612,6 +612,17 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
             bundle["pending_proposals"] = len(_pending)
     except Exception:
         pass
+    # Dream proposals join the SAME pending count through the same producer-
+    # agnostic ledger filter (D-059): one concept, one digest line — the dream
+    # share is tagged so the line can say what unblocks cz_dream.
+    try:
+        from .. import dreams as _dreams
+        _dp = _dreams.pending_proposals(paths)
+        if _dp:
+            bundle["pending_proposals"] = bundle.get("pending_proposals", 0) + len(_dp)
+            bundle["pending_dream_proposals"] = len(_dp)
+    except Exception:
+        pass
     if not gid:
         bundle["summary"] = "No active gameplan. Use cz_create_gameplan to start one."
         return bundle
@@ -784,9 +795,18 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
             "updates; cz_modernize lists the advisory proposals.")
     pp = bundle.get("pending_proposals")
     if pp:
-        lines.append(
-            f"⚙ {pp} upgrade proposal(s) awaiting triage — invoke the "
-            "clauderizer-modernize skill to handle/dismiss/defer them (cz_modernize).")
+        dp = bundle.get("pending_dream_proposals", 0)
+        if dp:
+            lines.append(
+                f"⚙ {pp} proposal(s) awaiting triage ({dp} dream) — handle/"
+                "dismiss/defer the dream ones to unblock cz_dream "
+                "(cz_handle_dream_proposal / cz_dismiss_proposal); upgrades via "
+                "cz_modernize.")
+        else:
+            # Modernize-only wording unchanged — golden/back-compat surface.
+            lines.append(
+                f"⚙ {pp} upgrade proposal(s) awaiting triage — invoke the "
+                "clauderizer-modernize skill to handle/dismiss/defer them (cz_modernize).")
     if bundle.get("blockers"):
         lines.append("Blocked: " + ", ".join(bundle["blockers"]))
     for warn in bundle.get("drift") or []:

@@ -404,3 +404,121 @@ def test_cz_dream_registered_read_only_and_stamped(temp_repo):
         res = ops.run_op("cz_dream")
     assert res["schema_version"] == contract.CONTRACT_SCHEMA_VERSION
     assert res["state"] == "not_ripe"  # fresh fixture: empty journal
+
+
+# --- Phase 3: durable proposals, watermark ordering, unified triage ----------------
+
+
+def _stage(paths, detail="Promote the tokenizer-docs gap into a lesson.",
+           op="cz_add_lesson", evidence=None, reviewed=None, **kw):
+    return mutations.stage_dream_proposals(
+        paths, proposals=[{"detail": detail, "op": op,
+                           "args": {"text": detail}, "evidence": evidence or []}],
+        reviewed_note_ids=reviewed, today=kw.get("today", "2026-07-24"))
+
+
+def test_stage_persists_consumes_and_gates_dreaming(temp_repo):
+    paths = resolve(temp_repo)
+    _seed(paths, dreams.RIPENESS_NOTES)
+    ids = [n["id"] for n in dreams.read_notes(paths)]
+    res = _stage(paths, evidence=ids[:2], reviewed=ids)
+    assert res["ok"] is True and res["staged"] == 1
+    assert res["ids"][0].startswith("dreamprop:")
+    assert res["consumed"] == len(ids)
+    # durable: fresh read sees it pending; the dream gate now blocks
+    assert [p["id"] for p in dreams.pending_proposals(paths)] == res["ids"]
+    blocked = dreams.assemble(paths, today="2026-07-24")
+    assert blocked["state"] == "blocked_on_triage"
+    # and every reviewed note is consumed
+    assert dreams.unconsumed_notes(paths) == []
+
+
+def test_restage_is_a_dedupe_noop_and_kill_resume_loses_nothing(temp_repo):
+    """Crash between proposal append and watermark: re-running the same pass
+    dedupes the proposal AND still advances the watermark — nothing double-
+    mined, nothing lost (A-001 ordering contract)."""
+    from clauderizer.telemetry import _append
+    paths = resolve(temp_repo)
+    _seed(paths, dreams.RIPENESS_NOTES)
+    ids = [n["id"] for n in dreams.read_notes(paths)]
+    # simulate the crashed pass: proposal landed, watermark did NOT advance
+    pid = dreams.dream_proposal_id("cz_add_lesson",
+                                   "Promote the tokenizer-docs gap into a lesson.",
+                                   sorted(ids[:2]))
+    _append(dreams.proposals_path(paths),
+            {"id": pid, "created": "2026-07-24",
+             "detail": "Promote the tokenizer-docs gap into a lesson.",
+             "op": "cz_add_lesson", "args": {}, "evidence": sorted(ids[:2])})
+    assert dreams.unconsumed_notes(paths) != []       # crash state: unconsumed
+    res = _stage(paths, evidence=ids[:2], reviewed=ids)  # resume: same batch
+    assert res["staged"] == 0 and res["deduped"] == 1  # no double-stage
+    assert dreams.unconsumed_notes(paths) == []        # watermark caught up
+    assert len([p for p in dreams.read_proposals(paths)
+                if p.get("id") == pid and not p.get("handled")]) == 1
+
+
+def test_nothing_durable_pass_consumes_only(temp_repo):
+    paths = resolve(temp_repo)
+    _seed(paths, dreams.RIPENESS_NOTES)
+    ids = [n["id"] for n in dreams.read_notes(paths)]
+    res = mutations.stage_dream_proposals(paths, proposals=[],
+                                          reviewed_note_ids=ids,
+                                          today="2026-07-24")
+    assert res["ok"] is True and res["staged"] == 0 and res["consumed"] == len(ids)
+    assert dreams.assemble(paths, today="2026-07-24")["state"] == "not_ripe"
+
+
+def test_pii_in_proposal_detail_rejected(temp_repo):
+    paths = resolve(temp_repo)
+    res = _stage(paths, detail="Ping somebody@example.com about the docs hole.")
+    assert res["ok"] is False and res["staged"] == 0
+    assert not dreams.proposals_path(paths).exists()
+
+
+def test_handle_marker_retires_and_dismiss_suppresses(temp_repo):
+    from clauderizer import proposals as P
+    paths = resolve(temp_repo)
+    _seed(paths, dreams.RIPENESS_NOTES)
+    ids = [n["id"] for n in dreams.read_notes(paths)]
+    a = _stage(paths, evidence=ids[:1], reviewed=None)["ids"][0]
+    b = _stage(paths, detail="Record the phase-aware prompt friction as a correction.",
+               op="cz_add_correction", evidence=ids[1:2], reviewed=None)["ids"][0]
+    assert {p["id"] for p in dreams.pending_proposals(paths)} == {a, b}
+    handled = mutations.handle_dream_proposal(paths, proposal_id=a, today="2026-07-24")
+    assert handled["ok"] is True and handled["changed"] is True
+    P.dismiss(paths, b)
+    assert dreams.pending_proposals(paths) == []
+    # idempotent handle; unknown id is a clear error
+    again = mutations.handle_dream_proposal(paths, proposal_id=a, today="2026-07-24")
+    assert again["ok"] is True and again["changed"] is False
+    bad = mutations.handle_dream_proposal(paths, proposal_id="dreamprop:nope",
+                                          today="2026-07-24")
+    assert bad["ok"] is False
+
+
+def test_digest_merges_dream_proposals_into_one_pending_line(temp_repo):
+    from clauderizer.config import Config
+    from clauderizer.rituals import status_bundle as S
+    paths = resolve(temp_repo)
+    _seed(paths, 3)
+    ids = [n["id"] for n in dreams.read_notes(paths)]
+    _stage(paths, evidence=ids[:1], reviewed=None)
+    with _chdir(temp_repo):
+        bundle = S.compute(paths, Config.load(paths.config_file))
+        out = S.render_digest(bundle)
+    assert bundle.get("pending_dream_proposals") == 1
+    assert "awaiting triage" in out and "(1 dream)" in out
+    assert out.count("[Clauderizer]") <= 1  # still the one digest (INVARIANT-08)
+
+
+def test_dream_triage_ops_registered_and_stamped(temp_repo):
+    for name in ("cz_dream_propose", "cz_handle_dream_proposal"):
+        assert name in TOOL_NAMES and name in ops.REGISTRY
+        assert ops.REGISTRY[name].writes is True
+    _seed(resolve(temp_repo), 1)
+    with _chdir(temp_repo):
+        nid = dreams.read_notes(resolve(temp_repo))[0]["id"]
+        res = ops.run_op("cz_dream_propose",
+                         proposals=[{"detail": "Stamp check.", "evidence": [nid]}])
+    assert res["schema_version"] == contract.CONTRACT_SCHEMA_VERSION
+    assert res["staged"] == 1

@@ -50,7 +50,7 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 ## Open Items
 
-**O-01.** _(phase 3)_ Dream-proposal persistence shape (Phase 3): dedicated .clauderizer/proposals.dream.jsonl vs generalizing status_bundle's pending_proposals into a multi-producer merge before filter_pending — decide when touching status_bundle.py:600-606; leaning generalized merge so the digest stays one line.
+**O-01.** _(phase 3)_ Dream-proposal persistence shape (Phase 3): dedicated .clauderizer/proposals.dream.jsonl vs generalizing status_bundle's pending_proposals into a multi-producer merge before filter_pending — decide when touching status_bundle.py:600-606; leaning generalized merge so the digest stays one line. _(resolved 2026-07-24: Decided in Phase 3: a dedicated append-only .clauderizer/proposals.dream.jsonl store (content-hash ids, terminal handled markers) whose pending set merges into status_bundle's ONE pending_proposals count through the producer-agnostic filter_pending — the digest stays one line, with a "(N dream)" tag only when dream proposals exist, and modernize-only wording is byte-unchanged.)_
 
 **O-02.** Should cz_curate and cz_mine_failures outputs also join the unified id+ledger proposal queue (they currently have no ids/ledger and can re-surface forever)? Likely a follow-on gameplan once Phase 3 proves the multi-producer merge point — tracked here so it is not silent scope creep.
 
@@ -115,10 +115,10 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] A dream proposal persisted via the new blessed write survives process restart and surfaces in the session-start pending-proposals count merged with modernize's — one digest line, one filter_pending path
-- [ ] cz_dismiss_proposal / cz_defer_proposal suppress dream proposals through the existing producer-agnostic ledger; identical proposal content yields the same stable content-hash id (spam/dedupe test)
-- [ ] The note-consumption watermark advances only after the proposal batch is durably written: a kill-and-resume test re-mines nothing already proposed and loses nothing unproposed
-- [ ] Full suite green at >= baseline; golden digest updated deliberately
+- [x] A dream proposal persisted via the new blessed write survives process restart and surfaces in the session-start pending-proposals count merged with modernize's — one digest line, one filter_pending path
+- [x] cz_dismiss_proposal / cz_defer_proposal suppress dream proposals through the existing producer-agnostic ledger; identical proposal content yields the same stable content-hash id (spam/dedupe test)
+- [x] The note-consumption watermark advances only after the proposal batch is durably written: a kill-and-resume test re-mines nothing already proposed and loses nothing unproposed
+- [x] Full suite green at >= baseline; golden digest updated deliberately
 
 ### Phase 4: The dreaming ritual: skill, loop integration & headless recipe
 

@@ -320,12 +320,13 @@ def assemble(paths: RepoPaths, *, today: str | None = None) -> dict:
         "prompt": (
             "Judge each cluster: does it indicate a durable memory change — a "
             "lesson, a correction, a decision, a doc/glossary gap, a procedure "
-            "drift? You decide; the engine only assembled (INVARIANT-05). Stage "
-            "one dream proposal per real signal for next-session triage "
-            "(Phase 3's blessed writer; until it ships, apply judgments "
-            "directly via cz_add_lesson / cz_add_correction / cz_add_decision) "
-            "and skip clusters with nothing durable. The consumption watermark "
-            "advances only when proposals are durably written."),
+            "drift? You decide; the engine only assembled (INVARIANT-05). Then "
+            "call cz_dream_propose ONCE with every proposal you stage ({detail, "
+            "op, args, evidence: note ids}) AND reviewed_note_ids = all note ids "
+            "across these clusters — clusters judged not durable are consumed "
+            "too, so they never re-ripen. Staged proposals surface at next "
+            "session start for triage (handle/dismiss/defer) and gate further "
+            "dreaming until triaged."),
     }
     est = len(json.dumps(bundle, sort_keys=True, ensure_ascii=False)) // 4
     bundle["est_tokens"] = est  # A-001: the bundle reports its own weight
@@ -334,3 +335,124 @@ def assemble(paths: RepoPaths, *, today: str | None = None) -> dict:
                          + (f" (+{dropped} dropped by cap)" if dropped else "")
                          + f", ~{est} tok bundle")
     return bundle
+
+
+# --- staging judged proposals + the consumption watermark (Phase 3, D-059) --------
+
+
+def _pii_hits(text: str) -> list[str]:
+    """Labels of PII/secret shapes present in ``text`` (shared deny-list)."""
+    return [label for label, pat in _PII_PATTERNS if pat.search(text or "")]
+
+
+def _validate_proposals(proposals: list) -> list[str]:
+    problems: list[str] = []
+    if not isinstance(proposals, list):
+        return ["proposals must be a list of {detail, op?, args?, evidence?}"]
+    for i, p in enumerate(proposals):
+        if not isinstance(p, dict):
+            problems.append(f"proposal[{i}] is not an object")
+            continue
+        detail = str(p.get("detail") or "").strip()
+        if not detail:
+            problems.append(f"proposal[{i}] has no detail")
+        if len(detail) > MAX_NOTE_CHARS:
+            problems.append(
+                f"proposal[{i}] detail is {len(detail)} chars "
+                f"(max {MAX_NOTE_CHARS}) — a proposal is a pointer, not an essay")
+        for label in _pii_hits(detail):
+            problems.append(
+                f"proposal[{i}] detail matches a {label} — proposals surface in "
+                f"sessions and their accepted writes become tracked memory; "
+                f"rephrase (repo-relative paths, id references)")
+        if p.get("op") is not None and not isinstance(p.get("op"), str):
+            problems.append(f"proposal[{i}] op is not a string")
+        if p.get("args") is not None and not isinstance(p.get("args"), dict):
+            problems.append(f"proposal[{i}] args is not an object")
+        ev = p.get("evidence") or []
+        if not isinstance(ev, list) or any(not isinstance(e, str) for e in ev):
+            problems.append(f"proposal[{i}] evidence is not a list of note ids")
+    return problems
+
+
+def dream_proposal_id(op: str, detail: str, evidence: list[str]) -> str:
+    collapsed = " ".join(str(detail).split())
+    return proposal_id("dreamprop", op or "", collapsed, *sorted(evidence or []))
+
+
+def _write_watermark(paths: RepoPaths, consumed: set[str], today: str | None) -> None:
+    # Operational state, not memory: a small rewritable JSON (like the triage
+    # ledger), NOT an append-only log — INVARIANT-03 governs memory, and the
+    # journal itself stays untouched.
+    watermark_path(paths).write_text(
+        json.dumps({"consumed": sorted(consumed), "advanced": _today(today)},
+                   sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8")
+
+
+def stage_proposals(paths: RepoPaths, *, proposals: list, reviewed_note_ids=None,
+                    today: str | None = None) -> dict:
+    """Durably stage judged dream proposals, THEN consume the reviewed notes.
+
+    The ordering is the resumability contract (A-001): proposals are appended
+    before the watermark advances, so a crash between the two re-mines nothing
+    already staged (content-hash dedupe) and loses nothing unstaged (watermark
+    unadvanced). An empty ``proposals`` with ``reviewed_note_ids`` is a valid
+    "dreamed, found nothing durable" pass — it only consumes. Caller holds the
+    H-05 lock (mutations.stage_dream_proposals).
+    """
+    problems = _validate_proposals(proposals)
+    if problems:
+        return {"ok": False, "staged": 0,
+                "error": "dream proposals rejected — nothing was staged",
+                "problems": problems, "summary": f"rejected: {problems[0]}"}
+    existing = {str(r.get("id")) for r in read_proposals(paths)}
+    staged_ids, deduped = [], 0
+    for p in proposals:
+        detail = str(p.get("detail")).strip()
+        ev = sorted({str(e) for e in (p.get("evidence") or [])})
+        pid = dream_proposal_id(str(p.get("op") or ""), detail, ev)
+        if pid in existing:
+            deduped += 1
+            continue
+        rec = {"id": pid, "created": _today(today), "detail": detail,
+               "op": str(p.get("op") or ""), "args": p.get("args") or {},
+               "evidence": ev}
+        _append(proposals_path(paths), rec)
+        existing.add(pid)
+        staged_ids.append(pid)
+    reviewed = {str(x) for x in (reviewed_note_ids or [])}
+    for p in proposals:
+        reviewed |= {str(e) for e in (p.get("evidence") or [])}
+    consumed_total = consumed_ids(paths) | reviewed
+    if reviewed:
+        _write_watermark(paths, consumed_total, today)
+    return {"ok": True, "staged": len(staged_ids), "deduped": deduped,
+            "ids": staged_ids, "consumed": len(reviewed),
+            "consumed_total": len(consumed_total),
+            "path": str(proposals_path(paths)),
+            "summary": (f"staged {len(staged_ids)} dream proposal(s)"
+                        + (f", {deduped} duplicate(s) skipped" if deduped else "")
+                        + f"; {len(reviewed)} note(s) consumed")}
+
+
+def mark_handled(paths: RepoPaths, *, proposal_id: str,
+                 today: str | None = None) -> dict:
+    """Retire a dream proposal after its work was done: append the terminal
+    ``{"id", "handled"}`` marker (append-only — the original record stays).
+    Caller holds the H-05 lock (mutations.handle_dream_proposal)."""
+    records = read_proposals(paths)
+    known = {str(r.get("id")) for r in records if not r.get("handled")}
+    done = {str(r.get("id")) for r in records if r.get("handled")}
+    pid = str(proposal_id)
+    if pid in done:
+        return {"ok": True, "id": pid, "changed": False,
+                "summary": f"{pid} already handled — no-op"}
+    if pid not in known:
+        return {"ok": False, "id": pid,
+                "error": f"unknown dream proposal id {pid!r} (cz_dream / the "
+                         f"digest show pending ids)",
+                "summary": f"unknown id {pid}"}
+    _append(proposals_path(paths), {"id": pid, "handled": _today(today)})
+    return {"ok": True, "id": pid, "changed": True,
+            "summary": f"dream proposal {pid} marked handled"}

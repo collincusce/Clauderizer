@@ -1758,3 +1758,21 @@ def add_dream(paths: RepoPaths, *, gameplan: str, phase: str, kind: str,
     """
     return dreams.add_note(paths, gameplan=gameplan, phase=phase, kind=kind,
                            note=note, refs=refs, today=today)
+
+
+@_locked
+def stage_dream_proposals(paths: RepoPaths, *, proposals: list,
+                          reviewed_note_ids=None,
+                          today: str | None = None) -> dict:
+    """Blessed write for the dreamer's judged output: durable proposal append,
+    then watermark advancement — one lock spans both (H-05)."""
+    return dreams.stage_proposals(paths, proposals=proposals,
+                                  reviewed_note_ids=reviewed_note_ids,
+                                  today=today)
+
+
+@_locked
+def handle_dream_proposal(paths: RepoPaths, *, proposal_id: str,
+                          today: str | None = None) -> dict:
+    """Blessed write for retiring a handled dream proposal (terminal marker)."""
+    return dreams.mark_handled(paths, proposal_id=proposal_id, today=today)
