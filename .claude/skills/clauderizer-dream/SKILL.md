@@ -47,11 +47,28 @@ via `clauderize ops <file.json|->` with the exact op names and args above — a
 cron or batch session can dream unattended and leave staged proposals for the
 next interactive session to triage.
 
+**Headless behavior**: there is no one to ask, so skip every ask-first prompt
+and do NOT triage — triage is the interactive session's half of the loop. If
+`cz_dream` is `ripe`, judge and stage in one pass (`cz_dream_propose` with
+`reviewed_note_ids`); if `blocked_on_triage` or `not_ripe`, report one line and
+exit. Never register or change the schedule from a headless run.
+
 **Schedule it, then say so.** If the session-start digest carries the 🌙 plea
 (notes accumulating, no schedule registered), help the user set one up —
 a Claude Code daily routine running `/clauderizer-dream` in this repo, or
-`cron: 0 7 * * *  cd <repo> && claude -p "/clauderizer-dream"` — and then
-record it so the plea retires:
+cron (the headless-verified shape — `-p` sessions do NOT auto-attach the
+project MCP server and need the tool allowances up front):
+
+```
+0 7 * * * cd <repo> && claude -p "/clauderizer-dream" \
+  --mcp-config .mcp.json \
+  --allowedTools "mcp__clauderizer__*,Bash(clauderize:*),Bash(.venv/bin/clauderize:*)" \
+  >> "$HOME/.clauderizer-dream-cron.log" 2>&1
+```
+
+The dreaming loop runs where the JOURNAL lives — dream notes are machine-local
+and gitignored, so a cloud routine cloning the repo sees an empty journal;
+schedule on the machine you work from. Then record it so the plea retires:
 `cz_register_dream_schedule(method="claude-code-routine"|"cron", cadence="daily 07:00", command="...")`.
 A user who prefers running it by hand records `method="manual"` — an honest
 verdict that quiets the plea while the loop, gauges, and this skill stay fully
