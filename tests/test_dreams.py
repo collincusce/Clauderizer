@@ -522,3 +522,51 @@ def test_dream_triage_ops_registered_and_stamped(temp_repo):
                          proposals=[{"detail": "Stamp check.", "evidence": [nid]}])
     assert res["schema_version"] == contract.CONTRACT_SCHEMA_VERSION
     assert res["staged"] == 1
+
+
+# --- Phase 4: skill ships, loop integration, doc seams pinned ----------------------
+
+
+def test_dream_skill_ships_and_is_registered():
+    from pathlib import Path
+    root = Path(__file__).parent.parent
+    tmpl = root / "src" / "clauderizer" / "skills" / "clauderizer-dream" / "SKILL.md"
+    body = tmpl.read_text(encoding="utf-8")
+    for needle in ("cz_dream_propose", "reviewed_note_ids", "clauderize ops",
+                   "cz_handle_dream_proposal"):
+        assert needle in body, needle
+    assert "clauderizer-dream" in (root / "docs" / "SKILLS.md").read_text(encoding="utf-8")
+
+
+def test_readme_mcp_surface_pins_the_full_tool_list():
+    """L-21 made executable: the README MCP-surface section must name every
+    registered tool and carry the true count — it had silently drifted 14
+    tools behind by 1.12.0."""
+    import re
+    from pathlib import Path
+    readme = (Path(__file__).parent.parent / "README.md").read_text(encoding="utf-8")
+    listed = set(re.findall(r"`(cz_[a-z_]+)`", readme))
+    missing = [t for t in TOOL_NAMES if t not in listed]
+    assert missing == [], f"README MCP surface lost {missing}"
+    assert f"**{len(TOOL_NAMES)} tools" in readme
+
+
+def test_loop_step_surfaces_dream_state(temp_repo):
+    paths = resolve(temp_repo)
+    with _chdir(temp_repo):
+        quiet = ops.run_op("cz_loop_step")
+        assert "dream" not in quiet          # empty journal -> silent
+        _seed(paths, 2, topic="same")
+        some = ops.run_op("cz_loop_step")
+        assert some["dream"]["state"] == "not_ripe"
+        _seed(paths, dreams.RIPENESS_NOTES)  # disjoint family -> 12 unique
+        ripe = ops.run_op("cz_loop_step")
+        assert ripe["dream"]["state"] == "ripe"
+        assert "cz_dream" in ripe["summary"]
+        ids = [n["id"] for n in dreams.read_notes(paths)]
+        mutations.stage_dream_proposals(
+            paths, proposals=[{"detail": "One durable thing.", "evidence": ids[:1]}],
+            reviewed_note_ids=ids, today="2026-07-24")
+        blocked = ops.run_op("cz_loop_step")
+        assert blocked["dream"]["state"] == "blocked_on_triage"
+        assert "clauderizer-dream" in blocked["summary"]

@@ -11,7 +11,7 @@
 | 1 | Capture ritual & read-only nudges | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | cz_dream — ripeness-gated dream assembly | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Durable dream proposals & unified triage | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | The dreaming ritual: skill, loop integration & headless recipe | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | The dreaming ritual: skill, loop integration & headless recipe | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Dogfood, eval & ship 1.13.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 ## Outputs Registry
@@ -48,6 +48,14 @@ tests: 9 new (not_ripe counts, ripe joins+weight, cap+named tail, guard both sid
 triage ops: cz_dream_propose (stage batch + consume reviewed notes, crash-safe ordering, dreamprop:&lt;12hex&gt; content-hash dedupe, PII-linted details, empty-batch pure-consumption pass) + cz_handle_dream_proposal (terminal marker); dismiss/defer unchanged, docstrings generalized to both producers
 digest merge: status_bundle merges dream pending into the single pending_proposals count (bundle.pending_dream_proposals tags the share); digest line gains "(N dream)" wording ONLY when dream>0 — modernize-only wording byte-unchanged, golden green; O-01 resolved with this shape
 tests: 7 new (stage/consume/gate, kill-and-resume watermark ordering, nothing-durable pass, PII reject, handle+dismiss retire, digest merge single header, registry/stamp) — suite exit 0 at 995 collected
+```
+
+### Phase 4 Outputs
+
+```
+skill: clauderizer-dream (S-09): src/clauderizer/skills/clauderizer-dream/SKILL.md + installed .claude/skills copy + SKILLS.md registration — triage-first, then dream-if-ripe, one cz_dream_propose call with reviewed_note_ids, headless clauderize-ops variant documented in the skill itself
+loop + docs: cz_loop_step gains a quiet-when-empty dream block (blocked_on_triage/ripe/not_ripe + summary suffix); CROSS-HOST §5b (capture is hook-independent by construction), TRUST .clauderizer row lists the three local dream artifacts + PII boundary; README MCP surface gains Dreaming group AND the missing 1.12.0 listing group — count corrected 48→66, now test-pinned
+tests: 3 new (skill ships+registered, README surface pin against TOOL_NAMES, loop_step all four dream states) — suite exit 0 at 998 collected; live loop_step on this repo: dream ripe, 10 unconsumed
 ```
 
 ## Corrections Log

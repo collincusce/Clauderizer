@@ -130,10 +130,10 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] clauderizer-dream skill ships in the scaffold and is registered in SKILLS.md; it drives triage -> ripeness check -> cz_dream -> judged writes exclusively via blessed cz_* ops
-- [ ] cz_loop_step surfaces dream ripeness alongside curator proposals for loop gameplans; the standing-curator loop's iteration body references it
-- [ ] GAMEPLAN-PROCEDURE.md, TRUST.md, and CROSS-HOST.md document the ritual, the local-only privacy boundary (journal and proposals stay local; only accepted, reviewed writes become tracked memory), and the headless clauderize-ops dreamer recipe
-- [ ] Full suite green at >= baseline
+- [x] clauderizer-dream skill ships in the scaffold and is registered in SKILLS.md; it drives triage -> ripeness check -> cz_dream -> judged writes exclusively via blessed cz_* ops
+- [x] cz_loop_step surfaces dream ripeness alongside curator proposals for loop gameplans; the standing-curator loop's iteration body references it
+- [x] GAMEPLAN-PROCEDURE.md, TRUST.md, and CROSS-HOST.md document the ritual, the local-only privacy boundary (journal and proposals stay local; only accepted, reviewed writes become tracked memory), and the headless clauderize-ops dreamer recipe
+- [x] Full suite green at >= baseline
 
 ### Phase 5: Dogfood, eval & ship 1.13.0
 

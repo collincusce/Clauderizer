@@ -101,6 +101,17 @@ AGENTS.md-native hosts (floor for free): Claude Code (via import), Copilot, Code
 
 So the floor emitter writes AGENTS.md **plus** a per-host native-instructions shim for those three.
 
+## 5b. Dream capture is host-independent by construction (D-058/D-059)
+
+The dreaming loop deliberately depends on NO hook event: per-exchange capture
+(`cz_add_dream`), the dreamer (`cz_dream`), staging (`cz_dream_propose`), and
+triage are all plain tool calls, reachable on every host through MCP or the
+`clauderize ops <file.json|->` batch fallback — including headless/scheduled
+sessions, which can dream unattended and leave staged proposals for the next
+interactive session. Hooks only ever NUDGE (the quiet-when-empty `Dreams:`
+digest gauge, the pre-compact reminder) — read-only and exit-0 per
+INVARIANT-06, so hosts without those events lose nothing but the reminder.
+
 ## 6. Zero-dependency format audit (O-04) — stdlib-only invariant holds
 
 | Format | Hosts | Stdlib-writable? | Policy |

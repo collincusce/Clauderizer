@@ -540,10 +540,12 @@ clauderize uninstall [--host <name>]   # reverse the full footprint (MCP config 
 **Discipline & analysis** (advisory — they surface findings for you to act on, never changing anything on their own) · `cz_analyze` · `cz_critique` · `cz_audit` · `cz_mine_failures` · `cz_corpus_health` · `cz_lesson_health` · `cz_curate` · `cz_loop_step` · `cz_add_open_item` · `cz_resolve_open_item` · `cz_set_exit_criteria` · `cz_check_exit_criterion`
 **Skills** (Clauderizer finds the skills your project already has and proposes them — you confirm; never auto-added) · `cz_register_skill` · `cz_obsolete_skill` · `cz_discover_skills`
 **Modernize** (advisory upgrade proposals from `clauderize upgrade` — you triage each: act, dismiss, or defer) · `cz_modernize` · `cz_dismiss_proposal` · `cz_defer_proposal`
+**Dreaming** (experiential capture → offline distillation: per-exchange notes in a local PII-linted journal; the ripeness-gated dreamer clusters them into staged proposals you triage — only reviewed writes become memory) · `cz_add_dream` · `cz_dream` · `cz_dream_propose` · `cz_handle_dream_proposal`
+**Listing reads & assignment** (the external read contract — schema-stamped, revision-signalled) · `cz_list_open_items` · `cz_list_decisions` · `cz_list_invariants` · `cz_list_findings` · `cz_list_lessons` · `cz_list_corrections` · `cz_list_amendments` · `cz_phase_detail` · `cz_list_cascade_reports` · `cz_docs_index` · `cz_doc` · `cz_assignments` · `cz_revision` · `cz_assign`
 **Resources** · `clauderizer://status` · `clauderizer://procedure` · `clauderizer://entity/{id}`
 **Prompts** · `cz-status` · `cz-next-phase` — surface as slash commands (e.g. `/cz-status`) on prompt-capable hosts
 
-In total: **48 tools + 3 resources + 2 prompts**.
+In total: **66 tools + 3 resources + 2 prompts**.
 
 The tools are deliberately separate and self-describing rather than one generic `mutate` — that's
 the whole point of going MCP-native: an agent dropped into the repo *discovers* the workflow from

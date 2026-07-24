@@ -25,3 +25,7 @@
 **S-07.** clauderizer-onboard — Seed a freshly clauderized project's memory from its existing documentation. Use right after `clauderize init` on a repo that already has a README or design docs, when init or `clauderize upgrade` suggests onboarding, or when VISION/ARCHITECTURE are still scaffold placeholders. *(source: .claude/skills/clauderizer-onboard)*
 
 **S-08.** clauderizer-modernize — Triage the advisory upgrade proposals cz_modernize surfaces — walk each one with the user to handle, dismiss, or defer. Use when the session digest says "N upgrade proposals awaiting triage", after `clauderize upgrade`, or when the user asks to finish/action a modernization. *(source: .claude/skills/clauderizer-modernize)*
+
+### Category: Memory maintenance
+
+**S-09.** clauderizer-dream — Run the dreaming ritual: triage staged dream proposals (handle/dismiss/defer), then if the journal is ripe run cz_dream, judge the clusters, and stage new proposals via cz_dream_propose with reviewed_note_ids. Use when the digest shows "Dreams: N note(s) awaiting the dreamer" or "(N dream)" proposals awaiting triage, or on "dream" / "run the dreamer". *(source: src/clauderizer/skills/clauderizer-dream/SKILL.md)*

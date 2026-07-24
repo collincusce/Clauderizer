@@ -1116,6 +1116,24 @@ def cz_loop_step() -> dict:
             result["summary"] = (str(result.get("summary", "")).rstrip(".")
                                  + f"; standing condition(s) met: {', '.join(met)}"
                                    " — iteration proposed").lstrip("; ")
+    # Dream signal (D-059): the loop's iteration body includes the dreaming
+    # ritual, so surface where it stands — quiet when the journal is empty.
+    from . import dreams as _dreams
+
+    _dp = _dreams.pending_proposals(paths)
+    _un = len(_dreams.unconsumed_notes(paths))
+    if _dp:
+        result["dream"] = {"state": "blocked_on_triage", "pending": len(_dp)}
+        result["summary"] = (str(result.get("summary", "")).rstrip(".")
+                             + f"; {len(_dp)} dream proposal(s) await triage "
+                               "(clauderizer-dream skill)")
+    elif _un >= _dreams.RIPENESS_NOTES:
+        result["dream"] = {"state": "ripe", "unconsumed": _un}
+        result["summary"] = (str(result.get("summary", "")).rstrip(".")
+                             + f"; dream ripe ({_un} notes — cz_dream)")
+    elif _un:
+        result["dream"] = {"state": "not_ripe", "unconsumed": _un,
+                           "ripeness": _dreams.RIPENESS_NOTES}
     return result
 
 

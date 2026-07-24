@@ -1,7 +1,7 @@
 # Chat Handoff Index — dreaming-loop
 
 > Last updated: 2026-07-24
-> Status: Phase 4 ready
+> Status: Phase 5 ready
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Capture ritual & read-only nudges | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | cz_dream — ripeness-gated dream assembly | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Durable dream proposals & unified triage | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | The dreaming ritual: skill, loop integration & headless recipe | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | The dreaming ritual: skill, loop integration & headless recipe | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Dogfood, eval & ship 1.13.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -63,6 +63,12 @@ Phase 3's read-side contracts got defined here by necessity: proposals.dream.jso
 The dreamer's output is now durable and triaged through the one existing pipeline. cz_dream_propose stages a judged batch into .clauderizer/proposals.dream.jsonl (append-only, content-hash dreamprop ids so restaging identical content is a no-op; details PII-linted with the shared deny-list since accepted writes become tracked memory) and THEN advances dreams.watermark.json over every reviewed note id — evidence ids always, plus the clusters judged not durable, so nothing re-ripens; the ordering is the resumability contract and the kill-and-resume test proves a crash between the two appends double-mines nothing and loses nothing. An empty batch with reviewed ids is a first-class "dreamed, found nothing durable" pass. cz_handle_dream_proposal retires a done proposal with a terminal marker; dismiss/defer needed ZERO changes — D-052's producer-agnostic ledger absorbed the second producer exactly as designed, only docstrings were generalized.
 
 status_bundle now folds dream pending into the single pending-proposals count with a producer tag, and the digest line says "(N dream)" plus what unblocks cz_dream — only when dream proposals exist; the modernize-only wording is byte-unchanged so every golden and existing digest test stayed green untouched. cz_dream's ripe prompt now names the real writer and the reviewed_note_ids contract (closing the Phase 2 friction note). O-01 resolved with this shape. Suite exit 0 at 995 collected; journal at 8 notes after this phase's two dogfood captures.
+
+### Phase 4 — completed 2026-07-24
+
+The dreaming ritual is now a first-class, host-portable workflow. The clauderizer-dream skill (S-09) ships in the engine's skill set (and this repo's installed copy) driving triage-first → dream-if-ripe → one cz_dream_propose call carrying reviewed_note_ids, with the headless clauderize-ops variant documented inline — and it appeared in this very session's skill roster the moment the file landed. cz_loop_step surfaces the dream state (blocked_on_triage / ripe / not_ripe, quiet on an empty journal) beside curator proposals with a summary suffix pointing at the skill, so the standing-curator loop's iterations inherit dreaming with no further wiring. Docs: CROSS-HOST gained §5b (dream capture is deliberately hook-independent — tool calls + the ops fallback reach every host, headless included), TRUST's .clauderizer row now names the three local dream artifacts and the PII boundary, and GAMEPLAN-PROCEDURE already carried the ritual from Phase 1.
+
+The L-21 sweep earned its keep: README's MCP surface had silently drifted FOURTEEN tools behind (the whole 1.12.0 listing-reads contract never landed there). Fixed with a new Listing group + the Dreaming group, count corrected 48→66, and the seam made executable — a test now diffs README's backticked tool names against TOOL_NAMES and pins the count line, so this drift class is dead. Suite exit 0 at 998 collected. The live repo closed the phase with its journal at exactly the ripeness floor: loop_step reports dream ripe, 10 unconsumed — Phase 5's dogfood dream has a real corpus waiting.
 
 ## Accumulated Lessons
 
