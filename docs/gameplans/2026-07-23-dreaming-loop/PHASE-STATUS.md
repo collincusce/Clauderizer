@@ -8,7 +8,7 @@
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Dream journal substrate & the blessed dream write | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Capture ritual & read-only nudges | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Capture ritual & read-only nudges | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | cz_dream — ripeness-gated dream assembly | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Durable dream proposals & unified triage | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The dreaming ritual: skill, loop integration & headless recipe | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
@@ -24,6 +24,14 @@ journal substrate: .clauderizer/dreams.jsonl via src/clauderizer/dreams.py — K
 tests: tests/test_dreams.py: 20 tests; suite 973 collected, exit 0 (pre-phase baseline 948 passing / 953 collected)
 first dogfood notes: dream:165246aa0b42 (gap), dream:77237552fb08 (win) — captured headless via `.venv/bin/clauderize ops` with defaults resolving 2026-07-23-dreaming-loop phase 0
 adjacent gap closed: scaffold/init.py now _ensure_gitignore's .clauderizer/telemetry.jsonl too (pre-existing: target repos could commit machine-local telemetry) alongside the new dreams.jsonl line
+```
+
+### Phase 1 Outputs
+
+```
+ritual surfaces: claude_stanza.md (source) + CLAUDE.md/AGENTS.md renders carry the cz_add_dream ritual bullet; GAMEPLAN-PROCEDURE.md v1.8.0 (+template synced, corpus stamped via clauderize upgrade) gains "## Dream Notes (experiential capture)"
+nudges: digest "Dreams: N note(s) awaiting the dreamer." (quiet-when-empty — golden digest proven byte-identical, no update needed, L-41); pre_compact reminder now names cz_add_dream; live repo digest shows Dreams: 4
+tests: 6 new (gauge both sides + single header, pre_compact mention, INVARIANT-06 read-only sweep with journal present, stanza/render seam pin, procedure version+section parity pin) — suite exit 0
 ```
 
 ## Corrections Log

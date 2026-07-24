@@ -32,6 +32,10 @@ against the exact tool names and schemas — until the wiring is repaired. Every
 - `cz_consolidate_lessons` / `cz_promote_lesson` / `cz_obsolete_lesson` — keep
   memory compact: synthesize overlap, promote the enduring to `docs/LESSONS.md`,
   mark the stale.
+- `cz_add_dream` — after each substantive exchange, leave a 2–4 sentence dream
+  note (kind: friction | gap | surprise | correction | drift | win; no PII, use
+  repo-relative paths) in the local journal — the dreamer distills accumulated
+  notes into next-session proposals.
 - `cz_add_open_item` / `cz_resolve_open_item` / `cz_set_exit_criteria` /
   `cz_check_exit_criterion` / `cz_analyze` — the discipline gates (D-015/D-016,
   always advisory & judgment-based — INVARIANT-05): track open items and

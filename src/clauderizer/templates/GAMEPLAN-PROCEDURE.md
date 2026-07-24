@@ -1,11 +1,12 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.7.0
-**Last updated**: 2026-07-16
+**Procedure version**: 1.8.0
+**Last updated**: 2026-07-24
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.8.0** (2026-07-24): **Dream notes (experiential capture).** After each substantive exchange the agent leaves a 2–4 sentence `cz_add_dream` note (kinds: friction/gap/surprise/correction/drift/win, plus `refs` to related ids) in a local, gitignored, append-only journal — PII shapes are rejected at write time (an append-only journal cannot be redacted after the fact), duplicate content is a no-op, and gameplan/phase default to the active phase. The journal is the substrate the dreamer later distills into advisory proposals triaged at session start (D-058/D-059); full transcripts are never retained — the note is the deliberately tiny, PII-safe residue of the exchange. Capture is nudged (a quiet-when-empty `Dreams:` digest gauge, a pre-compact reminder), never enforced, and has no on/off switch (INVARIANT-05/D-015).
 - **v1.7.0** (2026-07-16): **Self-audit after every gameplan.** Closing a gameplan now runs a work/release self-audit (`cz_audit`) before the post-mortem — an advisory gate (INVARIANT-05) for the failure modes a green test suite does not catch. Mechanical signals: version single-sourcing (pyproject vs the package `__version__` vs the top CHANGELOG entry — a mismatch a stale editable install hides), an uncommitted working tree, unresolved cascades/open items. Judgment checklist: verify in a **clean environment** (not a stale editable install), re-audit every **consumer** of a changed entity (including untracked ones — uninstall, CLI, docs claims), and claim only what you **verified**. Distinct from `cz_critique` (which audits memory coherence); its findings feed the post-mortem's procedure-improvements. Born from a real miss: a version bumped in one place but not another, green locally on a stale venv, caught only by a clean install.
 - **v1.6.0** (2026-07-01): **Onboarding an existing project.** A repo that already has real documentation deserves seeded memory, not placeholder scaffolds sitting beside it. `cz_onboard` (read-only) lists the Clauderizer docs that are still scaffold placeholders and the repo's existing docs that likely hold project knowledge; the `clauderizer-onboard` skill walks the agent through reading those sources and seeding memory — prose docs rewritten directly, subsystems/features recorded as entities, decisions and rules recorded with provenance naming the source file. `clauderize init` says when onboarding applies, and already-initialized repos learn about it from `clauderize upgrade`. The engine detects and prompts; it never seeds anything itself.
 - **v1.5.0** (2026-07-01): **Scoped memory, approval criteria, deliverables, standing conditions, corpus modernization.** Invariants may carry a **Scope** (project-wide, or one gameplan's) and an **Audience** label, and lessons an audience tag — reads *filter* (a gameplan's context carries the shared rules plus its own; untagged entries reach everyone), and nothing is ever hidden from the canonical files or the written handoff. An exit criterion may be an **approval** (`APPROVAL: <artifact-path> — <description>`): recording the sign-off binds it to the artifact's content hash, so editing the artifact makes the approval read as stale everywhere until it is re-approved. Campaign-style kinds define a **deliverable lifecycle**; each deliverable is a tracked entity moving through it, with a board in the gameplan's detail view. Loop and campaign gameplans may declare **standing conditions** (`.clauderizer/conditions.<gameplan-id>.toml`) — probes evaluated whenever status is asked for, proposing an iteration when one trips. **`clauderize upgrade`** modernizes an older corpus: mechanical updates apply automatically (the config's procedure stamp and migrations, missing gate-example files, refreshing this document); memory-shaped improvements only ever surface as proposals. All additive; a repo using none of it behaves exactly as before.
@@ -61,6 +62,33 @@ weekly_due  = "python tools/cadence_due.py"
 ```
 
 Each condition is a shell probe — exit 0 means **met**. Probes run only when status is explicitly asked for (`cz_status`, `clauderize status`, pre-flight, `cz_loop_step`), never on a timer and never from the session-start hook. A met condition surfaces as one line — *"standing condition met — iteration proposed"* — and that is all: the engine proposes, the agent decides.
+
+## Dream Notes (experiential capture)
+
+Mechanical telemetry records what the engine can observe — which lessons a
+handoff surfaced, whether a phase passed. **Dream notes** record what only the
+responding agent observed. The ritual: after each substantive exchange, call
+`cz_add_dream` with a 2–4 sentence note — `kind` one of `friction` (something
+fought you), `gap` (a memory/doc hole), `surprise` (an expectation violated),
+`correction` (the user corrected course), `drift` (practice drifted from the
+procedure), `win` (something worked notably well) — plus `refs` naming related
+ids (`D-NNN`, `L-NN`, entities). Notes land in `.clauderizer/dreams.jsonl`:
+local, gitignored, append-only.
+
+Notes are PII-free by construction: the write **rejects** emails, secret-token
+shapes, and absolute home paths (INVARIANT-03 — an append-only journal cannot
+be redacted retroactively), so use repo-relative paths and id references.
+Duplicate content is a safe no-op; the same observation in a later phase is
+new signal. `gameplan`/`phase` default to the active gameplan's current phase,
+so capture is a two-argument call.
+
+The journal is input, never memory: the dreamer (`cz_dream`, ripeness-gated)
+clusters accumulated notes for the agent to judge into advisory proposals
+triaged at session start (D-058/D-059) — only accepted proposals become
+tracked memory, through the normal blessed writes. Capture is nudged — the
+digest shows a quiet-when-empty `Dreams:` gauge and the pre-compact reminder
+includes `cz_add_dream` — never enforced, and there is no enable/disable
+switch (INVARIANT-05/D-015).
 
 ## Deliverables (campaign-style gameplans)
 

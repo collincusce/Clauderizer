@@ -106,7 +106,8 @@ def pre_compact(payload: dict | None) -> str | None:
         "safe, but anything discovered this turn and not yet recorded will leave "
         "working memory. If you made a decision, lesson, or correction, or produced "
         "a concrete value, record it now (cz_add_decision / cz_add_lesson / "
-        f"cz_add_correction / cz_add_output). State: {bundle.get('summary', '')}"
+        "cz_add_correction / cz_add_output) — and leave a dream note for the "
+        f"dreamer (cz_add_dream). State: {bundle.get('summary', '')}"
     )
 
 

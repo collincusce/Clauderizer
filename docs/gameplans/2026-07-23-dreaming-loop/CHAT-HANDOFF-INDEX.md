@@ -1,7 +1,7 @@
 # Chat Handoff Index — dreaming-loop
 
 > Last updated: 2026-07-24
-> Status: Phase 1 ready
+> Status: Phase 2 ready
 
 ## How This Works
 
@@ -30,7 +30,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Dream journal substrate & the blessed dream write | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Capture ritual & read-only nudges | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Capture ritual & read-only nudges | ✅ COMPLETE | 2026-07-24 | 2026-07-24 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | cz_dream — ripeness-gated dream assembly | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Durable dream proposals & unified triage | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | The dreaming ritual: skill, loop integration & headless recipe | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
@@ -45,6 +45,12 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 Landed the dream-journal substrate exactly on the telemetry pattern: new src/clauderizer/dreams.py reuses telemetry's sorted-key JSONL appender and torn-line-tolerant reader against a new paths.dreams_file (.clauderizer/dreams.jsonl, gitignored here and ensured by init in target repos — which also closed the pre-existing gap where init never gitignored telemetry.jsonl). The blessed write is mutations.add_dream (@_locked, so the dedupe read and append are one read-modify-write under H-05) surfaced as cz_add_dream (writes=True, centrally stamped, TOOL_NAMES parity kept); gameplan/phase default to the active gameplan's in-progress phase so capture is a two-argument call. Validation is reject-before-append per INVARIANT-03: closed kind vocabulary (friction/gap/surprise/correction/drift/win), 600-char/4-sentence/8-ref caps, and a conservative PII deny-list (emails, known secret-token shapes, absolute home paths — repo-relative paths pass). Duplicate content (whitespace-collapsed, keyed by gameplan+phase+kind+note) is a safe no-op; the same note in a later phase is deliberately new signal.
 
 Evidence: 20 new tests in tests/test_dreams.py (round-trip byte-determinism, all reject classes, dedupe both ways, revision non-bump, registry/lock discipline, init gitignoring, contract key-set pin — the criterion's "corpus payload" is pinned engine-side in test_op_result_carries_schema_version_and_contract_keys; the external PhaseKeep corpus regenerates at the 1.13.0 release per its own capture script). Full suite exit 0 at 973 collected vs 953 pre-phase. Dogfooding started immediately: the first two real notes were captured through the headless clauderize-ops path with defaults resolving correctly (ids in Outputs Registry). Doctor's exit-3 is pre-existing environment noise (kimi-desktop pin serves another repo at 1.11.0), unrelated to this phase.
+
+### Phase 1 — completed 2026-07-24
+
+The capture ritual is now documented at every surface an agent reads: the single-source claude_stanza.md template (and both of this repo's rendered marker blocks) carries a terse cz_add_dream bullet with the kind vocabulary and no-PII guidance; GAMEPLAN-PROCEDURE.md gained a "Dream Notes (experiential capture)" section and a MINOR bump to 1.8.0 (changelog entry, template copy synced byte-identical, this corpus mechanically stamped via clauderize upgrade). Nudges stayed inside INVARIANT-06/D-027 bounds: the session digest gains one quiet-when-empty line ("Dreams: N note(s) awaiting the dreamer."), and the pre-compact reminder now names cz_add_dream alongside the other record-now ops. No per-turn UserPromptSubmit nudge — that would be noise against D-027.
+
+The exit criterion anticipated a deliberate golden-digest update; the quiet-when-empty design made that unnecessary (every fixture repo has no journal, so the golden stays byte-identical — the L-41 identity-default pattern) and positive/negative digest tests pin both sides instead, plus a single-header INVARIANT-08 assertion. The INVARIANT-06 sweep was extended to run all four handlers over a repo WITH a dream journal. Two seam tests close silent-drift channels found en route: stanza source + both renders must mention the ritual together (L-55), and both GAMEPLAN-PROCEDURE copies must carry PROCEDURE_VERSION and the new section. Suite exit 0; live dogfood digest shows Dreams: 4.
 
 ## Accumulated Lessons
 

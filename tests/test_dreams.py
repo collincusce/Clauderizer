@@ -215,3 +215,73 @@ def test_this_repo_gitignores_the_dream_journal():
     from pathlib import Path
     gi = (Path(__file__).parent.parent / ".gitignore").read_text(encoding="utf-8")
     assert ".clauderizer/dreams.jsonl" in gi.splitlines()
+
+
+# --- Phase 1: capture ritual & read-only nudges ---------------------------------
+
+
+def test_digest_dream_gauge_quiet_when_empty(temp_repo):
+    from clauderizer.config import Config
+    from clauderizer.rituals import status_bundle as S
+    paths = resolve(temp_repo)
+    with _chdir(temp_repo):
+        out = S.render_digest(S.compute(paths, Config.load(paths.config_file)))
+    assert "Dreams:" not in out  # no journal -> byte-identical digest (L-41)
+
+
+def test_digest_dream_gauge_counts_notes_single_header(temp_repo):
+    from clauderizer.config import Config
+    from clauderizer.rituals import status_bundle as S
+    paths = resolve(temp_repo)
+    _add(paths)
+    _add(paths, note="A second observation. The gauge should say two.", kind="drift")
+    with _chdir(temp_repo):
+        out = S.render_digest(S.compute(paths, Config.load(paths.config_file)))
+    assert "Dreams: 2 note(s) awaiting the dreamer." in out
+    assert out.count("[Clauderizer]") == 1  # one injection point (INVARIANT-08)
+
+
+def test_pre_compact_reminds_the_dream_note(temp_repo):
+    from clauderizer.hook import handlers
+    with _chdir(temp_repo):
+        msg = handlers.pre_compact({})
+    assert msg is not None and "cz_add_dream" in msg
+
+
+def test_hook_handlers_read_only_with_dream_journal(temp_repo):
+    """INVARIANT-06 extended over the new advisory path: with a journal present,
+    every handler still mutates nothing (same skip-set as the house sweep)."""
+    from clauderizer.hook import handlers
+    paths = resolve(temp_repo)
+    _add(paths)
+    skip = {"index.json", "write.lock"}
+    def snap():
+        return {str(p.relative_to(temp_repo)): p.read_bytes()
+                for p in sorted(temp_repo.rglob("*"))
+                if p.is_file() and p.name not in skip and ".git" not in p.parts}
+    before = snap()
+    with _chdir(temp_repo):
+        handlers.session_start({})
+        handlers.pre_compact({})
+        handlers.post_compact({})
+        handlers.user_prompt_submit({"prompt": "does the dream ritual apply here?"})
+    assert snap() == before
+
+
+def test_stanza_source_and_both_renders_carry_the_ritual():
+    from pathlib import Path
+    root = Path(__file__).parent.parent
+    for rel in ("src/clauderizer/templates/claude_stanza.md", "CLAUDE.md", "AGENTS.md"):
+        assert "cz_add_dream" in (root / rel).read_text(encoding="utf-8"), \
+            f"{rel} lost the dream-note ritual (L-55: source + renders move together)"
+
+
+def test_procedure_doc_version_and_section_match_engine():
+    from pathlib import Path
+    from clauderizer import PROCEDURE_VERSION
+    root = Path(__file__).parent.parent
+    for rel in ("docs/gameplans/GAMEPLAN-PROCEDURE.md",
+                "src/clauderizer/templates/GAMEPLAN-PROCEDURE.md"):
+        text = (root / rel).read_text(encoding="utf-8")
+        assert f"**Procedure version**: {PROCEDURE_VERSION}" in text[:400], rel
+        assert "## Dream Notes (experiential capture)" in text, rel

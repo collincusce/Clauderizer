@@ -86,6 +86,11 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
         skills_active = sum(
             1 for ln in sbody.splitlines()
             if skill_state.SKILL_LINE_RE.search(ln) and skill_state.is_active(ln))
+    # Dream journal gauge (D-058): count only — quiet-when-empty at render, so
+    # repos without a journal (every golden fixture) see a byte-identical digest.
+    from ..dreams import read_notes
+
+    dream_notes = len(read_notes(paths))
     warn_active = (config.active_lessons_warn if config is not None
                    else ACTIVE_LESSONS_WARN)
     warn_project = (config.project_lessons_warn if config is not None
@@ -96,6 +101,7 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
         "promoted_lessons": promoted,
         "project_lessons": project,
         "active_skills": skills_active,
+        "dream_notes": dream_notes,
         "handoff_est_tokens": None,
         "warning": None,
     }
@@ -757,6 +763,8 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         lines.append(mem_line + suffix)
         if mem.get("warning"):
             lines.append(f"⚠ Memory: {mem['warning']}")
+        if mem.get("dream_notes"):
+            lines.append(f"Dreams: {mem['dream_notes']} note(s) awaiting the dreamer.")
     pc = bundle.get("pending_cascades") or []
     lines.append(f"Pending cascades: {len(pc)}." + (f" {', '.join(pc)}" if pc else ""))
     oi = bundle.get("open_items") or []

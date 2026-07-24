@@ -83,10 +83,10 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Scaffolded CLAUDE/AGENTS templates and GAMEPLAN-PROCEDURE.md (MINOR bump) document the per-exchange dream-note ritual: kinds vocabulary (friction/gap/surprise/correction/drift/win), 2-4 sentences, no-PII guidance
-- [ ] Session-start digest shows a one-line dream gauge only when unconsumed notes > 0 (quiet-when-empty); golden digest test updated deliberately; single [Clauderizer] header preserved (INVARIANT-08)
-- [ ] All hook handlers remain read-only and exit 0 — INVARIANT-06 test extended to cover the new advisory path
-- [ ] Full suite green at >= baseline
+- [x] Scaffolded CLAUDE/AGENTS templates and GAMEPLAN-PROCEDURE.md (MINOR bump) document the per-exchange dream-note ritual: kinds vocabulary (friction/gap/surprise/correction/drift/win), 2-4 sentences, no-PII guidance
+- [x] Session-start digest shows a one-line dream gauge only when unconsumed notes > 0 (quiet-when-empty); golden digest test updated deliberately; single [Clauderizer] header preserved (INVARIANT-08)
+- [x] All hook handlers remain read-only and exit 0 — INVARIANT-06 test extended to cover the new advisory path
+- [x] Full suite green at >= baseline
 
 ### Phase 2: cz_dream — ripeness-gated dream assembly
 
