@@ -146,16 +146,16 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 1.7 | The three probes: RLIMIT_FSIZE truncation (sha256-compared), planted leaf symlinks on both the handoff and cascade paths, and a windows-latest test holding the target open in a second handle | 4h |
 
 **Exit criteria**:
-- [ ] MANDATORY MITIGATION: tag pre-1.14.0-writepath exists BEFORE this phase starts (done: d52ef6e), and this phase's own cz_* bookkeeping runs on the PUBLISHED engine `uvx --from 'clauderizer[mcp]==1.13.0'` until these criteria pass — expect and accept the skew warning
-- [ ] `grep -rn '\.write_text(' src/clauderizer/rituals/ src/clauderizer/graph/ | grep -v abstract_index.py` returns 0 lines; tests/test_write_path.py enforces it PATH-SHAPED (no write_text on a docs/ or .clauderizer/ path outside writer.py) and fails if handoff.py:566 is reverted. A literal allowlist is rejected — 30 write_text sites exist and an allowlist that size is a registry the next writer joins
-- [ ] Under RLIMIT_FSIZE a failing write on a populated docs/DECISIONS.md raises and leaves the file byte-identical (sha256 compared); the same probe pre-fix destroys it (measured 92,027 -> 38,334 bytes)
-- [ ] After that failed write AND after the full suite, `git status --porcelain` is empty — no *.tmp residue (.gitignore has no *.tmp rule and clean_tree is git status --porcelain)
-- [ ] A planted leaf symlink at docs/gameplans/<gid>/handoffs/PHASE-N-HANDOFF.md makes cz_write_handoff return ok:false; same for cz_cascade's report path. Both return ok:true and write OUTSIDE the repo pre-fix
-- [ ] pytest tests/test_handoff.py asserts all four _merge modes (created/merged/migrated/preserved) still reachable and _AGENT_SCAFFOLD still present on a fresh handoff — writer.upsert_marker_block is NOT a drop-in for handoff.py:566
-- [ ] cz_revision increments exactly once per real change and zero times on a no-op; write_atomic itself does NOT bump (handoff.py:567, cascade.py:174, cascade.py:226 already call revision.bump_for — verified, correcting all three drafts)
-- [ ] A 0644 doc's mode is unchanged after an atomic write (stat compared in-test, not via GNU-only shell flags) — sibling temp, never mkstemp whose 0600 would re-permission every tracked doc
+- [x] MANDATORY MITIGATION: tag pre-1.14.0-writepath exists BEFORE this phase starts (done: d52ef6e), and this phase's own cz_* bookkeeping runs on the PUBLISHED engine `uvx --from 'clauderizer[mcp]==1.13.0'` until these criteria pass — expect and accept the skew warning
+- [x] `grep -rn '\.write_text(' src/clauderizer/rituals/ src/clauderizer/graph/ | grep -v abstract_index.py` returns 0 lines; tests/test_write_path.py enforces it PATH-SHAPED (no write_text on a docs/ or .clauderizer/ path outside writer.py) and fails if handoff.py:566 is reverted. A literal allowlist is rejected — 30 write_text sites exist and an allowlist that size is a registry the next writer joins
+- [x] Under RLIMIT_FSIZE a failing write on a populated docs/DECISIONS.md raises and leaves the file byte-identical (sha256 compared); the same probe pre-fix destroys it (measured 92,027 -> 38,334 bytes)
+- [x] After that failed write AND after the full suite, `git status --porcelain` is empty — no *.tmp residue (.gitignore has no *.tmp rule and clean_tree is git status --porcelain)
+- [x] A planted leaf symlink at docs/gameplans/<gid>/handoffs/PHASE-N-HANDOFF.md makes cz_write_handoff return ok:false; same for cz_cascade's report path. Both return ok:true and write OUTSIDE the repo pre-fix
+- [x] pytest tests/test_handoff.py asserts all four _merge modes (created/merged/migrated/preserved) still reachable and _AGENT_SCAFFOLD still present on a fresh handoff — writer.upsert_marker_block is NOT a drop-in for handoff.py:566
+- [x] cz_revision increments exactly once per real change and zero times on a no-op; write_atomic itself does NOT bump (handoff.py:567, cascade.py:174, cascade.py:226 already call revision.bump_for — verified, correcting all three drafts)
+- [x] A 0644 doc's mode is unchanged after an atomic write (stat compared in-test, not via GNU-only shell flags) — sibling temp, never mkstemp whose 0600 would re-permission every tracked doc
 - [ ] Full 9-cell test.yml matrix green INCLUDING windows-latest, with a Windows test holding the target open in a second handle (bounded retry around os.replace, mirroring locking.py:192-211)
-- [ ] H-16 (symlinked PARENT directory) is NOT attempted here; HARDENING.md:211 records the deferral rationale and Phase 6 re-confirms it as a named residual
+- [x] H-16 (symlinked PARENT directory) is NOT attempted here; HARDENING.md:211 records the deferral rationale and Phase 6 re-confirms it as a named residual
 
 ### Phase 2: Well-formedness at the write boundary
 
@@ -201,18 +201,18 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 3.7 | Record the criteria_checked unparking experiment as an open item with its kill criterion — pre-registered, run no earlier than 1.15.0 | 30m |
 
 **Exit criteria**:
-- [ ] IMPLEMENT, DO NOT RE-DECIDE: D-063 already states the never-surfaced obsoletion pressure is removed. It was never coded — telemetry.py:207 and telemetry.py:366-372 are both live. One change at the same two lines is simultaneously the zero-telemetry corpus-wipe fix, not two workstreams
-- [ ] test_curator_no_telemetry: on a telemetry-free clone of this repo, cz_curate returns 0 proposals with action=='obsolete'. Pre-fix: 25. Demonstrated red pre-fix
-- [ ] On the LIVE repo, cz_curate returns 0 obsolete proposals. Pre-fix: 6 (L-11, L-24, L-52, L-56, L-57, L-62) — three of which are outputs of the consolidation ritual and one promoted the day before
-- [ ] Driving the shipped loop body on a telemetry-free clone leaves corpus_health()['active_project_lessons'] == 25. Pre-fix it converges to 0 and reports converged:True
-- [ ] loop_step['summary'] on a telemetry-free checkout DIFFERS from the healthy-convergence string (asserted, not eyeballed) — the guard must not trade a false wipe for a false green
-- [ ] status_bundle.py:118-127's 'Re-distill: cz_obsolete_lesson the superseded L-entries' sentence is gated on there being >=1 non-flag proposal — silencing the tool while leaving the surface that issues the instruction is a half-fix, and 25 active lessons is over threshold today so it fires on the very next fresh clone
-- [ ] Where a never-surfaced framing survives (_lesson_signal, telemetry.py:207, feeding dreams.py:307), the wording with zero events reads UNMEASURED not unused, and suggested_op is None
+- [x] IMPLEMENT, DO NOT RE-DECIDE: D-063 already states the never-surfaced obsoletion pressure is removed. It was never coded — telemetry.py:207 and telemetry.py:366-372 are both live. One change at the same two lines is simultaneously the zero-telemetry corpus-wipe fix, not two workstreams
+- [x] test_curator_no_telemetry: on a telemetry-free clone of this repo, cz_curate returns 0 proposals with action=='obsolete'. Pre-fix: 25. Demonstrated red pre-fix
+- [x] On the LIVE repo, cz_curate returns 0 obsolete proposals. Pre-fix: 6 (L-11, L-24, L-52, L-56, L-57, L-62) — three of which are outputs of the consolidation ritual and one promoted the day before
+- [x] Driving the shipped loop body on a telemetry-free clone leaves corpus_health()['active_project_lessons'] == 25. Pre-fix it converges to 0 and reports converged:True
+- [x] loop_step['summary'] on a telemetry-free checkout DIFFERS from the healthy-convergence string (asserted, not eyeballed) — the guard must not trade a false wipe for a false green
+- [x] status_bundle.py:118-127's 'Re-distill: cz_obsolete_lesson the superseded L-entries' sentence is gated on there being >=1 non-flag proposal — silencing the tool while leaving the surface that issues the instruction is a half-fix, and 25 active lessons is over threshold today so it fires on the very next fresh clone
+- [x] Where a never-surfaced framing survives (_lesson_signal, telemetry.py:207, feeding dreams.py:307), the wording with zero events reads UNMEASURED not unused, and suggested_op is None
 - [ ] A fresh-clone CI leg is added to test.yml (L-23): clone to a temp dir with no .clauderizer/telemetry.jsonl, run cz_curate, assert zero obsoletion proposals
-- [ ] tests/test_curator.py::test_consolidate_proposal_for_redundant_pair and tests/test_telemetry.py (never_surfaced == 3 with no telemetry) pass UNMODIFIED; corpus_health's never_surfaced COUNT stays untouched and honest
-- [ ] `clauderize status` on a telemetry-free clone emits no cz_obsolete_lesson instruction, asserted by a string test
-- [ ] `git diff` shows NO new key in .clauderizer/config.toml or Config — INVARIANT-05 and D-015 forbid an enable/disable flag
-- [ ] The criteria_checked unparking EXPERIMENT is recorded as an open item, not actioned: it is still agent-declared so it does not clear D-063's externally-sourced bar as argued, but its variance is real. Pre-registered for 1.15.0 with a kill criterion
+- [x] tests/test_curator.py::test_consolidate_proposal_for_redundant_pair and tests/test_telemetry.py (never_surfaced == 3 with no telemetry) pass UNMODIFIED; corpus_health's never_surfaced COUNT stays untouched and honest
+- [x] `clauderize status` on a telemetry-free clone emits no cz_obsolete_lesson instruction, asserted by a string test
+- [x] `git diff` shows NO new key in .clauderizer/config.toml or Config — INVARIANT-05 and D-015 forbid an enable/disable flag
+- [x] The criteria_checked unparking EXPERIMENT is recorded as an open item, not actioned: it is still agent-declared so it does not clear D-063's externally-sourced bar as argued, but its variance is real. Pre-registered for 1.15.0 with a kill criterion
 
 ### Phase 4: Resolve H-20 with capability-not-presence engine identity
 

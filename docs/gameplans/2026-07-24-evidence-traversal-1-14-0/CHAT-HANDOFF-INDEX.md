@@ -1,7 +1,7 @@
 # Chat Handoff Index — evidence traversal 1.14.0
 
 > Last updated: 2026-07-25
-> Status: Phase 1 ready
+> Status: Phase 2 ready
 
 ## How This Works
 
@@ -30,9 +30,9 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Single-source the status parser and expose defaulted status | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | One atomic symlink-refusing write path for tracked markdown | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | One atomic symlink-refusing write path for tracked markdown | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Well-formedness at the write boundary | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Implement D-063 so the curator stops proposing from absent evidence | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Implement D-063 so the curator stops proposing from absent evidence | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Resolve H-20 with capability-not-presence engine identity | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Preserve foreign config and converge existing installs | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Restore full lesson propagation, close H-19, ship 1.14.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |

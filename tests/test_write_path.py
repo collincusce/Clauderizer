@@ -210,3 +210,24 @@ def test_no_tmp_residue_after_the_whole_suite_touches_the_repo(temp_repo):
                        decision="d", consequences="q", today="2026-07-25")
     stray = [str(p) for p in Path(temp_repo).rglob("*.tmp-*")]
     assert not stray, f"temp residue would dirty clean_tree: {stray}"
+
+
+@pytest.mark.skipif(sys.platform != "win32",
+                    reason="the sharing-violation window is Windows-only")
+def test_replace_survives_a_second_open_handle_on_windows(tmp_path):
+    """os.replace raises PermissionError on Windows while another handle is open.
+
+    A lock-free reader or the SessionStart hook can hold the target open at any
+    moment — reads deliberately never take the write lock — so the replace is
+    retried briefly. This is the one Phase 1 behavior no Linux cell can observe
+    (O-01), which is why it runs on the windows-latest matrix cells.
+    """
+    target = tmp_path / "DECISIONS.md"
+    target.write_text("original\n", encoding="utf-8")
+    holder = open(target, "r", encoding="utf-8")  # noqa: SIM115 — held on purpose
+    try:
+        writer.write_atomic(target, "replaced\n")
+    finally:
+        holder.close()
+    assert target.read_text(encoding="utf-8") == "replaced\n"
+    assert not [p for p in tmp_path.iterdir() if ".tmp-" in p.name]
