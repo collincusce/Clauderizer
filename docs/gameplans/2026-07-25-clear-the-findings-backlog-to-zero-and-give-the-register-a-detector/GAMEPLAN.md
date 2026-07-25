@@ -59,11 +59,11 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-1.14.2 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError (gameplan lesson 2 of the 1.14.1 plan). Suite >= 1164 is a precondition, never a criterion
-- [ ] cz_create_gameplan returns ranked project lessons for the gameplan's GOAL text — read-only, advisory, a pointer not an authority (D-013/INVARIANT-05); it never blocks or edits the plan
-- [ ] The never-surfaced set shrinks for a real reason: after this, a planning-relevant lesson (L-11's synthesis among them) can be surfaced by the ranker at plan time — asserted by test, not assumed
-- [ ] Telemetry records the surfacing through the same blessed path handoff.assemble uses, so lesson-utility scoring sees plan-time surfacings and a future never-surfaced judgment is sound
-- [ ] H-25 resolved; the finding's own claim that five lessons were unreachable is re-measured and the new number recorded
+- [x] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-1.14.2 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError (gameplan lesson 2 of the 1.14.1 plan). Suite >= 1164 is a precondition, never a criterion
+- [x] cz_create_gameplan returns ranked project lessons for the gameplan's GOAL text — read-only, advisory, a pointer not an authority (D-013/INVARIANT-05); it never blocks or edits the plan
+- [x] The never-surfaced set shrinks for a real reason: after this, a planning-relevant lesson (L-11's synthesis among them) can be surfaced by the ranker at plan time — asserted by test, not assumed
+- [x] Telemetry records the surfacing through the same blessed path handoff.assemble uses, so lesson-utility scoring sees plan-time surfacings and a future never-surfaced judgment is sound
+- [x] H-25 resolved; the finding's own claim that five lessons were unreachable is re-measured and the new number recorded
 
 ### Phase 2: The digest nudges on the cost it names, and the register stops being write-only (H-26 + the aging detector)
 

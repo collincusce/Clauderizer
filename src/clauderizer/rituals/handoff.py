@@ -342,6 +342,33 @@ def relevant_skill_pointer(paths: RepoPaths, query: str,
     return "\n".join(out) if out else None
 
 
+def plan_lessons(paths: RepoPaths, goal_text: str, k: int = RELEVANCE_K) -> list[dict]:
+    """Project lessons most relevant to a gameplan's GOAL, ranked at PLAN time (H-25).
+
+    Lesson surfacing lived only in ``assemble``, which runs per PHASE — so lessons
+    that govern *planning* could never reach the moment they apply. Measured cost:
+    ``L-11`` ("declare phase dependencies by technical need, not narrative order")
+    had ``surfaced_count`` 0, having reached nothing ever, and the very next plan
+    violated it. Worse, that zero was then read as evidence the lesson had no
+    value, when it was an artifact of where the ranker happened to be wired.
+
+    Same deterministic keyword + entity-id ranker as the phase path (no ML, D-018),
+    same contract: a pointer into canonical memory, never an authority over it
+    (D-013), advisory and non-blocking (INVARIANT-05). Returns ``[]`` rather than
+    raising when there is no corpus or no usable goal text.
+    """
+    if not goal_text or not goal_text.strip():
+        return []
+    lessons_doc = paths.doc("LESSONS")
+    if not lessons_doc.exists():
+        return []
+    try:
+        entries = _project_lesson_entries(lessons_doc.read_text(encoding="utf-8"))
+    except OSError:
+        return []
+    return analyze.rank_relevant(goal_text, entries, k=k)
+
+
 def surfaced_ids(paths: RepoPaths, gid: str, phase_n: str) -> dict:
     """Which project lessons / gameplan lessons / invariants the handoff for this
     phase SURFACES as most relevant — the same deterministic keyword + entity-id

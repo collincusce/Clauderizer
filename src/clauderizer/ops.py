@@ -487,6 +487,32 @@ def cz_create_gameplan(name: str, first_phase: str = "",
             revision.bump(paths.clauderizer_dir)
     result["focused"] = focus
     result["kind"] = kind
+    # H-25: lesson surfacing ran only per PHASE, so lessons about PLANNING could
+    # never reach planning — L-11 had reached nothing, ever, and the next plan
+    # violated it. Rank the corpus against the goal text available at this
+    # moment (the gameplan name + its first phase). Advisory pointers only
+    # (D-013/INVARIANT-05); best-effort, since a plan must never fail over its
+    # own advice. Logged through the same blessed telemetry write the handoff
+    # uses, so lesson-utility scoring finally sees plan-time surfacings and a
+    # future "never surfaced" judgment is sound.
+    try:
+        from . import telemetry
+        from .rituals import handoff as _handoff
+
+        ranked = _handoff.plan_lessons(paths, f"{name} {first_phase}")
+        if ranked:
+            result["relevant_lessons"] = ranked
+            result["advisory"] = (
+                "Project lessons ranked against this goal — read them before "
+                "authoring phases and exit criteria: "
+                + ", ".join(r["id"] for r in ranked)
+                + ". Pointers into docs/LESSONS.md, not instructions; cz_get any of them."
+            )
+            telemetry.record_surfaced(
+                paths.telemetry_file, gameplan=result["gameplan_id"], phase="plan",
+                lessons=[r["id"] for r in ranked], invariants=[])
+    except Exception:
+        pass
     return result
 
 
