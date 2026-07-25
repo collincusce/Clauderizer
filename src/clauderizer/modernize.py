@@ -260,6 +260,7 @@ LOCAL_STATE_IGNORES = (
     ".clauderizer/hook.sh",
     ".clauderizer/hook.cmd",
     ".clauderizer/write.lock",
+    ".clauderizer/baseline.json",
 )
 
 

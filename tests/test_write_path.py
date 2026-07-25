@@ -256,3 +256,49 @@ def test_replace_survives_a_second_open_handle_on_windows(tmp_path):
     assert not [p for p in tmp_path.iterdir() if ".tmp-" in p.name], (
         "a failed replace left temp residue, which dirties clean_tree"
     )
+
+
+def test_two_consecutive_preflights_both_pass(temp_repo):
+    """A green pre-flight must not arm the NEXT one's clean_tree failure.
+
+    preflight wrote the measured baseline into the TRACKED CHAT-HANDOFF-INDEX.md
+    from inside a check, and clean_tree (git status --porcelain) runs BEFORE
+    tests in every shipped manifest — so run 2 failed on a file the agent never
+    touched. Observed live on this gameplan's very first pre-flight, where the
+    count moved 0 -> 1002. D-024 keeps pre-flight blocking; the fix is that a
+    check stops mutating (L-56 clause 1).
+    """
+    import subprocess
+
+    from clauderizer import config as cfg
+    from clauderizer import paths as P
+    from clauderizer.profiles.detect import Profile
+    from clauderizer.rituals import preflight
+
+    paths = P.resolve(temp_repo)
+    config = cfg.Config.load(paths.config_file)
+    subprocess.run(["git", "init", "-q"], cwd=temp_repo, check=False)
+    subprocess.run(["git", "add", "-A"], cwd=temp_repo, check=False)
+    subprocess.run(["git", "-c", "user.email=t@e", "-c", "user.name=t",
+                    "commit", "-qm", "base"], cwd=temp_repo, check=False)
+
+    profile = Profile(name="python", commands={"test": "pytest -q"},
+                      baseline_test_regex=r"(\d+) passed")
+
+    def runner(cmd, cwd=None, **kw):
+        if "git status" in cmd:
+            out = subprocess.run(["git", "status", "--porcelain"], cwd=temp_repo,
+                                 capture_output=True, text=True)
+            return 0, out.stdout
+        if "pytest" in cmd:
+            return 0, "1002 passed in 1.0s"
+        return 0, ""
+
+    first = preflight.run(paths, config, profile, runner=runner)
+    assert first.baseline_tests == "1002"
+    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=temp_repo,
+                           capture_output=True, text=True).stdout.strip()
+    assert not dirty, f"a green pre-flight dirtied the tree: {dirty!r}"
+    second = preflight.run(paths, config, profile, runner=runner)
+    clean = next(c for c in second.checks if c.name == "clean_tree")
+    assert clean.status == "pass", f"run 2 clean_tree: {clean.detail}"

@@ -500,7 +500,8 @@ def init(
                    ".clauderizer/revision.json",
                    ".clauderizer/hook.sh",
                    ".clauderizer/hook.cmd",
-                   ".clauderizer/write.lock"):
+                   ".clauderizer/write.lock",
+                   ".clauderizer/baseline.json"):
         changed = _ensure_gitignore(gi, _local) or changed
     report.note(".gitignore", gi, changed)
     graph = index.build(paths.docs)

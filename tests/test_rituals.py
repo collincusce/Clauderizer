@@ -389,9 +389,14 @@ def test_preflight_writes_baseline_back(temp_repo):
                       baseline_test_regex=r"(\d+) passed")
     runner = _fake_runner({"git status --porcelain": (0, ""),
                            "pytest": (0, "7 passed in 0.1s")})
+    before = idx.read_text(encoding="utf-8")
     result = preflight.run(paths, config, profile, runner=runner)
     assert result.baseline_tests == "7"
-    assert "**Current baseline test count**: 7" in idx.read_text(encoding="utf-8")
+    # D-067/L-56(1): a CHECK must not mutate the tree. The measurement lands in
+    # gitignored per-machine state; the TRACKED tracker is untouched, because
+    # dirtying it here armed the NEXT pre-flight's clean_tree failure.
+    assert idx.read_text(encoding="utf-8") == before, "pre-flight dirtied a tracked file"
+    assert preflight.read_baseline_sidecar(paths) == "7"
     tests_check = next(c for c in result.checks if c.name == "tests")
     assert "baseline updated 5 -> 7" in tests_check.detail
     # idempotent: a second run finds the baseline already current

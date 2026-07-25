@@ -232,6 +232,19 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
     return 0
 
 
+def _tracked_local_state(root: Path) -> list[str]:
+    """Per-machine paths git is still tracking despite being gitignored (D-067)."""
+    import subprocess
+
+    from .modernize import LOCAL_STATE_IGNORES
+    try:
+        out = subprocess.run(["git", "ls-files", "--error-unmatch", *LOCAL_STATE_IGNORES],
+                             cwd=root, capture_output=True, text=True, timeout=15)
+    except (OSError, subprocess.SubprocessError):
+        return []
+    return sorted({l.strip() for l in out.stdout.splitlines() if l.strip()})
+
+
 def _mcp_entry_from_wiring(wiring: list[str]) -> dict:
     """The wiring argv as an mcp.json-shaped entry the probe understands."""
     return {"command": wiring[0], "args": list(wiring[1:])} if wiring else {}
@@ -427,6 +440,17 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                     hosts.verify_hook_wiring(hook_argv, session_host))
 
     check("AGENTS.md floor present", _has_marker(paths.agents_md, "clauderizer"))
+
+    # D-067: a .gitignore line does NOT untrack a file git already tracks, and
+    # the engine must not run a mutating git command on the user's behalf. Name
+    # the offenders and the exact remedy (D-048 configure-on-demand).
+    _tracked_local = _tracked_local_state(paths.root)
+    if _tracked_local:
+        warn("per-machine state is tracked in git",
+             f"{len(_tracked_local)} file(s) carry machine-specific state or churn "
+             f"on every write: {', '.join(_tracked_local)}. Untrack them with "
+             f"`git rm --cached {' '.join(_tracked_local)}` then commit. "
+             f"(Already-committed content stays in git history.)")
 
     # Per-host readiness + configure-on-demand (D-048)
     for hid in enabled:

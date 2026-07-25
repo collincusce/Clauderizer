@@ -298,7 +298,13 @@ def test_baseline_refresh_skips_not_fails_under_contention(temp_repo, monkeypatc
     monkeypatch.setattr(locking, "DEFAULT_ACQUIRE_TIMEOUT", 0.2)
     assert pf._write_back_baseline(paths, config, "123") is None  # skipped, no raise
     assert "**Current baseline test count**: 100" in idx.read_text(encoding="utf-8")
+    # The sidecar is equally untouched under contention — the value self-heals on
+    # the next green run rather than failing the ritual.
+    assert pf.read_baseline_sidecar(paths) is None
 
     paths.write_lock_file.unlink()
     assert pf._write_back_baseline(paths, config, "123") == "100"  # heals when free
-    assert "**Current baseline test count**: 123" in idx.read_text(encoding="utf-8")
+    # D-067: the measurement heals into gitignored per-machine state, NOT the
+    # tracked tracker — a check must not dirty the tree it gates on (L-56(1)).
+    assert pf.read_baseline_sidecar(paths) == "123"
+    assert "**Current baseline test count**: 100" in idx.read_text(encoding="utf-8")

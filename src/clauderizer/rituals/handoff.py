@@ -54,6 +54,41 @@ def collect_project_lessons(lessons_text: str, audience: str = "") -> tuple[str,
                            _PROJECT_LESSON_LINE, audience=audience)
 
 
+def project_lesson_index(lessons_md: str) -> tuple[str, int]:
+    """A compact ``id — one-line title`` index of EVERY active project lesson.
+
+    D-068. ``RELEVANCE_K`` renders the top-k in full and this renders the rest of
+    the corpus as pointers, so the handoff drops nothing (D-022's no-truncation
+    rule) while the full text is spent only where relevance justifies it (D-027's
+    injected-context budget). The engine had silently resolved that contradiction
+    in favour of D-027 — an if/elif rendered the focused block INSTEAD of the
+    full list, so a phase saw 5 of 25 — while D-021 recorded that it "drops
+    nothing" and this module's own docstring said "the full list still rides
+    along". Both were false, and the measured cost was that L-24, L-52 and L-62
+    had never reached a single phase.
+
+    Returns ``(markdown, count)``.
+    """
+    lines = [l for l in (lessons_md or "").splitlines() if l.strip()]
+    out: list[str] = []
+    for line in lines:
+        m = re.match(r"^\*\*(L-\d+)\.\*\*", line.strip())
+        if not m:
+            continue
+        lid = m.group(1)
+        rest = line.strip()[m.end():].strip()
+        # First sentence, capped — a pointer back to canonical markdown, never an
+        # authority over it (D-013 clause 2).
+        title = " ".join(rest.split())
+        cut = title.find(". ")
+        if cut > 24:
+            title = title[:cut + 1]
+        if len(title) > 150:
+            title = title[:147].rstrip() + "…"
+        out.append(f"- **{lid}** — {title}")
+    return "\n".join(out), len(out)
+
+
 def _audience_passes(line: str, audience: str) -> bool:
     """D-043 audience gate: with no filter everything passes; with one, untagged
     lines and lines tagged for THIS audience pass, other tags drop."""
@@ -525,17 +560,29 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *,
     ]
     if project_count and project_focus:
         focused_md, shown, total = project_focus
+        index_md, indexed = project_lesson_index(project_lessons_md)
         parts += [
             f"## Project Lessons (most relevant to this {P.lower()})",
             "",
-            f"_({shown} of {total} shown — ranked by keyword + entity-id overlap "
-            "with this phase, no ML. The full set is canonical in "
-            "`docs/LESSONS.md`; the handoff focuses under memory pressure without "
-            "dropping anything from canonical memory.)_",
+            f"_({shown} of {total} shown in full — ranked by keyword + entity-id "
+            "overlap with this phase, no ML. Every other active lesson is indexed "
+            "below; nothing is dropped (D-068). The full text is canonical in "
+            "`docs/LESSONS.md` — fetch any entry with `cz_get`.)_",
             "",
             focused_md,
             "",
         ]
+        if indexed:
+            parts += [
+                f"### All Active Project Lessons ({indexed})",
+                "",
+                "_(id + first line. The ranker above chooses what to render in "
+                "full; it does not choose what you are allowed to know — a "
+                "pointer, never an authority (D-013).)_",
+                "",
+                index_md,
+                "",
+            ]
     elif project_count:
         parts += [
             "## Project Lessons (distilled — survive across gameplans)",

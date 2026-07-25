@@ -95,18 +95,55 @@ def _write_back_baseline(paths: RepoPaths, config: Config, count: str) -> str | 
     if not idx.exists():
         return None
     m = re.search(rf"\*\*{_BASELINE_LABEL}\*\*\s*:\s*(\d+)", idx.read_text(encoding="utf-8"))
-    if m is None or m.group(1) == count:
+    if m is None:
+        return None
+    # Compare against what was last MEASURED (the sidecar), falling back to the
+    # tracked line on the first run. Comparing against the tracked line alone
+    # would report "updated" on every run now that the tracked line is no longer
+    # the thing being written.
+    previous = read_baseline_sidecar(paths) or m.group(1)
+    if previous == count:
         return None
     # One tracked write inside an otherwise read-only ritual: serialize it with
     # every other writer (H-05). The lock wraps just this write — never the
     # long-running test commands — and a contended lock skips the refresh
     # rather than failing preflight: the value self-heals on the next green run.
+    # D-067/L-56(1): a CHECK must not mutate the tree. Writing the measured count
+    # into the TRACKED CHAT-HANDOFF-INDEX.md meant a green pre-flight armed the
+    # NEXT pre-flight's clean_tree failure — clean_tree runs before tests in every
+    # shipped manifest, so the second run failed on a file the agent never
+    # touched. Verified live on this gameplan's very first pre-flight.
+    #
+    # The measurement now lands in gitignored per-machine state; the tracked line
+    # is refreshed at phase close, a moment that already dirties the tree by
+    # design. Pre-flight stays the blocking gate D-024 reserves it as.
     try:
         with write_lock(paths.write_lock_file):
-            writer.set_labeled_value(idx, _BASELINE_LABEL, count)
+            _write_baseline_sidecar(paths, count)
     except LockHeld:
         return None
-    return m.group(1)
+    return previous
+
+
+def _baseline_sidecar(paths: RepoPaths) -> Path:
+    return paths.clauderizer_dir / "baseline.json"
+
+
+def _write_baseline_sidecar(paths: RepoPaths, count: str) -> None:
+    import json
+    from ..markdown import writer as _w
+    _w.write_atomic(_baseline_sidecar(paths),
+                    json.dumps({"tests": count}, indent=2) + "\n")
+
+
+def read_baseline_sidecar(paths: RepoPaths) -> str | None:
+    """The last measured baseline, from gitignored per-machine state."""
+    import json
+    try:
+        return str(json.loads(
+            _baseline_sidecar(paths).read_text(encoding="utf-8")).get("tests") or "") or None
+    except (OSError, ValueError):
+        return None
 
 # (exit_code, combined_output)
 Runner = Callable[[str, Path], tuple[int, str]]
