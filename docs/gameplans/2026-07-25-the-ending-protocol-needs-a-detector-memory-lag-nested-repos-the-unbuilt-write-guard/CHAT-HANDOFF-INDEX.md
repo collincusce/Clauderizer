@@ -1,7 +1,7 @@
 # Chat Handoff Index — the ending protocol needs a detector — memory lag, nested repos, the unbuilt write guard
 
 > Last updated: 2026-07-25
-> Status: Phase 4 of 6 in progress
+> Status: All 6 phases complete
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 1074
+**Current baseline test count**: 1164
 
 ## Ending Protocol
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Nested clauderized repos stop contradicting each other | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Build the write guard 1.14.0 specified and did not ship | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Close the graph drop gap and the init spawn-test carried from 1.14.0 | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Close out and ship 1.14.1 | 🟡 IN PROGRESS | 2026-07-25 | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Close out and ship 1.14.1 | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Dream notes and dream proposals stop sharing a name | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -75,6 +75,12 @@ Added mid-flight (A-002) after a live failure in this very session: asked to "ta
 The fix is lexical, and the design rule it follows is that each artifact must carry its own noun *and* its own verb, in every place a human or agent reads it. Raw **notes** are **dreamed**; staged **proposals** are **triaged**. The digest's note line now says so and explicitly denies the other reading ("— not triage"); the proposal line states the A-001 gate affirmatively ("Further DREAMING is blocked until the dream proposals are triaged") where it previously said only "to unblock cz_dream", which reads as an optional benefit rather than a rule. The skill's description maps trigger phrases to halves and lists the exact phrasing that misrouted this session as a TRIAGE trigger, and its body opens with a two-row artifact table before any instructions. README gains a glossary row per artifact. Zero behavior change: `cz_add_dream`, `cz_dream`, `cz_dream_propose` and the triage ops keep their semantics and gating — this phase changed what things are called, not what they do.
 
 Two things worth carrying forward. First, the asymmetry that makes this worth a phase rather than a wording tweak: triage is idempotent and reversible, while a dreaming pass advances an append-only watermark, so the notes it consumes cannot be un-consumed — the ambiguity is not merely confusing, it is *destructive in one direction*, which is why the skill now says to ask when the ask is unclear. Second, writing the tests exposed two of my own assertions passing for the wrong reason: "block" matched the word *unblock*, and "the description mentions both words" was already true of the description that misrouted the session. Both were tightened to test the actual distinction before any code changed — a small instance of the same discipline the whole gameplan is about. Along the way `docs/features/dream-loop.md` turned out to still be the `_(describe.)_` scaffold placeholder, and `tests/test_dream_vocabulary.py::test_skill_source_and_render_are_identical` is the first test anywhere pinning a skill's src/ template against its .claude render (L-55 seam 1, previously unenforced for the entire skills surface). Suite 1152 → 1164.
+
+### Phase 4 — completed 2026-07-25
+
+Shipped 1.14.1. The phase ran in two halves separated by a deliberate halt: everything non-irreversible was completed, the release was stopped at the boundary by decision (A-001) with the publish criteria left UNCHECKED rather than waived and the CHANGELOG headed UNRELEASED so the corpus never claimed a release that did not exist, and it resumed later on instruction. Ordering held throughout L-51's sweeps: the four-registry sweep confirmed v1.14.1 unclaimed on the remote tag, GitHub Releases and PyPI before anything existed; origin/main took the commit before any tag; CI went 10/10 green on the EXACT released commit d356e24 -- verified at job granularity, 9 matrix cells plus the fresh-clone leg, because a workflow-level green is how 1.14.0 shipped with three red Windows cells; only then tag v1.14.1 -> 0cc8989, then the Release, which is what fires trusted publishing. Upload evidence was read IN-BAND from the publish log (both artifacts, with attestations and a sha256) rather than inferred from an index that lags, and the artifact was proven by CAPABILITY: a real MCP handshake against plain uvx returning serverInfo clauderizer 1.14.1 with 67 tools.
+
+The close-out found more than it shipped, and that is the honest headline. Two new findings, both from USING the system rather than testing it. H-27 (high): the MCP server serves the PUBLISHED build, so every cz_* write this session ran the release while the Phase 2 guard sat green in the working tree -- it executed for zero tool writes on the day it was written, and a malformed call produced the corrupt H-26 in consequence; engine_stale reported false and was right to, because it compares source mtimes and an installed package's are install-time. H-26 (medium): the lesson-bloat nudge thresholds on a COUNT while naming TOKENS as the cost, so a coverage-gated re-distill cleared the warning (26 -> 20) and made the corpus 1.1% larger and the handoff 14% heavier. Both are recorded open, neither is papered over, and the consolidation was kept on coherence grounds with no token claim attached. Against that, the release also closed the gap Phase 1 could not: replaying the real captured payload through the real outer wrapper on the published engine now yields silence at exit 0, so exactly one digest reaches a session and H-23's repair has finally reached the install that exhibits it.
 
 ## Accumulated Lessons
 

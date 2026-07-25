@@ -4,7 +4,9 @@
 > Scope: 6 phases (Phase 5 added mid-flight by A-002); phase 4 is the release
 > Suite: 1074 → 1164 passed, 7 skipped (+90)
 > Status: the release was halted once at the boundary by decision (A-001), then
-> resumed. `origin/main` holds `348537b`; tag, Release and publish followed CI.
+> resumed. `origin/main` holds `d356e24`, tag `v1.14.1` → `0cc8989`, cut as a
+> GitHub Release after CI went **10/10 green on the exact released commit** —
+> 9 matrix cells plus the fresh-clone leg, verified at job granularity.
 > Predecessor: [1.14.0 post-mortem](../2026-07-24-evidence-traversal-1-14-0/POST-MORTEM.md)
 
 ## Executive Summary
@@ -198,7 +200,9 @@ new modules      rituals/memory_lag.py, nesting.py
 lessons          9 gameplan lessons; project corpus 26 → 20 active
                  (L-63 promoted; L-64..L-67 syntheses at 10/10 coverage)
 registries       v1.14.1 unclaimed on all four before any tag existed
-push             origin/main efdf210 → 348537b before any tag existed (L-51 sweep 2)
+push             origin/main efdf210 → d356e24 before any tag existed (L-51 sweep 2)
+CI               10/10 green on d356e24 pre-tag (9 matrix cells + fresh-clone)
+release          tag v1.14.1 → 0cc8989; GitHub Release → PyPI trusted publishing
 ```
 
 ## Recommendations for the next gameplan

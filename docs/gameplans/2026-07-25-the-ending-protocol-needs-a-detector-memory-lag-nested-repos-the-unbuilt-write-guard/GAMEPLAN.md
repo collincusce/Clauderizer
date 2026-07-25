@@ -1,7 +1,7 @@
 # the ending protocol needs a detector — memory lag, nested repos, the unbuilt write guard Gameplan
 
 > Created: 2026-07-25
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -141,9 +141,9 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 - [x] cz_audit run; mechanical findings resolved or explicitly accepted with a reason; the judgment checklist affirmed
 - [x] The remote-registry sweep shipped in 1.14.0 reports 1.14.1 unclaimed before any tag exists
 - [x] Version single-sourced across pyproject, __version__ and the top CHANGELOG entry; the editable install refreshed so dist-info matches (H-03 turned 15 tests red in 1.14.0 for exactly this)
-- [ ] CI green on EVERY matrix cell plus the fresh-clone leg, on the exact commit being released, BEFORE any tag exists (L-51 sweep 2)
-- [ ] origin/main holds the release commit before any tag or GitHub Release
-- [ ] Published to PyPI, then PROVEN: plain `uvx --from clauderizer[mcp] clauderizer-mcp` returns serverInfo 1.14.1 with the full tool surface. Read the publish job log for in-band upload evidence — the index lags, so a fresh negative is unproven, not failed
+- [x] CI green on EVERY matrix cell plus the fresh-clone leg, on the exact commit being released, BEFORE any tag exists (L-51 sweep 2)
+- [x] origin/main holds the release commit before any tag or GitHub Release
+- [x] Published to PyPI, then PROVEN: plain `uvx --from clauderizer[mcp] clauderizer-mcp` returns serverInfo 1.14.1 with the full tool surface. Read the publish job log for in-band upload evidence — the index lags, so a fresh negative is unproven, not failed
 - [x] POST-MORTEM.md written, and it answers whether D-069's standing test (name the detector at design time) actually changed how this gameplan was executed
 
 ### Phase 5: Dream notes and dream proposals stop sharing a name
