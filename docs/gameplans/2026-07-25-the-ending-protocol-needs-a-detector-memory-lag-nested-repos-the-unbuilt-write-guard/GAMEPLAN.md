@@ -61,13 +61,13 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] STANDING ORACLE: demonstrated red first
-- [ ] With a clauderized ancestor present, the INNER repo's hook emits the digest and the outer emits nothing — asserted by test with two nested fixture repos
-- [ ] `clauderize doctor` names a detected nested install by path, since the outer stanza and wiring rot invisibly and nothing else reports it
-- [ ] `clauderize init` inside an existing clauderized repo warns rather than silently creating a second install
-- [ ] Hooks stay read-only and exit 0 throughout (INVARIANT-06); the dedup remains in-memory and session-scoped, never a persisted flag (INVARIANT-08/INVARIANT-05)
-- [ ] Verified live on this machine: /home/ccusce is a clauderized repo containing /home/ccusce/Clauderizer — a session in the inner repo must receive exactly ONE digest
-- [ ] H-23 resolved with the shipped evidence
+- [x] STANDING ORACLE: demonstrated red first
+- [x] With a clauderized ancestor present, the INNER repo's hook emits the digest and the outer emits nothing — asserted by test with two nested fixture repos
+- [x] `clauderize doctor` names a detected nested install by path, since the outer stanza and wiring rot invisibly and nothing else reports it
+- [x] `clauderize init` inside an existing clauderized repo warns rather than silently creating a second install
+- [x] Hooks stay read-only and exit 0 throughout (INVARIANT-06); the dedup remains in-memory and session-scoped, never a persisted flag (INVARIANT-08/INVARIANT-05)
+- [x] Verified live on this machine: /home/ccusce is a clauderized repo containing /home/ccusce/Clauderizer — a session in the inner repo must receive exactly ONE digest
+- [x] H-23 resolved with the shipped evidence
 
 ### Phase 2: Build the write guard 1.14.0 specified and did not ship
 

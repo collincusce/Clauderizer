@@ -1,11 +1,11 @@
 ---
 id: feat.init-cli
 type: feature
-version: 0.4.0
+version: 0.5.0
 status: completed
 depends_on:
   - subsys.scaffold@^0.5.0
-last_verified: 2026-06-21
+last_verified: 2026-07-25
 ---
 
 # Init Cli
@@ -58,6 +58,13 @@ for `docs/`, and `profile.lock.toml` edits all survive. It prints a summary (siz
 profile, session host, hosts wired, files written vs. kept) plus any warnings; `-v` lists
 every action. Before writing wiring it spawn-tests each command and refuses anything that
 won't launch and identify itself (`WiringRefused`).
+
+**Nested installs warn, they do not refuse (H-23).** Running `init` inside a repo that
+already sits under a clauderized ancestor creates a *second*, independent install whose
+corpus never merges with the outer one. That is supported — a session in the inner repo is
+owned by the inner repo, and the outer install stays silent for it — so init emits a `!`
+warning naming the ancestor and proceeds. Re-initializing the *same* repo has no clauderized
+ancestor and stays quiet, so the common idempotent path is unchanged.
 
 ## Exit codes
 
