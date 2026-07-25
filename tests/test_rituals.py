@@ -491,7 +491,7 @@ def test_memory_thresholds_config_roundtrip(tmp_path):
     assert legacy.project_lessons_warn == 20
 
 
-def test_memory_gauge_honors_configured_thresholds(temp_repo):
+def test_memory_gauge_honors_configured_thresholds(temp_repo, monkeypatch):
     # fixture has 3 active lessons and (after one promotion) 1 project lesson
     from clauderizer import mutations as M
 
@@ -499,21 +499,25 @@ def test_memory_gauge_honors_configured_thresholds(temp_repo):
     M.promote_lesson(paths, gameplan_id="2026-05-01-bootstrap", number=3,
                      today="2026-06-09")
     config.active_lessons_warn = 1   # 2 active > 1
-    config.project_lessons_warn = 0  # 1 project > 0
+    # H-26: the PROJECT nudge now thresholds on the block's TOKEN weight, which
+    # is the cost the warning names and the one consolidation can move the wrong
+    # way. The entry count is reported as a secondary detail, never the trigger.
+    monkeypatch.setattr(status_bundle, "PROJECT_LESSON_TOKENS_WARN", 0)
     bundle = status_bundle.compute(paths, config)
     warning = bundle["memory"]["warning"]
     assert "(> 1)" in warning and "cz_consolidate_lessons" in warning
+    assert "project lessons cost ~" in warning and "tok in every handoff" in warning
+    assert "1 entry" in warning, "the count survives as a detail"
     # The obsoletion INSTRUCTION is gated on telemetry existing (D-063/D-065):
     # with none, the digest must not tell the agent to obsolete entries whose
     # utility was never measured. The threshold report itself is unchanged.
-    assert "project lessons (> 0)" in warning
     assert ("L-entries" in warning) or ("UNMEASURED" in warning)
     assert " | " in warning  # both nudges coexist, one digest line each
     digest = status_bundle.render_digest(bundle, tools=[])
     assert "⚠ Memory:" in digest
-    # raise the lines back above the counts: silent again
+    # raise the lines back above the measurements: silent again
     config.active_lessons_warn = 12
-    config.project_lessons_warn = 20
+    monkeypatch.setattr(status_bundle, "PROJECT_LESSON_TOKENS_WARN", 5000)
     assert status_bundle.compute(paths, config)["memory"]["warning"] is None
 
 

@@ -46,6 +46,12 @@ def engine_source_newer_than(started: float) -> bool:
 # constants remain the fallback when no config is in hand.
 ACTIVE_LESSONS_WARN = 12
 PROJECT_LESSONS_WARN = 20
+# H-26: the threshold that actually fires. The project-lesson block rides in
+# every handoff across every gameplan, so its TOKEN weight is the cost the nudge
+# names and therefore the cost it must measure. ~5000 tok is roughly where the
+# old 20-entry line sat at the corpus's historical mean entry length, so this is
+# a re-expression of the same intent in the right unit rather than a new policy.
+PROJECT_LESSON_TOKENS_WARN = 5000
 # Skills surface FOCUSED by relevance (not all-carried like lessons), so the
 # threshold is higher and the nudge is about pruning STALE skills, not handoff weight.
 ACTIVE_SKILLS_WARN = 25
@@ -72,11 +78,20 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
             else:
                 active += 1
     project = 0
+    project_tokens = 0
     lessons_doc = paths.doc("LESSONS")
     if lessons_doc.exists():
         from .handoff import collect_project_lessons
 
-        _, project = collect_project_lessons(lessons_doc.read_text(encoding="utf-8"))
+        _block, project = collect_project_lessons(lessons_doc.read_text(encoding="utf-8"))
+        # H-26: this block is what actually rides in every handoff, so it is the
+        # thing to measure. The old nudge thresholded on the ENTRY COUNT while
+        # naming tokens as the cost — different levers, and consolidation moves
+        # them in opposite directions (a synthesis outranks its own sources, so
+        # the entries that get rendered in full get longer). Measured: a
+        # coverage-gated re-distill took 26 -> 20 entries and grew the corpus
+        # 1.1%, silencing a warning by making the warned-about thing worse.
+        project_tokens = len(_block) // 4
     # Registered skills (skill-awareness Phase 2): counted for visibility; they
     # surface focused-by-relevance, so the count is not handoff weight.
     skills_active = 0
@@ -103,6 +118,7 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
         "obsolete_lessons": obsolete,
         "promoted_lessons": promoted,
         "project_lessons": project,
+        "project_lesson_tokens": project_tokens,
         "active_skills": skills_active,
         "dream_notes": dream_notes,
         "handoff_est_tokens": None,
@@ -115,7 +131,7 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
             f"carries all of them. cz_consolidate_lessons the overlapping, "
             f"cz_promote_lesson the enduring, cz_obsolete_lesson the stale."
         )
-    if project > warn_project:
+    if project_tokens > PROJECT_LESSON_TOKENS_WARN:
         # O2: project lessons ride in every handoff across ALL gameplans —
         # past the line, re-distill. But the INSTRUCTION to obsolete entries is
         # gated on telemetry existing (D-063/D-065): silencing the curator that
@@ -131,9 +147,17 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
             "this checkout, so utility is UNMEASURED here — do not obsolete on "
             "that basis."
         )
+        # Threshold and headline are both TOKENS now; the entry count is the
+        # secondary detail it always should have been (H-26). Consolidating
+        # FEWER, LONGER entries does not clear this — which is the point.
         warnings.append(
-            f"{project} project lessons (> {warn_project}) — docs/LESSONS.md "
-            f"rides in every handoff across gameplans. {_tail}"
+            f"project lessons cost ~{project_tokens} tok in every handoff across "
+            f"gameplans (> {PROJECT_LESSON_TOKENS_WARN}), across {project} entr"
+            f"{'y' if project == 1 else 'ies'}"
+            + (f" (> {warn_project})" if project > warn_project else "")
+            + f". Note consolidation alone may NOT reduce this — a synthesis "
+            f"outranks its own sources, so the entries rendered in full get "
+            f"longer. {_tail}"
         )
     if skills_active > ACTIVE_SKILLS_WARN:
         warnings.append(
@@ -353,6 +377,38 @@ def exit_criteria(gameplan_dir: Path, phase: str) -> list[dict]:
 def unchecked_exit_criteria(gameplan_dir: Path, phase: str) -> list[dict]:
     """Exit criteria for ``phase`` still unchecked (``- [ ]``) — the surfacing input."""
     return [c for c in exit_criteria(gameplan_dir, phase) if not c["checked"]]
+
+
+# An open finding older than this reads as a backlog item rather than live work.
+FINDING_STALE_DAYS = 30
+
+
+def _findings_by_age(open_findings: list[dict], *, today: str | None = None) -> dict | None:
+    """``{oldest_id, oldest_days, stale_ids}`` for dated open findings, or ``None``.
+
+    Quiet by construction: no open findings, or none carrying a parseable date,
+    or nothing past :data:`FINDING_STALE_DAYS`, all produce ``None`` — so a young
+    register renders byte-identically (INVARIANT-08).
+    """
+    import datetime as _dt
+
+    try:
+        now = (_dt.date.fromisoformat(today) if today else _dt.date.today())
+    except ValueError:
+        return None
+    aged: list[tuple[int, str]] = []
+    for f in open_findings:
+        raw = str(f.get("date") or "")[:10]
+        try:
+            aged.append(((now - _dt.date.fromisoformat(raw)).days, str(f.get("id"))))
+        except ValueError:
+            continue                       # undated entries make no claim
+    stale = sorted((d, i) for d, i in aged if d >= FINDING_STALE_DAYS)
+    if not stale:
+        return None
+    oldest_days, oldest_id = stale[-1]
+    return {"oldest_id": oldest_id, "oldest_days": oldest_days,
+            "stale_ids": [i for _, i in reversed(stale)]}
 
 
 def _baseline_tests(index_text: str) -> str | None:
@@ -695,10 +751,17 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
     # then stopped looking at. Read-only; never blocks (INVARIANT-05).
     try:
         from .. import listing as _listing
-        bundle["open_findings"] = [
-            f["id"] for f in _listing.findings(paths)
-            if f.get("status") not in ("resolved", "accepted", "mitigated")
-        ]
+        _open = [f for f in _listing.findings(paths)
+                 if f.get("status") not in ("resolved", "accepted", "mitigated")]
+        bundle["open_findings"] = [f["id"] for f in _open]
+        # The register listed opens but said nothing about AGE, so a finding
+        # carried across four releases read exactly like one opened an hour ago —
+        # the same write-only shape D-069 exists to catch, one level up. Age is
+        # derived from the entry's own recorded date; undated entries simply do
+        # not contribute (evidence read, never assumed — D-065).
+        _aged = _findings_by_age(_open)
+        if _aged:
+            bundle["findings_age"] = _aged
     except Exception:  # a malformed register must never break the digest (INVARIANT-04)
         bundle["open_findings"] = []
     bundle["open_items"] = [it["id"] for it in unresolved_open_items(gdir)]
@@ -856,7 +919,15 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
     # 1.13.0's (INVARIANT-08 keeps injected status focused and minimal).
     of = bundle.get("open_findings") or []
     if of:
-        lines.append(f"Open findings: {len(of)} ({', '.join(of)}).")
+        line = f"Open findings: {len(of)} ({', '.join(of)})."
+        age = bundle.get("findings_age")
+        if age:
+            n = len(age["stale_ids"])
+            line += (f" {n} open {FINDING_STALE_DAYS}+ days — oldest "
+                     f"{age['oldest_id']} at {age['oldest_days']}d. A register "
+                     f"nobody empties is a backlog, not a memory: resolve, or "
+                     f"record an explicit dated acceptance.")
+        lines.append(line)
     oi = bundle.get("open_items") or []
     if oi:
         lines.append(f"Open items: {len(oi)} unresolved ({', '.join(oi)}).")

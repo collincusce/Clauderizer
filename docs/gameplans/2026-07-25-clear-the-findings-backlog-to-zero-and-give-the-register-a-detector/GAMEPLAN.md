@@ -75,12 +75,12 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-1.14.2 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError (gameplan lesson 2 of the 1.14.1 plan). Suite >= 1164 is a precondition, never a criterion
-- [ ] The memory warning fires on the lesson block's estimated TOKEN contribution — the gauge already computes handoff_est_tokens — with the entry count demoted to a secondary detail
-- [ ] Re-measured against the 1.14.1 re-distill: the corpus that went 26 -> 20 entries while growing 1.1% in bytes must now read as NOT improved, which is the whole point of H-26
-- [ ] An open finding's AGE is surfaced (opened date vs today, or releases since), so an aged finding stops reading identically to a fresh one — conditionally emitted, quiet when the register is young
-- [ ] Zero bytes when there is nothing to say; the golden single-gameplan digest test is updated deliberately, never loosened
-- [ ] H-26 resolved
+- [x] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-1.14.2 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError (gameplan lesson 2 of the 1.14.1 plan). Suite >= 1164 is a precondition, never a criterion
+- [x] The memory warning fires on the lesson block's estimated TOKEN contribution — the gauge already computes handoff_est_tokens — with the entry count demoted to a secondary detail
+- [x] Re-measured against the 1.14.1 re-distill: the corpus that went 26 -> 20 entries while growing 1.1% in bytes must now read as NOT improved, which is the whole point of H-26
+- [x] An open finding's AGE is surfaced (opened date vs today, or releases since), so an aged finding stops reading identically to a fresh one — conditionally emitted, quiet when the register is young
+- [x] Zero bytes when there is nothing to say; the golden single-gameplan digest test is updated deliberately, never loosened
+- [x] H-26 resolved
 
 ### Phase 3: Two core-path lows: a symlinked parent directory, and a gameplan that cannot be closed (H-16 + H-21)
 
