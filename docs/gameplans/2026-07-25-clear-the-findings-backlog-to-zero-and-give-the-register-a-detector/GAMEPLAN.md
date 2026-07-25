@@ -1,7 +1,7 @@
 # clear the findings backlog to zero and give the register a detector Gameplan
 
 > Created: 2026-07-25
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -131,11 +131,11 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 5.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_audit run; mechanical findings resolved or explicitly accepted with a reason; the judgment checklist affirmed
-- [ ] OPEN FINDINGS ARE ZERO — the register's own count, not a claim; if any finding survives it carries a dated disposition explaining why it is accepted rather than fixed
-- [ ] Version single-sourced across pyproject, __version__ and the top CHANGELOG entry; editable install refreshed so dist-info matches (H-03)
-- [ ] The four-registry sweep reports 1.14.2 unclaimed before any tag exists
-- [ ] CI green on EVERY matrix cell plus the fresh-clone leg, on the exact commit being released, BEFORE any tag exists, verified at JOB granularity (L-51 sweep 2)
-- [ ] origin/main holds the release commit before any tag or GitHub Release
-- [ ] Published, then PROVEN by handshake: plain uvx --refresh returns serverInfo 1.14.2 with the full tool surface; upload evidence read in-band from the publish log
-- [ ] POST-MORTEM answers the question this gameplan exists to test: does a register emptied to zero STAY at zero, or does the next release refill it — and if it refills, is that healthy discovery or the same rot one level up
+- [x] cz_audit run; mechanical findings resolved or explicitly accepted with a reason; the judgment checklist affirmed
+- [x] OPEN FINDINGS ARE ZERO — the register's own count, not a claim; if any finding survives it carries a dated disposition explaining why it is accepted rather than fixed
+- [x] Version single-sourced across pyproject, __version__ and the top CHANGELOG entry; editable install refreshed so dist-info matches (H-03)
+- [x] The four-registry sweep reports 1.14.2 unclaimed before any tag exists
+- [x] CI green on EVERY matrix cell plus the fresh-clone leg, on the exact commit being released, BEFORE any tag exists, verified at JOB granularity (L-51 sweep 2)
+- [x] origin/main holds the release commit before any tag or GitHub Release
+- [x] Published, then PROVEN by handshake: plain uvx --refresh returns serverInfo 1.14.2 with the full tool surface; upload evidence read in-band from the publish log
+- [x] POST-MORTEM answers the question this gameplan exists to test: does a register emptied to zero STAY at zero, or does the next release refill it — and if it refills, is that healthy discovery or the same rot one level up

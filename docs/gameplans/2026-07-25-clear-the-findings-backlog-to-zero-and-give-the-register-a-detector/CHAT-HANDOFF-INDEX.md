@@ -1,7 +1,7 @@
 # Chat Handoff Index — clear the findings backlog to zero and give the register a detector
 
 > Last updated: 2026-07-25
-> Status: Phase 5 ready
+> Status: All 6 phases complete
 
 ## How This Works
 
@@ -34,7 +34,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 2 | The digest nudges on the cost it names, and the register stops being write-only (H-26 + the aging detector) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Two core-path lows: a symlinked parent directory, and a gameplan that cannot be closed (H-16 + H-21) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Subsystem docs get an executable seam against their module (H-24) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Close out and ship 1.14.2 with the backlog at zero | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Close out and ship 1.14.2 with the backlog at zero | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -64,6 +64,8 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 **2.** A never-surfaced metric measures the SURFACING MACHINERY before it measures the item. Five project lessons showed surfaced_count 0 and the digest invited obsoleting them on that basis -- but ranking was wired only into per-phase handoff assembly, so a lesson about PLANNING could not be surfaced by any code path that existed. The zero was a fact about wiring, not about value, and acting on it would have deleted exactly the lessons the engine never gave a chance. Before curating on an absence, ask what would have had to happen for the count to be non-zero, and check that something actually does it. General form: any metric derived from an event log is bounded by where the events are emitted, so an emitter gap is indistinguishable from a real zero until you look. *(evidence: H-25; L-11 surfaced_count 0 while the next plan violated it; fixed by handoff.plan_lessons + telemetry.record_surfaced(phase='plan'))*
 
 **3.** An advisory that never fails is not a weaker gate, it is rot with a progress bar. My first draft of the doc seam printed per-subsystem coverage and failed only if a doc mentioned NONE of its module -- so rituals at 8-of-42 named passed cleanly, which is precisely the false green the release was built to end. The instinct behind it was sound (a fixed target like '80% documented' is an invented number, and invented numbers get ignored) but the conclusion was wrong. The escape from that dilemma is a RATCHET: record today's debt as the baseline and gate on the DELTA. No target to argue about, existing debt frozen visibly instead of laundered into a pass, and growing it becomes a decision someone has to write down. Two riders learned the hard way here. Gate BOTH directions -- an improvement that does not tighten the baseline just becomes slack for the next regression to hide in. And check the ratchet's own COVERAGE before trusting it: mine initially watched 8 of ~40 modules, and the two modules written that same week both landed in the blind spot, so the second ratchet had to be over the watched set itself. *(evidence: H-24 / amendment A-001; tests/test_subsystem_doc_seam.py; both gates demonstrated firing on a new module and a new public callable)*
+
+**5.** A lesson being SURFACED is not a lesson being APPLIED, and the gap between them is its own defect class. H-25 fixed reachability -- lessons about planning could not reach planning at all -- and within the same release I wrote `"uv/archive-v0" in path`, a separator assertion, while L-51 ('a path/separator assertion is itself a platform claim ... 0.14.0 shipped with 3 Windows cells red on such an assertion') was in the surfaced set in front of me. Three Windows cells went red, the same count. So a corpus can be perfectly reachable, perfectly ranked, and still not change behavior at the moment of writing the line. Two implications worth carrying: measuring 'surfaced' as if it were 'applied' overstates a memory system's value, and the only honest evidence of application is a machine check at the point of the mistake -- here, a test that would reject a separator claim outright rather than a lesson hoping to be remembered. *(evidence: 1.14.2 Phase 5: L-51 surfaced in the phase handoff; f9f8343 fixed the assertion after 3 windows-latest cells failed)*
 
 ### Category: Testing
 
