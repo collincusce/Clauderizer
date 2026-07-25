@@ -107,3 +107,16 @@ def adversarial_encoding(request):
 def adversarial_json_bytes(request):
     """(label, raw_bytes) an engine JSON reader must not destroy the file over."""
     return request.param
+
+
+@pytest.fixture(autouse=True)
+def _no_spawn_probe(monkeypatch):
+    """Unit tests must not spawn a real MCP server.
+
+    doctor now verifies engine IDENTITY by handshake rather than presence
+    (H-20/D-060), which means the default path spawns. In-process tests would
+    otherwise shell out to `uvx` — slow, network-dependent, and not what they
+    measure. Mirrors init(spawn_test=False) and the _no_real_kimi_desktop guard.
+    Tests that WANT the probe unset it explicitly.
+    """
+    monkeypatch.setenv("CLAUDERIZER_NO_SPAWN_PROBE", "1")

@@ -422,15 +422,17 @@ def test_doctor_deep_handshakes_auto_write_host(empty_python_repo, monkeypatch, 
     from clauderizer import mcp_probe
     init(empty_python_repo, host_target="cursor", spawn_test=False)
     monkeypatch.chdir(empty_python_repo)
+    # This test WANTS the probe, so it opts back in past the autouse guard.
+    monkeypatch.delenv("CLAUDERIZER_NO_SPAWN_PROBE", raising=False)
     monkeypatch.setattr(mcp_probe, "handshake_probe", lambda *a, **k: {
         "status": "ok", "detail": "initialize → serverInfo clauderizer",
         "server_name": "clauderizer", "server_version": None})
 
     cli.main(["doctor"])
-    assert "cursor MCP initialize handshake" not in capsys.readouterr().out   # default: presence only
+    assert "cursor MCP identity" not in capsys.readouterr().out   # default: presence only
 
     cli.main(["doctor", "--deep"])
-    assert "cursor MCP initialize handshake" in capsys.readouterr().out       # --deep: capability
+    assert "cursor MCP identity" in capsys.readouterr().out       # --deep: capability
 
 
 def test_doctor_guide_only_host_notes_manual(empty_python_repo, monkeypatch, capsys):

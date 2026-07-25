@@ -576,8 +576,19 @@ def hook_setup_guide(host_id: str, hook_argv: list[str] | None = None) -> str | 
 def verify_emitted_wiring(host_id: str, repo_root: Path) -> tuple[bool, str]:
     """Wiring-contract check (D-032): emit the host's config, read it back, and
     confirm the clauderizer entry is well-formed (command + args), path-safe, and
-    launches clauderizer-mcp. The 'does the real host actually read it' consumption
-    proof is irreducibly manual (D-032) — not this."""
+    ACTUALLY LAUNCHES — an MCP ``initialize`` handshake that asserts
+    ``serverInfo.name == 'clauderizer'``.
+
+    Until 1.14.0 the last step was ``any("clauderizer-mcp" in tok for tok in argv)``
+    — a substring match — while D-032 specified a launching host-simulator and
+    CROSS-HOST.md advertised it as a launch-and-round-trip proof. A config naming
+    a command that does not exist passed, for all eleven auto-write hosts
+    (recorded as H-20). ``unverifiable`` (offline, cold cache, a cross-host target
+    unreachable from here) is reported as such and does NOT fail the contract —
+    a false green is the failure this closes, and a false red would be its mirror.
+
+    The 'does the real host actually read it' consumption proof remains
+    irreducibly manual (D-032) — that part is unchanged."""
     em = HOST_EMITTERS[host_id]
     if not em.auto_write:
         return True, "guide-only (nothing auto-written to verify)"
@@ -593,8 +604,20 @@ def verify_emitted_wiring(host_id: str, repo_root: Path) -> tuple[bool, str]:
     if not is_path_safe(argv):
         return False, f"path-unsafe (machine-specific) command: {argv}"
     if not any("clauderizer-mcp" in tok for tok in argv):
-        return False, "command does not launch clauderizer-mcp"
-    return True, "wiring contract OK"
+        return False, "command does not name clauderizer-mcp"
+    # The launch proof D-032 specified and the code never implemented (H-20).
+    import os
+    import tempfile
+
+    from . import mcp_probe
+    if os.environ.get("CLAUDERIZER_NO_SPAWN_PROBE") == "1":
+        return True, "wiring contract OK (shape only; spawn probe disabled)"
+    probe = mcp_probe.handshake_probe(entry, cwd=tempfile.gettempdir())
+    if probe["status"] == "fail":
+        return False, f"registered command does not launch: {probe['detail']}"
+    if probe["status"] == "unverifiable":
+        return True, f"wiring contract OK (launch unverifiable: {probe['detail']})"
+    return True, f"wiring contract OK — initialize → serverInfo {probe['server_name']}"
 
 
 def wiring_contract_sweep(repo_root: Path) -> dict[str, tuple[bool, str]]:

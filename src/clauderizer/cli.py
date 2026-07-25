@@ -232,6 +232,80 @@ def cmd_upgrade(args: argparse.Namespace) -> int:
     return 0
 
 
+def _mcp_entry_from_wiring(wiring: list[str]) -> dict:
+    """The wiring argv as an mcp.json-shaped entry the probe understands."""
+    return {"command": wiring[0], "args": list(wiring[1:])} if wiring else {}
+
+
+# --- doctor: engine IDENTITY, not mere presence (H-20 / D-060 / D-065) --------
+#
+# `hosts.verify_wiring` on a native host is `shutil.which(argv[0])`: it reports
+# "launchable" when the string `uvx` resolves on PATH. It never spawns anything,
+# and cli.py deliberately routed the PORTABLE shipped .mcp.json down that native
+# path — so the recommended default config got the weakest possible check. That
+# green is what let a repo run its hook on one engine while its MCP client was
+# served a different one, advertising five tools the server did not have.
+#
+# The handshake is memoized on the (command, args) tuple: all nine auto-write
+# emitters share the identical portable entry, so `--deep`'s nine identical
+# handshakes collapse to one spawn.
+_HANDSHAKE_CACHE: dict[tuple, dict] = {}
+#: Shorter than mcp_probe.HANDSHAKE_TIMEOUT (20s) — this runs on the DEFAULT
+#: path now, so a hung server must degrade to `unverifiable` promptly rather
+#: than stall every doctor run.
+_DEFAULT_HANDSHAKE_TIMEOUT = 8.0
+
+
+def _identity_probe(entry: dict, *, timeout: float = _DEFAULT_HANDSHAKE_TIMEOUT) -> dict:
+    """Handshake once per distinct registered command; reuse the result.
+
+    ``CLAUDERIZER_NO_SPAWN_PROBE=1`` suppresses the spawn (the unit suite sets it
+    autouse, mirroring ``init(spawn_test=False)``). That returns ``skipped``, NOT
+    ``unverifiable`` — "I was told not to look" is a different claim from "I
+    looked and could not tell", and collapsing the two is precisely the
+    evidence-traversal error this release exists to fix (D-065).
+    """
+    import os
+    import tempfile
+
+    from . import mcp_probe
+
+    if os.environ.get("CLAUDERIZER_NO_SPAWN_PROBE") == "1":
+        return {"status": "skipped", "detail": "spawn probe disabled "
+                "(CLAUDERIZER_NO_SPAWN_PROBE=1)", "server_name": None,
+                "server_version": None}
+    argv = (entry or {}).get("command"), tuple((entry or {}).get("args") or ())
+    if argv in _HANDSHAKE_CACHE:
+        return _HANDSHAKE_CACHE[argv]
+    r = mcp_probe.handshake_probe(entry or {}, cwd=tempfile.gettempdir(), timeout=timeout)
+    _HANDSHAKE_CACHE[argv] = r
+    return r
+
+
+def _identity_verdict(label: str, entry: dict, *, verdict, warn) -> dict:
+    """Report a registered MCP entry's IDENTITY with the three-state contract.
+
+    ok -> the server started and claims to be clauderizer; a version different
+    from this engine's is a WARNING (exit 3), never a pass and never a failure —
+    a separately-installed server legitimately lags. unverifiable (timeout, cold
+    cache, offline, an unreachable cross-host target) is reported BY NAME and
+    warns; it is never silently green and never `x` (D-010, D-048, INVARIANT-05,
+    L-59).
+    """
+    r = _identity_probe(entry)
+    if r["status"] == "skipped":
+        # Not a verdict at all: nothing was measured, and nothing is claimed.
+        return r
+    verdict(label, hosts.Probe(r["status"], r["detail"]))
+    served = r.get("server_version")
+    if r["status"] == "ok" and served and served != __version__:
+        warn(f"{label} version",
+             f"the registered server serves clauderizer {served} but this engine "
+             f"is {__version__} — the session would get a different tool surface "
+             f"than this repo expects; publish or reinstall to align them")
+    return r
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     paths, config = _load()
     if config is None:
@@ -316,8 +390,18 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 if session_host and str(session_host).startswith("windows-wsl"):
                     print("✓ MCP config is portable (multi-host); session_host "
                           f"{session_host} still composes Claude hooks")
-            verdict("MCP server launchable for session host",
-                    hosts.verify_wiring(wiring, mcp_probe_host))
+            if mcp_probe_host is None and wiring:
+                # Portable entry: spawn it and ask who answered (H-20). Presence
+                # is retired here — it is the check that certified the split.
+                _r = _identity_verdict("MCP server identity (portable wiring)",
+                                       _mcp_entry_from_wiring(list(wiring)),
+                                       verdict=verdict, warn=warn)
+                if _r["status"] == "skipped":
+                    verdict("MCP server launchable for session host",
+                            hosts.verify_wiring(wiring, mcp_probe_host))
+            else:
+                verdict("MCP server launchable for session host",
+                        hosts.verify_wiring(wiring, mcp_probe_host))
             if _mcp_wiring_missing_extra(wiring):
                 check("MCP server wiring includes the [mcp] extra", False,
                       "wired via `--from clauderizer` WITHOUT the [mcp] extra; re-run "
@@ -346,6 +430,13 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     # Per-host readiness + configure-on-demand (D-048)
     for hid in enabled:
+        # claude-code has no HOST_EMITTERS entry — its wiring is the portable
+        # .mcp.json handled in the dedicated block above, which since 1.14.0
+        # verifies engine IDENTITY by handshake rather than presence. So the
+        # H-20 intent ("the host INVARIANT-07 protects must not be the one host
+        # that is never identity-checked") is satisfied there, on the DEFAULT
+        # path, which is stronger than the --deep-only check this loop offers.
+        # Forcing it through this loop only produces "unknown host".
         if hid == hosttargets.CLAUDE_CODE:
             continue
         em = hosttargets.HOST_EMITTERS.get(hid)
@@ -361,13 +452,12 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 # gain — O-01/L-07). `--deep` opts into the capability check for every
                 # auto-write host, reusing the shared mcp_probe primitive (D-056).
                 if getattr(args, "deep", False):
-                    import tempfile
-
-                    from . import mcp_probe
-                    entry = _host_registered_entry(paths.root / em.config_path, em.servers_key)
-                    r = mcp_probe.handshake_probe(entry or {}, cwd=tempfile.gettempdir())
-                    verdict(f"{hid} MCP initialize handshake",
-                            hosts.Probe(r["status"], r["detail"]))
+                    entry = _host_registered_entry(paths.root / em.config_path,
+                                                   em.servers_key)
+                    # Was: handshake without ever judging server_version, so an
+                    # identity check that HAD the answer threw it away.
+                    _identity_verdict(f"{hid} MCP identity", entry or {},
+                                      verdict=verdict, warn=warn)
             else:
                 warn(f"{hid} MCP",
                      f"{em.config_path} missing clauderizer — re-run `clauderize init` "
