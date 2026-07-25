@@ -1,12 +1,12 @@
 ---
 id: subsys.mutations
 type: subsystem
-version: 0.7.0
+version: 0.8.0
 status: active
 depends_on:
   - subsys.markdown-core@^0.1.0
   - subsys.graph@^0.1.0
-last_verified: 2026-07-19
+last_verified: 2026-07-25
 ---
 
 # Mutations
@@ -20,6 +20,17 @@ IDs (`D-NNN`, `INVARIANT-NN`, `H-NN`, `C-NN`, `A-NNN`, `O-NN`, `L-NN`, lesson `*
 ## Append-only memory (INVARIANT-03)
 
 Decisions, invariants, findings, corrections, and lessons are **superseded, never deleted**. `obsolete_lesson` rewrites the line with an `(obsolete <date>: …)` marker and keeps it (re-marking is a no-op); `promote_lesson` marks the source `(promoted <date>: L-NN)` so it stops rolling up but stays in the trail; `resolve_finding` updates an `H-NN` block's `**Status**` line + a dated `**Resolution**` in place; `resolve_open_item` appends `_(resolved <date>: …)_` to the `O-NN` line. Nothing is removed — `consolidate_lessons` shrinks the handoff roll-up while the full set of source lines survives, each marked `(obsolete …: consolidated into #N)`.
+
+## Well-formedness at the write boundary (D-066)
+
+Every render site interpolates caller strings into markdown that line-anchored parsers then read back, so the boundary is where a string could **forge structure**. `_safe_body` / `_safe_cell` / `_one_line` are that boundary, and the contract is **normalize, never reject**: no write is lost (INVARIANT-03) and no mutation gains a hard block (INVARIANT-05). This is D-007/INVARIANT-02 well-formedness, *not* a discipline gate — INVARIANT-05 enumerates exactly three gates, and `dreams.validate` is the shipped precedent that a blessed write may check its own input. Normalization runs **before** the change diff, so re-submitting identical input stays a no-op.
+
+- **Forged structure** — a column-zero heading, a `### D-900 — …` entry anchor, or a `**N.**` lesson number is backslash-escaped (CommonMark renders it identically, so the human view is byte-equivalent while the parsers stop matching). Unescaped, `add_decision(title="ok\n\n### D-900 — FAKE…")` returned `ok:true`, created a genuine-looking D-900, absorbed the real entry's body, and burned 899 ids irreversibly.
+- **Table cells** — pipes escaped and newlines collapsed (H-02): a `|` in a phase name ate half the name on the next transition.
+- **Marker blocks** — a body containing `clauderizer:handoff` would permanently escape its block, voiding D-008's byte-for-byte guarantee.
+- **Leaked tool-call markup** (1.14.1) — `_strip_toolcall_markup` removes the writing agent's own framing when it lands in an argument *value*. Two signals, neither of them "any angle bracket": the tool-call vocabulary (`parameter` / `invoke` / `function_calls`, bare or `antml:`-prefixed), and **unbalanced** closing tags — `</context>` with no `<context…>` opening it. Unbalanced-detection is what leaves a body legitimately containing `<div>…</div>` completely alone, which a field-name blocklist could not promise. Code spans and fenced blocks are skipped, matching the read side's `sections._without_code_spans`, so an entry that *quotes* this shape is never rewritten.
+
+1.14.0 specified that last guard as an exit criterion and never built it; four entries — `D-052`, `D-062`, `H-19`, `H-23` — carry the proof, and `tests/test_toolcall_write_guard.py` reads them off disk as its acceptance corpus. They are deliberately **not** retro-edited: append-only (INVARIANT-03), they parse, and repair belongs to the amendment op.
 
 ## The write lock
 

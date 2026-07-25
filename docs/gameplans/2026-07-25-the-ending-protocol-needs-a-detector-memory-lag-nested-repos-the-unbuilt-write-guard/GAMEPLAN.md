@@ -79,12 +79,12 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] STANDING ORACLE: demonstrated red first
-- [ ] A structured-write argument containing tool-call markup (a closing field tag, or `<parameter name=`) is rejected or neutralized at the mutations render boundary — no legitimate ADR, finding, correction or lesson body contains one
-- [ ] The four live corrupted entries are the acceptance cases: docs/DECISIONS.md D-052 and D-062, docs/HARDENING.md H-19 and H-23. A test asserts the guard would have caught each
-- [ ] Consistent with D-066: NORMALIZE, never reject where neutralizing is possible, so no write is lost (INVARIANT-03) and no mutation gains a hard block (INVARIANT-05)
-- [ ] The four existing occurrences are NOT retro-edited — append-only (INVARIANT-03), they parse, and they are the acceptance corpus. Repair belongs to the amendment op, still deferred
-- [ ] A test asserts the guard fires on the exact shapes that landed: `</consequences>`, `</context>`, `</root_cause>`, `</impact>`, and a bare `<parameter name=` line
+- [x] STANDING ORACLE: demonstrated red first
+- [x] A structured-write argument containing tool-call markup (a closing field tag, or `<parameter name=`) is rejected or neutralized at the mutations render boundary — no legitimate ADR, finding, correction or lesson body contains one
+- [x] The four live corrupted entries are the acceptance cases: docs/DECISIONS.md D-052 and D-062, docs/HARDENING.md H-19 and H-23. A test asserts the guard would have caught each
+- [x] Consistent with D-066: NORMALIZE, never reject where neutralizing is possible, so no write is lost (INVARIANT-03) and no mutation gains a hard block (INVARIANT-05)
+- [x] The four existing occurrences are NOT retro-edited — append-only (INVARIANT-03), they parse, and they are the acceptance corpus. Repair belongs to the amendment op, still deferred
+- [x] A test asserts the guard fires on the exact shapes that landed: `</consequences>`, `</context>`, `</root_cause>`, `</impact>`, and a bare `<parameter name=` line
 
 ### Phase 3: Close the graph drop gap and the init spawn-test carried from 1.14.0
 

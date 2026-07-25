@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Memory-lag detection so a session cannot silently drift from the repo | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Nested clauderized repos stop contradicting each other | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Build the write guard 1.14.0 specified and did not ship | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Build the write guard 1.14.0 specified and did not ship | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Close the graph drop gap and the init spawn-test carried from 1.14.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Close out and ship 1.14.1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
@@ -32,6 +32,14 @@ OWNERSHIP_MODULE: src/clauderizer/nesting.py — is_clauderized(d); owner_of(cwd
 SUITE: 1085 -> 1101 passed, 7 skipped (+16, all in tests/test_nested_installs.py)
 LIVE_NESTED_SCAN: /home/ccusce holds TEN nested clauderized installs, found in 0.24s: Clauderizer, arena-security-audit, clauderizer-site, cz-dogfood-pet, cz-dogfood-saas, cz-dogfood-standard, cz-hosttest, marketing-studio, phasekeep, viderizer. Every one of them was being narrated over by the outer install, because /home/ccusce/.claude/settings.json IS the per-user settings file — initializing Clauderizer in $HOME makes its hook global to every session on the machine. That is the root cause behind H-23 and it is worth stating plainly: the outer install is not merely "an ancestor", it is wired globally.
 DEPLOYMENT_GAP: /home/ccusce/.clauderizer/hook.sh runs `uvx -q --from clauderizer clauderizer-hook` — the PUBLISHED engine, currently 1.14.0. The nesting fix therefore does NOT reach the outer install until 1.14.1 is on PyPI and uvx's cache refreshes. Phase 4 must re-run the live two-digest check AFTER publish (`uvx --refresh`) to confirm the repair actually lands where the pathology lives; until then the live green is for the mechanism, not the deployment.
+```
+
+### Phase 2 Outputs
+
+```
+WRITE_GUARD: src/clauderizer/mutations.py::_strip_toolcall_markup, applied inside _safe_body and _one_line — the D-066 render boundary every cz_* write already flows through. Two signals: (1) _TOOLCALL_TAG_RE matches the vocabulary parameter|invoke|function_calls|function_results, bare or antml:-prefixed, opening or closing; (2) an UNBALANCED closing tag, i.e. _CLOSE_TAG_RE match whose name has no _OPEN_TAG_RE opener in the visible value. _code_segments skips fenced blocks and inline code (read-side parity with sections._without_code_spans). Fast path returns unchanged when the value has no "<".
+SUITE: 1101 -> 1127 passed, 7 skipped (+26, all in tests/test_toolcall_write_guard.py)
+RED_EVIDENCE: Substantive RED at efdf210: cz_add_decision fed the exact live shapes wrote them straight to docs/DECISIONS.md — "**Context**: User confusion, this session.</context>" followed by "<parameter name=\"context\">User confusion (real, this session)." — byte-for-byte the corruption at docs/DECISIONS.md:381-382. Same probe on the fixed tree: all three markers neutralized, every word of prose preserved. Acceptance corpus is read OFF DISK (not synthesized): tests parse D-052/D-062/H-19/H-23 out of the live registers, assert the stray tag is still present (a guard against retro-editing), then assert the guard cleans it.
 ```
 
 ## Corrections Log

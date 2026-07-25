@@ -40,6 +40,23 @@ it is a hope (D-069).
   ancestor), and `clauderize init` under an existing install warns and proceeds
   rather than silently creating a second one. Verified live on the authoring
   machine, where the scan found **ten** nested installs under one home directory.
+- **The write guard 1.14.0 specified and did not ship.** Its Phase 5 criterion 12
+  required a write-time guard against tool-call markup in structured-write
+  arguments; `grep` for it returned zero, and four malformed writes are now in
+  append-only memory — the fourth landing while the finding about the first three
+  was being recorded. The guard now runs at the `mutations` render boundary that
+  every `cz_*` write already flows through, on two unambiguous signals: the
+  tool-call vocabulary itself (`parameter` / `invoke` / `function_calls`, bare or
+  `antml:`-prefixed) and **unbalanced** closing tags — `</context>` with nothing
+  opening it. Balance-detection is what lets a body legitimately containing
+  `<div>…</div>` through untouched, which a field-name blocklist could never
+  promise, and code spans and fenced blocks are skipped exactly as the read side
+  has done since 1.14.0. Per D-066 it **normalizes, never rejects**: the tags are
+  scaffolding, so removing them loses no content (INVARIANT-03) and no mutation
+  gains a hard block (INVARIANT-05). The four live entries — `D-052`, `D-062`,
+  `H-19`, `H-23` — are read off disk as the acceptance corpus and are
+  deliberately **not** retro-edited; they are append-only, they parse, and repair
+  belongs to the amendment op.
 
 ## [1.14.0] — 2026-07-25
 

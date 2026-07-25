@@ -153,18 +153,99 @@ _LEADING_LESSON_NUM_RE = re.compile(r"^(\*\*\d+\.\*\*)", re.M)
 _LEADING_ENTRY_RE = re.compile(r"^(###\s+[A-Z][A-Z0-9]*-\d+\s+—)", re.M)
 
 
+# --- tool-call markup at the write boundary (H-22 sibling; 1.14.1 Phase 2) ----
+#
+# 1.14.0's Phase 5 specified this guard as an exit criterion and never built it.
+# Four live entries carry the proof: docs/DECISIONS.md D-052 and D-062 and
+# docs/HARDENING.md H-19 and H-23 each contain a stray `</context>`,
+# `</consequences>`, `</root_cause>` or `</impact>` plus a swallowed
+# `<parameter name=…>` line — the writing agent's own tool-call framing, leaked
+# into an argument VALUE. The fourth landed while the finding about the first
+# three was being recorded.
+#
+# Two signals, both unambiguous, and neither one "any angle bracket":
+#
+#   1. The tool-call vocabulary itself — parameter / invoke / function_calls,
+#      bare or `antml:`-prefixed. No prose contains these outside a code span.
+#   2. An UNBALANCED closing tag: `</name>` with no `<name…>` opening it. That
+#      is what a swallowed field close looks like. Balanced markup — a body
+#      legitimately showing `<div>…</div>` — is left completely alone, which a
+#      field-name blocklist could never promise.
+#
+# Code spans and fenced blocks are skipped, the same protection the READ side
+# gained in 1.14.0 (`sections._without_code_spans`): an entry that quotes this
+# very shape inside backticks — as this repo's own CHANGELOG and tests now do —
+# must not be rewritten.
+#
+# NORMALIZE, never reject (D-066): the tags are pure scaffolding, so removing
+# them loses no content (INVARIANT-03) and no mutation gains a hard block
+# (INVARIANT-05). The four existing occurrences are NOT retro-edited — they are
+# append-only (INVARIANT-03), they parse, and they are this guard's acceptance
+# corpus. Repair belongs to the amendment op, still deferred.
+
+_TOOLCALL_TAG_RE = re.compile(
+    r"</?(?:antml:)?(?:parameter|invoke|function_calls|function_results)\b[^>]*>",
+    re.I)
+_OPEN_TAG_RE = re.compile(r"<([A-Za-z_][A-Za-z0-9_.:-]*)(?:\s[^>]*?)?/?>")
+_CLOSE_TAG_RE = re.compile(r"</([A-Za-z_][A-Za-z0-9_.:-]*)\s*>")
+_INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
+
+
+def _code_segments(text: str) -> list[tuple[bool, str]]:
+    """``[(is_code, chunk), …]`` covering ``text`` — fenced blocks and inline
+    code spans flagged, so a rewrite can skip exactly them."""
+    from .markdown.sections import _FENCE_RE
+
+    spans: list[tuple[int, int]] = [m.span() for m in _FENCE_RE.finditer(text)]
+    for m in _INLINE_CODE_RE.finditer(text):
+        if not any(s <= m.start() < e for s, e in spans):
+            spans.append(m.span())
+    spans.sort()
+    out: list[tuple[bool, str]] = []
+    pos = 0
+    for s, e in spans:
+        if s > pos:
+            out.append((False, text[pos:s]))
+        out.append((True, text[s:e]))
+        pos = e
+    if pos < len(text):
+        out.append((False, text[pos:]))
+    return out
+
+
+def _strip_toolcall_markup(text: str) -> str:
+    """Remove leaked tool-call framing and unbalanced closing tags, outside code."""
+    if "<" not in text:
+        return text                      # the overwhelmingly common path
+    segments = _code_segments(text)
+    # Pass 1: drop the tool-call vocabulary from every non-code segment.
+    segments = [(is_code, chunk if is_code else _TOOLCALL_TAG_RE.sub("", chunk))
+                for is_code, chunk in segments]
+    # Pass 2: a closing tag is scaffolding only when nothing opened it. Balance
+    # is judged over the whole visible value, never per segment — an opener and
+    # its closer may sit either side of a code span.
+    visible = "".join(chunk for is_code, chunk in segments if not is_code)
+    opened = {m.group(1).lower() for m in _OPEN_TAG_RE.finditer(visible)}
+
+    def _drop_unbalanced(m: re.Match) -> str:
+        return "" if m.group(1).lower() not in opened else m.group(0)
+
+    return "".join(chunk if is_code else _CLOSE_TAG_RE.sub(_drop_unbalanced, chunk)
+                   for is_code, chunk in segments)
+
+
 def _one_line(value: str, *, fallback: str = "") -> str:
     """Collapse a structurally single-line field (a title, a table cell).
 
     Uses the same whitespace collapse as ``learn._excerpt``'s ``" ".join(split())``.
     """
-    out = " ".join(str(value or "").split())
+    out = " ".join(_strip_toolcall_markup(str(value or "")).split())
     return out or fallback
 
 
 def _safe_body(value: str) -> str:
     """Neutralize column-zero markdown structure in a multi-line body field."""
-    text = str(value or "").strip()
+    text = _strip_toolcall_markup(str(value or "")).strip()
     text = _LEADING_ENTRY_RE.sub(r"\\\1", text)
     text = _LEADING_HEADING_RE.sub(r"\\\1\2", text)
     text = _LEADING_LESSON_NUM_RE.sub(r"\\\1", text)
