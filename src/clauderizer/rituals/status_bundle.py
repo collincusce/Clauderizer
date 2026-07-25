@@ -693,6 +693,22 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
     cur = bundle["current_phase"]
     nxt = bundle["next_phase"]
     target = cur or nxt
+    # Memory-lag detection (H-22/D-069): every other discipline here has a
+    # detector; the one that keeps the tracker current had none, and 1.14.0
+    # shipped two phases while its table read "not started". Read-only, bounded
+    # git reads; best-effort so a hook can never die on it (INVARIANT-06), and
+    # silent unless there is real drift (INVARIANT-08).
+    if target:
+        try:
+            from . import memory_lag as _lag
+
+            _state = next((p["status"] for p in bundle["phases"]
+                           if p["number"] == target["number"]), None)
+            _found = _lag.detect(paths, gid, target, _state)
+            if _found:
+                bundle["memory_lag"] = _found
+        except Exception:
+            pass
     if target:
         # Size what the next session would actually load (in-memory; no write).
         from . import handoff as handoff_mod
@@ -873,6 +889,13 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
             "cadence=\"daily 07:00\").")
     if bundle.get("blockers"):
         lines.append("Blocked: " + ", ".join(bundle["blockers"]))
+    # The tracker has fallen behind the repo (H-22). Conditionally emitted: a
+    # repo whose memory is current renders byte-identically to 1.14.0.
+    lag = bundle.get("memory_lag")
+    if lag:
+        from . import memory_lag as _lag
+
+        lines.append(f"⚠ Memory lag: {_lag.describe(lag)}")
     for warn in bundle.get("drift") or []:
         lines.append(f"⚠ Drift: {warn}")
     if bundle.get("engine_stale"):

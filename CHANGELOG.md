@@ -2,6 +2,28 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [Unreleased]
+
+**The ending protocol gets a detector.** 1.14.0's own execution produced the
+argument for this patch: a discipline this system asks an agent to perform must
+have a machine-checked signal that notices when it has *not* been performed, or
+it is a hope (D-069).
+
+- **Memory-lag detection** (H-22). 1.14.0 implemented, tested and pushed two
+  entire phases across eight commits while its phase table still read "not
+  started", and nothing anywhere emitted a signal — every *other* discipline
+  here has a detector (cascade hygiene, unchecked exit criteria, unresolved open
+  items, corpus redundancy, wiring drift). `rituals/memory_lag.py` now derives
+  the claim from git rather than from the tracker asserting itself (D-065): the
+  anchor is the last commit that *touched* the phase tracker, and the signal is
+  work landing past it while the tracker still says the phase has not begun. The
+  digest emits a `⚠ Memory lag:` line naming the phase and the commit count, and
+  `cz_preflight` surfaces the identical sentence as a **warn** that never fails
+  the ritual (INVARIANT-05; D-024 keeps pre-flight blocking for its own checks).
+  Conditionally emitted — a repo whose memory is current renders byte-identically
+  to 1.14.0 (INVARIANT-08). Verified against this repo's own history at
+  `eac1c9a`: it fires on the failure that motivated it.
+
 ## [1.14.0] — 2026-07-25
 
 **Evidence you actually traversed.** One phenomenon wearing nine costumes: the

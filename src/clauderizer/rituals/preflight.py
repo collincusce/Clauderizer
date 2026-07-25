@@ -523,4 +523,25 @@ def run(
             add("standing_conditions", "pass", f"{len(conds)} declared, none met")
 
     check_standing_conditions()
+
+    def check_memory_lag() -> None:
+        """Appended ONLY when the tracker has actually fallen behind the repo, so
+        a repo whose memory is current keeps a byte-identical check list
+        (INVARIANT-07). WARN, never fail: D-024 keeps pre-flight blocking for its
+        OWN checks, and this one is a discipline advisory (INVARIANT-05) — the
+        agent decides whether to reconcile before working."""
+        if not gid:
+            return
+        try:
+            bundle = status_bundle.compute(paths, config)
+            lag = bundle.get("memory_lag")
+        except Exception:
+            return
+        if not lag:
+            return
+        from . import memory_lag as _lag
+
+        add("memory_lag", "warn", _lag.describe(lag))
+
+    check_memory_lag()
     return result
