@@ -38,6 +38,45 @@ jobs:
           printf '%s\n' "$OUT" | head -1 | grep -q '^\[Clauderizer\]'
           cd /tmp/my-project
           uvx --from clauderizer clauderize doctor
+      - name: The MCP leg — the PUBLISHED server answers, and says which version
+        # H-20/D-060. test.yml runs in-process and structurally cannot see this
+        # (L-60): the tool surface a session actually gets comes from whatever
+        # `uvx --from clauderizer[mcp]` resolves, which is a DIFFERENT install
+        # from the engine under test. That gap is how a repo came to run its hook
+        # on one engine while its MCP client was served another, advertising five
+        # tools the server did not have.
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          cd /tmp/my-project
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | uvx --from 'clauderizer[mcp]' clauderizer-mcp > /tmp/mcp.out 2>/dev/null || true
+          python3 - <<'PY_EOF'
+          import json, sys
+          served_name = served_version = None
+          tools = None
+          for line in open("/tmp/mcp.out", encoding="utf-8", errors="replace"):
+              try:
+                  m = json.loads(line)
+              except Exception:
+                  continue
+              if m.get("id") == 1:
+                  info = m["result"].get("serverInfo") or {}
+                  served_name, served_version = info.get("name"), info.get("version")
+              if m.get("id") == 2:
+                  tools = [t["name"] for t in m["result"]["tools"]]
+          assert served_name == "clauderizer", f"serverInfo.name={served_name!r}"
+          assert served_version, "the published server reported no version"
+          assert tools, "the published server listed no tools"
+          print(f"published MCP server: clauderizer {served_version}, {len(tools)} tools")
+          # The digest advertises TOOL_NAMES from the engine that wrote it; if the
+          # served surface is smaller, an agent is told about tools it cannot call.
+          missing = [t for t in ("cz_status", "cz_next_phase_context", "cz_preflight")
+                     if t not in tools]
+          assert not missing, f"published surface is missing core tools: {missing}"
+          PY_EOF
       - name: The wiring survives a cache clean (self-arming)
         # Published 0.9.0 predates the ephemeral-wiring fix (it wires uv-cache
         # paths that die on `uv cache clean`); the assertion arms automatically

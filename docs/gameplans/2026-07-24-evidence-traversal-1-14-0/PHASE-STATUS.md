@@ -51,6 +51,13 @@ INJECTION_CLOSED: Scratch-repo probe, before -> after. add_decision(title=ok\n\n
 NORMALIZER_SHAPE: Three field shapes at five render sites: _one_line (title, lesson line), _safe_body (multi-line bodies: escape column-zero headings/entry-anchors/**N.** and neutralize the handoff marker), _safe_cell (escape the pipe, collapse newlines — closes H-02). Column-zero only: a mid-line '- **Status**:' was probed and does NOT fool the readers. Backslash-escape renders identically in CommonMark. Idempotent, runs before the diff.
 ```
 
+### Phase 4 Outputs
+
+```
+IDENTITY_BEFORE_AFTER: before: '✓ MCP server launchable for session host — uvx' (the string uvx resolving on PATH; nothing spawned). after: '✓ MCP server identity (portable wiring) — initialize → serverInfo clauderizer 1.13.0'. The portable .mcp.json — the config most consumers get — was deliberately routed to the weakest native check.
+HANDSHAKE_COST: warm 0.99-1.22s; cold cache 2.72s; budget 8.0s (shorter than mcp_probe's 20s because this now runs on the default path). Memoized on (command,args): --deep's nine identical auto-write entries collapse to one spawn.
+```
+
 ## Corrections Log
 
 _(Every divergence from the gameplan, captured in real time, as C-NN entries.)_
