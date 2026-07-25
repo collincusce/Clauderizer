@@ -83,8 +83,10 @@ def open_items(paths: RepoPaths, gameplan_id: str = "",
 _SUPERSEDES_RE = re.compile(r"^\s*\*\*Supersedes\*\*\s*:\s*(\S+)", re.M)
 # The back-ref _mark_superseded upserts: **Superseded by**: D-NNN (date)
 _SUPERSEDED_BY_RE = re.compile(r"^\s*\*\*Superseded by\*\*\s*:\s*(\S+)", re.M)
-_STATUS_LINE_RE = re.compile(
-    r"^\s*\*\*Status\*\*\s*:\s*([a-z]+)\s*(?:\(([^)]*)\))?", re.M | re.I)
+# The Status grammar is single-sourced in markdown.sections (D-065) — this
+# module's private copy did not tolerate the ``- **Status**:`` bullet that
+# add_finding emits, which is why every hardening finding read as ``active``
+# with ``date: null``. Do not re-declare it.
 _DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
@@ -97,16 +99,18 @@ def _entry_record(entry: dict, include_bodies: bool) -> dict:
         "id": entry["id"],
         "title": entry["title"],
         "status": entry.get("status", "active"),
+        # parsed | defaulted — a status the reader READ vs one it fell back to
+        # because no Status line was present (D-065).
+        "status_source": entry.get("status_source", sections.STATUS_DEFAULTED),
         "scope": parse_scope(body),
         "audience": parse_audience_meta(body) or None,
         "date": None,
         "supersedes": None,
         "superseded_by": None,
     }
-    sm = _STATUS_LINE_RE.search(body)
-    if sm:
-        detail = sm.group(2) or ""
-        dm = _DATE_RE.search(detail)
+    _status, _source, annotation = sections.entry_status(body)
+    if annotation:
+        dm = _DATE_RE.search(annotation)
         if dm:
             rec["date"] = dm.group(0)
     bm = _SUPERSEDED_BY_RE.search(body)

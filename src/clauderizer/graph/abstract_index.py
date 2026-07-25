@@ -39,7 +39,7 @@ import os
 import re
 from pathlib import Path
 
-from ..markdown import lesson_state, writer
+from ..markdown import lesson_state, sections, writer
 from ..paths import RepoPaths
 
 # Bump when the record shape changes; load_or_rebuild refreshes the cache file on a
@@ -69,9 +69,8 @@ _DOC_SECTION_BY_KIND["lesson"] = (_LESSONS_DOC, "Lessons")
 
 # A LESSONS.md entry line: ``**L-39.** text…`` (sibling of handoff._PROJECT_LESSON_NUM_RE).
 _LESSON_LINE_RE = re.compile(r"^\*\*(L-\d+)\.\*\*\s*(.*)$")
-# Entry lifecycle status, tolerating the decisions form (``**Status**: active``) and
-# the hardening form (``- **Status**: resolved (date)``). First word after the label.
-_STATUS_RE = re.compile(r"^\s*(?:-\s*)?\*\*Status\*\*\s*:\s*([a-z]+)", re.M | re.I)
+# Entry lifecycle status is single-sourced in markdown.sections (D-065). This
+# module had the only correct copy of the pattern; it is now the shared one.
 # D-043 scoped-memory metadata lines on ### ID — title entries.
 _SCOPE_RE = re.compile(r"^\s*\*\*Scope\*\*\s*:\s*(\S+)", re.M)
 _AUDIENCE_META_RE = re.compile(r"^\s*\*\*Audience\*\*\s*:\s*(.+?)\s*$", re.M)
@@ -214,8 +213,8 @@ def _lesson_records(text: str, rel_path: str) -> list[dict]:
 
 def _status(body: str) -> str:
     """Lifecycle status from an entry body's ``**Status**`` line; ``active`` default."""
-    m = _STATUS_RE.search(body)
-    return m.group(1).lower() if m else "active"
+    status, _source, _annotation = sections.entry_status(body)
+    return status
 
 
 def parse_scope(body: str) -> str:

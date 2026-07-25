@@ -230,3 +230,48 @@ def remove_marker_block(text: str, name: str) -> str:
     stripped = re.sub(r"\n{3,}", "\n\n", stripped)
     body = stripped.strip("\n")
     return body + "\n" if body else ""
+
+
+# --- entry lifecycle status: the ONE canonical grammar (D-065) -----------------
+#
+# Both writers in mutations.py emit a Status line, in two shapes:
+#   decisions / invariants : ``**Status**: active (2026-07-24)``
+#   hardening findings     : ``- **Status**: resolved (2026-07-24)``  <- list bullet
+# Three readers each had their own pattern and only ONE tolerated the bullet, so
+# cz_list_findings reported all 20 findings ``active`` with ``date: null`` while
+# docs/HARDENING.md said 17 resolved and 3 open. This module is the leaf (it
+# imports only ``re``), which is why the canonical definition lives here rather
+# than in analyze.py: graph.abstract_index can import it eagerly without the
+# cycle that forces its analyze import to be lazy.
+#
+# Group 1 is the state; group 2 is the optional parenthetical annotation (a date,
+# or "by D-NNN"). Enforced single-source by tests/test_canonical_parsers.py, the
+# same discipline INVARIANT-09 applies to analyze._tokens.
+ENTRY_STATUS_RE = re.compile(
+    r"^\s*(?:[-*]\s*)?\*\*Status\*\*\s*:\s*([a-z]+)\s*(?:\(([^)]*)\))?",
+    re.M | re.I)
+
+#: What :func:`entry_status` returns in ``source`` when no Status line was found.
+STATUS_DEFAULTED = "defaulted"
+#: ...and when one was actually read.
+STATUS_PARSED = "parsed"
+
+
+def entry_status(body: str, *, default: str = "active") -> tuple[str, str, str | None]:
+    """``(status, source, annotation)`` for a ``### ID — title`` entry body.
+
+    ``source`` is :data:`STATUS_PARSED` when the Status line was actually read and
+    :data:`STATUS_DEFAULTED` when it was absent. That distinction is the point
+    (D-065): a register reporting every entry ``active`` because its parser
+    matched nothing must be distinguishable from one whose entries really are
+    active. A missing line is legitimate for older entries and for invariants —
+    it is a *default*, not an error — but a caller that cannot tell the two apart
+    is asserting a property from evidence it never read.
+
+    ``annotation`` is the parenthetical text when present (usually a date), else
+    ``None``.
+    """
+    m = ENTRY_STATUS_RE.search(body or "")
+    if m is None:
+        return default, STATUS_DEFAULTED, None
+    return m.group(1).lower(), STATUS_PARSED, (m.group(2) or None)

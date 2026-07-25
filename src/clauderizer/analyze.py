@@ -23,10 +23,11 @@ from .paths import RepoPaths
 _ENTRY_RE = re.compile(r"^###\s+([A-Z][A-Z0-9]*-\d+)\s+—\s+(.+)$")
 _ID_RE = re.compile(r"\b([A-Z][A-Z0-9]*-\d+)\b")
 _WORD_RE = re.compile(r"[a-z0-9]+")
-# A decision's lifecycle status (D-NNN gain ``**Status**: active|superseded|deprecated``
-# in mutations.add_decision). The first word after the label is the state; the trailing
-# ``(date)``/``by D-NNN`` annotation is ignored. Absent -> treated as active.
-_STATUS_RE = re.compile(r"^\s*\*\*Status\*\*\s*:\s*([a-z]+)", re.M | re.I)
+# The entry lifecycle status grammar is single-sourced in markdown.sections
+# (D-065): three readers each had their own pattern and only one tolerated the
+# ``- **Status**:`` bullet the finding writer emits, so the hardening register
+# reported every entry ``active``. Do not re-declare it here — a second copy
+# fails tests/test_canonical_parsers.py.
 
 # Drop ADR boilerplate (in every entry) + very common words, so overlap reflects
 # the distinctive content, not the template.
@@ -56,8 +57,19 @@ def _entry_status(body: str) -> str:
     invariants — is ``active`` (the rank-neutral default), so the demotion only ever
     affects entries that explicitly declare a non-active status.
     """
-    m = _STATUS_RE.search(body)
-    return m.group(1).lower() if m else "active"
+    status, _source, _annotation = sections.entry_status(body)
+    return status
+
+
+def _entry_status_with_source(body: str) -> tuple[str, str]:
+    """``(status, source)`` where ``source`` is ``parsed`` or ``defaulted``.
+
+    The provenance half of :func:`_entry_status`, so a consumer can tell a status
+    that was read from one that was defaulted because the line was absent
+    (D-065). Ranking uses the value; the reconciliation report uses the source.
+    """
+    status, source, _annotation = sections.entry_status(body)
+    return status, source
 
 
 def parse_entries(doc_text: str, section: str) -> list[dict]:
@@ -81,7 +93,7 @@ def parse_entries(doc_text: str, section: str) -> list[dict]:
     if cur:
         entries.append(cur)
     for e in entries:
-        e["status"] = _entry_status(e["body"])
+        e["status"], e["status_source"] = _entry_status_with_source(e["body"])
     return entries
 
 
