@@ -1,7 +1,7 @@
 # clear the findings backlog to zero and give the register a detector Gameplan
 
 > Created: 2026-07-25
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -42,12 +42,12 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-1.14.2 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError (gameplan lesson 2 of the 1.14.1 plan). Suite >= 1164 is a precondition, never a criterion
-- [ ] cz_status surfaces it when the module serving the call is NOT the working tree's source — compare the running clauderizer.__file__ location and __version__ against the repo's src/, which the process already has in hand; no subprocess, no handshake needed for the self-check
-- [ ] Silent for an ordinary consumer: a repo with no src/clauderizer, or a served build that IS the working tree, emits zero bytes (INVARIANT-08) — asserted by test on both
-- [ ] The uvx case is the one that must fire: a served build resolving outside the repo while src/clauderizer exists is named, with the served version and the tree's version both shown
-- [ ] Honest about scope in the module docstring: this detects the SERVING process, and says plainly what it cannot see
-- [ ] H-27 resolved with the shipped evidence, including a replay of the exact conditions that produced the corrupt H-26
+- [x] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-1.14.2 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError (gameplan lesson 2 of the 1.14.1 plan). Suite >= 1164 is a precondition, never a criterion
+- [x] cz_status surfaces it when the module serving the call is NOT the working tree's source — compare the running clauderizer.__file__ location and __version__ against the repo's src/, which the process already has in hand; no subprocess, no handshake needed for the self-check
+- [x] Silent for an ordinary consumer: a repo with no src/clauderizer, or a served build that IS the working tree, emits zero bytes (INVARIANT-08) — asserted by test on both
+- [x] The uvx case is the one that must fire: a served build resolving outside the repo while src/clauderizer exists is named, with the served version and the tree's version both shown
+- [x] Honest about scope in the module docstring: this detects the SERVING process, and says plainly what it cannot see
+- [x] H-27 resolved with the shipped evidence, including a replay of the exact conditions that produced the corrupt H-26
 
 ### Phase 1: Planning surfaces the lessons that govern planning (H-25)
 

@@ -595,6 +595,19 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
     # so a single-gameplan repo renders byte-identically to before (D6 golden gate).
     bundle["focus"] = gid
     bundle["portfolio"] = portfolio(paths, config)
+    # H-27: engine_source_newer_than below detects only the EDITABLE-install
+    # staleness; a uvx-served process reports "not stale" while running an
+    # entirely different build. This asks the question that actually matters —
+    # am I the build this repo describes — by self-introspection, so it stays
+    # read-only and hook-safe. Silent for any ordinary consumer repo.
+    try:
+        from .. import engine_identity as _eid
+
+        _mismatch = _eid.serving_build(paths)
+        if _mismatch:
+            bundle["engine_identity"] = _mismatch
+    except Exception:
+        pass
     # The monotonic memory revision (O-03): pollers read .clauderizer/revision.json
     # directly (the near-free path); riding it in status keeps one full read
     # coherent — state and the revision it corresponds to, in the same payload.
@@ -908,6 +921,11 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         lines.append(f"⚠ Memory lag: {_lag.describe(lag)}")
     for warn in bundle.get("drift") or []:
         lines.append(f"⚠ Drift: {warn}")
+    ident = bundle.get("engine_identity")
+    if ident:
+        from .. import engine_identity as _eid
+
+        lines.append(f"⚠ Engine identity: {_eid.describe(ident)}")
     if bundle.get("engine_stale"):
         lines.append(
             "⚠ Engine: source changed since this server started — cz_* tools run "
