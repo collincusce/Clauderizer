@@ -7,16 +7,75 @@
 
 ## Project Overview
 
-_(1–2 paragraphs: what this gameplan accomplishes.)_
+1.14.0 repairs one phenomenon wearing nine costumes: **the engine asserts
+things from evidence it never traversed.** A findings register reports every
+entry `active` because its parser matched nothing and the reader defaulted. The
+curator proposes deleting a lesson because a machine-local, gitignored file is
+absent — on a fresh clone that is 100% of the corpus. `doctor` reports the MCP
+server "launchable" from `shutil.which`. The graph reports "no dependents" for a
+document it silently dropped. The release gate reports the wiring "verified"
+from a substring match. Each of those defenses was built after a real incident,
+recorded, declared resolved — and is live again, because nothing diffs a claim
+against its source.
+
+So this release ships **no new capability, no tuning, and no ranker change.** It
+makes the existing defenses actually fire, and ships the executable seam test
+for each one — every new test must be demonstrated **red on the pre-fix tree**,
+because a fix without its seam test buys about three months, which is the
+measured lifespan of the seventeen defenses in `docs/HARDENING.md` that were
+declared resolved and came back. And because a defect only counts if it is wrong
+for somebody who is not the author, every repair ships as a D-042 tier-1
+`clauderize upgrade` action — otherwise it fixes nothing for anyone who already
+ran `init`, which is every install in the world.
 
 ## Subsystems Touched
 
-_(list the subsystems/features this gameplan affects.)_
+- `subsys.markdown-core` — the atomic write path, the shared normalizer at the
+  five render sites, the single-sourced status grammar (Phases 0, 1, 2)
+- `subsys.mutations` — well-formedness at the write boundary; the phase-table
+  escape that closes H-02 (Phase 2)
+- `subsys.rituals` — parse reconciliation in corpus-health, the curator's
+  zero-telemetry arm, the digest's open-findings line, the preflight baseline
+  move, full lesson propagation in the handoff (Phases 0, 3, 5, 6)
+- `subsys.graph` — drop records and duplicate-id collisions instead of a silent
+  `None` (Phase 5)
+- `subsys.scaffold` — preserve-and-refuse on foreign JSON config, the gitignore
+  set, `ensure_gitignore_current` and `refresh_claude_stanza` as tier-1 actions
+  (Phases 5, 6)
+- `subsys.mcp-server` / `feat.init-cli` — capability-not-presence identity in
+  `doctor`, the real handshake in the wiring contract (Phase 4)
+- `feat.corpus-modernization` — the tier-1 delivery path that makes any of this
+  reach an existing install (Phase 5)
 
 ## Source-of-Truth Captures
 
-_(Real values captured from real systems at gameplan start. Authority over the
-gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
+Measured 2026-07-24/25. **Authority over anything in this gameplan's body.**
+
+```
+engine source (pyproject + __version__)  : 1.13.0   PUBLISHED to PyPI 2026-07-24
+procedure version (engine + both copies) : 1.9.0    corpus stamp: 1.9.0
+suite baseline                           : 1002 passed, 5 skipped
+safety tag before the write-path work    : pre-1.14.0-writepath @ d52ef6e
+MCP tool surface                         : 67 tools, 50,382 chars on the wire
+  descriptions                           : 28,228 chars (56%) — NOT to be trimmed (D-064 rule 2)
+hardening register (ground truth in md)  : 20 findings — 17 resolved, 3 open (H-16, H-19, H-20)
+  what cz_list_findings reports today    : 20 x active, date null  <-- the Phase 0 defect
+status-pattern copies under src/         : 3 disagreeing (analyze.py:29, listing.py:87,
+                                           abstract_index.py:74 — the last already widened)
+active project lessons                   : 25   never surfaced to any phase: 6
+  never-surfaced ids                     : L-11, L-24, L-52, L-56, L-57, L-62
+  handoff renders                         : 5 of 25 (RELEVANCE_K=5, if/elif) <-- the Phase 6 defect
+cz_curate obsolete proposals, live repo  : 6   on a telemetry-free clone: 25 of 25
+telemetry                                : 77 events; outcomes 46/46 complete, 0 failed, pass_rate 1.0
+  criteria_checked variance              : 7 of 46 partial, aggregate 188/195, stdev 0.08
+cascade corpus                           : 53 reports / 123 verdicts / 97 no-change / 26 already-done / 0 discovered
+tracked per-machine files (must untrack) : hook.sh, revision.json, proposals.dream.jsonl,
+                                           dreams.watermark.json
+init gitignore list                      : 6 paths (none of the four above)
+ranker: Spearman(length, surfacing)      : +0.868 over 220 real phase queries
+  Jaccard normalization                  : McNemar exact p = 0.1250 (NOT supported)
+  supersession ties destroyed by it      : 3,222 -> 116 (~96%)  <-- why D-061 is parked
+```
 
 ## Amendments
 
@@ -28,18 +87,36 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 ## Open Items
 
-_(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Blockers and cross-phase questions — unresolved ones surface in cz_status and when a phase is completed.)_
+**O-01.** _(phase 1)_ Windows os.replace under a held handle. locking.py:192-211 documents the sharing-violation class for os.unlink; nobody has tested it for os.replace while a lock-free reader or the SessionStart hook holds the file open. Resolution: a windows-latest test in Phase 1 that opens a second handle and asserts the write either succeeds via retry or fails cleanly WITHOUT truncation. This is a Phase 1 exit criterion, not a hope — test.yml already runs the cell.
+
+**O-02.** _(phase 4)_ Cold-cache handshake cost is unmeasured. Warm is 0.71-0.94s; cold (after uv cache clean) is the one unverified input to Phase 4's default-on design. Resolution: measure on a scratch HOME in Phase 4 and record it as a phase output. If it exceeds the timeout budget the verdict is unverifiable — which is already the designed behavior — not a slow doctor.
+
+**O-03.** _(phase 3)_ criteria_checked as a lesson-utility signal — pre-registered experiment, NOT actioned in 1.14.0. Hypothesis: a phase's criteria_checked/criteria_total ratio predicts subsequent phase-level rework better than chance. Metric: over at least 30 further recorded outcomes, the correlation between that ratio and whether a later phase reopens or amends its outputs. Kill criterion: no correlation, or the signal is explained by which agent authored the criteria (the self-declaration confound). Note it is still agent-declared, so it does not clear D-063's externally-sourced bar as originally argued — but pass_rate is saturated and this varies (7 of 46 partial, stdev 0.08), so the question is empirical. Run no earlier than 1.15.0. Honest coupling: Phase 5's preflight fix removes SPURIOUS pre-flight failures while D-063's unparking trigger is a stream of GENUINE ones, so that fix moves D-063 FURTHER from unparking.
+
+**O-04.** _(phase 0)_ The 27 founding decisions carry date null. D-001 through D-027 have no date, so no tool can order them temporally — which matters to supersession-demotion and to any is-this-still-current pass. Phase 0's reconciliation will correctly report them as defaulted rather than as an error. Resolution: backfill from git history in 1.14.1 (frontmatter/metadata, append-only-safe), or record the gap explicitly. Not in 1.14.0 because the ordering only matters to the parked ranker work.
+
+**O-05.** _(phase 5)_ Whether .claude/settings.json should join the gitignore set. HARDENING.md:154 records leaving it to the user as deliberate; it contains an always-absolute hook path, so it is machine-specific by construction. Phase 5 deliberately does not change it. Resolution: needs its own decision in the cross-host gameplan, paired with the wrapper-regeneration guarantee — this is a policy question, not a patch. Until then docs/TRUST.md and the README both disclose it and tell the reader to gitignore it themselves.
+
+**O-06.** _(phase 6)_ D-022's formal status. It reads active with superseded_by null while the engine did the exact thing it discarded (tail truncation of lesson propagation). D-068 resolves the BEHAVIOR; whether D-022 is now honored or superseded by D-027 is a records question. Resolution: under D-068 the honest reading is that D-022 is HONORED — nothing is dropped — and D-027 governs the FORM of the roll-up rather than its completeness. Record that reading in Phase 6; if a reviewer disagrees, mark D-022 superseded by D-068 instead.
+
+**O-07.** _(phase 6)_ H-16 (engine writes follow a symlinked PARENT directory) stays open through 1.14.0. HARDENING.md:211 records the deferral with a real compatibility rationale — the naive fix would break legitimate setups where a user symlinks docs/ — and the correct fix, repo-root containment threaded through every write call, is a dedicated hardening pass. Phase 1 explicitly does NOT attempt it. Resolution: named residual against RELEASING.md gate G4 in Phase 6, per D-012's own rule, since pyproject.toml declares Production/Stable; the real fix belongs to the cross-host gameplan alongside D-032's host-simulator stub.
 
 ## Phase Breakdown
 
 ### Phase 0: Single-source the status parser and expose defaulted status
 
-**Goal**: _(one sentence.)_
+**Goal**: The corpus registers are parsed by one shared grammar, and a status the reader *defaulted* is distinguishable from a status it *read*.
 **Depends on**: nothing (first phase).
 
 | Task | Description | Effort |
 |------|-------------|--------|
-| 0.1 | _(describe)_ | _(est)_ |
+| 0.1 | Move the status pattern to one module and import it in analyze.py, listing.py and abstract_index.py (whose copy is already widened). Do NOT touch the writer at mutations.py:353 | 2h |
+| 0.2 | Return `status_source` as parsed/defaulted from analyze._entry_status and listing._entry_record so a defaulted status is distinguishable from a read one | 2h |
+| 0.3 | tests/test_render_roundtrip.py — L-52 made executable: for each of the 5 kinds, write via the real mutation op and read via the real listing op; assert id, title, status and date survive | 3h |
+| 0.4 | Shape-aware parse reconciliation per register in cz_corpus_health and doctor. A flat heading-count check is vacuous because the readers default | 3h |
+| 0.5 | Regenerate tests/fixtures/contract_corpus/.../cz_list_findings.json, which freezes the corruption in a golden. The diff is a free reviewable proof artifact | 1h |
+| 0.6 | Surface open hardening findings in cz_critique Coverage and as a conditionally-emitted digest line (zero bytes when none are open, per INVARIANT-08) | 2h |
+| 0.7 | Build the shared L-24 adversarial-input fixture in conftest (BOM, CRLF, unicode, empty, valid-non-dict JSON, truncated); Phase 5 consumes it | 2h |
 
 **Exit criteria**:
 - [ ] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-fix tree in this phase's output record. "Suite >= 1002" is a precondition, never a criterion
@@ -60,7 +137,13 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 
 | Task | Description | Effort |
 |------|-------------|--------|
-| 1.1 | _(describe)_ | _(est)_ |
+| 1.1 | Add writer.write_atomic: refuse_if_symlink, parent.mkdir, SIBLING temp in the same dir (never mkstemp, whose 0600 would re-permission every tracked doc), copy the target's mode, os.replace, unlink in a finally | 3h |
+| 1.2 | Route writer.py:45, :128 and :190 through it, preserving _write_if_changed's old==new early exit and its revision-bump ordering | 2h |
+| 1.3 | Reroute handoff.py:566, cascade.py:171 and cascade.py:225 to write_atomic — NOT to upsert_marker_block, which would drop _AGENT_SCAFFOLD and kill legacy migration | 2h |
+| 1.4 | graph/index.py:68 gets the JSON atomic helper abstract_index.py:258-265 already uses for its cache | 1h |
+| 1.5 | Bounded retry around os.replace mirroring locking.py:192-211 — on Windows a lock-free reader or the SessionStart hook holding the file raises PermissionError | 2h |
+| 1.6 | tests/test_write_path.py — PATH-SHAPED guard: no write_text on a docs/ or .clauderizer/ path outside writer.py. A literal allowlist is rejected (30 sites; an allowlist that size is a registry the next writer joins) | 3h |
+| 1.7 | The three probes: RLIMIT_FSIZE truncation (sha256-compared), planted leaf symlinks on both the handoff and cascade paths, and a windows-latest test holding the target open in a second handle | 4h |
 
 **Exit criteria**:
 - [ ] MANDATORY MITIGATION: tag pre-1.14.0-writepath exists BEFORE this phase starts (done: d52ef6e), and this phase's own cz_* bookkeeping runs on the PUBLISHED engine `uvx --from 'clauderizer[mcp]==1.13.0'` until these criteria pass — expect and accept the skew warning
@@ -81,7 +164,13 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 
 | Task | Description | Effort |
 |------|-------------|--------|
-| 2.1 | _(describe)_ | _(est)_ |
+| 2.1 | Shared normalizer at the five render sites (mutations.py:167-173, :274-276, :352-357, :425, phase-table row): single-line-ify structurally single-line fields via the helper already at learn.py:212 | 3h |
+| 2.2 | Backslash-escape LINE-LEADING headings and **N.** markers in multi-line bodies. Scoped to column-zero only — a mid-line bold Status label was probed and does not fool the resolver | 3h |
+| 2.3 | Visible placeholder for an empty or whitespace-only title, so no id is ever allocated to an entry cz_get and listing cannot reach | 1h |
+| 2.4 | Neutralize the handoff MARKER string in any field rendered inside a block — a body containing it permanently escapes the block, voiding D-008 with no op to undo it | 2h |
+| 2.5 | Escape pipes and collapse newlines in phase-table cells. This is H-02, marked resolved and live | 2h |
+| 2.6 | Extend _PII_PATTERNS with the measured misses and apply the lint at the render boundary as an ADVISORY payload warning, never a block — D-058's own justification names the append-only surface | 3h |
+| 2.7 | tests/test_write_wellformed.py — the eight named cases, including the fenced-heading accident case that needs no adversary | 4h |
 
 **Exit criteria**:
 - [ ] RECORDED VERBATIM SO A REVIEWER CANNOT KILL THIS WITH THE WRONG INVARIANT: validation is NOT a discipline gate. INVARIANT-05 enumerates three gates (clarify/open-items, exit-criteria, analyze-against-invariants); dreams.validate (dreams.py:81) and D-058 are the shipped precedent that a blessed write may check its own input. Normalization runs BEFORE the diff, is deterministic, and NEVER rejects — no write is lost (INVARIANT-03), no mutation gains a hard block (INVARIANT-05)
@@ -103,7 +192,13 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 
 | Task | Description | Effort |
 |------|-------------|--------|
-| 3.1 | _(describe)_ | _(est)_ |
+| 3.1 | Remove the surfaced_count==0 obsolete arm at telemetry.py:366-372, per D-063's own recorded text. Leave corpus_health's never_surfaced COUNT untouched and honest | 1h |
+| 3.2 | Compute _has_telemetry once; where a never-surfaced framing survives (_lesson_signal, telemetry.py:207, feeding dreams.py:307), gate the wording to read UNMEASURED and set suggested_op to None | 2h |
+| 3.3 | loop_step's summary must distinguish 'converged: no evidence to act on' from 'converged: corpus healthy', or the guard trades a false wipe for a false green | 2h |
+| 3.4 | Gate status_bundle.py:118-127's re-distill instruction on >=1 non-flag proposal — silencing the tool while leaving the surface that issues the instruction is a half-fix | 1h |
+| 3.5 | Add the fresh-clone leg to test.yml: clone to a temp dir with no telemetry.jsonl, run cz_curate, assert zero obsoletion proposals | 2h |
+| 3.6 | tests/test_curator_no_telemetry.py, demonstrated red pre-fix (25 obsolete proposals) | 2h |
+| 3.7 | Record the criteria_checked unparking experiment as an open item with its kill criterion — pre-registered, run no earlier than 1.15.0 | 30m |
 
 **Exit criteria**:
 - [ ] IMPLEMENT, DO NOT RE-DECIDE: D-063 already states the never-surfaced obsoletion pressure is removed. It was never coded — telemetry.py:207 and telemetry.py:366-372 are both live. One change at the same two lines is simultaneously the zero-telemetry corpus-wipe fix, not two workstreams
@@ -126,7 +221,14 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 
 | Task | Description | Effort |
 |------|-------------|--------|
-| 4.1 | _(describe)_ | _(est)_ |
+| 4.1 | One handshake_probe on the path-safe .mcp.json near cli.py:319, MEMOIZED on the (command, args) tuple so 9 identical auto-write entries collapse to one spawn | 3h |
+| 4.2 | Assert serverInfo.name and compare serverInfo.version to __version__, reusing the warning shape that already exists at cli.py:441-445 and is absent from the emitter branch | 2h |
+| 4.3 | Delete the CLAUDE_CODE skip at cli.py:347 — the host INVARIANT-07 makes a release blocker is the one host --deep never deepens | 30m |
+| 4.4 | Three-state contract per D-010/D-048/INVARIANT-05: timeout, cold cache, offline, proxy all yield `unverifiable` BY NAME, warn, exit 3. Never a silent green, never a free pass | 3h |
+| 4.5 | Upgrade hosttargets.verify_emitted_wiring from JSON-parse-plus-substring to the real handshake, and fix its docstring, which claims it launches clauderizer-mcp | 3h |
+| 4.6 | init spawn-tests the PORTABLE_COMMAND it is about to write (not the locally-resolved console script), as a warning — never WiringRefused, so an offline first run still installs | 2h |
+| 4.7 | Extend quickstart.yml with the MCP leg and a serverInfo.version == tag-under-test assertion; test.yml runs in-process and structurally cannot see this (L-60) | 3h |
+| 4.8 | Measure the cold-cache handshake cost on a scratch HOME and record it as a phase output; cz_resolve_finding H-20 with the shipped evidence | 2h |
 
 **Exit criteria**:
 - [ ] THIS PHASE RESOLVES AN OPEN FINDING THE REPO ALREADY WROTE. HARDENING.md:250-260 records the defect, the recommended fix, and three regression tests. Criteria 2-4 below ARE H-20's own recorded regression tests — read them rather than re-deriving them (all three planning drafts re-derived this from scratch)
@@ -150,7 +252,13 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 
 | Task | Description | Effort |
 |------|-------------|--------|
-| 5.1 | _(describe)_ | _(est)_ |
+| 5.1 | Preserve-and-refuse at all four JSON writers (init.py:533-534, :562-563, hosttargets.py:279-287, bespoke_hosts.py:60-72): decode utf-8-sig, validate shape, and on unparseable input refuse the merge with a warning naming the file — never rewrite | 4h |
+| 5.2 | model.from_file returns a drop record instead of a bare None; index.build accumulates drops and duplicate-id collisions; both surface in corpus_health and doctor | 3h |
+| 5.3 | Delete the basename-suffix fallback at ops.py:1003-1005 so the caller's existing ok:False hint fires. Keep the explicit-arg and env-var paths | 1h |
+| 5.4 | Add the six per-machine paths to init's gitignore list and widen tests/test_dreams.py:206 — this keeps the promise docs/TRUST.md already published | 2h |
+| 5.5 | doctor nudge naming every still-tracked per-machine path with the exact git rm --cached command; a gitignore line does not untrack | 2h |
+| 5.6 | ensure_gitignore_current as a D-042 tier-1 action in modernize.py, plus the wrapper-regeneration guarantee that answers the hook.sh objection with a mechanism rather than an exemption | 3h |
+| 5.7 | Move the preflight baseline off the tracked CHAT-HANDOFF-INDEX.md to a gitignored sidecar or the phase-transition write. Do NOT make preflight advisory — D-024 reserves it as the blocking gate | 3h |
 
 **Exit criteria**:
 - [ ] tests/test_config_preservation.py parametrized over the L-24 matrix x 4 writers (init.py:533-534, init.py:562-563, hosttargets.py:279-287, bespoke_hosts.py:60-72): a pre-existing {'mcpServers':{'github':...,'postgres':...}} retains BOTH keys byte-identical after init for every encoding; on unparseable input the file is byte-identical and a warning names it. Pre-fix the BOM case leaves only clauderizer
@@ -171,7 +279,13 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 
 | Task | Description | Effort |
 |------|-------------|--------|
-| 6.1 | _(describe)_ | _(est)_ |
+| 6.1 | Change handoff.py:526-545's elif so it renders BOTH the focused block and a compact id + one-line-title index of every active project lesson; fix the module docstring that already claims this | 3h |
+| 6.2 | Close H-19 with its own recommended fix: cz_audit calls release_check's remote legs, reports `unverified` on an unreachable registry, and emits 'source X is ahead of release Y' | 3h |
+| 6.3 | Fix docs/TRUST.md's excerpt-cap claim — it says 600 characters; learn.py:211 caps at 160 and 600 is the candidate filter. A doc-vs-code mismatch inside the honesty repair itself | 30m |
+| 6.4 | The four claim-pin tests (L-62), each demonstrated red when its counterpart is mutated, including the live ancestor-CLAUDE.md staleness case | 4h |
+| 6.5 | refresh_claude_stanza as a second D-042 tier-1 action; modernize.py:112-144 has no stanza action so older installs rot | 2h |
+| 6.6 | Apply D-063's own amendment text to L-53; record the D-022-is-honored reading; re-confirm H-16 as a named residual in RELEASING.md against gate G4 | 2h |
+| 6.7 | Close-out: cz_add_output per phase, cz_add_phase_summary, cascade, handoff, CHANGELOG, version bump, release-check exit 0, tag, publish, and the post-publish four-registry proof | 4h |
 
 **Exit criteria**:
 - [ ] MAKE D-021 TRUE INSTEAD OF AMENDING IT TO BE FALSE: handoff.py:120 RELEVANCE_K=5 and handoff.py:526-545 is an if/elif — the focused block REPLACES the full project-lesson list, so a phase sees 5 of 25 while D-021 says it 'drops nothing'. The elif also renders a compact id + one-line-title index of EVERY active project lesson
