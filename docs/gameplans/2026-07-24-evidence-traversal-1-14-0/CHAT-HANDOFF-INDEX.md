@@ -1,7 +1,7 @@
 # Chat Handoff Index — evidence traversal 1.14.0
 
 > Last updated: 2026-07-25
-> Status: Phase 5 ready
+> Status: Phase 6 of 7 in progress
 
 ## How This Works
 
@@ -34,8 +34,8 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 2 | Well-formedness at the write boundary | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Implement D-063 so the curator stops proposing from absent evidence | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Resolve H-20 with capability-not-presence engine identity | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Preserve foreign config and converge existing installs | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Restore full lesson propagation, close H-19, ship 1.14.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
+| 5 | Preserve foreign config and converge existing installs | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-5-HANDOFF.md |
+| 6 | Restore full lesson propagation, close H-19, ship 1.14.0 | 🟡 IN PROGRESS | 2026-07-25 | — | handoffs/PHASE-6-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -73,3 +73,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 _(none yet)_
 
 **1.** A criterion that names a specific line to DELETE encodes an assumption about why that line exists, and deleting-to-satisfy is how a plan converts a guard into a regression. Before removing a guard a plan told you to remove, reproduce the behavior it produces: here the skip was not an oversight excluding a host from a check, it was structural, because the host has no entry in the registry the loop indexes. State criteria as the PROPERTY required ("the host INVARIANT-07 protects is identity-checked") rather than the EDIT imagined to produce it ("delete line N") — the property survives being wrong about the mechanism, and in this case was satisfied better by a different one.
+
+**2.** A safety fix that converts data destruction into failure-to-install can be a NET REGRESSION, and the comparison is not optional — A/B the new behavior against the old on the realistic input, not the adversarial one. Ask what the CALLER does with a refusal before choosing a raise: an exception refuses the operation and everything sequenced after it, so in a loop over independent items the correct shape is almost always catch-warn-continue. And pick the fixture from the ecosystem, not from convenience: JSONC configs (.zed, .vscode) make a leading comment the DEFAULT, so "malformed JSON" was the common case and my test's hand-written broken JSON was the rare one.
+
+**3.** Widening a parser to accept a new shape widens what it matches inside PROSE, and a corpus that documents its own format quotes that format constantly. Whenever a write-side guard is added against forged structure, ask immediately whether the read side needs the mirror guard — they are one defect seen from two ends. And note the detector trap: a reconciliation that counts DEFAULTED values cannot see a value parsed from the wrong line, so "my own check is green" was never evidence here.
