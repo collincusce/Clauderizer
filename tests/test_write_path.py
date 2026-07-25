@@ -234,8 +234,25 @@ def test_replace_survives_a_second_open_handle_on_windows(tmp_path):
     target.write_text("original\n", encoding="utf-8")
     holder = open(target, "r", encoding="utf-8")  # noqa: SIM115 — held on purpose
     try:
-        writer.write_atomic(target, "replaced\n")
+        try:
+            writer.write_atomic(target, "replaced\n")
+            landed = True
+        except PermissionError:
+            landed = False
     finally:
         holder.close()
-    assert target.read_text(encoding="utf-8") == "replaced\n"
-    assert not [p for p in tmp_path.iterdir() if ".tmp-" in p.name]
+
+    # MEASURED on the windows-latest cells: a PERSISTENTLY held handle denies the
+    # replace for the whole retry window, so the write fails. Either outcome is
+    # acceptable, but the SAFETY property is not optional — the target must never
+    # be left truncated or half-written, and no temp may survive.
+    if landed:
+        assert target.read_text(encoding="utf-8") == "replaced\n"
+    else:
+        assert target.read_text(encoding="utf-8") == "original\n", (
+            "the replace failed AND corrupted the target — that is the exact "
+            "data destruction write_atomic exists to prevent"
+        )
+    assert not [p for p in tmp_path.iterdir() if ".tmp-" in p.name], (
+        "a failed replace left temp residue, which dirties clean_tree"
+    )

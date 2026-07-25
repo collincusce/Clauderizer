@@ -62,6 +62,15 @@ def write_atomic(path: Path, text: str) -> None:
     open on the target — a lock-free reader or the SessionStart hook — so the
     replace is retried briefly, mirroring the sharing-violation mitigation in
     ``locking``. The temp is always cleaned up.
+
+    MEASURED on the windows-latest CI cells (O-01): the retry recovers a
+    *transient* handle, but a handle held for longer than the retry budget denies
+    the replace outright and the write RAISES. That is the correct outcome and it
+    is strictly safer than what it replaced: the target is left byte-identical
+    and the temp is removed, where truncate-then-write would have destroyed the
+    file. Engine reads (``path.read_text``) open and close immediately, so the
+    exposed window is a user's editor or another tool holding the document — a
+    condition the caller should see rather than have silently swallowed.
     """
     refuse_if_symlink(path)
     path.parent.mkdir(parents=True, exist_ok=True)
