@@ -61,7 +61,7 @@ def test_the_uvx_case_fires_and_names_both_sides(tmp_path):
     m = eid.serving_build(P.resolve(repo), module_file=UVX_LIKE,
                           running_version="1.14.1")
     assert m is not None
-    assert "uv/archive-v0" in m["serving_path"]
+    assert "archive-v0" in m["serving_path"], "separator-agnostic: Windows renders backslashes (L-51)"
     assert m["serving_version"] == "1.14.1"
     assert m["tree_version"] == "1.14.2"
     assert str(repo.resolve()) in m["tree_path"]
@@ -130,7 +130,7 @@ def test_digest_emits_the_line_when_the_build_is_wrong(temp_repo, monkeypatch):
     assert bundle.get("engine_identity")
     digest = S.render_digest(bundle)
     assert "⚠ Engine identity:" in digest
-    assert "uv/archive-v0" in digest
+    assert "archive-v0" in digest
 
 
 def test_digest_is_byte_identical_when_there_is_nothing_to_say(temp_repo):
