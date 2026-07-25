@@ -1000,9 +1000,14 @@ def _default_transcripts_dir() -> str:
     cand = projects / _re.sub(r"[^A-Za-z0-9]+", "-", str(root))
     if cand.exists():
         return str(cand)
-    for p in sorted(projects.glob("*")):
-        if p.is_dir() and p.name.endswith(root.name):
-            return str(p)
+    # The basename-suffix fallback is REMOVED. It matched any transcript
+    # directory whose name merely ended with this repo's folder name, so mining
+    # from a repo with no transcripts of its own silently scanned an UNRELATED
+    # project's sessions — a probe returned ok:true with 47 proposals drawn from
+    # another project's prompts. Reading someone's session history is not a
+    # best-effort convenience; when the exact slug is absent the caller's
+    # existing ok:False + hint fires, and CLAUDERIZER_TRANSCRIPTS_DIR remains the
+    # documented explicit path (D-065: no output from evidence never read).
     return ""
 
 

@@ -489,6 +489,19 @@ def init(
     changed = _ensure_gitignore(gi, ".clauderizer/telemetry.jsonl") or changed
     changed = _ensure_gitignore(gi, ".clauderizer/dreams.jsonl") or changed
     changed = _ensure_gitignore(gi, ".clauderizer/dreams.schedule.toml") or changed
+    # D-067: per-machine state is gitignored, team memory is tracked. These four
+    # were TRACKED — the dream watermark and proposal store index a journal that
+    # is itself gitignored, revision.json is a local counter bumped on every
+    # markdown write (a guaranteed merge conflict for the second agent on the
+    # second branch), and the hook wrapper carries the absolute path of whoever
+    # ran init. docs/TRUST.md already published this promise to users.
+    for _local in (".clauderizer/proposals.dream.jsonl",
+                   ".clauderizer/dreams.watermark.json",
+                   ".clauderizer/revision.json",
+                   ".clauderizer/hook.sh",
+                   ".clauderizer/hook.cmd",
+                   ".clauderizer/write.lock"):
+        changed = _ensure_gitignore(gi, _local) or changed
     report.note(".gitignore", gi, changed)
     graph = index.build(paths.docs)
     index.write_cache(graph, paths.index_file, paths.docs)
@@ -527,11 +540,13 @@ def _rewrite_if_diff(path: Path, content: str, *, exact_newlines: bool = False) 
 
 def _register_mcp(mcp_json: Path, mcp_cmd: list[str]) -> bool:
     data = {}
-    if mcp_json.exists():
-        try:
-            data = json.loads(mcp_json.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            data = {}
+    loaded, refusal = hosttargets.read_foreign_json(mcp_json)
+    if refusal:
+        raise WiringRefused(
+            f"{mcp_json} is {refusal} — refusing to rewrite a config this engine "
+            f"cannot parse (it may hold other MCP servers). Fix or move the file, "
+            f"then re-run `clauderize init`.")
+    data = loaded or {}
     servers = data.setdefault("mcpServers", {})
     entry = {"command": mcp_cmd[0], "args": list(mcp_cmd[1:])}
     if servers.get("clauderizer") == entry:
@@ -555,12 +570,13 @@ HOOK_EVENTS = ("SessionStart", "UserPromptSubmit")
 
 def _register_hook(settings_json: Path, hook_argv: list[str],
                    events: tuple[str, ...] = HOOK_EVENTS) -> bool:
-    data = {}
-    if settings_json.exists():
-        try:
-            data = json.loads(settings_json.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            data = {}
+    loaded, refusal = hosttargets.read_foreign_json(settings_json)
+    if refusal:
+        raise WiringRefused(
+            f"{settings_json} is {refusal} — refusing to rewrite it; it may hold "
+            f"your own hooks and settings. Fix or move the file, then re-run "
+            f"`clauderize init`.")
+    data = loaded or {}
     hook_cmd = " ".join(hook_argv)
     hooks = data.setdefault("hooks", {})
 

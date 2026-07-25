@@ -138,6 +138,13 @@ def report(paths: RepoPaths, config: Config, *, cheap: bool = False) -> dict:
                 "action": f"scaffold_preflight_example:{kind_name}",
                 "detail": f".clauderizer/preflight.{kind_name}.toml.example "
                           f"(gates: {', '.join(gates)})"})
+    missing_ignores = _missing_local_state_ignores(paths)
+    if missing_ignores:
+        mechanical.append({
+            "action": "ensure_gitignore_current",
+            "detail": f"{len(missing_ignores)} per-machine path(s) not gitignored "
+                      f"({', '.join(missing_ignores[:3])}"
+                      + (", …" if len(missing_ignores) > 3 else "") + ") — D-067"})
     doc_ver = _procedure_doc_version(paths)
     if doc_ver is not None and _ver_tuple(doc_ver) < _ver_tuple(PROCEDURE_VERSION):
         mechanical.append({
@@ -238,6 +245,34 @@ def report(paths: RepoPaths, config: Config, *, cheap: bool = False) -> dict:
     }
 
 
+#: Engine-owned per-machine state that must never be committed (D-067). Single
+#: source for `init`, `upgrade` and the doctor nudge, so the three cannot drift.
+LOCAL_STATE_IGNORES = (
+    ".clauderizer/index.json",
+    ".clauderizer/abstract_index.json",
+    ".clauderizer/proposals.local.toml",
+    ".clauderizer/telemetry.jsonl",
+    ".clauderizer/dreams.jsonl",
+    ".clauderizer/dreams.schedule.toml",
+    ".clauderizer/proposals.dream.jsonl",
+    ".clauderizer/dreams.watermark.json",
+    ".clauderizer/revision.json",
+    ".clauderizer/hook.sh",
+    ".clauderizer/hook.cmd",
+    ".clauderizer/write.lock",
+)
+
+
+def _missing_local_state_ignores(paths: RepoPaths) -> list[str]:
+    """Which per-machine paths a repo's .gitignore does not yet carry."""
+    gi = paths.root / ".gitignore"
+    try:
+        have = set(gi.read_text(encoding="utf-8").splitlines())
+    except OSError:
+        have = set()
+    return [line for line in LOCAL_STATE_IGNORES if line not in have]
+
+
 def apply(paths: RepoPaths, config: Config) -> dict:
     """Apply the MECHANICAL tier only; proposals remain proposals.
 
@@ -262,6 +297,15 @@ def apply(paths: RepoPaths, config: Config) -> dict:
             example.parent.mkdir(parents=True, exist_ok=True)
             example.write_text(_example_body(kind_name, _wireable_gates(kind)),
                                encoding="utf-8")
+        elif act == "ensure_gitignore_current":
+            # D-067 as a D-042 TIER-1 action. Without this the whole policy fix
+            # reaches zero existing installs — and every install in the world
+            # already ran `init`. Purely additive: lines are appended, never
+            # removed, and no docs/ file is touched.
+            from .scaffold.init import _ensure_gitignore
+            gi = paths.root / ".gitignore"
+            for line in _missing_local_state_ignores(paths):
+                _ensure_gitignore(gi, line)
         elif act == "refresh_procedure_doc":
             writer.refuse_if_symlink(paths.procedure_file)
             paths.procedure_file.write_text(assets.procedure_text(), encoding="utf-8")

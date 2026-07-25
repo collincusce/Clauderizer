@@ -274,18 +274,54 @@ def emit_mcp(host_id: str, repo_root: Path, argv: list[str] | None = None) -> Pa
             f"{argv!r} — use the portable uvx form (D-031 path-safety)"
         )
     path = repo_root / em.config_path
-    data: dict = {}
-    if path.exists():
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            data = {}
+    # Preserve-and-refuse (D-046's unimplemented safety clause, L-54's unbuilt
+    # guard). This is the writer bare `init` actually uses — multi-host is the
+    # default — and it did `except JSONDecodeError: data = {}` then rewrote the
+    # WHOLE file. A UTF-8 BOM (PowerShell's default) was enough to silently
+    # delete every co-resident MCP server a user had.
+    data, refusal = read_foreign_json(path)
+    if refusal:
+        raise ValueError(
+            f"refusing to rewrite {path}: {refusal}. It may hold other MCP "
+            f"servers; fix or move the file, then re-run `clauderize init`.")
+    data = data or {}
     servers = data.setdefault(em.servers_key, {})
     servers["clauderizer"] = _entry(argv)
     refuse_if_symlink(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return path
+
+
+def read_foreign_json(path: Path) -> tuple[dict | None, str | None]:
+    """Read a JSON config this engine did not author. ``(data, refusal)``.
+
+    Decoded with ``utf-8-sig`` so a byte-order mark is data rather than a parse
+    error (L-24's adversarial-input matrix). A genuine parse failure or a
+    non-object document REFUSES instead of falling through to a rewrite: the
+    file belongs to someone else, and for a bespoke host it lives outside the
+    repo where `git checkout` cannot restore it (L-29).
+    """
+    if not path.exists():
+        return {}, None
+    try:
+        raw = path.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError as exc:
+        # L-24, caught by its own fixture: tolerance must wrap the DECODE, not
+        # just the parse. A latin-1 byte raises here, before json.loads is ever
+        # reached, and an unguarded decode error propagates out of a wiring write.
+        return None, f"not UTF-8 text ({exc.reason} at byte {exc.start})"
+    except OSError as exc:
+        return None, f"unreadable ({exc.__class__.__name__})"
+    if not raw.strip():
+        return {}, None
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        return None, f"not valid JSON (line {exc.lineno}): {exc.msg}"
+    if not isinstance(data, dict):
+        return None, f"top level is {type(data).__name__}, expected an object"
+    return data, None
 
 
 def remove_mcp(host_id: str, repo_root: Path) -> bool:
