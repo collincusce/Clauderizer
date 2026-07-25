@@ -67,6 +67,20 @@ absent and says nothing about behavior. Phase 0 caught this and the remaining
 phases used a standalone probe restricted to APIs present on both trees. That
 became Lesson 2, and it is the single most reusable thing this gameplan produced.
 
+**Verified after the fact, and it should have been verified first.** Phase 1's
+entire fix reads `payload["cwd"]`, and `cwd` is the *only* payload key nothing
+else in the engine reads — `hook_event_name`, `source` and `prompt` are proven by
+shipped handlers; `cwd` was my assumption alone. Had the harness not sent it, the
+outer install would never fall silent and the phase would have shipped
+inert. A gitignored `settings.local.json` probe captured real payloads from a
+fresh session and settled it: `cwd` is present on **both** SessionStart and
+UserPromptSubmit, as the absolute repo path. Replaying those captured bytes, the
+outer install on 1.14.1 is silent on both events while the inner one speaks, and
+the same bytes through the real published-1.14.0 wrapper still print "No active
+gameplan". The verification is recorded as output `PAYLOAD_CWD_VERIFIED`. The
+lesson is not that it worked — it is that a five-minute probe would have retired
+the risk at design time, and L-54 already says so.
+
 ## What the gameplan got right
 
 **The RED probes were the real deliverable.** Four of them, each reproducing the
