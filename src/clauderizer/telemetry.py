@@ -146,6 +146,63 @@ def _active_project_lessons(paths) -> list[dict]:
     return out
 
 
+# --- D-065 parse reconciliation ------------------------------------------------
+#
+# Per REGISTER, because the honest expectation differs by document shape and a
+# flat heading-count check is vacuous here: the readers DEFAULT, so counts match
+# while values are wrong. Only HARDENING is an error condition — every finding
+# add_finding writes carries a Status line, so a defaulted one means the reader
+# failed. DECISIONS legitimately defaults for the founding entries that predate
+# the Status line (O-04); INVARIANTS never carry one by design; LESSONS uses the
+# ``**L-NN.**`` form and has no ### entries at all.
+_RECONCILE: tuple[tuple[str, str, str, bool], ...] = (
+    # (doc name, section, label, status_line_expected_on_every_entry)
+    ("HARDENING", "Risks", "hardening", True),
+    ("DECISIONS", "Decisions", "decisions", False),
+    ("INVARIANTS", "Invariants", "invariants", False),
+)
+
+
+def parse_reconciliation(paths) -> dict:
+    """Per-register: how many entries had their status PARSED vs DEFAULTED.
+
+    The D-065 detector. A register whose writer always emits a Status line and
+    whose reader defaults on every entry is not "all active" — it is a parser
+    that matched nothing, which is an error, not a default.
+    """
+    from . import analyze
+    from .markdown import frontmatter, sections
+
+    out: dict = {}
+    offenders: list[str] = []
+    for doc_name, section, label, strict in _RECONCILE:
+        path = paths.docs / f"{doc_name}.md"
+        if not path.exists():
+            continue
+        _fm, body = frontmatter.split(path.read_text(encoding="utf-8"))
+        entries = analyze.parse_entries(body, section)
+        defaulted = [e["id"] for e in entries
+                     if e.get("status_source") != sections.STATUS_PARSED]
+        out[label] = {
+            "entries": len(entries),
+            "status_parsed": len(entries) - len(defaulted),
+            "status_defaulted": len(defaulted),
+            # Expected-by-design defaults are not a fault; only `strict`
+            # registers must be fully parsed.
+            "strict": strict,
+            "defaulted_ids": defaulted[:10],
+        }
+        if strict and defaulted:
+            offenders.append(
+                f"{doc_name}: {len(defaulted)} of {len(entries)} entries have a "
+                f"Status line the reader could not parse ({', '.join(defaulted[:5])})"
+            )
+    out["ok"] = not offenders
+    if offenders:
+        out["offenders"] = offenders
+    return out
+
+
 def corpus_health(paths, *, today: str | None = None) -> dict:
     """Deterministic health snapshot over the project-lesson corpus + telemetry.
 
@@ -189,11 +246,14 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
         "outcome_events": len(outcomes),
         "pass_rate": pass_rate,
         "telemetry_events": len(events),
+        "parse_reconciliation": parse_reconciliation(paths),
         "summary": (
             f"{len(lessons)} active project lessons; {len(redundant)} redundant "
             f"pair(s); {len(never)} never surfaced; {len(events)} telemetry event(s) "
             f"({len(surfaced)} surfaced, {len(outcomes)} outcome"
             + (f", pass_rate {pass_rate}" if pass_rate is not None else "") + ")"
+            + (f"; PARSE FAULT — {_recon['offenders'][0]}"
+               if not (_recon := parse_reconciliation(paths))["ok"] else "")
         ),
     }
 

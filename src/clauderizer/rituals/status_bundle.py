@@ -660,6 +660,16 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
         bundle["drift"] = _drift_warnings(paths, rows)
 
     bundle["pending_cascades"] = _pending_cascades(gdir / "_cascade-reports")
+    # D-065: an open finding is a claim the repo already made about itself and
+    # then stopped looking at. Read-only; never blocks (INVARIANT-05).
+    try:
+        from .. import listing as _listing
+        bundle["open_findings"] = [
+            f["id"] for f in _listing.findings(paths)
+            if f.get("status") not in ("resolved", "accepted", "mitigated")
+        ]
+    except Exception:  # a malformed register must never break the digest (INVARIANT-04)
+        bundle["open_findings"] = []
     bundle["open_items"] = [it["id"] for it in unresolved_open_items(gdir)]
 
     cur = bundle["current_phase"]
@@ -786,6 +796,13 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
             lines.append(f"Dreams: {mem['dream_notes']} note(s) awaiting the dreamer.")
     pc = bundle.get("pending_cascades") or []
     lines.append(f"Pending cascades: {len(pc)}." + (f" {', '.join(pc)}" if pc else ""))
+    # Open hardening findings — the register that tracked seventeen recurring
+    # defenses was surfaced nowhere (D-065). Conditionally emitted: zero bytes
+    # when nothing is open, so a healthy repo's digest is byte-identical to
+    # 1.13.0's (INVARIANT-08 keeps injected status focused and minimal).
+    of = bundle.get("open_findings") or []
+    if of:
+        lines.append(f"Open findings: {len(of)} ({', '.join(of)}).")
     oi = bundle.get("open_items") or []
     if oi:
         lines.append(f"Open items: {len(oi)} unresolved ({', '.join(oi)}).")

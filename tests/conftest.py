@@ -61,3 +61,49 @@ def _no_real_kimi_desktop(monkeypatch):
     their own environ (unaffected) or monkeypatch detect_config directly."""
     from clauderizer import kimidesktop
     monkeypatch.setenv(kimidesktop.DISABLE_ENV, "1")
+
+
+# --- L-24 adversarial input matrix (shared; consumed by Phase 5) ---------------
+#
+# L-24: "a 'degrades gracefully' claim is only as strong as the input diversity
+# it was tested against… guard the file DECODE before the parse and the SHAPE
+# after it." The measured cost of not having this: init.py's
+# `except JSONDecodeError: data = {}` then rewrites the whole file, so a
+# PowerShell-authored .mcp.json (BOM by default) silently deletes every
+# co-resident MCP server. One promoted lesson, written in June, would have
+# killed that and the BOM'd-entity-doc drop — and it is one of the six lessons
+# cz_corpus_health reports as NEVER SURFACED to any phase.
+#
+# Each case is (label, encoder) where encoder(text) -> bytes.
+ADVERSARIAL_ENCODINGS = [
+    ("utf8", lambda s: s.encode("utf-8")),
+    ("utf8-bom", lambda s: s.encode("utf-8-sig")),
+    ("crlf", lambda s: s.replace("\n", "\r\n").encode("utf-8")),
+    ("crlf-bom", lambda s: s.replace("\n", "\r\n").encode("utf-8-sig")),
+    ("unicode", lambda s: (s + "\n<!-- ✓ café — 日本語 -->\n").encode("utf-8")),
+    ("trailing-ws", lambda s: (s + "   \n\n").encode("utf-8")),
+]
+
+#: Byte payloads a JSON reader must survive without destroying the file.
+ADVERSARIAL_JSON = [
+    ("empty", b""),
+    ("whitespace", b"   \n\t\n"),
+    ("valid-non-dict", b'["not", "an", "object"]'),
+    ("valid-scalar", b'"just a string"'),
+    ("truncated", b'{"mcpServers": {"github": {'),
+    ("bom-valid", '{"mcpServers": {"github": {"command": "x"}}}'.encode("utf-8-sig")),
+    ("nul-byte", b'{"mcpServers": {}}\x00'),
+    ("latin1-bytes", b'{"note": "caf\xe9"}'),
+]
+
+
+@pytest.fixture(params=ADVERSARIAL_ENCODINGS, ids=[c[0] for c in ADVERSARIAL_ENCODINGS])
+def adversarial_encoding(request):
+    """(label, encoder) over the L-24 matrix — parametrize a text-file reader."""
+    return request.param
+
+
+@pytest.fixture(params=ADVERSARIAL_JSON, ids=[c[0] for c in ADVERSARIAL_JSON])
+def adversarial_json_bytes(request):
+    """(label, raw_bytes) an engine JSON reader must not destroy the file over."""
+    return request.param

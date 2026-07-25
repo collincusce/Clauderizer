@@ -244,6 +244,15 @@ def critique(paths: RepoPaths, config: Config, target: str | None = None) -> dic
         incomplete = [r.number for r in rows if r.status != "complete"]
         if incomplete:
             coverage.append(f"phase(s) not complete: {', '.join(incomplete)}")
+    # Open hardening findings were surfaced NOWHERE (D-065/D-019): seventeen
+    # defenses were recorded, declared resolved, and came back unseen because
+    # nothing put the register in front of anyone. Advisory like every other
+    # coverage line (INVARIANT-05).
+    from .. import listing as _listing
+    for f in _listing.findings(paths):
+        if f.get("status") not in ("resolved", "accepted", "mitigated"):
+            coverage.append(
+                f"open finding {f['id']} ({f.get('status', 'open')}): {f['title'][:70]}")
 
     # --- Coherence: nothing contradicted, graph reconciled? ---
     coherence = list(sb._drift_warnings(paths, rows))
