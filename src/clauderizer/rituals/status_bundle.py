@@ -117,13 +117,23 @@ def _memory_gauge(paths: RepoPaths, config: Config, index_text: str) -> dict:
         )
     if project > warn_project:
         # O2: project lessons ride in every handoff across ALL gameplans —
-        # past the line, re-distill: obsolete the superseded L-entries
-        # (cz_obsolete_lesson "L-NN") and promote a tighter synthesis.
+        # past the line, re-distill. But the INSTRUCTION to obsolete entries is
+        # gated on telemetry existing (D-063/D-065): silencing the curator that
+        # supplies the target list while leaving the surface that issues the
+        # instruction is a half-fix, and on a fresh clone this fired at 25
+        # lessons with no evidence behind it at all.
+        _has_tel = paths.telemetry_file.exists()
+        _tail = (
+            "Re-distill: cz_obsolete_lesson the superseded L-entries and "
+            "promote a tighter synthesis."
+            if _has_tel else
+            "Consider consolidating (cz_consolidate_lessons). No telemetry in "
+            "this checkout, so utility is UNMEASURED here — do not obsolete on "
+            "that basis."
+        )
         warnings.append(
             f"{project} project lessons (> {warn_project}) — docs/LESSONS.md "
-            f"rides in every handoff across gameplans. Re-distill: "
-            f"cz_obsolete_lesson the superseded L-entries and promote a "
-            f"tighter synthesis."
+            f"rides in every handoff across gameplans. {_tail}"
         )
     if skills_active > ACTIVE_SKILLS_WARN:
         warnings.append(

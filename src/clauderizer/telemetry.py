@@ -258,13 +258,18 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
     }
 
 
-def _lesson_signal(*, surfaced_count: int, resolved: int, utility) -> str | None:
+def _lesson_signal(*, surfaced_count: int, resolved: int, utility,
+                   has_telemetry: bool = True) -> str | None:
     """An advisory, judgment-prompting hint (INVARIANT-05) — never a decision.
 
     Returns the candidate framing for the agent / Phase 2 curator, or None when
     there isn't enough signal to say anything.
     """
     if surfaced_count == 0:
+        if not has_telemetry:
+            return ("no telemetry in this checkout (0 events) — 'never surfaced' "
+                    "here means UNMEASURED, not unused; telemetry.jsonl is "
+                    "machine-local and gitignored")
         return "never-surfaced: consider whether it still earns its place"
     if resolved == 0:
         return None  # surfaced, but no resolved phase yet — not enough signal
@@ -324,7 +329,9 @@ def lesson_health(paths, *, window: int = 0) -> dict:
             "utility": utility,
             "failure_risk": failure_risk,
             "last_surfaced": last_surfaced,
-            "signal": _lesson_signal(surfaced_count=len(hits), resolved=n, utility=utility),
+            "signal": _lesson_signal(surfaced_count=len(hits), resolved=n,
+                                     utility=utility,
+                                     has_telemetry=bool(events)),
         })
     scores.sort(key=lambda r: r["id"])
     with_signal = sum(1 for r in scores if r["signal"])
@@ -424,15 +431,18 @@ def curate_proposals(paths, gid: str = "") -> dict:
     # obsolete / flag: from per-lesson utility.
     for r in health["scores"]:
         u, n, sc = r["utility"], r["resolved_count"], r["surfaced_count"]
-        if sc == 0:
-            proposals.append({
-                "action": "obsolete", "lessons": [r["id"]],
-                "evidence": "never surfaced in any handoff to date",
-                "suggested_op": "cz_obsolete_lesson",
-                "suggested_args": {"number": r["id"],
-                                   "reason": "never surfaced; likely superseded or out of scope"},
-            })
-        elif n >= 2 and u is not None and u <= 0.2:
+        # D-063 removed the "never surfaced -> obsolete" arm, and it was never
+        # coded until now. It proposed DELETING a lesson from the absence of
+        # .clauderizer/telemetry.jsonl — a machine-local, gitignored file — so on
+        # any fresh clone, teammate machine or CI runner it proposed obsoleting
+        # 100% of the corpus (measured: 25 of 25, including a lesson promoted the
+        # day before and three that are the OUTPUTS of the consolidation ritual).
+        # Every other arm below already requires n >= 2 resolved surfacings; this
+        # one required no evidence at all. corpus_health still reports the
+        # never_surfaced COUNT, which is honest and useful — what is gone is
+        # treating that count as grounds for deletion (D-065: no output asserts a
+        # property from evidence it never read).
+        if n >= 2 and u is not None and u <= 0.2:
             proposals.append({
                 "action": "obsolete", "lessons": [r["id"]],
                 "evidence": f"utility {u} over {n} resolved surfacing(s)",
@@ -497,6 +507,7 @@ def loop_step(paths, gid: str = "") -> dict:
     never auto-creates.
     """
     health = corpus_health(paths)
+    _has_tel = bool(read_events(paths.telemetry_file))
     proposals = curate_proposals(paths, gid)["proposals"]
     actionable = [p for p in proposals if p["action"] in ("consolidate", "obsolete", "promote")]
     flags = [p for p in proposals if p["action"] == "flag"]
@@ -523,7 +534,13 @@ def loop_step(paths, gid: str = "") -> dict:
                    "blessed cz_* ops, then call cz_loop_step again; the loop ends when converged "
                    "is true. spawn_gameplan, when set, suggests escalating to a driven gameplan "
                    "(the agent decides - INVARIANT-05)."),
-        "summary": (("loop iteration: CONVERGED" if not actionable
+        "has_telemetry": _has_tel,
+        # A guard that trades a false wipe for a false green is not a fix:
+        # "converged" with no evidence to act on is a DIFFERENT state from
+        # "converged, corpus healthy" (D-063/D-065).
+        "summary": ((("loop iteration: CONVERGED (no telemetry in this checkout — "
+                      "nothing measured, not nothing to do)" if not _has_tel
+                      else "loop iteration: CONVERGED") if not actionable
                      else f"loop iteration: {len(actionable)} actionable proposal(s)")
                     + f"; metric redundant={health['redundant_pairs']} "
                       f"never_surfaced={health['never_surfaced']}"

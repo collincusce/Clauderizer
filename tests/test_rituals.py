@@ -498,7 +498,11 @@ def test_memory_gauge_honors_configured_thresholds(temp_repo):
     bundle = status_bundle.compute(paths, config)
     warning = bundle["memory"]["warning"]
     assert "(> 1)" in warning and "cz_consolidate_lessons" in warning
-    assert "project lessons (> 0)" in warning and "L-entries" in warning
+    # The obsoletion INSTRUCTION is gated on telemetry existing (D-063/D-065):
+    # with none, the digest must not tell the agent to obsolete entries whose
+    # utility was never measured. The threshold report itself is unchanged.
+    assert "project lessons (> 0)" in warning
+    assert ("L-entries" in warning) or ("UNMEASURED" in warning)
     assert " | " in warning  # both nudges coexist, one digest line each
     digest = status_bundle.render_digest(bundle, tools=[])
     assert "⚠ Memory:" in digest

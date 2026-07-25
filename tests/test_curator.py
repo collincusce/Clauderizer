@@ -47,7 +47,17 @@ def test_consolidate_proposal_for_redundant_pair(tmp_path):
     assert cons[0]["suggested_args"]["number"] in {"L-01", "L-02"}
 
 
-def test_obsolete_never_surfaced_and_low_utility(tmp_path):
+def test_obsoletion_needs_evidence_never_surfaced_alone_is_not_enough(tmp_path):
+    """D-063's decided contract, implemented in the evidence-traversal release.
+
+    This test previously asserted that a never-surfaced lesson is proposed for
+    obsoletion. That arm required NO evidence — and because
+    .clauderizer/telemetry.jsonl is gitignored into every repo while LESSONS.md
+    is committed, it proposed deleting 100% of the corpus on any fresh clone,
+    teammate machine or CI runner. D-063 recorded its removal; Phase 3 shipped
+    it. The MEASUREMENT (corpus_health never_surfaced) is unchanged; only the
+    deletion proposal is gone.
+    """
     paths = _bare_repo_with_lessons(tmp_path, [
         "**L-01.** a lesson that is never surfaced anywhere distinct topic alpha *(from g)*",
         "**L-02.** a different lesson surfaced but its phase keeps failing topic beta *(from g)*",
@@ -56,8 +66,16 @@ def test_obsolete_never_surfaced_and_low_utility(tmp_path):
         _surface(paths, p, project=["L-02"]); _outcome(paths, p, "failed")
     props = telemetry.curate_proposals(paths)
     obs = {p["lessons"][0] for p in props["proposals"] if p["action"] == "obsolete"}
-    assert "L-01" in obs                            # never surfaced
-    assert "L-02" in obs                            # utility 0.0
+    assert "L-01" not in obs, (
+        "never-surfaced alone must NOT propose obsoletion — that is the "
+        "fresh-clone corpus wipe (D-063)"
+    )
+    assert "L-02" in obs, (
+        "the EVIDENCE-BACKED arm must survive: L-02 was surfaced 3 times and "
+        "every phase failed (utility 0.0)"
+    )
+    # And the count is still reported honestly.
+    assert telemetry.corpus_health(paths)["never_surfaced"] >= 1
 
 
 def test_flag_for_mediocre_utility(tmp_path):
