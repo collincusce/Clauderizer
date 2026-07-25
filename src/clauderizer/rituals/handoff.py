@@ -22,7 +22,7 @@ from pathlib import Path
 from .. import analyze, revision
 from ..config import Config
 from ..graph.abstract_index import parse_audience, parse_lesson_line
-from ..markdown import lesson_state, sections, skill_state
+from ..markdown import lesson_state, sections, skill_state, writer
 from ..paths import RepoPaths
 
 _LESSON_LINE = re.compile(r"^\s*\*\*\d+\.\*\*")
@@ -563,7 +563,7 @@ def assemble(paths: RepoPaths, config: Config, gid: str, phase_n: str, *,
     text, mode = _merge(existing, core)
     if write:
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(text, encoding="utf-8")
+        writer.write_atomic(out_path, text)
         revision.bump_for(out_path)
         summary = (f"wrote handoff for phase {phase_n} ({mode}): "
                    f"{lessons_count} lessons rolled up")

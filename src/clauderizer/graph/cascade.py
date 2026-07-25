@@ -15,6 +15,7 @@ from pathlib import Path
 
 from . import query
 from .. import revision
+from ..markdown import writer
 from .index import Graph
 
 # Statuses that make an entity a SHAKY foundation: its dependents may rest on
@@ -168,9 +169,9 @@ def fanout_cross_gameplan(
         reports_dir = gdir / "_cascade-reports"
         reports_dir.mkdir(parents=True, exist_ok=True)
         path = reports_dir / report_filename(entity_id, now, reports_dir)
-        path.write_text(
-            _cross_ref_report(entity_id, transition, focus_gid or "(none)", other_gid, now),
-            encoding="utf-8")
+        writer.write_atomic(
+            path,
+            _cross_ref_report(entity_id, transition, focus_gid or "(none)", other_gid, now))
         revision.bump_for(path)
         written.append(str(path))
     return written
@@ -222,7 +223,7 @@ def run(
     written = False
     if not dry_run:
         reports_dir.mkdir(parents=True, exist_ok=True)
-        path.write_text(report_md, encoding="utf-8")
+        writer.write_atomic(path, report_md)
         revision.bump_for(path)
         written = True
     return {

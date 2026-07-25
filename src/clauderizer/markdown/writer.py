@@ -11,10 +11,17 @@ operation was a no-op (the idempotency signal the tests assert on).
 from __future__ import annotations
 
 import re
+import os
+import time
 from pathlib import Path
 from typing import Any
 
 from . import frontmatter, sections, tables
+
+
+# os.replace retry budget for the Windows sharing-violation window.
+_REPLACE_ATTEMPTS = 5
+_REPLACE_BACKOFF = 0.05
 
 
 def _read(path: Path) -> str:
@@ -36,13 +43,55 @@ def refuse_if_symlink(path: Path) -> None:
         )
 
 
+def write_atomic(path: Path, text: str) -> None:
+    """Write ``text`` to ``path`` atomically, refusing a symlinked target.
+
+    The canonical byte-write for tracked markdown. Before this existed every
+    write was truncate-then-write (``path.write_text``), so a write that failed
+    partway — a full disk, a quota, a killed process — left canonical
+    append-only memory truncated, and a concurrent lock-free reader (reads never
+    take the write lock, by design) could observe a partial or zero-byte
+    ``DECISIONS.md``. A measured probe destroyed a 92 KB register down to 38 KB.
+
+    Sibling temp + ``os.replace``, which is atomic on POSIX and Windows. The temp
+    file is a *sibling* rather than ``tempfile.mkstemp`` deliberately: mkstemp
+    creates ``0600``, which would silently re-permission every tracked document
+    on the first write. The target's existing mode is preserved instead.
+
+    On Windows ``os.replace`` raises ``PermissionError`` while another handle is
+    open on the target — a lock-free reader or the SessionStart hook — so the
+    replace is retried briefly, mirroring the sharing-violation mitigation in
+    ``locking``. The temp is always cleaned up.
+    """
+    refuse_if_symlink(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    mode = path.stat().st_mode & 0o777 if path.exists() else None
+    tmp = path.with_name(f"{path.name}.tmp-{os.getpid()}")
+    try:
+        tmp.write_text(text, encoding="utf-8")
+        if mode is not None:
+            os.chmod(tmp, mode)
+        last: OSError | None = None
+        for attempt in range(_REPLACE_ATTEMPTS):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError as exc:  # Windows sharing violation
+                last = exc
+                time.sleep(_REPLACE_BACKOFF * (attempt + 1))
+        raise last if last else OSError(f"could not replace {path}")
+    finally:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+
+
 def _write_if_changed(path: Path, new_text: str) -> bool:
     old = _read(path)
     if old == new_text:
         return False
-    refuse_if_symlink(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(new_text, encoding="utf-8")
+    write_atomic(path, new_text)
     # Every real markdown change bumps the repo's monotonic revision (O-03) —
     # this choke point is why external pollers can trust the counter. No-ops
     # (old == new) return above and never bump, keeping idempotency observable.
@@ -124,8 +173,7 @@ def remove_marker_block(path: Path, name: str) -> bool:
     if not new_text.strip():
         path.unlink()
         return True
-    refuse_if_symlink(path)
-    path.write_text(new_text, encoding="utf-8")
+    write_atomic(path, new_text)
     return True
 
 
@@ -185,9 +233,7 @@ def create_if_absent(path: Path, content: str) -> bool:
     """Write ``content`` only if the file does not already exist (scaffolding)."""
     if path.exists():
         return False
-    refuse_if_symlink(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    write_atomic(path, content)
     return True
 
 

@@ -64,8 +64,8 @@ def _latest_mtime(docs_dir: Path) -> float:
 def write_cache(graph: Graph, cache_file: Path, docs_dir: Path) -> None:
     cache = graph.to_cache()
     cache["docs_mtime"] = _latest_mtime(docs_dir)
-    cache_file.parent.mkdir(parents=True, exist_ok=True)
-    cache_file.write_text(json.dumps(cache, indent=2, sort_keys=True), encoding="utf-8")
+    from ..markdown import writer
+    writer.write_atomic(cache_file, json.dumps(cache, indent=2, sort_keys=True))
 
 
 def load_or_rebuild(docs_dir: Path, cache_file: Path) -> Graph:
