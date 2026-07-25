@@ -57,6 +57,32 @@ it is a hope (D-069).
   `H-19`, `H-23` — are read off disk as the acceptance corpus and are
   deliberately **not** retro-edited; they are append-only, they parse, and repair
   belongs to the amendment op.
+- **The graph stops hiding what it failed to load.** `model.from_file` returned a
+  bare `None` for an unreadable entity doc — the same value it returns for
+  ordinary prose — so a BOM'd entity (the L-24 class: PowerShell and several
+  Windows editors write UTF-8 BOM by default, and the frontmatter fence anchors
+  at offset zero) simply stopped existing, and every consumer then reasoned about
+  a DAG that was quietly missing a node. It now returns a **`Drop`** record
+  carrying the path and a machine-readable reason, and `graph.index.build`
+  accumulates both drops and **duplicate-id collisions** (last-wins is unchanged;
+  the shadowed file is merely no longer invisible). `Graph.integrity()` reports
+  the accounting — `entities_indexed + dropped + collisions == entities_on_disk`
+  — and `cz_corpus_health` and `clauderize doctor` both surface it by path.
+  Classification is deliberately conservative: a doc with no frontmatter, or with
+  frontmatter carrying neither `id` nor `type`, is ordinary prose and reports
+  nothing, so the count stays actionable.
+- **`cz_cascade` on an unknown entity returns `ok:false`,** instead of `ok:true`
+  with zero dependents. That old answer was indistinguishable from a real leaf,
+  which made a dropped doc read as safely cascaded and silently voided D-018;
+  when a drop plausibly explains the missing id, the error names it.
+- **`init` spawn-tests the portable command it actually writes** (task 4.6,
+  carried from 1.14.0). The H-04 guard probed the commands composed at step 0b
+  but never `PORTABLE_COMMAND`, so init certified wiring it did not write and
+  wrote wiring it never certified. The new probe is deliberately **advisory** —
+  it warns and never raises `WiringRefused` — because the portable form is
+  `uvx --from clauderizer[mcp]`, which needs the network on a cold cache: an
+  offline or proxied first run must still install, and simply learn in-band that
+  this leg is uncertified.
 
 ## [1.14.0] — 2026-07-25
 

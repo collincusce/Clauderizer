@@ -1,11 +1,11 @@
 ---
 id: subsys.graph
 type: subsystem
-version: 0.3.0
+version: 0.4.0
 status: active
 depends_on:
   - subsys.markdown-core@^0.1.0
-last_verified: 2026-07-01
+last_verified: 2026-07-25
 ---
 
 # Graph
@@ -29,6 +29,16 @@ depends_on:
 **`query.py` — lookups.** `dependencies()` returns an entity's declared pin targets; `dependents()` scans all entities for those that name `entity_id` in `depends_on`; `transitive_dependents()` is the forward closure. `pin_violations()` reports dependents whose pin is no longer satisfied by the target's current `version`.
 
 **`cascade.py` — post-hoc forward walk + report.** `render_report()` / `run()` take a changed `entity_id` and a `transition` label, gather direct + transitive dependents and any pin violations, and emit a Markdown report marking each dependent **"needs review"**.
+
+## The scan says what it could NOT load (1.14.1)
+
+`from_file` used to return a bare `None` for an unreadable entity doc — the same value it returns for ordinary prose — so a defective entity did not fail, it simply **stopped existing**, and every consumer then reasoned about a DAG quietly missing a node. It now returns one of three things: an `Entity`, `None` (this was never an entity doc), or a **`Drop`** carrying the path and a machine-readable reason.
+
+Classification is deliberately conservative, so the count stays actionable rather than becoming a standing false positive. A drop is only a file that clearly *intended* to be an entity: unreadable or non-UTF-8; a **byte-order mark before the `---` fence** (the L-24 class — PowerShell and several Windows editors write UTF-8 BOM by default, and `has_frontmatter` anchors at offset zero); a fence that is never closed; or frontmatter carrying exactly one of `id`/`type`. A doc with no frontmatter, or with frontmatter carrying neither key, reports nothing.
+
+`build()` accumulates `drops` and `collisions` (two docs declaring the same `id`; **last-wins is unchanged** — the shadowed file is merely no longer invisible), and `Graph.integrity()` publishes the accounting identity `entities_indexed + dropped + collisions == entities_on_disk`. `cz_corpus_health` carries it as `graph_integrity` and prefixes its summary with `GRAPH FAULT`; `clauderize doctor` names each offender by path.
+
+The payoff is at the consumer: **`cz_cascade` on an entity that is not in the graph now returns `ok:false`**. The old `ok:true` with zero dependents was indistinguishable from a real leaf, so a dropped doc read as safely cascaded and D-018 was silently void; when a drop plausibly explains the missing id, the error names it.
 
 ## The cache contract
 

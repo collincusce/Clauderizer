@@ -247,6 +247,11 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
         "pass_rate": pass_rate,
         "telemetry_events": len(events),
         "parse_reconciliation": parse_reconciliation(paths),
+        # The graph's own honesty report: entity-shaped docs it could not index,
+        # and duplicate-id shadowings. Both were previously silent, which made a
+        # dropped doc indistinguishable from one that simply has no edges and
+        # quietly voided D-018's "the graph knows what depends on what".
+        "graph_integrity": _graph_integrity(paths),
         "summary": (
             f"{len(lessons)} active project lessons; {len(redundant)} redundant "
             f"pair(s); {len(never)} never surfaced; {len(events)} telemetry event(s) "
@@ -254,8 +259,34 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
             + (f", pass_rate {pass_rate}" if pass_rate is not None else "") + ")"
             + (f"; PARSE FAULT — {_recon['offenders'][0]}"
                if not (_recon := parse_reconciliation(paths))["ok"] else "")
+            + (f"; GRAPH FAULT — {_gi['summary']}"
+               if not (_gi := _graph_integrity(paths))["ok"] else "")
         ),
     }
+
+
+def _graph_integrity(paths) -> dict:
+    """``graph.index.build``'s integrity block, plus a one-line summary.
+
+    Best-effort: an unbuildable graph reports ``ok`` with a note rather than
+    breaking the health read (INVARIANT-04 spirit)."""
+    try:
+        from .graph import index
+
+        report = index.build(paths.docs).integrity()
+    except Exception as exc:
+        return {"ok": True, "unavailable": str(exc),
+                "summary": "graph integrity unavailable"}
+    parts = []
+    if report["dropped"]:
+        parts.append(f"{report['dropped']} entity doc(s) not indexed: "
+                     + "; ".join(d["path"] for d in report["drops"][:3]))
+    if report["collisions"]:
+        parts.append(f"{report['collisions']} duplicate id(s): "
+                     + "; ".join(c["id"] for c in report["collision_details"][:3]))
+    report["summary"] = " | ".join(parts) if parts else (
+        f"{report['entities_indexed']} entities indexed, none dropped")
+    return report
 
 
 def _lesson_signal(*, surfaced_count: int, resolved: int, utility,

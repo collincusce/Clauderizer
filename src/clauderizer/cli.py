@@ -441,6 +441,26 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     check("AGENTS.md floor present", _has_marker(paths.agents_md, "clauderizer"))
 
+    # An entity doc the graph could not index, or one shadowed by a duplicate id,
+    # is a MISSING NODE every consumer then reasons past (D-018). Both were
+    # silent before 1.14.1; name them by path.
+    try:
+        from .graph import index as _gindex
+
+        _integrity = _gindex.build(paths.docs).integrity()
+    except Exception:
+        _integrity = None
+    if _integrity and not _integrity["ok"]:
+        for d in _integrity["drops"]:
+            warn("entity doc not indexed", f"{d['path']} — {d['detail'] or d['reason']}")
+        for c in _integrity["collision_details"]:
+            warn("duplicate entity id",
+                 f"{c['id']} is declared twice — {c['shadowed']} is shadowed by "
+                 f"{c['kept']}; give one of them a distinct id")
+    elif _integrity:
+        print(f"✓ graph integrity — {_integrity['entities_indexed']} entities indexed, "
+              f"0 dropped, 0 duplicate ids")
+
     # H-23: a nested install carries its own hook, stanza and wiring, all of
     # which rot invisibly — nothing else in the engine ever mentions them. Name
     # them by path. Advisory (INVARIANT-05): nesting is legal, just never silent.

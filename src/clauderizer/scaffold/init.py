@@ -495,6 +495,24 @@ def init(
         port = hosttargets.PORTABLE_COMMAND
         # Use [mcp] extra form for the server when possible — match engine_mcp shape
         # if it is already portable; otherwise stick to PORTABLE_COMMAND.
+        #
+        # Task 4.6, carried from 1.14.0: the H-04 guard spawn-tests the commands
+        # composed at step 0b, but the PORTABLE command written here was never
+        # probed — so init could certify wiring it did not write and write wiring
+        # it never certified. It is probed now, and the verdict is deliberately
+        # ADVISORY: unlike step 0b this must NEVER raise WiringRefused, because
+        # the portable form is `uvx --from clauderizer[mcp]`, which needs the
+        # network on a cold cache. An offline or proxied first run must still
+        # install — it simply learns, in-band, that this leg is uncertified.
+        if spawn_test:
+            probe = hosts.spawn_probe(list(port))
+            if probe.status != "ok":
+                report.warnings.append(
+                    f"portable MCP wiring {probe.status}: {probe.detail}\n"
+                    f"  command: {' '.join(port)}\n"
+                    f"  Written anyway — a cold uvx cache needs the network, and an "
+                    f"offline first run must still install. Certify it later with "
+                    f"`clauderize doctor`.")
         changed = _register_mcp(paths.mcp_json, list(port))
         report.note(".mcp.json (portable multi-host)", paths.mcp_json, changed)
 

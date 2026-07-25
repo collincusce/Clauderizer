@@ -65,11 +65,25 @@ class Entity:
         )
 
     @classmethod
-    def from_file(cls, path: Path) -> "Entity | None":
+    def from_file(cls, path: Path) -> "Entity | Drop | None":
+        """An ``Entity``, a ``Drop``, or ``None``.
+
+        The three-way return is the point (D-018/D-065). ``None`` means "this is
+        not an entity doc" — the ordinary case for prose under ``docs/``. A
+        ``Drop`` means "this file was TRYING to be a tracked entity and could not
+        be indexed", which the bare ``None`` this used to return made
+        indistinguishable from the ordinary case: a BOM'd entity doc vanished
+        from the graph in silence, and every consumer then reasoned about a DAG
+        that was quietly missing a node.
+        """
         try:
-            return cls.from_text(path.read_text(encoding="utf-8"), path)
-        except (OSError, UnicodeDecodeError):
-            return None
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError as exc:
+            return Drop(path, "undecodable", f"not valid UTF-8: {exc}")
+        except OSError as exc:
+            return Drop(path, "unreadable", str(exc))
+        entity = cls.from_text(text, path)
+        return entity if entity is not None else _classify_drop(text, path)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -86,6 +100,55 @@ class Entity:
             ],
             "path": str(self.path),
         }
+
+
+@dataclass(frozen=True)
+class Drop:
+    """A ``docs/`` file that was trying to be a tracked entity and could not be
+    indexed. Carries the path so the report can name it (a count alone is not
+    actionable) and a machine-readable ``reason``."""
+
+    path: Path
+    reason: str
+    detail: str = ""
+
+    def to_dict(self) -> dict[str, str]:
+        return {"path": str(self.path), "reason": self.reason, "detail": self.detail}
+
+    def describe(self) -> str:
+        return f"{self.path}: {self.reason}" + (f" ({self.detail})" if self.detail else "")
+
+
+#: A byte-order mark ahead of the fence. PowerShell and several Windows editors
+#: write UTF-8 BOM by default, and ``has_frontmatter`` anchors on ``---`` at
+#: offset zero — so the whole entity silently stops existing (the L-24 class).
+_BOM = "﻿"
+
+
+def _classify_drop(text: str, path: Path) -> "Drop | None":
+    """Why an entity-shaped file failed to parse, or ``None`` if it was never
+    entity-shaped to begin with.
+
+    Deliberately conservative: a doc with no frontmatter, or with frontmatter
+    carrying neither ``id`` nor ``type``, is ordinary prose and reports nothing.
+    Only a file that clearly INTENDED to be an entity is a drop, so the count is
+    actionable rather than a standing false positive.
+    """
+    if text.startswith(_BOM) and frontmatter.has_frontmatter(text.lstrip(_BOM)):
+        return Drop(path, "bom-before-frontmatter",
+                    "a byte-order mark precedes the opening --- fence, so the "
+                    "frontmatter is never recognized; re-save as UTF-8 without BOM")
+    if frontmatter.has_frontmatter(text):
+        block, _ = frontmatter.split(text)
+        if block is None:
+            return Drop(path, "unterminated-frontmatter",
+                        "the opening --- fence is never closed")
+        data = frontmatter.parse_block(block)
+        has_id, has_type = "id" in data, "type" in data
+        if has_id != has_type:
+            missing = "type" if has_id else "id"
+            return Drop(path, "incomplete-frontmatter", f"missing required '{missing}'")
+    return None
 
 
 def _opt_str(v: Any) -> str | None:

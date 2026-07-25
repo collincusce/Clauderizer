@@ -6,16 +6,57 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ..model import Entity
+from ..model import Drop, Entity
 
 # Directories under the repo root we never scan for entities.
 _SKIP_DIRS = {".git", ".venv", "node_modules", ".clauderizer", "__pycache__"}
+
+
+@dataclass(frozen=True)
+class Collision:
+    """Two entity docs declaring the same ``id``. Last one wins (unchanged), but
+    the loser is no longer silent: an id collision makes one of the two files
+    invisible to every graph consumer with nothing anywhere reporting it."""
+
+    id: str
+    kept: Path
+    shadowed: Path
+
+    def to_dict(self) -> dict[str, str]:
+        return {"id": self.id, "kept": str(self.kept), "shadowed": str(self.shadowed)}
+
+    def describe(self) -> str:
+        return f"{self.id}: {self.shadowed} is shadowed by {self.kept}"
 
 
 @dataclass
 class Graph:
     entities: dict[str, Entity] = field(default_factory=dict)
     root: Path | None = None
+    #: Entity-shaped files that could not be indexed (D-018/D-065). A graph that
+    #: cannot say what it FAILED to load is asserting a DAG from evidence it
+    #: never read.
+    drops: list[Drop] = field(default_factory=list)
+    #: Duplicate-id shadowings observed during the scan.
+    collisions: list[Collision] = field(default_factory=list)
+
+    @property
+    def entity_files_seen(self) -> int:
+        """Every file that intended to be an entity: indexed + dropped +
+        shadowed. The accounting identity a caller can check."""
+        return len(self.entities) + len(self.drops) + len(self.collisions)
+
+    def integrity(self) -> dict:
+        """The scan's own honesty report — what was indexed, and what was not."""
+        return {
+            "entities_indexed": len(self.entities),
+            "dropped": len(self.drops),
+            "collisions": len(self.collisions),
+            "entities_on_disk": self.entity_files_seen,
+            "drops": [d.to_dict() for d in self.drops],
+            "collision_details": [c.to_dict() for c in self.collisions],
+            "ok": not self.drops and not self.collisions,
+        }
 
     def get(self, entity_id: str) -> Entity | None:
         return self.entities.get(entity_id)
@@ -41,9 +82,18 @@ def build(docs_dir: Path) -> Graph:
     for path in sorted(docs_dir.rglob("*.md")):
         if any(part in _SKIP_DIRS for part in path.parts):
             continue
-        entity = Entity.from_file(path)
-        if entity is not None:
-            graph.entities[entity.id] = entity
+        loaded = Entity.from_file(path)
+        if loaded is None:
+            continue                      # ordinary prose — never was an entity
+        if isinstance(loaded, Drop):
+            graph.drops.append(loaded)
+            continue
+        prior = graph.entities.get(loaded.id)
+        if prior is not None:
+            # Last-wins is preserved so no existing graph changes shape; the
+            # shadowed file is simply no longer invisible.
+            graph.collisions.append(Collision(loaded.id, loaded.path, prior.path))
+        graph.entities[loaded.id] = loaded
     return graph
 
 

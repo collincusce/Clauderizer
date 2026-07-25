@@ -10,7 +10,7 @@
 | 0 | Memory-lag detection so a session cannot silently drift from the repo | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Nested clauderized repos stop contradicting each other | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Build the write guard 1.14.0 specified and did not ship | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Close the graph drop gap and the init spawn-test carried from 1.14.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Close the graph drop gap and the init spawn-test carried from 1.14.0 | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Close out and ship 1.14.1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 
 ## Outputs Registry
@@ -40,6 +40,14 @@ DEPLOYMENT_GAP: /home/ccusce/.clauderizer/hook.sh runs `uvx -q --from clauderize
 WRITE_GUARD: src/clauderizer/mutations.py::_strip_toolcall_markup, applied inside _safe_body and _one_line — the D-066 render boundary every cz_* write already flows through. Two signals: (1) _TOOLCALL_TAG_RE matches the vocabulary parameter|invoke|function_calls|function_results, bare or antml:-prefixed, opening or closing; (2) an UNBALANCED closing tag, i.e. _CLOSE_TAG_RE match whose name has no _OPEN_TAG_RE opener in the visible value. _code_segments skips fenced blocks and inline code (read-side parity with sections._without_code_spans). Fast path returns unchanged when the value has no "<".
 SUITE: 1101 -> 1127 passed, 7 skipped (+26, all in tests/test_toolcall_write_guard.py)
 RED_EVIDENCE: Substantive RED at efdf210: cz_add_decision fed the exact live shapes wrote them straight to docs/DECISIONS.md — "**Context**: User confusion, this session.</context>" followed by "<parameter name=\"context\">User confusion (real, this session)." — byte-for-byte the corruption at docs/DECISIONS.md:381-382. Same probe on the fixed tree: all three markers neutralized, every word of prose preserved. Acceptance corpus is read OFF DISK (not synthesized): tests parse D-052/D-062/H-19/H-23 out of the live registers, assert the stray tag is still present (a guard against retro-editing), then assert the guard cleans it.
+```
+
+### Phase 3 Outputs
+
+```
+DROP_RECORD: model.Drop(path, reason, detail) with reasons: unreadable | undecodable | bom-before-frontmatter | unterminated-frontmatter | incomplete-frontmatter. Entity.from_file now returns Entity | Drop | None (None = never was an entity doc — the conservative classification that keeps the count actionable; model._classify_drop decides). graph.index.Collision(id, kept, shadowed) records duplicate ids with last-wins preserved. Graph.drops / Graph.collisions / Graph.entity_files_seen / Graph.integrity(). Accounting identity: entities_indexed + dropped + collisions == entities_on_disk.
+SUITE: 1127 -> 1152 passed, 7 skipped (+25, all in tests/test_graph_drop_gap.py)
+RED_EVIDENCE: Substantive RED at efdf210 with a BOM'd docs/subsystems/probe.md declaring subsys.probe: Entity.from_file -> None (identical to ordinary prose), 'subsys.probe' in graph -> False, graph could not report the drop at all, and cz_cascade('subsys.probe') -> ok=True, direct=[], "0 direct, 0 transitive dependents" — a false all-clear indistinguishable from a real leaf. Post-fix on the same input: Drop(reason='bom-before-frontmatter'), 1 drop reported, cz_cascade -> ok=False naming the drop as the explanation.
 ```
 
 ## Corrections Log

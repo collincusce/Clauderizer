@@ -96,12 +96,12 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] STANDING ORACLE: demonstrated red first
-- [ ] model.from_file returns a drop record rather than a bare None; graph.index.build accumulates drops AND duplicate-id collisions, both surfaced in cz_corpus_health and doctor
-- [ ] A BOM'd entity doc under docs/ yields a non-zero drop count naming the path, and entities_indexed + dropped == entities_on_disk
-- [ ] cz_cascade on an entity that is not in the graph returns ok:false with 'unknown entity', not ok:true with zero dependents — the current behavior makes a dropped doc indistinguishable from one with no edges, which silently voids D-018
-- [ ] init spawn-tests the PORTABLE command it is about to write, as report.warnings and never WiringRefused — an offline or proxied first run must still install
-- [ ] Suite green; no regression in the 1.14.0 behavior any of these touch
+- [x] STANDING ORACLE: demonstrated red first
+- [x] model.from_file returns a drop record rather than a bare None; graph.index.build accumulates drops AND duplicate-id collisions, both surfaced in cz_corpus_health and doctor
+- [x] A BOM'd entity doc under docs/ yields a non-zero drop count naming the path, and entities_indexed + dropped == entities_on_disk
+- [x] cz_cascade on an entity that is not in the graph returns ok:false with 'unknown entity', not ok:true with zero dependents — the current behavior makes a dropped doc indistinguishable from one with no edges, which silently voids D-018
+- [x] init spawn-tests the PORTABLE command it is about to write, as report.warnings and never WiringRefused — an offline or proxied first run must still install
+- [x] Suite green; no regression in the 1.14.0 behavior any of these touch
 
 ### Phase 4: Close out and ship 1.14.1
 

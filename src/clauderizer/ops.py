@@ -337,6 +337,30 @@ def cz_cascade(entity_id: str, transition: str, dry_run: bool = False) -> dict:
     if not config.active_gameplan:
         return {"ok": False, "error": "no active gameplan for the report dir"}
     g = _graph(paths)
+    # An entity that is not in the graph must not report "cascaded, 0 dependents".
+    # That answer is indistinguishable from a real leaf, so a doc the scan DROPPED
+    # (a BOM'd frontmatter, a duplicate id) reads as safely cascaded and D-018 is
+    # silently void. Name the failure, and name the drops when they explain it.
+    if g.get(entity_id) is None:
+        err = {
+            "ok": False,
+            "error": f"unknown entity {entity_id!r} — it is not in the graph, so "
+                     f"'0 dependents' would be a false all-clear rather than a "
+                     f"cascade. Check the id (cz_graph_query), or create the "
+                     f"entity doc with cz_upsert_entity.",
+            "entity_id": entity_id,
+        }
+        # An id is `subsys.probe` while its file is `probe.md`, so match the id's
+        # last segment against the stem — the drop that most likely IS this entity.
+        tail = entity_id.rsplit(".", 1)[-1].lower()
+        hint = [d.describe() for d in g.drops
+                if d.path.stem.lower() == tail or d.path.stem.lower() in entity_id.lower()]
+        if hint:
+            err["error"] += (" NOTE: an entity doc matching this id failed to "
+                             "index — " + "; ".join(hint))
+        elif g.drops:
+            err["dropped_entity_docs"] = [d.to_dict() for d in g.drops]
+        return err
     reports_dir = paths.gameplan_dir(config.active_gameplan) / "_cascade-reports"
     if dry_run:
         res = cascade_mod.run(g, entity_id, transition, reports_dir, dry_run=True)
