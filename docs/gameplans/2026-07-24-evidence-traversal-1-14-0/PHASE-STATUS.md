@@ -9,7 +9,7 @@
 |-------|------|--------|---------|-----------|---------|
 | 0 | Single-source the status parser and expose defaulted status | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | One atomic symlink-refusing write path for tracked markdown | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
-| 2 | Well-formedness at the write boundary | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
+| 2 | Well-formedness at the write boundary | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Implement D-063 so the curator stops proposing from absent evidence | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Resolve H-20 with capability-not-presence engine identity | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Preserve foreign config and converge existing installs | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
@@ -33,6 +33,7 @@ WRITE_PATH: writer.write_atomic is the single byte-write: refuse_if_symlink -> s
 TRUNCATION_PROOF: RLIMIT_FSIZE probe: a failed write on a populated DECISIONS.md leaves it sha256-identical. Pre-fix the same probe destroyed 92,027 -> 38,334 bytes. Planted-symlink probes: cz_write_handoff and the cascade report path both refuse instead of writing outside the repo. 7 of 10 tests red pre-fix.
 EARLY_WARNING_CHECK: git diff pre-1.14.0-writepath -- docs/ after Phase 1: 9 files, 750 insertions, ALL intended gameplan artifacts. No unintended mutation of canonical memory. No *.tmp-* residue.
 WINDOWS_HELD_HANDLE_TEST: test_replace_survives_a_second_open_handle_on_windows: opens a second read handle on the target, then write_atomic must still land via the bounded retry and leave no tmp residue. Skipped on POSIX by design — O-01's resolution is the windows-latest matrix cells, which is the one Phase 1 behavior no Linux cell can observe.
+WINDOWS_CI_FAILURE_AND_FIX: First 9-cell run after Phase 1: all three windows-latest cells FAILED. Cause: import resource at module scope in tests/test_write_path.py — POSIX-only, so the whole module was unimportable on Windows, silently disabling the windows-only held-handle test, the one Phase 1 behavior no other cell can observe. Moved inside its test + skipif win32. A module-level platform import is itself a platform claim (L-51). The fresh-clone leg passed on the same run, verifying Phase 3 in CI.
 ```
 
 ### Phase 3 Outputs
@@ -41,6 +42,13 @@ WINDOWS_HELD_HANDLE_TEST: test_replace_survives_a_second_open_handle_on_windows:
 CORPUS_WIPE_CLOSED: live repo 6 obsolete proposals -> 0. Fresh clone 25 of 25 -> 0, 25 active lessons still standing. Standing loop no longer drives the corpus to zero. loop_step now says CONVERGED (no telemetry — nothing measured, not nothing to do) instead of a false all-clear.
 TESTS_RETARGETED: test_curator.py::test_obsolete_never_surfaced_and_low_utility pinned the pre-decision behavior; retargeted to assert the DECIDED contract (never-surfaced alone does not propose; the evidence-backed low-utility arm still does) and renamed. test_rituals memory-gauge assertion accepts either wording since the instruction half is telemetry-gated. The two the plan named as must-pass-unmodified both did.
 FRESH_CLONE_CI_LEG: test.yml gains a fresh-clone job: asserts telemetry.jsonl is NOT tracked, then that cz_curate proposes zero obsoletions, cz_loop_step reports has_telemetry false with the honest summary, and the corpus is intact. This is the only place that shape is exercised — the in-process suite always has the author's repo.
+```
+
+### Phase 2 Outputs
+
+```
+INJECTION_CLOSED: Scratch-repo probe, before -> after. add_decision(title=ok\n\n### D-900 — FAKE...): D-900 forged True -> False; new entries 2 -> 1; next id D-901 -> sequential (899 ids no longer burned); victim body absorbed -> intact. Empty title: unreachable id burned -> reachable placeholder. Lesson with a quoted **99.**: sequence jumped to 100 -> advances by exactly 1.
+NORMALIZER_SHAPE: Three field shapes at five render sites: _one_line (title, lesson line), _safe_body (multi-line bodies: escape column-zero headings/entry-anchors/**N.** and neutralize the handoff marker), _safe_cell (escape the pipe, collapse newlines — closes H-02). Column-zero only: a mid-line '- **Status**:' was probed and does NOT fool the readers. Backslash-escape renders identically in CommonMark. Idempotent, runs before the diff.
 ```
 
 ## Corrections Log

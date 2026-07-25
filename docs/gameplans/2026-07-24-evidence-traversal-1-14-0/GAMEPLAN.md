@@ -173,17 +173,17 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 2.7 | tests/test_write_wellformed.py — the eight named cases, including the fenced-heading accident case that needs no adversary | 4h |
 
 **Exit criteria**:
-- [ ] RECORDED VERBATIM SO A REVIEWER CANNOT KILL THIS WITH THE WRONG INVARIANT: validation is NOT a discipline gate. INVARIANT-05 enumerates three gates (clarify/open-items, exit-criteria, analyze-against-invariants); dreams.validate (dreams.py:81) and D-058 are the shipped precedent that a blessed write may check its own input. Normalization runs BEFORE the diff, is deterministic, and NEVER rejects — no write is lost (INVARIANT-03), no mutation gains a hard block (INVARIANT-05)
-- [ ] test_forged_heading: cz_add_decision(title='ok\n\n### D-900 — FAKE\n\n**Context**: forged') produces exactly ONE new heading, allocates D-<n+1> never D-901, the prior entry's body is byte-unchanged, and cz_list_decisions contains no D-900
-- [ ] test_accident_fenced_heading: a context containing a fenced ```\n### D-999 — example\n``` leaves parse_entries count at exactly before+1 (no adversary required — this repo quotes markdown constantly)
-- [ ] test_empty_title_reachable: cz_add_decision(title='') yields an id that cz_get retrieves and listing reports — no id is ever allocated to an unreachable entry
-- [ ] test_lesson_number_not_burned: cz_add_lesson(text='the roll-up showed:\n**99.** a quoted line') advances the lesson number by exactly 1
-- [ ] test_phase_table_contiguous: cz_add_phase(name='A|B') and name='A\nB' each produce a row whose cell count equals the header's, and cz_transition_phase on that phase succeeds. This is H-02, marked resolved and live
-- [ ] test_marker_escape: a field rendered inside a handoff block containing the literal MARKER string (handoff.py:345) cannot escape the block — D-008's byte-for-byte guarantee holds
-- [ ] test_invariant_multiline_contract pins mutations.py:274-276's first-line-is-title contract; writing byte-identical input twice returns changed:False with no cz_revision bump
-- [ ] test_pii_advisory: decision bodies containing AKIA and sk_live_ each return a WARNING and still write. _PII_PATTERNS extended with the measured misses (sk_live_, ASIA[0-9A-Z]{16}, arn:aws:, AIza, npm_, pypi-, xapp-, password=) and applied at the mutations.py render boundary — D-058's own justification is that INVARIANT-03 makes retroactive redaction impossible, yet it ships only on the gitignored journal where deletion is trivial
-- [ ] Escaping is scoped to LINE-LEADING #{1,6} and **N.** only — a mid-line '- **Status**:' was probed and does NOT fool resolve_finding; do not over-scope to any string. Backslash-escape renders identically in CommonMark so the human view is byte-equivalent
-- [ ] Phase 0's round-trip harness green for all 5 kinds after normalization; DECISIONS.md:382, :467 and HARDENING.md:245 left byte-identical (append-only, they parse, cosmetic)
+- [x] RECORDED VERBATIM SO A REVIEWER CANNOT KILL THIS WITH THE WRONG INVARIANT: validation is NOT a discipline gate. INVARIANT-05 enumerates three gates (clarify/open-items, exit-criteria, analyze-against-invariants); dreams.validate (dreams.py:81) and D-058 are the shipped precedent that a blessed write may check its own input. Normalization runs BEFORE the diff, is deterministic, and NEVER rejects — no write is lost (INVARIANT-03), no mutation gains a hard block (INVARIANT-05)
+- [x] test_forged_heading: cz_add_decision(title='ok\n\n### D-900 — FAKE\n\n**Context**: forged') produces exactly ONE new heading, allocates D-<n+1> never D-901, the prior entry's body is byte-unchanged, and cz_list_decisions contains no D-900
+- [x] test_accident_fenced_heading: a context containing a fenced ```\n### D-999 — example\n``` leaves parse_entries count at exactly before+1 (no adversary required — this repo quotes markdown constantly)
+- [x] test_empty_title_reachable: cz_add_decision(title='') yields an id that cz_get retrieves and listing reports — no id is ever allocated to an unreachable entry
+- [x] test_lesson_number_not_burned: cz_add_lesson(text='the roll-up showed:\n**99.** a quoted line') advances the lesson number by exactly 1
+- [x] test_phase_table_contiguous: cz_add_phase(name='A|B') and name='A\nB' each produce a row whose cell count equals the header's, and cz_transition_phase on that phase succeeds. This is H-02, marked resolved and live
+- [x] test_marker_escape: a field rendered inside a handoff block containing the literal MARKER string (handoff.py:345) cannot escape the block — D-008's byte-for-byte guarantee holds
+- [x] test_invariant_multiline_contract pins mutations.py:274-276's first-line-is-title contract; writing byte-identical input twice returns changed:False with no cz_revision bump
+- [x] test_pii_advisory: decision bodies containing AKIA and sk_live_ each return a WARNING and still write. _PII_PATTERNS extended with the measured misses (sk_live_, ASIA[0-9A-Z]{16}, arn:aws:, AIza, npm_, pypi-, xapp-, password=) and applied at the mutations.py render boundary — D-058's own justification is that INVARIANT-03 makes retroactive redaction impossible, yet it ships only on the gitignored journal where deletion is trivial
+- [x] Escaping is scoped to LINE-LEADING #{1,6} and **N.** only — a mid-line '- **Status**:' was probed and does NOT fool resolve_finding; do not over-scope to any string. Backslash-escape renders identically in CommonMark so the human view is byte-equivalent
+- [x] Phase 0's round-trip harness green for all 5 kinds after normalization; DECISIONS.md:382, :467 and HARDENING.md:245 left byte-identical (append-only, they parse, cosmetic)
 
 ### Phase 3: Implement D-063 so the curator stops proposing from absent evidence
 
@@ -208,7 +208,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 - [x] loop_step['summary'] on a telemetry-free checkout DIFFERS from the healthy-convergence string (asserted, not eyeballed) — the guard must not trade a false wipe for a false green
 - [x] status_bundle.py:118-127's 'Re-distill: cz_obsolete_lesson the superseded L-entries' sentence is gated on there being >=1 non-flag proposal — silencing the tool while leaving the surface that issues the instruction is a half-fix, and 25 active lessons is over threshold today so it fires on the very next fresh clone
 - [x] Where a never-surfaced framing survives (_lesson_signal, telemetry.py:207, feeding dreams.py:307), the wording with zero events reads UNMEASURED not unused, and suggested_op is None
-- [ ] A fresh-clone CI leg is added to test.yml (L-23): clone to a temp dir with no .clauderizer/telemetry.jsonl, run cz_curate, assert zero obsoletion proposals
+- [x] A fresh-clone CI leg is added to test.yml (L-23): clone to a temp dir with no .clauderizer/telemetry.jsonl, run cz_curate, assert zero obsoletion proposals
 - [x] tests/test_curator.py::test_consolidate_proposal_for_redundant_pair and tests/test_telemetry.py (never_surfaced == 3 with no telemetry) pass UNMODIFIED; corpus_health's never_surfaced COUNT stays untouched and honest
 - [x] `clauderize status` on a telemetry-free clone emits no cz_obsolete_lesson instruction, asserted by a string test
 - [x] `git diff` shows NO new key in .clauderizer/config.toml or Config — INVARIANT-05 and D-015 forbid an enable/disable flag
