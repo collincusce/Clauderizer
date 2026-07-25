@@ -271,7 +271,30 @@ def entry_status(body: str, *, default: str = "active") -> tuple[str, str, str |
     ``annotation`` is the parenthetical text when present (usually a date), else
     ``None``.
     """
-    m = ENTRY_STATUS_RE.search(body or "")
+    m = ENTRY_STATUS_RE.search(_without_code_spans(body or ""))
     if m is None:
         return default, STATUS_DEFAULTED, None
     return m.group(1).lower(), STATUS_PARSED, (m.group(2) or None)
+
+
+#: A fenced code block, whatever its info string.
+_FENCE_RE = re.compile(r"^[ \t]*(```+|~~~+).*?^[ \t]*\1[ \t]*$", re.M | re.S)
+
+
+def _without_code_spans(text: str) -> str:
+    """Blank out fenced blocks and inline code, preserving line structure.
+
+    An entry body that QUOTES the register's own shape must not be read as
+    declaring it. This repo writes fenced markdown constantly, so a decision
+    whose Context shows ``- **Status**: superseded (1999-01-01)`` inside a
+    ```markdown fence was reported as superseded — and reported as ``parsed``,
+    which is worse than defaulting because it looks authoritative. Found by the
+    pre-ship review; the same class as D-066's forged heading, on the read side.
+
+    Newlines are kept so any future line-anchored use of the result still lines
+    up with the original.
+    """
+    def _blank(m: re.Match) -> str:
+        return "\n" * m.group(0).count("\n")
+    out = _FENCE_RE.sub(_blank, text)
+    return re.sub(r"`[^`\n]*`", "", out)

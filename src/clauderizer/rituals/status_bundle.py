@@ -657,7 +657,15 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
         bundle["phases"] = [
             {"number": r.number, "name": r.name, "status": r.status} for r in rows
         ]
-        bundle["baseline_tests"] = _baseline_tests(text)
+        # Prefer what pre-flight last MEASURED (the gitignored sidecar) over the
+        # tracked line, which is now written by nothing (D-067 moved the write out
+        # of the check). Reading only the tracked line published a frozen number
+        # and called it measured — an evidence-traversal defect introduced by the
+        # very release that exists to end them. Tracked line is the fallback for a
+        # checkout that has never run pre-flight.
+        from .preflight import read_baseline_sidecar
+        bundle["baseline_tests"] = (read_baseline_sidecar(paths)
+                                    or _baseline_tests(text))
         current = next((r for r in rows if r.status == "in_progress"), None)
         if current:
             bundle["current_phase"] = {"number": current.number, "name": current.name}

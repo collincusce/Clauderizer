@@ -44,3 +44,10 @@ env/
 # OS
 .DS_Store
 .clauderizer/proposals.local.toml
+.clauderizer/proposals.dream.jsonl
+.clauderizer/dreams.watermark.json
+.clauderizer/revision.json
+.clauderizer/hook.sh
+.clauderizer/hook.cmd
+.clauderizer/write.lock
+.clauderizer/baseline.json

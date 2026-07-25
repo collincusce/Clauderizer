@@ -98,3 +98,55 @@ def test_the_hardening_register_of_this_repo_parses_completely():
                                               "mitigated", "accepted"}
     assert any(e["status"] == "resolved" for e in entries)
     assert any(e["status"] == "open" for e in entries)
+
+
+def test_a_quoted_status_line_does_not_hijack_the_entry(temp_repo):
+    """A body that QUOTES the register's shape must not be read as declaring it.
+
+    Found by the pre-ship review, and a regression this release introduced:
+    widening the pattern to accept ``- **Status**:`` (needed for findings) made a
+    fenced example inside prose match. The reader returned ``superseded`` with a
+    1999 date and stamped it ``parsed`` — worse than defaulting, because it looks
+    authoritative. Same class as D-066's forged heading, on the read side.
+    """
+    from clauderizer import config as cfg
+    from clauderizer import listing
+    from clauderizer import mutations as M
+    from clauderizer import paths as P
+
+    paths = P.resolve(temp_repo)
+    cfg.Config.load(paths.config_file)
+    ctx = ("the register renders entries like this:\n\n```markdown\n"
+           "- **Status**: superseded (1999-01-01)\n```\n\nwhich we copied.")
+    r = M.add_decision(paths, title="Quoting the register", context=ctx,
+                       decision="d", consequences="q", today="2026-07-25")
+    rec = [d for d in listing.decisions(paths) if d["id"] == r["id"]][0]
+    assert rec["status"] == "active", rec
+    assert rec["date"] == "2026-07-25", rec
+
+
+def test_an_inline_code_status_does_not_hijack_either(temp_repo):
+    from clauderizer import listing
+    from clauderizer import mutations as M
+    from clauderizer import paths as P
+
+    paths = P.resolve(temp_repo)
+    r = M.add_decision(paths, title="Inline case",
+                       context="the line reads `**Status**: deprecated (1998-01-01)` verbatim",
+                       decision="d", consequences="q", today="2026-07-25")
+    rec = [d for d in listing.decisions(paths) if d["id"] == r["id"]][0]
+    assert rec["status"] == "active", rec
+
+
+def test_an_invariant_quoting_a_status_line_still_defaults(temp_repo):
+    """Invariants carry no Status line by design, so a quoted one is unopposed."""
+    from clauderizer import listing
+    from clauderizer import mutations as M
+    from clauderizer import paths as P
+    from clauderizer.markdown import sections
+
+    paths = P.resolve(temp_repo)
+    r = M.add_invariant(paths, text="A rule.\n\n```\n- **Status**: deprecated (1997-01-01)\n```")
+    rec = [i for i in listing.invariants(paths) if i["id"] == r["id"]][0]
+    assert rec["status"] == "active"
+    assert rec["status_source"] == sections.STATUS_DEFAULTED

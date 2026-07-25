@@ -23,11 +23,15 @@ import json
 
 import pytest
 
-from clauderizer import cli, hosttargets, mcp_probe
+from clauderizer import __version__, cli, hosttargets, mcp_probe
 from clauderizer.scaffold.init import init
 
 
-def _probe_result(status="ok", *, version="1.13.0", detail=None):
+def _probe_result(status="ok", *, version=None, detail=None):
+    # Track the engine rather than pinning a literal: a matched pair must
+    # stay matched across a version bump, or the release itself turns the
+    # "no skew" cases red.
+    version = version or __version__
     return {
         "status": status,
         "detail": detail or f"initialize → serverInfo clauderizer {version}",

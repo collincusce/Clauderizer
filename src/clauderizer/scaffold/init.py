@@ -411,8 +411,18 @@ def init(
                             root / ".gitignore", gi)
 
     for hid in wire_others:
-        for res in hosttargets.emit_host_wiring(hid, root):
-            report.note(f"{res.label}:{hid}", res.path, res.changed)
+        try:
+            for res in hosttargets.emit_host_wiring(hid, root):
+                report.note(f"{res.label}:{hid}", res.path, res.changed)
+        except ValueError as exc:
+            # Preserve-and-refuse (D-067) must refuse ONE HOST, not abort the
+            # sweep. .zed/settings.json and .vscode/mcp.json are JSONC, where a
+            # comment is the DEFAULT rather than an adversary — and the emitter
+            # order puts zed before the grok emitter that writes .mcp.json, so an
+            # uncaught raise here left the PRIMARY wiring unwritten. That would
+            # trade data destruction for failure-to-install, which is worse for
+            # the common case. Warn, skip that host, keep going.
+            report.warnings.append(f"{hid}: {exc}")
 
     # Bespoke auto-write hosts (kimi-desktop and any future one — D-053/D-056): the
     # hosts whose config is a per-user runtime home clauderizer auto-writes. Generic

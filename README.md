@@ -241,9 +241,13 @@ the absolute path `init` was run from, which includes your username — so it sh
 
 - `.mcp.json` — already handled: `init` gitignores it automatically whenever it holds a
   machine-specific path.
-- `.clauderizer/hook.sh` (or `hook.cmd`) and `.claude/settings.json` — **not** handled yet
-  (fix landing in 1.14.0). If your repo is public or shared, add both to `.gitignore` before
-  your first commit.
+- `.clauderizer/hook.sh` (or `hook.cmd`) — handled since 1.14.0: `init` gitignores it, and
+  `clauderize upgrade` adds the line to a repo set up on an older version.
+- `.claude/settings.json` — still yours to decide. It always contains an absolute hook path,
+  so if your repo is public or shared, add it to `.gitignore` before your first commit.
+
+A `.gitignore` line does not untrack a file git already tracks — `clauderize doctor` names
+any still-tracked path with the exact `git rm --cached` command to run.
 
 Everything else — your `docs/` memory, the stanzas, the portable config — is meant to be
 committed and shared. Each clone re-runs `clauderize init` to regenerate its own wiring, and
@@ -607,13 +611,12 @@ Three guards keep the wiring honest after that:
   (`uvx --from "clauderizer[mcp]==0.5.0"` *launches fine*) fails loudly there instead of
   certifying green.
 
-  **Known gap, landing in 1.14.0 (D-060):** for the ordinary portable wiring — the default
-  `.mcp.json` most people get — doctor currently only checks that the command *exists on your
-  PATH*, not that it starts and reports the right version. So if your installed engine is
-  behind the one your repo expects, doctor can still say ✓. If you want certainty today, run:
-  `uvx --from "clauderizer[mcp]" clauderizer-mcp --version` and compare it to
-  `clauderize --version`. Extending the handshake to every registered host is the first phase
-  of 1.14.0.
+  **Since 1.14.0 this covers the ordinary portable wiring too** — the default `.mcp.json`
+  most people get. doctor spawns the registered command, completes an MCP handshake, and
+  reports the version the server actually claims; if that differs from your engine it warns
+  and exits 3 rather than saying ✓. Previously it only checked that the command existed on
+  your PATH, which is how a repo could run its hook on one engine while its MCP client was
+  served another.
 
 ## Configurable two ways
 

@@ -96,3 +96,24 @@ def test_transcript_mining_refuses_an_unrelated_project(empty_python_repo, monke
     monkeypatch.delenv("CLAUDERIZER_TRANSCRIPTS_DIR", raising=False)
     assert ops._default_transcripts_dir() == "", (
         "a directory merely ENDING with this repo's folder name was mined")
+
+
+def test_a_jsonc_host_config_refuses_that_host_without_aborting_the_sweep(empty_python_repo):
+    """.zed/settings.json and .vscode/mcp.json are JSONC — a comment is the
+    DEFAULT, not an adversary. Preserve-and-refuse must refuse ONE HOST.
+
+    A regression this release introduced: the bare ValueError propagated out of
+    the host-sweep loop, and because the emitter order puts zed before the
+    emitter that writes .mcp.json, the PRIMARY wiring was never written. That
+    trades data destruction for failure-to-install, which is worse for the
+    common case.
+    """
+    zed = empty_python_repo / ".zed" / "settings.json"
+    zed.parent.mkdir(parents=True, exist_ok=True)
+    zed.write_text('// Zed settings\n{\n  "theme": "One Dark"\n}\n', encoding="utf-8")
+    report = init(empty_python_repo, spawn_test=False)
+    assert (empty_python_repo / ".mcp.json").exists(), (
+        "the sweep aborted: the primary .mcp.json was never written")
+    assert "One Dark" in zed.read_text(encoding="utf-8"), "the user's config was rewritten"
+    assert any("zed" in w for w in report.warnings), (
+        f"the refusal must be reported, not swallowed: {report.warnings}")

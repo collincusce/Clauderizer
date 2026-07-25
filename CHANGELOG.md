@@ -2,7 +2,87 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [Unreleased] — toward 1.14.0
+## [1.14.0] — 2026-07-25
+
+**Evidence you actually traversed.** One phenomenon wearing nine costumes: the
+engine asserted things from evidence it never read. A findings register that
+reported every entry `active` because its parser matched nothing and the reader
+defaulted. A curator that proposed deleting a lesson because a *gitignored*
+file was absent. A `doctor` that reported "launchable" from `shutil.which`. A
+release gate that reported "wiring verified" from a substring match. Each of
+those defenses was built after a real incident, recorded, declared resolved —
+and was live again, because nothing diffed a claim against its source.
+
+So this release ships **no new capability and no tuning**. It makes the existing
+defenses fire, and pins each one to its source with a test that was demonstrated
+**red on the pre-fix tree** before it went green. Suite 1002 → 1074.
+
+- **The entry-status grammar is single-sourced** in `markdown/sections.py`;
+  `analyze`, `listing` and `graph/abstract_index` all import it, and
+  `entry_status()` reports whether a status was **parsed** or **defaulted**.
+  Three readers each had their own pattern and only one tolerated the
+  `- **Status**:` bullet that `add_finding` emits, so `cz_list_findings` reported
+  all findings `active` with `date: null` against a file recording 17 resolved.
+  Code spans are stripped first, so an entry that *quotes* the register's shape
+  is not read as declaring it. `cz_corpus_health` gained a per-register parse
+  reconciliation, and open findings now surface in `cz_critique` and the digest.
+- **One atomic, symlink-refusing write path.** `writer.write_atomic` — sibling
+  temp, preserved mode, `os.replace`, bounded Windows retry — is now the only
+  byte-write for tracked content. Four sites bypassed `markdown/writer.py`
+  entirely and therefore never ran `refuse_if_symlink`, which is how a planted
+  symlink made `cz_write_handoff` write *outside* the repo and report success.
+  A write that fails now leaves the target byte-identical; it previously
+  truncated it. **Measured on Windows:** a held handle denies the replace and the
+  write raises — safe, and reported, rather than silently destructive.
+- **Well-formedness at the write boundary.** A title containing a newline plus a
+  heading used to forge a real entry, absorb the true entry's body, and burn
+  hundreds of ids in an append-only corpus with no repair op. Caller strings are
+  now normalized at all five render sites: single-line fields collapsed,
+  column-zero markdown escaped, table cells escaped (closing a resurrected
+  phase-table defect), empty titles given a visible placeholder. **Normalize,
+  never reject** — no write is lost and no mutation gains a hard block.
+- **The curator no longer proposes deletion without evidence.** `telemetry.jsonl`
+  is gitignored into every repo while `docs/LESSONS.md` is committed, so on any
+  fresh clone, teammate machine or CI runner every lesson read as never-surfaced
+  and the curator proposed obsoleting **the entire corpus** (measured: 25 of 25,
+  including one promoted the day before). That arm is gone — as D-063 had already
+  decided and nobody had coded. The *count* is still reported; only the deletion
+  proposal is gone, and `cz_loop_step` now distinguishes "nothing measured" from
+  "corpus healthy".
+- **`doctor` certifies engine identity, not presence.** The portable `.mcp.json`
+  most consumers get was routed to `shutil.which`, so "MCP server launchable"
+  meant a string resolved on PATH. It now completes an MCP `initialize`
+  handshake, reports the served version, and warns (exit 3) on a skew — which is
+  how a repo could run its hook on one engine while its MCP client was served
+  another. The wiring contract launches too. Memoized: warm ~1.0s, cold ~2.7s.
+- **Foreign config survives.** Every JSON writer did
+  `except JSONDecodeError: data = {}` and then rewrote the whole file, so a UTF-8
+  BOM — PowerShell's default — silently deleted every co-resident MCP server.
+  Now decoded `utf-8-sig` and **refused** rather than rewritten, per host, so one
+  unparseable JSONC config warns and skips instead of aborting the install.
+- **Per-machine state is gitignored, team memory is tracked.** Six more paths
+  join the ignore set, and `clauderize upgrade` adds them to a repo set up on an
+  older version — without touching a byte of `docs/`. A `.gitignore` line does
+  not untrack, so `doctor` names any still-tracked path with the exact
+  `git rm --cached` command. Pre-flight's baseline moved to a gitignored sidecar:
+  a check must not dirty the tree it gates on.
+- **The handoff drops nothing.** It renders the most relevant lessons in full
+  *and* an index of **every** active lesson — 5 of 25 became 25 of 25. Three
+  lessons this release depended on had never reached a single phase.
+- **The release gate sweeps the remote registries.** `cz_audit` checked three
+  local files that one commit edits together, so they agreed by construction; it
+  passed on a version that existed on *zero* remote registries. It now sweeps
+  remote tags, GitHub Releases and PyPI, reporting `unverified` rather than a
+  false green when a registry is unreachable.
+- **`cz_mine_failures` no longer guesses.** Its fallback matched any transcript
+  directory merely *ending* with this repo's folder name, so mining from a repo
+  with no transcripts of its own scanned an unrelated project's sessions.
+
+Procedure 1.9.0. Known and deliberate: H-16 (symlinked parent directory, with a
+recorded compatibility rationale) and H-21 (a superseded gameplan cannot be
+closed) remain open.
+
+## [Unreleased — superseded by 1.14.0] — the July doc pass
 
 **Documentation truth repair.** A six-agent audit of the engine found several
 places where the docs claimed behavior the code does not have. Those claims are

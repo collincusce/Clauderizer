@@ -182,9 +182,11 @@ that means on your machine:
   `.claude/settings.json`, and `.clauderizer/hook.sh` are short, plain
   text, and written to be read. Two of them are **machine-specific**:
   `.claude/settings.json` and `.clauderizer/hook.sh` contain the absolute
-  path of the machine that ran `init`, which includes your username. `init`
-  does not gitignore them yet (fix landing in 1.14.0) — if your repo is
-  public or shared, add them to `.gitignore` and `git rm --cached` them.
+  path of the machine that ran `init`, which includes your username. Since
+  1.14.0 `init` gitignores `hook.sh`/`hook.cmd`; `.claude/settings.json` is
+  still yours to decide (see H-11). If your repo is public or shared, add it
+  to `.gitignore`, and use `clauderize doctor` — it names any per-machine
+  path git still tracks with the exact `git rm --cached` command.
   A teammate who clones a repo containing someone else's `hook.sh` gets a
   wrapper pointing at a directory that does not exist on their machine; it
   fails quietly and re-running `clauderize init` repairs it.

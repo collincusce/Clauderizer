@@ -1216,7 +1216,9 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
         unchecked = unchecked_exit_criteria(gdir, str(phase_n))
         if unchecked:
             idx = gdir / "CHAT-HANDOFF-INDEX.md"
-            baseline = _baseline_tests(idx.read_text(encoding="utf-8")) if idx.exists() else None
+            from .rituals.preflight import read_baseline_sidecar
+            baseline = read_baseline_sidecar(paths) or (
+                _baseline_tests(idx.read_text(encoding="utf-8")) if idx.exists() else None)
 
             def _annot(t: str) -> str:
                 # Intelligence (D-015): link a test-ish criterion to the measured signal.
