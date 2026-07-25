@@ -1,7 +1,7 @@
 # the ending protocol needs a detector — memory lag, nested repos, the unbuilt write guard Gameplan
 
 > Created: 2026-07-25
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -42,14 +42,14 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-1.14.1 tree before it goes green. Suite >= 1074 is a precondition, never a criterion
-- [ ] `clauderize status` emits a memory-lag line when the focus gameplan's current phase has non-docs commits landed after its last recorded state change, naming the phase and the commit count
-- [ ] The line is CONDITIONALLY emitted: byte-identical digest to 1.14.0 when there is no lag (INVARIANT-08), asserted by test
-- [ ] cz_preflight surfaces the same signal as an advisory check that never fails the ritual (INVARIANT-05, D-024 keeps preflight blocking for its OWN checks)
-- [ ] Reproduction test: a fixture repo with a phase marked not_started and a commit touching src/ afterwards produces the signal; the same repo with the phase recorded produces nothing
-- [ ] The signal derives from evidence actually read — git log, not the tracker asserting itself (D-065). No persisted flag, no config key (INVARIANT-05/D-015)
-- [ ] Historical check: run it against this repo's own history at eac1c9a, where phases 5 and 6 were implemented while the tracker read not-started, and assert it would have fired
-- [ ] H-22 resolved with the shipped evidence
+- [x] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-1.14.1 tree before it goes green. Suite >= 1074 is a precondition, never a criterion
+- [x] `clauderize status` emits a memory-lag line when the focus gameplan's current phase has non-docs commits landed after its last recorded state change, naming the phase and the commit count
+- [x] The line is CONDITIONALLY emitted: byte-identical digest to 1.14.0 when there is no lag (INVARIANT-08), asserted by test
+- [x] cz_preflight surfaces the same signal as an advisory check that never fails the ritual (INVARIANT-05, D-024 keeps preflight blocking for its OWN checks)
+- [x] Reproduction test: a fixture repo with a phase marked not_started and a commit touching src/ afterwards produces the signal; the same repo with the phase recorded produces nothing
+- [x] The signal derives from evidence actually read — git log, not the tracker asserting itself (D-065). No persisted flag, no config key (INVARIANT-05/D-015)
+- [x] Historical check: run it against this repo's own history at eac1c9a, where phases 5 and 6 were implemented while the tracker read not-started, and assert it would have fired
+- [x] H-22 resolved with the shipped evidence
 
 ### Phase 1: Nested clauderized repos stop contradicting each other
 

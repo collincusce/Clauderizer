@@ -1,12 +1,12 @@
 ---
 id: subsys.rituals
 type: subsystem
-version: 0.11.0
+version: 0.12.0
 status: active
 depends_on:
   - subsys.graph@^0.1.0
   - subsys.markdown-core@^0.1.0
-last_verified: 2026-07-16
+last_verified: 2026-07-25
 ---
 
 # Rituals
@@ -39,6 +39,20 @@ Git state is read through a helper that distinguishes `branch` / `detached` / `u
 
 **The memory gauge** counts active/obsolete/promoted lessons plus project lessons and estimates the assembled handoff size (a real `assemble(write=False)`). Past `config.active_lessons_warn` (12) or `project_lessons_warn` (20) it emits consolidation nudges toward `cz_consolidate_lessons` / `cz_promote_lesson` / `cz_obsolete_lesson`. This is **pressure + visibility, not caps** (D-009) — nothing is auto-pruned. `render_digest()` flattens the bundle into the compact `[Clauderizer]` block and surfaces an engine-stale warning when a long-lived server's source changed after start.
 
+## Memory-lag detection (`memory_lag.py`, H-22 / D-069)
+
+**Does the tracker still describe the repo?** Every other discipline here has a detector — cascade hygiene, unchecked exit criteria, unresolved open items, corpus redundancy, wiring drift — and the one that keeps memory *current* had none, so 1.14.0 shipped two entire phases across eight commits while its phase table still read "not started".
+
+The claim is derived from **git**, never from the tracker asserting itself (D-065):
+
+- **anchor** — the last commit that *touched* this gameplan's phase tracker. That is "the last recorded state change" read as evidence, rather than trusted as a date some writer typed into a cell.
+- **work** — commits after the anchor touching anything outside the docs tree and `.clauderizer/`, i.e. outside the paths Clauderizer itself owns.
+- **lag** — the tracker's last write left the phase the gameplan is *at* still unstarted (`not_started` / `ready`), yet `work` is non-empty.
+
+`detect()` returns the lag record or `None`; `describe()` renders the **single shared sentence** so the digest line and the pre-flight check can never word the same finding differently. `compute()` folds it into `bundle["memory_lag"]`, `render_digest()` emits `⚠ Memory lag: …`, and pre-flight appends a `memory_lag` **warn** — appended *only* when there is lag, so an unaffected repo's check list and digest stay byte-identical (INVARIANT-07/08). Advisory throughout (INVARIANT-05); read-only, bounded (10s) git reads that swallow every exception, so a hook may call it (INVARIANT-06). No config key, no persisted flag.
+
+**Honest scope limit**: the phase-state gate is what keeps it quiet enough to read — an `in_progress` phase is *supposed* to accumulate commits — but the cost is that a phase left marked `in_progress` long after it was really finished is **not** detected, because git cannot distinguish "still working" from "done but unrecorded".
+
 ## Self-critique (`critique.py`, D-019)
 
 **`critique()` assembles a reference-free rubric** over a target — a phase, the whole gameplan, or the in-progress handoff — across three dimensions, each backed by signals the engine already computes:
@@ -51,4 +65,4 @@ It is read-only and **advisory, exactly like the analyze gate** (D-016): the eng
 
 ## Where it sits in the DAG
 
-`subsys.rituals` depends on **markdown-core** (it reads/writes sections, marker blocks, and lesson state) and the **graph** (drift and analyze ranking). The **mcp-server** depends on it — `cz_preflight`, `cz_write_handoff`, `cz_status`, and `cz_critique` are thin wrappers over `run()`, `assemble()`, `compute()`, and `critique()`.
+`subsys.rituals` depends on **markdown-core** (it reads/writes sections, marker blocks, and lesson state) and the **graph** (drift and analyze ranking). The **mcp-server** depends on it — `cz_preflight`, `cz_write_handoff`, `cz_status`, and `cz_critique` are thin wrappers over `run()`, `assemble()`, `compute()`, and `critique()`. `memory_lag.py` is the one module here that shells out to **git** for its own evidence rather than reading the corpus.
