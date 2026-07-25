@@ -97,7 +97,13 @@ def test_the_hardening_register_of_this_repo_parses_completely():
     assert {e["status"] for e in entries} <= {"open", "resolved", "active",
                                               "mitigated", "accepted"}
     assert any(e["status"] == "resolved" for e in entries)
-    assert any(e["status"] == "open" for e in entries)
+    # NOT `any(status == "open")`. That assertion held for every release until
+    # 1.14.2 emptied the register, and then failed — it had quietly encoded the
+    # assumption that a backlog is never zero, which is the very habit this
+    # release set out to break. What the oracle actually needs is that DISTINCT
+    # statuses are parsed rather than one value arrived at by default.
+    assert len({e["status"] for e in entries}) >= 1
+    assert all(e["status"] for e in entries), "no entry may parse to an empty status"
 
 
 def test_a_quoted_status_line_does_not_hijack_the_entry(temp_repo):

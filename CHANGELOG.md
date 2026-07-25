@@ -2,6 +2,46 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.14.2] — 2026-07-25
+
+**The backlog goes to zero, and the register gets a detector.** 1.14.1 closed two
+findings and opened four — one of them high — which is the same write-only shape
+D-069 exists to catch, one level up: a register that lists open findings but has
+no signal that they are aging reads an item carried across four releases exactly
+like one opened an hour ago. All six open findings are resolved here.
+
+- **`H-27` (high) — the process says when it is not the build the working tree
+  describes.** `.mcp.json` wires the *published* command by design, so in a
+  session that edits the engine every `cz_*` write runs the release while the fix
+  sits green in the tree; 1.14.1's write guard executed for **zero** tool writes
+  on the day it was written. `engine_identity.serving_build` compares the running
+  module's import path and version against the repo's `src/` — self-introspection,
+  no spawn, hook-safe. The **path** is the disambiguator: during 1.14.1 both sides
+  reported the same version while being different builds.
+- **`H-25` — planning surfaces the lessons that govern planning.** Ranking ran
+  only per phase, so `L-11` had reached nothing, ever — and that zero was being
+  read as evidence of low value rather than of where the ranker was wired.
+  `cz_create_gameplan` now ranks the corpus against the goal and logs the
+  surfacing through the same blessed telemetry write.
+- **`H-26` — the nudge measures the cost it names.** It thresholded a COUNT while
+  naming TOKENS; a coverage-gated re-distill then cut 26 → 20 entries and made the
+  corpus *larger*. It now fires on the block's token weight and says outright that
+  consolidation may not reduce it. **Plus the meta-fix:** open findings carry an
+  age, so a carried finding stops reading like a fresh one.
+- **`H-16` — a symlinked parent directory.** The leaf guard passed cleanly while
+  the write landed outside the repo; the whole ancestor chain is walked now,
+  proven in both directions.
+- **`H-21` — a superseded gameplan can be closed.** `deferred` joins the phase-row
+  vocabulary and is threaded through the lifecycle, the open set and the
+  completion branch together. All-deferred reports `deferred`, never `complete`.
+- **`H-24` — subsystem docs get a gating seam.** Two strict ratchets: undocumented
+  public callables per subsystem may only go down, and the set of modules with no
+  subsystem doc may only shrink. No invented target, and no advisory — an advisory
+  that never fails is rot with a progress bar. Existing debt is frozen visibly (79
+  callables, 32 unmapped modules) rather than laundered into a passing check.
+
+Suite 1164 → 1232. Every new test demonstrated **behaviorally** red first.
+
 ## [1.14.1] — 2026-07-25
 
 **The ending protocol gets a detector.** 1.14.0's own execution produced the
