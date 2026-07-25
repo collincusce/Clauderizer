@@ -23,19 +23,33 @@ from ..rituals import status_bundle
 from ..tools_list import TOOL_NAMES
 
 
-def repo_paths_config():
-    """``(paths, config)`` for the clauderized repo at cwd, or ``None`` if this is
-    not a clauderized repo (the handler then stays silent).
+def repo_paths_config(payload: dict | None = None):
+    """``(paths, config)`` for the clauderized repo at cwd, or ``None`` if this
+    handler should stay silent.
 
     The hook wrapper ``cd``-s into the repo before the engine runs, so cwd is the
     project even when the host launched the hook from elsewhere. Returning
     ``None`` from a non-repo cwd is therefore the *correct* silence the H-09
     anchor probe relies on (an un-anchored wrapper produces it; an anchored one
-    does not)."""
+    does not).
+
+    Nesting (H-23): that same anchoring is what makes an OUTER install talk about
+    the wrong repo. When the payload's session ``cwd`` is owned by a clauderized
+    repo nested beneath this one, the nested install speaks and this one stays
+    silent — decided fresh from the payload every event, never a persisted or
+    cross-process flag (INVARIANT-05/08). Without a payload cwd there is no
+    ownership claim and behavior is exactly as before (INVARIANT-07)."""
     root = find_repo_root(Path.cwd())
     paths = resolve(root)
     if not paths.config_file.exists():
         return None
+    try:
+        from .. import nesting
+
+        if nesting.outranked_by(root, (payload or {}).get("cwd")) is not None:
+            return None
+    except Exception:
+        pass  # a nesting probe must never cost a session its digest
     return paths, Config.load(paths.config_file)
 
 
@@ -49,7 +63,7 @@ _SOURCE_NOTE = {
 }
 
 
-def build_digest(source: str | None = None) -> str | None:
+def build_digest(source: str | None = None, payload: dict | None = None) -> str | None:
     """The ``[Clauderizer]`` status digest, optionally framed by the session
     ``source``.
 
@@ -57,7 +71,7 @@ def build_digest(source: str | None = None) -> str | None:
     On any internal error returns the visible "status unavailable" breadcrumb
     rather than nothing: a silent SessionStart failure is the dangerous kind
     (L-07), so the digest path is loud about its own failure."""
-    rc = repo_paths_config()
+    rc = repo_paths_config(payload)
     if rc is None:
         return None
     paths, config = rc
@@ -75,14 +89,14 @@ def session_start(payload: dict | None) -> str | None:
     prints even with no active gameplan (the cold-start win) — and silent only
     when the repo is not clauderized."""
     source = (payload or {}).get("source")
-    return build_digest(source if isinstance(source, str) else None)
+    return build_digest(source if isinstance(source, str) else None, payload)
 
 
-def _active_bundle():
+def _active_bundle(payload: dict | None = None):
     """``bundle`` for an in-flight gameplan, or ``None`` when there is nothing to
     surface (not a clauderized repo, no active gameplan, or a compute error —
     advisory events stay silent on error rather than spamming every occurrence)."""
-    rc = repo_paths_config()
+    rc = repo_paths_config(payload)
     if rc is None:
         return None
     paths, config = rc
@@ -98,7 +112,7 @@ def pre_compact(payload: dict | None) -> str | None:
     durable state discovered this turn (the docs survive; working memory does
     not) and re-anchor where things stand. Silent unless a gameplan is active —
     with nothing in flight there is nothing to lose."""
-    bundle = _active_bundle()
+    bundle = _active_bundle(payload)
     if bundle is None:
         return None
     return (
@@ -116,9 +130,9 @@ def post_compact(payload: dict | None) -> str | None:
     summary. This is the kimi path — kimi's SessionStart does not re-fire on
     compact; on Claude Code SessionStart(source=compact) already covers it.
     Silent when no gameplan is active."""
-    if _active_bundle() is None:
+    if _active_bundle(payload) is None:
         return None
-    return build_digest("compact")
+    return build_digest("compact", payload)
 
 
 def user_prompt_submit(payload: dict | None) -> str | None:
@@ -130,7 +144,7 @@ def user_prompt_submit(payload: dict | None) -> str | None:
     prompt = (payload or {}).get("prompt")
     if not isinstance(prompt, str) or not prompt.strip():
         return None
-    rc = repo_paths_config()
+    rc = repo_paths_config(payload)
     if rc is None:
         return None
     paths, _config = rc

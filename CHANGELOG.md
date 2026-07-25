@@ -23,6 +23,23 @@ it is a hope (D-069).
   Conditionally emitted — a repo whose memory is current renders byte-identically
   to 1.14.0 (INVARIANT-08). Verified against this repo's own history at
   `eac1c9a`: it fires on the failure that motivated it.
+- **Nested clauderized repos stop contradicting each other** (H-23). `/home/ccusce`
+  is itself a clauderized repo containing `/home/ccusce/Clauderizer`, so two
+  SessionStart hooks fired and the outer one announced "No active gameplan" about
+  a repo that was mid-release — the first thing in that session's context, read
+  past for an entire release. INVARIANT-08's at-most-once guarantee is an
+  in-memory per-process signal, which nesting defeats structurally. `nesting.py`
+  resolves it by **ownership** instead: for any session cwd exactly one install
+  is the owner (the nearest clauderized ancestor), and a non-owner stays silent —
+  decided fresh from the hook payload's `cwd` on every event, across every
+  handler, with no persisted or cross-process flag (INVARIANT-05/08). Scope is
+  deliberately narrow: an install falls silent only when the session's owner is a
+  *proper descendant* of its own root, so a session elsewhere — or a host that
+  sends no `cwd` — behaves exactly as in 1.14.0 (INVARIANT-07). `clauderize
+  doctor` now names nested installs by path (and, from inside, the clauderized
+  ancestor), and `clauderize init` under an existing install warns and proceeds
+  rather than silently creating a second one. Verified live on the authoring
+  machine, where the scan found **ten** nested installs under one home directory.
 
 ## [1.14.0] — 2026-07-25
 

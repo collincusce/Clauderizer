@@ -441,6 +441,22 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     check("AGENTS.md floor present", _has_marker(paths.agents_md, "clauderizer"))
 
+    # H-23: a nested install carries its own hook, stanza and wiring, all of
+    # which rot invisibly — nothing else in the engine ever mentions them. Name
+    # them by path. Advisory (INVARIANT-05): nesting is legal, just never silent.
+    from . import nesting as _nesting
+
+    _nested = _nesting.nested_installs(paths.root)
+    if _nested:
+        warn("nested clauderized installs", _nesting.describe_nested(paths.root, _nested))
+    _ancestors = _nesting.clauderized_ancestors(paths.root)
+    if _ancestors:
+        warn("clauderized ancestor",
+             f"this repo is itself nested inside {_ancestors[0]} — that install's "
+             f"hook fires for sessions here too, but stays silent because this "
+             f"repo owns them (H-23). If you see two [Clauderizer] digests at "
+             f"session start, the outer install predates 1.14.1: upgrade it.")
+
     # D-067: a .gitignore line does NOT untrack a file git already tracks, and
     # the engine must not run a mutating git command on the user's behalf. Name
     # the offenders and the exact remedy (D-048 configure-on-demand).

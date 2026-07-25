@@ -179,6 +179,16 @@ def init(
     paths = resolve(root)
     report = InitReport(repo=str(root))
 
+    # H-23: initializing under an existing clauderized repo makes a SECOND,
+    # independent install whose corpus never merges with the outer one. Legal,
+    # and sometimes exactly what you want — but never silent. A re-init of the
+    # SAME repo has no clauderized ancestor, so this stays quiet on the common path.
+    from .. import nesting
+
+    _ancestors = nesting.clauderized_ancestors(root)
+    if _ancestors:
+        report.warnings.append(nesting.describe_ancestors(root, _ancestors))
+
     # 0. session host of record (D3): explicit flag > what config already
     # records > adoption of the host the existing wiring serves > native.
     existing_config = Config.load(paths.config_file) if paths.config_file.exists() else None
