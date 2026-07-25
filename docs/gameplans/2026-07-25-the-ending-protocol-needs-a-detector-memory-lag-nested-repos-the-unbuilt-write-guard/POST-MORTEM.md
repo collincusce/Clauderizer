@@ -1,8 +1,11 @@
 # The Ending Protocol Needs a Detector (1.14.1) — Post-Mortem
 
 > Author: Claude Opus 5 session, 2026-07-25
-> Scope: all 5 phases, planned and executed in one continuous session
+> Scope: phases 0–3 complete; phase 4 delivered its non-irreversible half
 > Suite: 1074 → 1152 passed, 7 skipped (+78)
+> Status: **1.14.1 is STAGED, NOT SHIPPED** — commit `a4784e3` on local `main`,
+> unpushed, untagged, unpublished. Halted at the release boundary by decision
+> (amendment A-001); resume sequence in the Outputs Registry under `RESUME_TO_SHIP`.
 > Predecessor: [1.14.0 post-mortem](../2026-07-24-evidence-traversal-1-14-0/POST-MORTEM.md)
 
 ## Executive Summary

@@ -20,7 +20,14 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 ## Amendments
 
-_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+### A-001 — 1.14.1 is staged, not shipped — the release halts before every irreversible step
+
+- **Date**: 2026-07-25
+- **Affected sections in GAMEPLAN.md**: Phase Breakdown (Phase 4), CHANGELOG.md, POST-MORTEM.md
+- **Affected phases**: 4
+- **Triggered by**: User decision at the release boundary: asked how far to take the release with everything staged and green, the answer was "Stop here — nothing leaves this machine."
+- **What changed**: Phase 4 delivers its non-irreversible half and stops. DONE: cz_audit run with both mechanical findings accepted with reasons and all four judgment checks affirmed; the four-registry sweep confirming v1.14.1 unclaimed on the remote tag, GitHub Releases and PyPI; version single-sourced across pyproject / __version__ / the top CHANGELOG entry with the editable install refreshed so dist-info matches (H-03); README documenting the two user-visible behaviors; POST-MORTEM.md written and grading D-069's standing test. NOT DONE, and left unchecked rather than waived: CI green on every matrix cell on the released commit, origin/main holding the release commit, and the PyPI publish plus its uvx serverInfo proof. The release commit a4784e3 sits on local main, unpushed. CHANGELOG's top entry is headed "1.14.1 — UNRELEASED (staged 2026-07-25)" so the corpus never claims a release that does not exist. Phase 4 stays in_progress; the gameplan stays open.
+- **Why**: Publishing is irreversible and outward-facing, and the standing preference on this project is that tag/push/publish are confirmed rather than assumed — "do all phases" scopes the work, it does not pre-authorize the release. Recording this as an amendment rather than checking the criteria off is the same discipline the release itself is about (D-069): a criterion that was not met must read as not met. Leaving the phase in_progress with the resume sequence recorded is also what makes the memory-lag detector shipped in Phase 0 correct about this repo — a phase marked complete while the release is unshipped would be precisely the drift it exists to catch.
 
 ## Decisions
 
@@ -113,10 +120,10 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_audit run; mechanical findings resolved or explicitly accepted with a reason; the judgment checklist affirmed
-- [ ] The remote-registry sweep shipped in 1.14.0 reports 1.14.1 unclaimed before any tag exists
-- [ ] Version single-sourced across pyproject, __version__ and the top CHANGELOG entry; the editable install refreshed so dist-info matches (H-03 turned 15 tests red in 1.14.0 for exactly this)
+- [x] cz_audit run; mechanical findings resolved or explicitly accepted with a reason; the judgment checklist affirmed
+- [x] The remote-registry sweep shipped in 1.14.0 reports 1.14.1 unclaimed before any tag exists
+- [x] Version single-sourced across pyproject, __version__ and the top CHANGELOG entry; the editable install refreshed so dist-info matches (H-03 turned 15 tests red in 1.14.0 for exactly this)
 - [ ] CI green on EVERY matrix cell plus the fresh-clone leg, on the exact commit being released, BEFORE any tag exists (L-51 sweep 2)
 - [ ] origin/main holds the release commit before any tag or GitHub Release
 - [ ] Published to PyPI, then PROVEN: plain `uvx --from clauderizer[mcp] clauderizer-mcp` returns serverInfo 1.14.1 with the full tool surface. Read the publish job log for in-band upload evidence — the index lags, so a fresh negative is unproven, not failed
-- [ ] POST-MORTEM.md written, and it answers whether D-069's standing test (name the detector at design time) actually changed how this gameplan was executed
+- [x] POST-MORTEM.md written, and it answers whether D-069's standing test (name the detector at design time) actually changed how this gameplan was executed

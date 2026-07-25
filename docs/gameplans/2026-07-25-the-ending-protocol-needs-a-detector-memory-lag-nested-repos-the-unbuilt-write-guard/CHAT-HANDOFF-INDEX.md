@@ -1,7 +1,7 @@
 # Chat Handoff Index — the ending protocol needs a detector — memory lag, nested repos, the unbuilt write guard
 
 > Last updated: 2026-07-25
-> Status: Phase 4 ready
+> Status: Phase 4 of 5 in progress
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Nested clauderized repos stop contradicting each other | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Build the write guard 1.14.0 specified and did not ship | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Close the graph drop gap and the init spawn-test carried from 1.14.0 | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Close out and ship 1.14.1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Close out and ship 1.14.1 | 🟡 IN PROGRESS | 2026-07-25 | — | handoffs/PHASE-4-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 

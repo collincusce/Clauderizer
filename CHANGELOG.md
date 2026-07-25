@@ -2,7 +2,11 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [1.14.1] — 2026-07-25
+## [1.14.1] — UNRELEASED (staged 2026-07-25)
+
+> Staged and green locally; **not** tagged, pushed, or published. The release was
+> deliberately halted before any irreversible step. Four-registry sweep confirms
+> `v1.14.1` is unclaimed on the remote tag, GitHub Releases and PyPI.
 
 **The ending protocol gets a detector.** 1.14.0's own execution produced the
 argument for this patch: a discipline this system asks an agent to perform must
