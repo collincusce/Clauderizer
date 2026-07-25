@@ -48,11 +48,39 @@ jobs:
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           cd /tmp/my-project
-          printf '%s\n' \
-            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
-            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
-            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-            | uvx --from 'clauderizer[mcp]' clauderizer-mcp > /tmp/mcp.out 2>/dev/null || true
+          # Drive the server as a real client would: hold stdin OPEN and read
+          # until the responses arrive. Piping all three messages and closing
+          # stdin is a race — the server may see EOF and exit before answering
+          # tools/list, which made this gate a coin flip (green on 1.14.1's
+          # release commit, red on 1.14.2's, green again on a bare re-run, with
+          # the published server proven healthy at 67 tools throughout). A
+          # flaky release gate is worse than none: it teaches you to re-run red.
+          python3 - > /tmp/mcp.out <<'DRIVE_EOF' || true
+          import json, subprocess, sys, time
+          p = subprocess.Popen(["uvx", "--from", "clauderizer[mcp]", "clauderizer-mcp"],
+                               stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                               stderr=subprocess.DEVNULL, text=True, bufsize=1)
+          def send(o):
+              p.stdin.write(json.dumps(o) + "\n"); p.stdin.flush()
+          send({"jsonrpc": "2.0", "id": 1, "method": "initialize",
+                "params": {"protocolVersion": "2024-11-05", "capabilities": {},
+                           "clientInfo": {"name": "ci", "version": "0"}}})
+          time.sleep(1.0)
+          send({"jsonrpc": "2.0", "method": "notifications/initialized"})
+          time.sleep(0.5)
+          send({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+          seen, deadline = set(), time.time() + 120
+          while time.time() < deadline and 2 not in seen:
+              line = p.stdout.readline()
+              if not line:
+                  break
+              sys.stdout.write(line)
+              try:
+                  seen.add(json.loads(line).get("id"))
+              except Exception:
+                  pass
+          p.kill()
+          DRIVE_EOF
           python3 - <<'PY_EOF'
           import json, sys
           served_name = served_version = None
