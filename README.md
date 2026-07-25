@@ -160,6 +160,8 @@ Everything here is **advisory** — the second-most important word in the system
 | **onboard / seed** | "Onboard this repo" reads your existing README and specs and seeds VISION, ARCHITECTURE, and the memory graph from them — the agent does the distilling, the engine never writes that prose. |
 | **upgrade / modernize** | "Upgrade the repo" delivers a newer engine's improvements: mechanical changes applied, memory-shaped changes proposed. |
 | **close out / post-mortem** | "Close out the gameplan" runs the ending: lesson curation, the post-mortem, final statuses. |
+| **dream note** | A raw 2–4 sentence capture of friction, a gap, a surprise — written as you work. Notes are **dreamed**: an offline pass distills them into proposals. Saying "take care of the dream notes" almost always means the *next* row. |
+| **dream proposal** | What a dreaming pass produced: a judged, staged change to memory. Proposals are **triaged** — handle, dismiss, or defer each. Untriaged proposals *block* further dreaming, so this is the half that usually needs you. |
 | **append-only** | The house physics: nothing in memory is ever deleted. Say "obsolete it," "supersede it," or "resolve it" — never "delete it." |
 
 ---

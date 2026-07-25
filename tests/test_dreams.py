@@ -237,7 +237,7 @@ def test_digest_dream_gauge_counts_notes_single_header(temp_repo):
     _add(paths, note="A second observation. The gauge should say two.", kind="drift")
     with _chdir(temp_repo):
         out = S.render_digest(S.compute(paths, Config.load(paths.config_file)))
-    assert "Dreams: 2 note(s) awaiting the dreamer." in out
+    assert "Dream notes: 2 raw capture(s) awaiting DREAMING" in out
     assert out.count("[Clauderizer]") == 1  # one injection point (INVARIANT-08)
 
 
@@ -507,7 +507,7 @@ def test_digest_merges_dream_proposals_into_one_pending_line(temp_repo):
         bundle = S.compute(paths, Config.load(paths.config_file))
         out = S.render_digest(bundle)
     assert bundle.get("pending_dream_proposals") == 1
-    assert "awaiting triage" in out and "(1 dream)" in out
+    assert "awaiting TRIAGE" in out and "(1 dream)" in out
     assert out.count("[Clauderizer]") <= 1  # still the one digest (INVARIANT-08)
 
 
@@ -603,7 +603,7 @@ def test_digest_dream_gauge_counts_only_unconsumed(temp_repo):
                                     today="2026-07-24")
     with _chdir(temp_repo):
         out = S.render_digest(S.compute(paths, Config.load(paths.config_file)))
-    assert "Dreams: 1 note(s) awaiting the dreamer." in out
+    assert "Dream notes: 1 raw capture(s) awaiting DREAMING" in out
 
 
 # --- Phase 6: the schedule plea (A-004) --------------------------------------------
@@ -657,7 +657,7 @@ def test_manual_method_is_a_quieting_verdict_loop_stays_active(temp_repo):
     mutations.register_dream_schedule(paths, method="manual", today="2026-07-24")
     out = _digest(temp_repo)
     assert "🌙" not in out                          # plea quiet
-    assert "Dreams: 2 note(s) awaiting the dreamer." in out  # gauge still live
+    assert "Dream notes: 2 raw capture(s) awaiting DREAMING" in out  # gauge still live
     assert dreams.assemble(paths, today="2026-07-24")["state"] == "not_ripe"
 
 
@@ -667,7 +667,7 @@ def test_plea_defers_to_the_triage_line(temp_repo):
     ids = [n["id"] for n in dreams.read_notes(paths)]
     _stage(paths, evidence=ids[:1], reviewed=None)
     out = _digest(temp_repo)
-    assert "(1 dream)" in out and "awaiting triage" in out
+    assert "(1 dream)" in out and "awaiting TRIAGE" in out
     assert "🌙" not in out                          # triage owns that state
 
 

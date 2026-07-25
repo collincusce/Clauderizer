@@ -1,17 +1,33 @@
 ---
 name: clauderizer-dream
-description: Run the dreaming ritual — triage staged dream proposals, then distill accumulated dream notes into new staged proposals via cz_dream. Use when the digest says "Dreams. N note(s) awaiting the dreamer", shows "(N dream)" proposals awaiting triage, or the user says "dream" / "run the dreamer".
+description: The dream loop has TWO halves with two artifacts — do the one being asked for. TRIAGE staged dream PROPOSALS (handle/dismiss/defer what the dreamer already produced); DREAMING distills raw dream NOTES into new proposals via cz_dream. Use for TRIAGE when the digest shows "proposal(s) awaiting TRIAGE (N dream)" or the user says "triage the dream proposals" / "take care of the dream notes" / "action what the dreamer produced" — that last phrasing means triage, not a new dreaming pass. Use for DREAMING when the digest shows "Dream notes: N raw capture(s) awaiting DREAMING" or the user says "dream" / "run the dreamer" / "distill the notes". When genuinely ambiguous, ask — a dreaming pass consumes notes irreversibly.
 ---
 
-# The dreaming ritual
+# The dream loop — two artifacts, two verbs
 
-Dream notes (`cz_add_dream`, one per substantive exchange) accumulate in a
-local journal; this skill turns them into durable memory. The two halves
-usually happen in DIFFERENT sessions — staged proposals wait for next session's
-fresh eyes, which is the point of dreaming offline (D-059).
+**Read this before acting. The loop has two halves, and doing the wrong one is
+not recoverable.**
+
+| Artifact | Written by | Consumed by | Digest line |
+|---|---|---|---|
+| **dream NOTE** — a raw 2–4 sentence capture | `cz_add_dream`, per exchange | **DREAMING** (`cz_dream` → `cz_dream_propose`) | `Dream notes: N raw capture(s) awaiting DREAMING` |
+| **dream PROPOSAL** — the dreamer's judged output | a dreaming pass | **TRIAGE** (handle / dismiss / defer) | `⚙ N proposal(s) awaiting TRIAGE (M dream)` |
+
+**Which half is being asked for?** "Triage the dream proposals", "action what
+the dreamer produced", and — the phrasing that once misrouted a live session —
+"take care of the dream notes" all mean **TRIAGE**: act on what already exists.
+"Dream", "run the dreamer", "distill the notes" mean **DREAMING**: produce new
+proposals. If the ask is genuinely ambiguous, **ask** — a dreaming pass advances
+an append-only watermark, so the notes it consumes cannot be un-consumed, and it
+stages proposals nobody requested.
+
+Triage is also the half the loop *gates* on: staged proposals block `cz_dream`
+(A-001), so when both are pending, triage is the only thing that can proceed.
+The two halves usually happen in DIFFERENT sessions — staged proposals wait for
+next session's fresh eyes, which is the point of dreaming offline (D-059).
 
 1. **Triage first — the last dream's output.** If the digest shows "(N dream)"
-   proposals awaiting triage, ask-first like modernize ("triage now or keep
+   proposals awaiting TRIAGE, ask-first like modernize ("triage now or keep
    working?"), then walk each pending proposal (ids and details via `cz_dream`'s
    `blocked_on_triage` state or the store the digest counts):
    - **handle** — do the work via its suggested `op`/`args` (or your better

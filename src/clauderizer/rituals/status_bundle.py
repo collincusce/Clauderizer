@@ -827,7 +827,14 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         if mem.get("warning"):
             lines.append(f"⚠ Memory: {mem['warning']}")
         if mem.get("dream_notes"):
-            lines.append(f"Dreams: {mem['dream_notes']} note(s) awaiting the dreamer.")
+            # A-002: raw NOTES and staged PROPOSALS are two artifacts with two
+            # verbs, and calling both "dreams" cost a real session: asked to
+            # "take care of the dream notes", it ran the DREAMER instead of
+            # triaging what the dreamer had produced — and consumed notes cannot
+            # be un-consumed. Each line now carries its own noun AND its own verb.
+            lines.append(
+                f"Dream notes: {mem['dream_notes']} raw capture(s) awaiting "
+                f"DREAMING (cz_dream distills them into proposals) — not triage.")
     pc = bundle.get("pending_cascades") or []
     lines.append(f"Pending cascades: {len(pc)}." + (f" {', '.join(pc)}" if pc else ""))
     # Open hardening findings — the register that tracked seventeen recurring
@@ -856,11 +863,14 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
     if pp:
         dp = bundle.get("pending_dream_proposals", 0)
         if dp:
+            # "to unblock cz_dream" read as an optional reward; A-001 makes it a
+            # GATE. Say so, and keep the noun (proposal) and verb (triage) paired.
             lines.append(
-                f"⚙ {pp} proposal(s) awaiting triage ({dp} dream) — handle/"
-                "dismiss/defer the dream ones to unblock cz_dream "
-                "(cz_handle_dream_proposal / cz_dismiss_proposal); upgrades via "
-                "cz_modernize.")
+                f"⚙ {pp} proposal(s) awaiting TRIAGE ({dp} dream) — handle/"
+                "dismiss/defer each (cz_handle_dream_proposal / "
+                "cz_dismiss_proposal / cz_defer_proposal); upgrades via "
+                "cz_modernize. Further DREAMING is blocked until the dream "
+                "proposals are triaged.")
         else:
             # Modernize-only wording unchanged — golden/back-compat surface.
             lines.append(
