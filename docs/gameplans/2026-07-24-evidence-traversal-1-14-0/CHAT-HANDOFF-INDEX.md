@@ -1,7 +1,7 @@
 # Chat Handoff Index — evidence traversal 1.14.0
 
 > Last updated: 2026-07-25
-> Status: Phase 6 of 7 in progress
+> Status: All 7 phases complete
 
 ## How This Works
 
@@ -35,7 +35,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 3 | Implement D-063 so the curator stops proposing from absent evidence | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Resolve H-20 with capability-not-presence engine identity | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Preserve foreign config and converge existing installs | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Restore full lesson propagation, close H-19, ship 1.14.0 | 🟡 IN PROGRESS | 2026-07-25 | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | Restore full lesson propagation, close H-19, ship 1.14.0 | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-6-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -62,6 +62,10 @@ One shared normalizer with three field shapes, applied at all five render sites,
 ### Phase 4 — completed 2026-07-25
 
 doctor stopped reporting presence as capability on the path that matters most. The portable .mcp.json — the config most consumers get — was deliberately routed to hosts.verify_wiring, which on a native host is shutil.which(argv[0]); '✓ MCP server launchable — uvx' meant the string uvx resolved on PATH and nothing was ever spawned. It now completes an MCP initialize handshake and reports 'serverInfo clauderizer 1.13.0', warning at exit 3 on a served-vs-source skew — never a pass, never a failure, because a separately-installed server legitimately lags. hosttargets.verify_emitted_wiring was upgraded from a substring match to the same handshake, so a config naming a non-existent command now fails the contract where it passed for all eleven auto-write hosts. H-20 resolved with its own recorded fix and its own three regression tests, which three planning drafts had re-derived from scratch instead of reading. The handshake is memoized on (command, args), measured warm 1.0s and cold-cache 2.7s against an 8s budget, so --deep's nine identical entries cost one spawn. quickstart.yml gained an MCP leg that spawns the PUBLISHED server on a clean runner and asserts its identity and tool surface — the gap test.yml structurally cannot see (L-60), and precisely the gap that let this repo's hook and MCP client run different engines. Two plan corrections came out of the work: the CLAUDE_CODE skip must stay (C-01), and verifying identity means doctor spawns, so unit tests need a seam that reports 'skipped' rather than 'unverifiable' — being told not to look is a different claim from looking and not being able to tell.
+
+### Phase 6 — completed 2026-07-25
+
+Restored full lesson propagation (5 of 25 -> 25 of 25 at ~4,138 tokens, finally delivering L-24, L-52 and L-62 to a phase for the first time), closed H-19 by having cz_audit sweep the three REMOTE registries rather than three local files one commit edits together, corrected six false doc sentences, and shipped 1.14.0 to PyPI. The release was gated the way L-51 demands: CI 10/10 on the exact released commit before any tag existed, release-check exit 0 across all four registries, in-band upload evidence read from the publish job log rather than inferred from an exit code, and the identity proof run against plain uvx — serverInfo 1.14.0, 67 tools. An 11-agent adversarial pre-ship review returned SHIP WITH FIXES and six blockers, two of which were regressions this release itself introduced (C-02 init aborting the whole install on a commented JSONC config, C-03 a quoted Status line hijacking an entry). Both were caught by running the real CLI on realistic input, not by the 1074-test suite. Deliberately unfinished and carried to 1.14.1: task 5.2 (graph drop records), task 4.6 (init spawn-testing the portable command), H-16, H-21, and the tool-call-markup write guard this gameplan specified in Phase 5 criterion 12 and never built — a fourth occurrence landed in H-23 while writing this phase.
 
 ## Accumulated Lessons
 

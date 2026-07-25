@@ -13,7 +13,7 @@
 | 3 | Implement D-063 so the curator stops proposing from absent evidence | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Resolve H-20 with capability-not-presence engine identity | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Preserve foreign config and converge existing installs | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Restore full lesson propagation, close H-19, ship 1.14.0 | 🟡 IN PROGRESS | 2026-07-25 | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | Restore full lesson propagation, close H-19, ship 1.14.0 | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-6-HANDOFF.md |
 
 ## Outputs Registry
 
@@ -72,6 +72,7 @@ LESSON_PROPAGATION: handoff renders top-k in full PLUS an index of every active 
 H19_CLOSED: audit._remote_release_signals + release_check.remote_claims sweep remote git tag, GitHub Release and PyPI. Verified live: 1.13.0 claimed on all three, 1.14.0 on none. Unreachable registry reports 'unverified', never a false green (L-25). cz_audit correctly stays silent when the version really is released.
 RELEASE_GATES_GREEN: Suite 1074 passed / 7 skipped (from 1002). CI 10/10: ubuntu+macos+windows x py3.11-3.13 PLUS the new fresh-clone leg, run 30152785561. clauderize release-check exit 0 — clean tree, origin/main == HEAD f42f73de5, v1.14.0 unclaimed on local tag, remote tag, GitHub Release and PyPI. Editable install refreshed to 1.14.0 (dist-info skew turned 15 tests red first — H-03).
 PRESHIP_REVIEW: 11-agent adversarial review returned SHIP WITH FIXES with 6 blockers; all 6 fixed in f42f73d. Two were regressions this release introduced: B3 (init aborted the install on a commented JSONC config — see C-02) and B4 (a quoted Status line hijacked an entry's status — see C-03). B5: the digest published a frozen baseline because the readers were never migrated to the sidecar. B6: six shipped doc sentences were false, two in README, which is the PyPI long_description.
+PUBLISHED_1_14_0: Shipped 2026-07-25. tag v1.14.0 @ 891c682 == origin/main; GitHub Release cut; publish workflow 30172392478 build+publish success with in-band upload confirmation for both artifacts. VERIFIED: PyPI latest 1.14.0; uvx --refresh reports 1.14.0; plain `uvx --from clauderizer[mcp] clauderizer-mcp` (exactly what .mcp.json spawns) returns serverInfo {name: clauderizer, version: 1.14.0} with 67 tools and the dream tools present. CI 10/10 green on the released commit BEFORE the tag existed.
 ```
 
 ## Corrections Log

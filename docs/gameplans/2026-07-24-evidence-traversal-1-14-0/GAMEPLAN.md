@@ -1,7 +1,7 @@
 # evidence traversal 1.14.0 Gameplan
 
 > Created: 2026-07-24
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -291,12 +291,12 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 - [x] MAKE D-021 TRUE INSTEAD OF AMENDING IT TO BE FALSE: handoff.py:120 RELEVANCE_K=5 and handoff.py:526-545 is an if/elif — the focused block REPLACES the full project-lesson list, so a phase sees 5 of 25 while D-021 says it 'drops nothing'. The elif also renders a compact id + one-line-title index of EVERY active project lesson
 - [x] tests/test_handoff_propagation.py: a generated handoff for any phase contains every active L-NN id (25/25); pre-fix it contains 5. cz_next_phase_context output contains L-24, L-52 and L-62 — the three lessons this entire release rests on, all currently never surfaced
 - [x] cz_audit emits the source-vs-release line ('source X is ahead of the latest release Y'); a fixture-mocked test asserts an unreachable registry yields 'unverified', never a pass (no live network in the suite); cz_list_findings reports H-19 resolved
-- [ ] Four claim-pin tests (L-62), each demonstrated RED when its counterpart is mutated in a scratch copy: (a) every path TRUST.md describes as gitignored appears in init.py's _ensure_gitignore calls; (b) the excerpt cap named in TRUST.md equals learn._excerpt's default; (c) no doc asserts release-check is CI-enforced while `grep -rn release-check .github/` is empty; (d) the CLAUDE.md and AGENTS.md marker blocks equal the template render, extended to the ANCESTOR-staleness case which is live today
+- [x] Four claim-pin tests (L-62), each demonstrated RED when its counterpart is mutated in a scratch copy: (a) every path TRUST.md describes as gitignored appears in init.py's _ensure_gitignore calls; (b) the excerpt cap named in TRUST.md equals learn._excerpt's default; (c) no doc asserts release-check is CI-enforced while `grep -rn release-check .github/` is empty; (d) the CLAUDE.md and AGENTS.md marker blocks equal the template render, extended to the ANCESTOR-staleness case which is live today
 - [x] `grep -n '600 char' docs/TRUST.md` returns nothing — TRUST.md says excerpts are 'up to 600 characters' but learn.py:211 caps at 160; 600 is the candidate filter at learn.py:121. A doc-vs-code mismatch shipped inside the honesty repair itself
-- [ ] refresh_claude_stanza ships as a second D-042 tier-1 action (modernize.py:112-144 has no stanza action, so older installs rot); a test asserts the rendered block equals the template byte-for-byte
-- [ ] cz_list_corrections returns the corrections of the decision-corrections section with resolvable targets; the D-063 amendment text is applied to L-53, which rides in every handoff and was never updated
-- [ ] cz_list_findings shows H-16 still open and docs/RELEASING.md carries it as a named residual against gate G4, per D-012's own rule, since pyproject.toml:15 claims Production/Stable
-- [ ] INVARIANT-10 is ratified here ONLY if its wording survived the release unchanged; otherwise it stays a decision
-- [ ] `clauderize release-check` exits 0 for 1.14.0 BEFORE the tag; after publish, git ls-remote --tags, the GitHub Releases API and the PyPI JSON API all report 1.14.0
+- [x] refresh_claude_stanza ships as a second D-042 tier-1 action (modernize.py:112-144 has no stanza action, so older installs rot); a test asserts the rendered block equals the template byte-for-byte
+- [x] cz_list_corrections returns the corrections of the decision-corrections section with resolvable targets; the D-063 amendment text is applied to L-53, which rides in every handoff and was never updated
+- [x] cz_list_findings shows H-16 still open and docs/RELEASING.md carries it as a named residual against gate G4, per D-012's own rule, since pyproject.toml:15 claims Production/Stable
+- [x] INVARIANT-10 is ratified here ONLY if its wording survived the release unchanged; otherwise it stays a decision
+- [x] `clauderize release-check` exits 0 for 1.14.0 BEFORE the tag; after publish, git ls-remote --tags, the GitHub Releases API and the PyPI JSON API all report 1.14.0
 - [x] Full 9-cell matrix green plus the new fresh-clone leg and quickstart.yml's MCP identity assertion
-- [ ] POST-MORTEM.md written; the superseded gameplan 2026-07-24-workflow-critique-repairs-... is closed with its own post-mortem explaining supersession
+- [x] POST-MORTEM.md written; the superseded gameplan 2026-07-24-workflow-critique-repairs-... is closed with its own post-mortem explaining supersession
