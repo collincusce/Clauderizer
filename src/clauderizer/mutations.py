@@ -1241,6 +1241,21 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
             })
         if advisories:
             result["advisories"] = advisories
+    if norm == "complete":
+        # Refresh the TRACKED baseline from what pre-flight last measured. This
+        # is the write preflight.py's own comment promises and the pre-ship
+        # review found missing. Phase close already dirties the tree by design,
+        # so a check no longer has to (L-56(1)) — and without it the tracked line
+        # is a number with no writer, which every machine but the one that ran
+        # pre-flight reads forever.
+        try:
+            from .rituals.preflight import read_baseline_sidecar
+            measured = read_baseline_sidecar(paths)
+            idx_p = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+            if measured and idx_p.exists():
+                writer.set_labeled_value(idx_p, "Current baseline test count", measured)
+        except Exception:  # never let bookkeeping fail a transition (INVARIANT-05)
+            pass
     if norm in ("complete", "failed"):
         # Telemetry (Phase 0): log the phase outcome + its exit-criteria
         # checked/total so 'which surfaced lessons preceded a pass/fail' becomes
