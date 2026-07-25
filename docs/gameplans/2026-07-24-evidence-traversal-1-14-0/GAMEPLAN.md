@@ -1,7 +1,7 @@
 # evidence traversal 1.14.0 Gameplan
 
 > Created: 2026-07-24
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -119,16 +119,16 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 0.7 | Build the shared L-24 adversarial-input fixture in conftest (BOM, CRLF, unicode, empty, valid-non-dict JSON, truncated); Phase 5 consumes it | 2h |
 
 **Exit criteria**:
-- [ ] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-fix tree in this phase's output record. "Suite >= 1002" is a precondition, never a criterion
-- [ ] `grep -rn 'Status\*\*' src/clauderizer/` shows exactly ONE compiled status pattern; tests/test_canonical_parsers.py asserts single definition + import identity and fails if a fourth copy appears (note: graph/abstract_index.py:74 ALREADY has the widened regex — this is three disagreeing copies, not two stale ones)
-- [ ] `cz_list_findings` returns 20 findings: 17 resolved, 3 open (H-16, H-19, H-20), every entry with a non-null date. Pre-fix: 20 x active, date null
-- [ ] pytest tests/test_render_roundtrip.py green for all 5 kinds (decision, invariant, finding, correction, lesson) written via the real mutation op and read via the real listing op; demonstrated red with the pre-fix regex
-- [ ] `cz_corpus_health` emits parse_reconciliation with HARDENING.status_defaulted == 0; planting one unparseable Status line in a scratch copy makes it non-zero AND names the entry id. Expected shapes: DECISIONS 27 defaulted (D-001..D-027, by design), INVARIANTS 9 defaulted (by design), LESSONS uses **L-NN.** not ###
-- [ ] status_source is returned as parsed|defaulted from analyze._entry_status and listing._entry_record — a defaulted status is distinguishable from a read one
+- [x] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-fix tree in this phase's output record. "Suite >= 1002" is a precondition, never a criterion
+- [x] `grep -rn 'Status\*\*' src/clauderizer/` shows exactly ONE compiled status pattern; tests/test_canonical_parsers.py asserts single definition + import identity and fails if a fourth copy appears (note: graph/abstract_index.py:74 ALREADY has the widened regex — this is three disagreeing copies, not two stale ones)
+- [x] `cz_list_findings` returns 20 findings: 17 resolved, 3 open (H-16, H-19, H-20), every entry with a non-null date. Pre-fix: 20 x active, date null
+- [x] pytest tests/test_render_roundtrip.py green for all 5 kinds (decision, invariant, finding, correction, lesson) written via the real mutation op and read via the real listing op; demonstrated red with the pre-fix regex
+- [x] `cz_corpus_health` emits parse_reconciliation with HARDENING.status_defaulted == 0; planting one unparseable Status line in a scratch copy makes it non-zero AND names the entry id. Expected shapes: DECISIONS 27 defaulted (D-001..D-027, by design), INVARIANTS 9 defaulted (by design), LESSONS uses **L-NN.** not ###
+- [x] status_source is returned as parsed|defaulted from analyze._entry_status and listing._entry_record — a defaulted status is distinguishable from a read one
 - [ ] tests/fixtures/contract_corpus/driven-rich/ops/cz_list_findings.json regenerated; its git diff shows 20 statuses moving off active and dates populating; pytest tests/test_contract_corpus.py green
-- [ ] `cz_critique` Coverage output contains H-16, H-19, H-20; `clauderize status` carries an open-findings line whose byte length on a zero-open-findings fixture is UNCHANGED from 1.13.0 (INVARIANT-08)
-- [ ] The shared L-24 adversarial-input fixture (BOM, CRLF, unicode, empty, valid-non-dict JSON, truncated) exists in conftest and is consumed by Phase 5
-- [ ] `git status --porcelain` empty; suite >= 1002 passed, 5 skipped
+- [x] `cz_critique` Coverage output contains H-16, H-19, H-20; `clauderize status` carries an open-findings line whose byte length on a zero-open-findings fixture is UNCHANGED from 1.13.0 (INVARIANT-08)
+- [x] The shared L-24 adversarial-input fixture (BOM, CRLF, unicode, empty, valid-non-dict JSON, truncated) exists in conftest and is consumed by Phase 5
+- [x] `git status --porcelain` empty; suite >= 1002 passed, 5 skipped
 
 ### Phase 1: One atomic symlink-refusing write path for tracked markdown
 
