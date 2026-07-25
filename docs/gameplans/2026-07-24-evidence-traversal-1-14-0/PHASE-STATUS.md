@@ -11,7 +11,7 @@
 | 1 | One atomic symlink-refusing write path for tracked markdown | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Well-formedness at the write boundary | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Implement D-063 so the curator stops proposing from absent evidence | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Resolve H-20 with capability-not-presence engine identity | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Resolve H-20 with capability-not-presence engine identity | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Preserve foreign config and converge existing installs | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Restore full lesson propagation, close H-19, ship 1.14.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 
@@ -60,4 +60,10 @@ HANDSHAKE_COST: warm 0.99-1.22s; cold cache 2.72s; budget 8.0s (shorter than mcp
 
 ## Corrections Log
 
-_(Every divergence from the gameplan, captured in real time, as C-NN entries.)_
+### C-01 — Phase 4
+
+**Phase**: 4
+**What gameplan said**: Phase 4 task 4.3 and its exit criterion: "Delete `if hid == hosttargets.CLAUDE_CODE: continue` at cli.py:347 — the host INVARIANT-07 makes a release blocker is the one host --deep never deepens."
+**What was actually correct**: Deleting the skip is wrong and the criterion cannot be met as written. claude-code has NO entry in HOST_EMITTERS — its wiring is the portable .mcp.json handled by a dedicated block earlier in cmd_doctor, not by an emitter. With the skip removed, the per-host loop looks claude-code up, misses, and reports "? host claude-code — unknown — not in HOST_EMITTERS", which degrades a healthy repo to exit 3. Verified by reproduction in a scratch repo. The skip is restored with the reasoning recorded inline. The criterion's INTENT is nevertheless satisfied, and satisfied more strongly than the criterion asked: claude-code's portable entry is now identity-checked on the DEFAULT doctor path via a real initialize handshake, where the loop this criterion pointed at only offers an opt-in --deep check. So the host INVARIANT-07 protects went from never being identity-checked at all to being the only host checked without a flag.
+**Why**: The criterion was written from a reading of the call site rather than from the host registry it indexes. The audit agent that surfaced it correctly observed that claude-code was excluded from the --deep loop and correctly judged that to be a gap; it inferred the remedy was to remove the exclusion, without checking that HOST_EMITTERS has no claude-code key. This is L-33 exactly — a subagent's file:line claim is a lead to verify at the point of edit, not a fact — and it is the second time in this gameplan that a criterion derived from an unverified structural assumption had to be corrected at implementation time.
+**Lesson**: A criterion that names a specific line to DELETE encodes an assumption about why that line exists, and deleting-to-satisfy is how a plan converts a guard into a regression. Before removing a guard a plan told you to remove, reproduce the behavior it produces: here the skip was not an oversight excluding a host from a check, it was structural, because the host has no entry in the registry the loop indexes. State criteria as the PROPERTY required ("the host INVARIANT-07 protects is identity-checked") rather than the EDIT imagined to produce it ("delete line N") — the property survives being wrong about the mechanism, and in this case was satisfied better by a different one.

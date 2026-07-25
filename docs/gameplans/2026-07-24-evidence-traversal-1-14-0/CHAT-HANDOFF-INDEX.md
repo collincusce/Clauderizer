@@ -1,7 +1,7 @@
 # Chat Handoff Index — evidence traversal 1.14.0
 
 > Last updated: 2026-07-25
-> Status: Phase 4 ready
+> Status: Phase 5 ready
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | One atomic symlink-refusing write path for tracked markdown | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Well-formedness at the write boundary | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Implement D-063 so the curator stops proposing from absent evidence | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Resolve H-20 with capability-not-presence engine identity | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Resolve H-20 with capability-not-presence engine identity | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Preserve foreign config and converge existing installs | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Restore full lesson propagation, close H-19, ship 1.14.0 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 
@@ -59,6 +59,10 @@ Implemented what D-063 decided and nobody coded: the never-surfaced obsoletion a
 
 One shared normalizer with three field shapes, applied at all five render sites, closed the content-injection class. Before: a title containing a newline plus a heading returned ok:true, forged a genuine-looking D-900, absorbed the real entry's body, and advanced the next id to D-901 — 899 ids burned irreversibly in an append-only corpus with no repair op. After: one entry in, one entry out, ids sequential, the malicious text rendered as literal prose. Empty titles get a visible placeholder so no allocated id is ever unreachable, quoted lesson numbers no longer shift the sequence, and a pipe or newline in a phase name can no longer eat half the name or make a phase permanently untransitionable (H-02, which was marked resolved and live). Escaping is scoped to column zero because a mid-line bold Status label was probed and does not fool the readers; backslash-escape renders identically in CommonMark so the human view is byte-equivalent. The contract is normalize, never reject, so no write is lost and no mutation gains a hard block — recorded in D-066 and repeated in the phase record because this fix is one wrong INVARIANT-05 citation away from being killed by a reviewer.
 
+### Phase 4 — completed 2026-07-25
+
+doctor stopped reporting presence as capability on the path that matters most. The portable .mcp.json — the config most consumers get — was deliberately routed to hosts.verify_wiring, which on a native host is shutil.which(argv[0]); '✓ MCP server launchable — uvx' meant the string uvx resolved on PATH and nothing was ever spawned. It now completes an MCP initialize handshake and reports 'serverInfo clauderizer 1.13.0', warning at exit 3 on a served-vs-source skew — never a pass, never a failure, because a separately-installed server legitimately lags. hosttargets.verify_emitted_wiring was upgraded from a substring match to the same handshake, so a config naming a non-existent command now fails the contract where it passed for all eleven auto-write hosts. H-20 resolved with its own recorded fix and its own three regression tests, which three planning drafts had re-derived from scratch instead of reading. The handshake is memoized on (command, args), measured warm 1.0s and cold-cache 2.7s against an 8s budget, so --deep's nine identical entries cost one spawn. quickstart.yml gained an MCP leg that spawns the PUBLISHED server on a clean runner and asserts its identity and tool surface — the gap test.yml structurally cannot see (L-60), and precisely the gap that let this repo's hook and MCP client run different engines. Two plan corrections came out of the work: the CLAUDE_CODE skip must stay (C-01), and verifying identity means doctor spawns, so unit tests need a seam that reports 'skipped' rather than 'unverifiable' — being told not to look is a different claim from looking and not being able to tell.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -67,3 +71,5 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Process
 
 _(none yet)_
+
+**1.** A criterion that names a specific line to DELETE encodes an assumption about why that line exists, and deleting-to-satisfy is how a plan converts a guard into a regression. Before removing a guard a plan told you to remove, reproduce the behavior it produces: here the skip was not an oversight excluding a host from a check, it was structural, because the host has no entry in the registry the loop indexes. State criteria as the PROPERTY required ("the host INVARIANT-07 protects is identity-checked") rather than the EDIT imagined to produce it ("delete line N") — the property survives being wrong about the mechanism, and in this case was satisfied better by a different one.
