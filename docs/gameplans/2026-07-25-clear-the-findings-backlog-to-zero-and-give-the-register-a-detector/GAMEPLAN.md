@@ -20,7 +20,14 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 ## Amendments
 
-_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+### A-001 — H-24's acceptance sub-criterion is not mechanically satisfiable; the seam GATES instead of advising
+
+- **Date**: 2026-07-25
+- **Affected sections in GAMEPLAN.md**: Phase Breakdown (Phase 4)
+- **Affected phases**: 4
+- **Triggered by**: Two corrections in flight. First, checking the acceptance case: the criterion asked the seam to fail on the pre-1.14.1 tree over the undocumented D-066 boundary, but _safe_body is PRIVATE and what was missing was a conceptual section, so no public-symbol check could ever have caught it. Second, and sharper, the user on seeing my first draft: 'that's exactly how you get rot -- we're supposed to be stopping rot.'
+- **What changed**: The acceptance sub-criterion is retired as unsatisfiable and replaced by what is soundly buildable: two strict RATCHETS, both gating. (1) Undocumented public callables per subsystem may only go DOWN, recorded in tests/fixtures/subsystem_doc_baseline.json. (2) The set of modules with no subsystem doc may only SHRINK -- because only 8 of ~40 modules sit under a subsystem doc, and both modules written during 1.14.1/1.14.2 landed in that blind spot. My first draft printed a coverage report and failed only when a doc mentioned NOTHING, which passed rituals at 8/42 named. That is a false green, and the user named it correctly.
+- **Why**: No invented target ('80% documented') because an invented number is how a check earns its way into the ignore list; and no advisory-only report, because an advisory that never fails is the same write-only shape as the findings register this whole gameplan exists to empty. A ratchet needs no target: existing debt is frozen visibly where it stands, and growing it has to be a decision someone writes down. Both directions are proven to fire -- a new module and a new public callable each fail the suite.
 
 ## Decisions
 

@@ -11,7 +11,7 @@
 | 1 | Planning surfaces the lessons that govern planning (H-25) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | The digest nudges on the cost it names, and the register stops being write-only (H-26 + the aging detector) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Two core-path lows: a symlinked parent directory, and a gameplan that cannot be closed (H-16 + H-21) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Subsystem docs get an executable seam against their module (H-24) | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Subsystem docs get an executable seam against their module (H-24) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Close out and ship 1.14.2 with the backlog at zero | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 ## Outputs Registry
@@ -41,6 +41,12 @@ SUITE: 1184 -> 1194 passed, 7 skipped (+10). tests/test_rituals.py::test_memory_
 
 ```
 TWO_CORE_LOWS: H-16: markdown/writer.refuse_if_symlink walks path.parents (existing dirs only, stops at fs root). H-21: _tables._STATUS_WORDS gains DEFERRED/SUPERSEDED/ABANDONED/WONTFIX -> 'deferred' ahead of GATED/BLOCKED; status_bundle._lifecycle, gameplan_card['open'] and the completion branch all updated together. SUITE 1194 -> 1213.
+```
+
+### Phase 4 Outputs
+
+```
+DOC_SEAM_RATCHET: tests/test_subsystem_doc_seam.py + tests/fixtures/subsystem_doc_baseline.json. Ratchet 1: undocumented_per_subsystem, actual must equal baseline (fails BOTH ways -- growth is rot, improvement must be locked in). Ratchet 2: modules_with_no_subsystem_doc, may only shrink. Guards on the map: every doc resolves to code, no stale alias, baseline covers exactly the checkable set. Frozen debt: 79 undocumented callables across 7 subsystems + 32 unmapped modules -- visible, not laundered.
 ```
 
 ## Corrections Log

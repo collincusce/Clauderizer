@@ -1,7 +1,7 @@
 # Chat Handoff Index — clear the findings backlog to zero and give the register a detector
 
 > Last updated: 2026-07-25
-> Status: Phase 4 ready
+> Status: Phase 5 ready
 
 ## How This Works
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Planning surfaces the lessons that govern planning (H-25) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | The digest nudges on the cost it names, and the register stops being write-only (H-26 + the aging detector) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Two core-path lows: a symlinked parent directory, and a gameplan that cannot be closed (H-16 + H-21) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Subsystem docs get an executable seam against their module (H-24) | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Subsystem docs get an executable seam against their module (H-24) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Close out and ship 1.14.2 with the backlog at zero | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
@@ -64,3 +64,5 @@ _(none yet)_
 **1.** When a component can answer a question about ITSELF, do not build a probe to ask it from outside. Doctor verifies another command by spawning it and completing a handshake, which is right because that command is a different process -- and the reflexive version of the same question needs none of that: a process already knows where its own module was imported from and what version it carries, and the source it should be running is on disk beside it. The self-check is therefore cheap, synchronous, exception-free and safe inside a hook, where a spawn probe would be none of those. Corollary that decided the design here: compare the PATH, not just the version. The failure being fixed had both sides reporting the same version string while being different builds, so a version-only check would have certified the exact situation as healthy. *(evidence: Phase 0 of the 1.14.2 backlog gameplan: engine_identity.serving_build vs the H-20 doctor handshake; tests/test_serving_build_identity.py::test_it_fires_even_when_the_versions_agree)*
 
 **2.** A never-surfaced metric measures the SURFACING MACHINERY before it measures the item. Five project lessons showed surfaced_count 0 and the digest invited obsoleting them on that basis -- but ranking was wired only into per-phase handoff assembly, so a lesson about PLANNING could not be surfaced by any code path that existed. The zero was a fact about wiring, not about value, and acting on it would have deleted exactly the lessons the engine never gave a chance. Before curating on an absence, ask what would have had to happen for the count to be non-zero, and check that something actually does it. General form: any metric derived from an event log is bounded by where the events are emitted, so an emitter gap is indistinguishable from a real zero until you look. *(evidence: H-25; L-11 surfaced_count 0 while the next plan violated it; fixed by handoff.plan_lessons + telemetry.record_surfaced(phase='plan'))*
+
+**3.** An advisory that never fails is not a weaker gate, it is rot with a progress bar. My first draft of the doc seam printed per-subsystem coverage and failed only if a doc mentioned NONE of its module -- so rituals at 8-of-42 named passed cleanly, which is precisely the false green the release was built to end. The instinct behind it was sound (a fixed target like '80% documented' is an invented number, and invented numbers get ignored) but the conclusion was wrong. The escape from that dilemma is a RATCHET: record today's debt as the baseline and gate on the DELTA. No target to argue about, existing debt frozen visibly instead of laundered into a pass, and growing it becomes a decision someone has to write down. Two riders learned the hard way here. Gate BOTH directions -- an improvement that does not tighten the baseline just becomes slack for the next regression to hide in. And check the ratchet's own COVERAGE before trusting it: mine initially watched 8 of ~40 modules, and the two modules written that same week both landed in the blind spot, so the second ratchet had to be over the watched set itself. *(evidence: H-24 / amendment A-001; tests/test_subsystem_doc_seam.py; both gates demonstrated firing on a new module and a new public callable)*
