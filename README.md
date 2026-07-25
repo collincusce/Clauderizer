@@ -150,6 +150,7 @@ Everything here is **advisory** — the second-most important word in the system
 | **analyze** | "Run the analyze gate" before a decision surfaces the existing decisions and invariants it might contradict — judgment support, not a veto. |
 | **critique** | At a phase or gameplan close, a self-grading rubric of the gaps the engine can detect. |
 | **standing condition** | A declared threshold probe ("backlog below 3") checked whenever anyone asks for status; when it trips, an iteration is *proposed* — nothing runs by itself. |
+| **memory lag** | Since 1.14.1: if code has landed while the tracker still says the phase hasn't begun, the digest and pre-flight both say so — derived from `git log`, not from the tracker vouching for itself. Silent when memory is current. |
 
 ### The lifecycle words
 
@@ -235,6 +236,13 @@ Because your project already has a language, pre-flight runs your **real** test/
 commands from the start (tweak them in `.clauderizer/profile.lock.toml` if your repo is
 non-standard). Commit this diff on its own branch/commit so adopting Clauderizer is a clean,
 reviewable change in your history.
+
+> **Nesting.** Clauderizing a directory that *contains* other clauderized repos — most
+> commonly your home directory — is supported but rarely what you want: in `$HOME`,
+> `.claude/settings.json` is the **per-user** settings file, so that install's hook fires for
+> every session on the machine. Since 1.14.1 each session is owned by its nearest clauderized
+> repo and non-owners stay silent, so you get exactly one digest; `init` warns before creating
+> a nested install, and `doctor` names nested installs (and the ancestor) by path.
 
 **Before you commit, check three files.** Some wiring is specific to *your* machine — it contains
 the absolute path `init` was run from, which includes your username — so it shouldn't be shared:

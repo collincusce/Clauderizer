@@ -2,7 +2,7 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [Unreleased]
+## [1.14.1] — 2026-07-25
 
 **The ending protocol gets a detector.** 1.14.0's own execution produced the
 argument for this patch: a discipline this system asks an agent to perform must
