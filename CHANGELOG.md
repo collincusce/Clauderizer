@@ -2,11 +2,7 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [1.14.1] — UNRELEASED (staged 2026-07-25)
-
-> Staged and green locally; **not** tagged, pushed, or published. The release was
-> deliberately halted before any irreversible step. Four-registry sweep confirms
-> `v1.14.1` is unclaimed on the remote tag, GitHub Releases and PyPI.
+## [1.14.1] — 2026-07-25
 
 **The ending protocol gets a detector.** 1.14.0's own execution produced the
 argument for this patch: a discipline this system asks an agent to perform must
@@ -87,6 +83,18 @@ it is a hope (D-069).
   `uvx --from clauderizer[mcp]`, which needs the network on a cold cache: an
   offline or proxied first run must still install, and simply learn in-band that
   this leg is uncertified.
+
+- **Two findings recorded during the close-out, both found by using the system
+  rather than testing it.** `H-27` (high): the MCP server is wired to
+  `uvx --from clauderizer[mcp]` — the *published* build — so in a session that
+  edits the engine, every `cz_*` write runs the release while the fix sits green
+  in the working tree; the Phase 2 guard above executed for zero tool writes on
+  the day it was written, and `engine_stale` cannot see this because it compares
+  source mtimes and an installed package's are install-time. `H-26` (medium): the
+  lesson-bloat nudge thresholds on a COUNT while naming TOKENS as the cost — a
+  coverage-gated re-distill took the corpus 26 → 20 entries and made it 1.1%
+  *larger*, because the handoff renders the top five in full and a synthesis
+  outranks its own sources.
 
 ## [1.14.0] — 2026-07-25
 

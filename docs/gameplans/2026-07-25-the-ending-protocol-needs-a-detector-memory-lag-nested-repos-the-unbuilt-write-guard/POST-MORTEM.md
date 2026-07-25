@@ -1,11 +1,10 @@
 # The Ending Protocol Needs a Detector (1.14.1) — Post-Mortem
 
 > Author: Claude Opus 5 session, 2026-07-25
-> Scope: phases 0–3 complete; phase 4 delivered its non-irreversible half
-> Suite: 1074 → 1152 passed, 7 skipped (+78)
-> Status: **1.14.1 is STAGED, NOT SHIPPED** — commit `a4784e3` on local `main`,
-> unpushed, untagged, unpublished. Halted at the release boundary by decision
-> (amendment A-001); resume sequence in the Outputs Registry under `RESUME_TO_SHIP`.
+> Scope: 6 phases (Phase 5 added mid-flight by A-002); phase 4 is the release
+> Suite: 1074 → 1164 passed, 7 skipped (+90)
+> Status: the release was halted once at the boundary by decision (A-001), then
+> resumed. `origin/main` holds `348537b`; tag, Release and publish followed CI.
 > Predecessor: [1.14.0 post-mortem](../2026-07-24-evidence-traversal-1-14-0/POST-MORTEM.md)
 
 ## Executive Summary
@@ -138,28 +137,86 @@ independent; the plan declared 1 → 0, 2 → 1, 3 → 0. Nothing was harmed bec
 one session executed all of them in order, but a second agent could not have
 parallelized them, and L-11 says exactly this.
 
+## What the close-out found (and it is the biggest thing here)
+
+Two findings landed during Phase 4 that outrank most of what the plan set out to
+do, and both were found by *using* the system rather than by testing it.
+
+**H-27 (high): the MCP server serves the PUBLISHED engine, so the write guard
+never ran.** `.mcp.json` wires `uvx --from clauderizer[mcp] clauderizer-mcp` —
+correct and deliberate, because the wiring must be machine-independent and
+committable. The consequence for a session that *edits the engine* is that every
+`cz_*` write is served by the released build from uv's cache while the fix sits
+green in the working tree. Phase 2's guard was authored, tested at 26 tests, and
+committed — and executed for **zero** tool writes afterwards. It was found the
+only way it could be: a malformed `cz_add_finding` produced a corrupt `H-26`
+carrying the exact shapes the guard exists to strip, with the guard passing its
+own tests the entire time. That is the fifth such corruption, inside the release
+built to end them, and it is D-069's thesis arriving a third way — the discipline
+existed, was executed, was verified, and still did not reach the surface that
+matters.
+
+The detector that should have caught it cannot: `engine_source_newer_than`
+compares source mtimes against process start, which only ever detects the
+*editable-install* case; an installed package's mtimes are install-time, so
+`cz_status` reported `engine_stale: false` with complete confidence while running
+a different build. The check answers "did my files change since I started" when
+the question is "am I the build the working tree describes". Every tracked write
+after that point went through `clauderize ops` — a fresh process on local source —
+which is how the finding itself was written, and it came out clean.
+
+**H-26 (medium): the lesson-bloat nudge measures the wrong thing.** The digest
+thresholds on a COUNT while naming TOKENS as the cost. A coverage-gated
+re-distill took 26 → 20 active lessons, cleared the warning, and made the corpus
+*larger*: +1.1% characters, +14% estimated handoff. The handoff renders the top
+five in full, and a synthesis outranks its own sources on any query that used to
+retrieve any of them, so consolidation systematically lengthens exactly the
+entries that get rendered. Following the nudge in good faith made the thing it
+warns about slightly worse. The consolidation was kept — the corpus is more
+coherent and every merge is gate-verified — but no token claim is made for it.
+
+One thing genuinely worked here: **L-26's coverage gate paid for itself on first
+use.** The first draft of the four syntheses failed 4 of 10 source queries,
+because the queries are derived from each source's own rarest tokens and cannot
+be rationalized away. Fixing them made the syntheses faithful rather than merely
+shorter — and exposed that fidelity and brevity are in structural tension, which
+is precisely why the re-distill could not shrink the corpus.
+
 ## Numbers
 
 ```
-suite            1074 → 1152 passed, 7 skipped   (+78: 11 + 16 + 26 + 25)
-findings closed  H-22, H-23      (open findings 4 → 2: H-16, H-21, both deferred with rationale)
+suite            1074 → 1164 passed, 7 skipped   (+90: 11 + 16 + 26 + 25 + 12)
+phases           6 (Phase 5 added mid-flight by A-002)
+amendments       A-001 release halted, A-002 dream vocabulary, A-003 lesson re-distill
+findings closed  H-22, H-23
+findings opened  H-24 doc seams, H-25 planning surfaces no lessons,
+                 H-26 count-vs-tokens, H-27 MCP serves the published engine (high)
 entities         subsys.rituals 0.11→0.12, subsys.scaffold 0.15→0.16,
                  subsys.mutations 0.7→0.8, subsys.graph 0.3→0.4, feat.init-cli 0.4→0.5
 cascades         4 reports, 28 dependent verdicts, all resolved
 new modules      rituals/memory_lag.py, nesting.py
-lessons          6 gameplan lessons (3 Process, 2 Testing, 1 Process)
+lessons          9 gameplan lessons; project corpus 26 → 20 active
+                 (L-63 promoted; L-64..L-67 syntheses at 10/10 coverage)
 registries       v1.14.1 unclaimed on all four before any tag existed
+push             origin/main efdf210 → 348537b before any tag existed (L-51 sweep 2)
 ```
 
 ## Recommendations for the next gameplan
 
-1. **Amend D-069 to name the install, not just the detector.** A repair that lives
-   only in source has not reached anything that runs a published engine.
-2. **The corpus is over its lesson threshold** (25 project lessons > 20) and has
+1. **Amend D-069 to name the install, not just the detector.** H-23's deployment
+   gap and H-27 are the same sentence twice: a repair that lives only in source
+   has not reached anything running a published engine — and in H-27's case, not
+   even the authoring session's own tool calls. The standing test needs a second
+   clause: *name the detector, and name the install that runs it.*
+2. **Fix H-27 before trusting any future dogfood claim.** Until the digest
+   compares BUILD IDENTITY rather than mtimes, "I verified it live" through the
+   MCP surface is unfalsifiable — the server may be any build. `doctor` already
+   has the handshake that answers this; the digest does not use it.
+3. **The corpus is over its lesson threshold** (25 project lessons > 20) and has
    been for several releases. `docs/LESSONS.md` rides in every handoff across all
    gameplans; the digest has been asking for a re-distill for long enough that the
    warning has become furniture.
-3. **The four corrupted entries are still corrupted.** The guard stops new ones;
+4. **The corrupted entries are still corrupted.** The guard stops new ones;
    the amendment op that would repair the existing four remains deferred, and they
    are now load-bearing as `test_toolcall_write_guard.py`'s acceptance corpus —
    which means repairing them later requires updating that test deliberately, not
