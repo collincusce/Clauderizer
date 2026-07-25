@@ -100,3 +100,48 @@ def test_procedure_template_documents_self_audit_at_current_version():
     proc = (assets.TEMPLATES / "GAMEPLAN-PROCEDURE.md").read_text(encoding="utf-8")
     assert "cz_audit" in proc and "self-audit" in proc.lower()
     assert f"**Procedure version**: {PROCEDURE_VERSION}" in proc
+
+
+# --- H-19: a locally-consistent version can exist on ZERO remote registries ---
+
+def _mock_claims(monkeypatch, claims):
+    from clauderizer import release_check
+    monkeypatch.delenv("CLAUDERIZER_NO_NETWORK", raising=False)
+    monkeypatch.setattr(release_check, "remote_claims", lambda root, v: claims)
+
+
+def _versioned(root):
+    """_release_signals needs a pyproject version to have anything to check."""
+    (root / "pyproject.toml").write_text(
+        '[project]\nname = "demo"\nversion = "9.9.9"\n', encoding="utf-8")
+    return root
+
+
+def test_audit_flags_a_version_that_is_released_nowhere(temp_repo, monkeypatch):
+    """H-19. The three local checks read files ONE COMMIT edits together, so they
+    agree by construction — the gate passed on 1.13.0 while that version existed
+    on no remote registry, which is how a release sat unshipped behind a commit
+    titled "ship 1.13.0"."""
+    from clauderizer.rituals import audit
+    _mock_claims(monkeypatch, {"remote git tag": False, "GitHub Release": False,
+                               "PyPI": False})
+    signals = audit._release_signals(_versioned(temp_repo))
+    assert any("not released" in s or "not claimed on" in s for s in signals), signals
+
+
+def test_audit_is_silent_when_the_version_is_actually_released(temp_repo, monkeypatch):
+    from clauderizer.rituals import audit
+    _mock_claims(monkeypatch, {"remote git tag": True, "GitHub Release": True,
+                               "PyPI": True})
+    assert not [s for s in audit._release_signals(_versioned(temp_repo)) if "not claimed" in s]
+
+
+def test_an_unreachable_registry_is_unverified_never_a_pass(temp_repo, monkeypatch):
+    """L-25: a green that means "I could not look" is worse than no check. An
+    offline registry must read as unverified, not as released."""
+    from clauderizer.rituals import audit
+    _mock_claims(monkeypatch, {"remote git tag": True, "GitHub Release": None,
+                               "PyPI": None})
+    signals = audit._release_signals(_versioned(temp_repo))
+    joined = " ".join(signals)
+    assert "unverified" in joined, signals

@@ -209,3 +209,27 @@ def run(start: Path) -> tuple[int, list[Check]]:
     if any(c.status == "unverifiable" for c in checks):
         return 3, checks
     return 0, checks
+
+
+def remote_claims(root: Path, version: str) -> dict[str, bool | None]:
+    """Is ``version`` claimed on each REMOTE registry? (H-19's reusable core)
+
+    ``{registry: True | False | None}`` where ``None`` means unknowable from
+    here — offline, no ``gh``, no remote. Never raises, never guesses: an
+    unreachable registry is reported as unverified rather than as absent, because
+    a green that means "I could not look" is the failure this exists to close
+    (L-25).
+
+    The three checks in ``audit._release_signals`` all read files that one commit
+    edits together, so they agree by construction. These are the legs that can
+    disagree — and 1.13.0 sat locally consistent and released nowhere while a
+    commit titled "ship 1.13.0" was already two commits back (H-19).
+    """
+    tag = f"v{version}"
+    out: dict[str, bool | None] = {}
+    rc, res, _err = _git(root, "ls-remote", "--tags", "origin", f"refs/tags/{tag}")
+    out["remote git tag"] = bool(res.strip()) if rc == 0 else None
+    out["GitHub Release"] = _gh_release_exists(root, tag)
+    name, _v = _project(root)
+    out["PyPI"] = _pypi_claimed(name, version) if name else None
+    return out

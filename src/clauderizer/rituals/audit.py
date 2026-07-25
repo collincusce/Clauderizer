@@ -113,7 +113,47 @@ def _release_signals(root: Path) -> list[str]:
             f"version drift: pyproject.toml is {proj_v} but the top CHANGELOG "
             f"entry is {changelog_v} — the changelog does not describe this version"
         )
+    # H-19: the three checks above all read files ONE COMMIT edits together, so
+    # they agree by construction — the gate was close to tautological. It passed
+    # on 1.13.0 while that version existed on ZERO remote registries, which is
+    # how a release sat unshipped with a commit titled "ship 1.13.0". L-51 names
+    # four registries; sweep the remote three too.
+    out += _remote_release_signals(root, proj_v)
     return out
+
+
+def _remote_release_signals(root: Path, version: str | None) -> list[str]:
+    """Is the locally-consistent version actually RELEASED? (H-19)
+
+    Network-optional: an unreachable registry reports ``unverified`` and never a
+    false green (L-25 — a green that means "I could not look" is the failure this
+    closes). Advisory like every audit signal (INVARIANT-05).
+    """
+    import os
+    if not version or os.environ.get("CLAUDERIZER_NO_NETWORK") == "1":
+        # Same discipline as the spawn probe: a unit suite must not reach the
+        # network. Set autouse in conftest; the H-19 tests opt back in.
+        return []
+    try:
+        from .. import release_check
+    except Exception:
+        return []
+    ahead: list[str] = []
+    try:
+        claimed = release_check.remote_claims(root, version)
+    except Exception as exc:  # never break the audit on a registry hiccup
+        return [f"release status unverified ({exc.__class__.__name__}) — "
+                f"run `clauderize release-check` before claiming {version} is shipped"]
+    for registry, state in sorted(claimed.items()):
+        if state is False:
+            ahead.append(registry)
+        elif state is None:
+            ahead.append(f"{registry} (unverified)")
+    if ahead:
+        return [f"source is at {version} but it is not claimed on: "
+                f"{', '.join(ahead)} — this version is not released; "
+                f"`clauderize release-check` is the four-registry sweep"]
+    return []
 
 
 def _git_signals(root: Path) -> list[str]:
