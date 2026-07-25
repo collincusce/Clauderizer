@@ -23,8 +23,6 @@ from __future__ import annotations
 import ast
 import hashlib
 import os
-import resource
-import subprocess
 import sys
 from pathlib import Path
 
@@ -90,8 +88,18 @@ def test_writer_is_the_only_module_declaring_the_atomic_primitive():
     assert defs == ["markdown/writer.py"], defs
 
 
+@pytest.mark.skipif(sys.platform == "win32",
+                    reason="RLIMIT_FSIZE is POSIX-only; the truncation class is "
+                           "the same, the injection mechanism is not portable")
 def test_a_failed_write_leaves_the_target_byte_identical(tmp_path):
-    """The truncation case. Pre-fix, truncate-then-write destroyed the file."""
+    """The truncation case. Pre-fix, truncate-then-write destroyed the file.
+
+    ``resource`` is imported INSIDE the test on purpose: at module scope it made
+    this entire file unimportable on Windows, which silently disabled the
+    windows-only held-handle test below — the one behaviour no other cell can
+    observe. A module-level platform import is itself a platform claim (L-51).
+    """
+    import resource
     target = tmp_path / "DECISIONS.md"
     original = ("# Decisions\n\n" + ("x" * 200 + "\n") * 400)
     target.write_text(original, encoding="utf-8")

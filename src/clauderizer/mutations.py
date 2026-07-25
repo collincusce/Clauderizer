@@ -122,6 +122,67 @@ def _require_gameplan(paths: RepoPaths, gameplan_id: str | None) -> dict | None:
         + ". Create one with cz_create_gameplan.")}
 
 
+# --- write-boundary well-formedness (D-066) -----------------------------------
+#
+# Every render site below interpolates caller strings into markdown that
+# line-anchored parsers then read back. Unnormalized, a newline plus a heading
+# forges a whole entry: add_decision(title="ok\n\n### D-900 — FAKE\n\n**Context**: x")
+# returned ok:true, created a genuine-looking D-900, ABSORBED the real entry's
+# body, and advanced the next id to D-901 — 899 ids burned irreversibly, in an
+# append-only corpus with no repair op. No adversary is needed: a fenced code
+# block containing a heading is enough, and this repo writes those constantly.
+#
+# The contract is NORMALIZE, never reject (D-066): no write is lost
+# (INVARIANT-03) and no mutation gains a hard block (INVARIANT-05). This is
+# D-007/INVARIANT-02 well-formedness, NOT a discipline gate — INVARIANT-05
+# enumerates exactly three gates, and dreams.validate plus D-058's write-time
+# schema validation are the shipped precedent that a blessed write may check its
+# own input. Normalization runs BEFORE the change diff, so re-submitting
+# identical input stays a no-op.
+
+#: Placeholder for an empty title, so no allocated id is ever unreachable by
+#: cz_get and the listing readers.
+_EMPTY_TITLE = "(untitled — supply a title)"
+
+# Column-zero tokens only. A mid-line "- **Status**:" was probed and does NOT
+# fool the readers, so widening this to "any string" would escape prose for no
+# gain. Escaped with a backslash, which CommonMark renders identically — the
+# human view is byte-equivalent while the line-anchored parsers stop matching.
+_LEADING_HEADING_RE = re.compile(r"^(#{1,6})(\s)", re.M)
+_LEADING_LESSON_NUM_RE = re.compile(r"^(\*\*\d+\.\*\*)", re.M)
+_LEADING_ENTRY_RE = re.compile(r"^(###\s+[A-Z][A-Z0-9]*-\d+\s+—)", re.M)
+
+
+def _one_line(value: str, *, fallback: str = "") -> str:
+    """Collapse a structurally single-line field (a title, a table cell).
+
+    Uses the same whitespace collapse as ``learn._excerpt``'s ``" ".join(split())``.
+    """
+    out = " ".join(str(value or "").split())
+    return out or fallback
+
+
+def _safe_body(value: str) -> str:
+    """Neutralize column-zero markdown structure in a multi-line body field."""
+    text = str(value or "").strip()
+    text = _LEADING_ENTRY_RE.sub(r"\\\1", text)
+    text = _LEADING_HEADING_RE.sub(r"\\\1\2", text)
+    text = _LEADING_LESSON_NUM_RE.sub(r"\\\1", text)
+    # A body containing the handoff marker permanently escapes its block,
+    # voiding D-008's byte-for-byte guarantee with no op to undo it.
+    return text.replace("clauderizer:handoff", "clauderizer\u200b:handoff")
+
+
+def _safe_cell(value: str) -> str:
+    """A markdown table cell: no pipes, no newlines (H-02, marked resolved and live).
+
+    A ``|`` in a phase name silently ate half the name on the next transition and
+    a newline made the phase permanently untransitionable, with no rename op to
+    recover.
+    """
+    return _one_line(value).replace("|", "\\|")
+
+
 # --- append-only numbered logs ------------------------------------------------
 
 
@@ -165,10 +226,10 @@ def add_decision(
     # makes a decision's place in its lifecycle machine-readable, so the analyze ranker
     # can keep a superseded predecessor from outranking it.
     entry = (
-        f"### {new_id} — {title}\n\n"
-        f"**Context**: {context}\n"
-        f"**Decision**: {decision}\n"
-        f"**Consequences**: {consequences}{sup}{ev}\n"
+        f"### {new_id} — {_one_line(title, fallback=_EMPTY_TITLE)}\n\n"
+        f"**Context**: {_safe_body(context)}\n"
+        f"**Decision**: {_safe_body(decision)}\n"
+        f"**Consequences**: {_safe_body(consequences)}{sup}{ev}\n"
         f"**Status**: active ({today})"
     )
     writer.append_to_section(path, "Decisions", entry, fuzzy=True)
@@ -272,8 +333,8 @@ def add_invariant(
         meta.append(f"**Audience**: {audience.strip()}")
     intro = ("\n" + "\n".join(meta)) if meta else ""
     # First line becomes the title; remainder the body.
-    title = text.strip().split("\n", 1)[0]
-    entry = f"### {new_id} — {title}{intro}\n\n{text.strip()}"
+    title = _one_line(text.strip().split("\n", 1)[0], fallback=_EMPTY_TITLE)
+    entry = f"### {new_id} — {title}{intro}\n\n{_safe_body(text)}"
     writer.append_to_section(path, "Invariants", entry, fuzzy=True)
     result = {"ok": True, "id": new_id, "path": str(path),
               "files_changed": [str(path)], "summary": f"added {new_id}"}
@@ -350,11 +411,11 @@ def add_finding(
         ("Regression tests", regression_tests, False),
     ]
     body = "\n".join(
-        f"- **{label}**: {str(value).strip()}"
+        f"- **{label}**: {_safe_body(value)}"
         for label, value, required in fields
         if required or str(value).strip()
     )
-    entry = f"### {new_id} — {title.strip()}\n\n{body}"
+    entry = f"### {new_id} — {_one_line(title, fallback=_EMPTY_TITLE)}\n\n{body}"
     writer.append_to_section(path, "Risks", entry, fuzzy=True)
     return {"ok": True, "id": new_id, "path": str(path),
             "files_changed": [str(path)], "summary": f"added finding {new_id} ({severity.strip()})"}
@@ -422,7 +483,7 @@ def add_lesson(
     # must not shift the sequence.
     nums = [int(m.group(1)) for m in re.finditer(r"^\s*\*\*(\d+)\.\*\*", body, re.M)]
     n = (max(nums) + 1) if nums else 1
-    lesson_line = f"**{n}.** {text.strip()}"
+    lesson_line = f"**{n}.** {_one_line(text)}"
     # Provenance rides inline so it survives every handoff rollup. The trailing
     # italic marker is NOT a lesson-state marker (lesson_state reads an
     # (obsolete|promoted …) marker at line end), so state parsing is unaffected.
@@ -959,7 +1020,8 @@ def add_phase(
     files = [str(gp)]
     # add a status row to the trackers — through the table-aware write, so the
     # row joins the table block instead of fracturing it (H-02 / gameplan D3)
-    row = f"| {n} | {name} | ⬜ NOT STARTED | — | — | handoffs/PHASE-{n}-HANDOFF.md |"
+    row = (f"| {n} | {_safe_cell(name)} | ⬜ NOT STARTED | — | — | "
+           f"handoffs/PHASE-{n}-HANDOFF.md |")
     for fname, heading in (
         ("CHAT-HANDOFF-INDEX.md", "Phase Status Table"),
         ("PHASE-STATUS.md", "Phase Status"),
