@@ -49,6 +49,12 @@ TWO_CORE_LOWS: H-16: markdown/writer.refuse_if_symlink walks path.parents (exist
 DOC_SEAM_RATCHET: tests/test_subsystem_doc_seam.py + tests/fixtures/subsystem_doc_baseline.json. Ratchet 1: undocumented_per_subsystem, actual must equal baseline (fails BOTH ways -- growth is rot, improvement must be locked in). Ratchet 2: modules_with_no_subsystem_doc, may only shrink. Guards on the map: every doc resolves to code, no stale alias, baseline covers exactly the checkable set. Frozen debt: 79 undocumented callables across 7 subsystems + 32 unmapped modules -- visible, not laundered.
 ```
 
+### Phase 5 Outputs
+
+```
+RELEASE_GATES_CAUGHT_TWO: Both caught by CI on the release commit, before any tag existed -- which is the entire argument for L-51 sweep 2. (1) The Quickstart published-MCP probe was a COIN FLIP, not a check: it piped all three JSON-RPC messages and closed stdin, so the server could see EOF and exit before answering tools/list. Green on 1.14.1's release commit, red on 1.14.2's, green again on a bare re-run -- with the published server proven healthy at 67 tools throughout, verified locally by holding stdin open. Fixed to drive the server as a real client does. A flaky release gate is worse than none because it teaches you to re-run red. (2) THREE Windows cells red on a path assertion: `"uv/archive-v0" in serving_path` asserts a SEPARATOR, and Windows renders `uv\archive-v0`. This is L-51 sweep 2 verbatim, down to the cell count -- '0.14.0 shipped with 3 Windows cells red on such an assertion' -- and the lesson was in the surfaced set at the time I wrote it.
+```
+
 ## Corrections Log
 
 _(Every divergence from the gameplan, captured in real time, as C-NN entries.)_
