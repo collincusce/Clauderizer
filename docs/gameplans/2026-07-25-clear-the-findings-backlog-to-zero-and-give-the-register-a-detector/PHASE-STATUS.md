@@ -10,7 +10,7 @@
 | 0 | Engine identity — the digest says when it is not the build the working tree describes | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Planning surfaces the lessons that govern planning (H-25) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | The digest nudges on the cost it names, and the register stops being write-only (H-26 + the aging detector) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Two core-path lows: a symlinked parent directory, and a gameplan that cannot be closed (H-16 + H-21) | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Two core-path lows: a symlinked parent directory, and a gameplan that cannot be closed (H-16 + H-21) | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Subsystem docs get an executable seam against their module (H-24) | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Close out and ship 1.14.2 with the backlog at zero | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 
@@ -35,6 +35,12 @@ SUITE: 1177 -> 1184 passed, 7 skipped (+7, tests/test_plan_time_lessons.py)
 ```
 TOKEN_NUDGE_AND_AGING: status_bundle.PROJECT_LESSON_TOKENS_WARN=5000 with memory['project_lesson_tokens'] reported whether or not it fires; _findings_by_age(open_findings, today=None) -> {oldest_id, oldest_days, stale_ids} | None with FINDING_STALE_DAYS=30, surfaced as bundle['findings_age'] and appended to the existing Open findings digest line. Live at close: project lessons ~6168 tok across 20 entries (fires); oldest open finding H-16 at 32d.
 SUITE: 1184 -> 1194 passed, 7 skipped (+10). tests/test_rituals.py::test_memory_gauge_honors_configured_thresholds updated deliberately to the new token contract — a golden update, not a loosened assertion.
+```
+
+### Phase 3 Outputs
+
+```
+TWO_CORE_LOWS: H-16: markdown/writer.refuse_if_symlink walks path.parents (existing dirs only, stops at fs root). H-21: _tables._STATUS_WORDS gains DEFERRED/SUPERSEDED/ABANDONED/WONTFIX -> 'deferred' ahead of GATED/BLOCKED; status_bundle._lifecycle, gameplan_card['open'] and the completion branch all updated together. SUITE 1194 -> 1213.
 ```
 
 ## Corrections Log

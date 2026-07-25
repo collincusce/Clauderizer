@@ -21,6 +21,15 @@ _STATUS_WORDS = {
     "READY": "ready",
     "PENDING": "not_started",
     "TODO": "not_started",
+    # H-21: the close ritual and the status-value table both name "explicitly
+    # deferred" as a first-class disposition, and the phase-row vocabulary had no
+    # equivalent — so the ONE documented path for closing an unfinished gameplan
+    # was unreachable, and a superseded gameplan stayed open forever. Matched
+    # before GATED/BLOCKED so "DEFERRED (blocked on X)" reads as deferred.
+    "DEFERRED": "deferred",
+    "SUPERSEDED": "deferred",
+    "ABANDONED": "deferred",
+    "WONTFIX": "deferred",
     "GATED": "blocked",
     "WAITING": "blocked",
     "PAUSED": "blocked",

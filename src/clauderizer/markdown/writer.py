@@ -41,6 +41,23 @@ def refuse_if_symlink(path: Path) -> None:
             f"refusing to write through a symlink: {path} — Clauderizer never "
             "writes through links; review your working tree and remove the link."
         )
+    # H-16: a leaf-only check is defeated by a symlinked PARENT. `docs -> /tmp/evil`
+    # leaves every file under it a perfectly ordinary non-symlink, so the guard
+    # above passes and the write lands outside the repo exactly as if the leaf had
+    # been linked. Walk the whole ancestor chain. Existing parents only — the
+    # write creates missing ones itself, and a path that does not exist cannot be
+    # redirecting anything.
+    for parent in path.parents:
+        if parent.is_symlink():
+            raise OSError(
+                f"refusing to write through a symlinked directory: {parent} "
+                f"(an ancestor of {path}) — the target file is not a link, but "
+                f"the write would still land wherever that directory points. "
+                f"Clauderizer never writes through links; review your working "
+                f"tree and remove the link."
+            )
+        if parent == parent.parent:        # filesystem root; stop
+            break
 
 
 def write_atomic(path: Path, text: str) -> None:

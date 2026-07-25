@@ -503,9 +503,18 @@ def _lifecycle(rows) -> str:
     so the two never disagree."""
     if not rows:
         return "planning"
-    if all(r.status == "complete" for r in rows):
+    # H-21: a gameplan every one of whose phases is finished-or-deliberately-
+    # dropped IS closed. Requiring literal `complete` everywhere meant a
+    # superseded gameplan could never leave the open set, so the procedure's own
+    # "explicitly deferred" disposition had nowhere to land. A gameplan that is
+    # ALL deferred reports `deferred` rather than `complete` — closed, but never
+    # claiming work that was not done.
+    if all(r.status == "deferred" for r in rows):
+        return "deferred"
+    if all(r.status in ("complete", "deferred") for r in rows):
         return "complete"
-    if any(r.status in ("in_progress", "complete", "blocked", "failed") for r in rows):
+    if any(r.status in ("in_progress", "complete", "blocked", "failed", "deferred")
+           for r in rows):
         return "executing"
     return "planning"
 
@@ -537,7 +546,9 @@ def gameplan_card(gdir: Path, focus_id: str | None,
         "kind": kind_name,
         "phase_label": kinds.resolve(kind_name, kinds_overlay).label("phase"),
         "lifecycle": lifecycle,
-        "open": lifecycle != "complete",
+        # H-21: `deferred` is a CLOSED disposition too — a superseded gameplan
+        # must leave the open set, which is the whole point of the finding.
+        "open": lifecycle not in ("complete", "deferred"),
         "total_phases": len(rows),
         "phase": phase,
         "blockers": [r.name for r in rows if r.status == "blocked"],
@@ -829,7 +840,8 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
             f"Gameplan {gid}: next ready {ph_w} {nxt['number']}/{total} — \"{nxt['name']}\"."
         )
         bundle["next_action"] = "cz_next_phase_context, then cz_preflight."
-    elif total and all(p["status"] == "complete" for p in bundle["phases"]):
+    elif total and all(p["status"] in ("complete", "deferred")
+                       for p in bundle["phases"]):
         # A finished gameplan is a success state, not a confusing dead end.
         bundle["summary"] = f"Gameplan {gid}: all {total} {ph_w}(s) COMPLETE. 🎉"
         bundle["next_action"] = (

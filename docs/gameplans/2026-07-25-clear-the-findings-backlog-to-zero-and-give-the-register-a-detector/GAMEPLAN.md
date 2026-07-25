@@ -92,11 +92,11 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-1.14.2 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError (gameplan lesson 2 of the 1.14.1 plan). Suite >= 1164 is a precondition, never a criterion
-- [ ] writer.write_atomic refuses a target whose PARENT chain contains a symlink, not merely a symlinked leaf — with a test that plants a symlinked parent directory and asserts the write is refused and nothing escapes the repo (L-29: prove the isolation)
-- [ ] The phase-row vocabulary gains the deferred/superseded state the close ritual already names, threaded through _tables._STATUS_WORDS, the lifecycle derivation and the portfolio open/closed computation so all three agree
-- [ ] A superseded gameplan can actually be closed end-to-end — asserted by test, since H-21's whole point is that the documented path is unreachable
-- [ ] H-16 and H-21 resolved
+- [x] STANDING ORACLE (every phase): each new test is demonstrated RED on the pre-1.14.2 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError (gameplan lesson 2 of the 1.14.1 plan). Suite >= 1164 is a precondition, never a criterion
+- [x] writer.write_atomic refuses a target whose PARENT chain contains a symlink, not merely a symlinked leaf — with a test that plants a symlinked parent directory and asserts the write is refused and nothing escapes the repo (L-29: prove the isolation)
+- [x] The phase-row vocabulary gains the deferred/superseded state the close ritual already names, threaded through _tables._STATUS_WORDS, the lifecycle derivation and the portfolio open/closed computation so all three agree
+- [x] A superseded gameplan can actually be closed end-to-end — asserted by test, since H-21's whole point is that the documented path is unreachable
+- [x] H-16 and H-21 resolved
 
 ### Phase 4: Subsystem docs get an executable seam against their module (H-24)
 
