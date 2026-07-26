@@ -1,7 +1,7 @@
 # pay down the frozen debt — separator claims, exempted modules, and surfaced-not-applied Gameplan
 
 > Created: 2026-07-25
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -75,11 +75,11 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_audit run; mechanical findings resolved or explicitly accepted with a reason
-- [ ] OPEN FINDINGS ARE ZERO at close — the register's own count, or each survivor carries a dated acceptance
-- [ ] Version single-sourced across pyproject, __version__ and the top CHANGELOG entry; editable install refreshed (H-03)
-- [ ] Four-registry sweep reports 1.14.3 unclaimed before any tag exists
-- [ ] CI green on EVERY matrix cell plus fresh-clone, on the exact released commit, BEFORE any tag, verified at JOB granularity
-- [ ] origin/main holds the release commit before any tag or Release
-- [ ] Published, then PROVEN by handshake with stdin HELD OPEN (never the fire-and-close pipe whose race 1.14.2 fixed); upload evidence read in-band from the publish log
-- [ ] POST-MORTEM answers the question that motivated this gameplan: L-51 was surfaced and still not applied — did adding a machine check at the point of the mistake change that, and what remains unenforced
+- [x] cz_audit run; mechanical findings resolved or explicitly accepted with a reason
+- [x] OPEN FINDINGS ARE ZERO at close — the register's own count, or each survivor carries a dated acceptance
+- [x] Version single-sourced across pyproject, __version__ and the top CHANGELOG entry; editable install refreshed (H-03)
+- [x] Four-registry sweep reports 1.14.3 unclaimed before any tag exists
+- [x] CI green on EVERY matrix cell plus fresh-clone, on the exact released commit, BEFORE any tag, verified at JOB granularity
+- [x] origin/main holds the release commit before any tag or Release
+- [x] Published, then PROVEN by handshake with stdin HELD OPEN (never the fire-and-close pipe whose race 1.14.2 fixed); upload evidence read in-band from the publish log
+- [x] POST-MORTEM answers the question that motivated this gameplan: L-51 was surfaced and still not applied — did adding a machine check at the point of the mistake change that, and what remains unenforced
