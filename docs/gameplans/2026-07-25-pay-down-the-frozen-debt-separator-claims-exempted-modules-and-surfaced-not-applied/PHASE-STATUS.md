@@ -8,7 +8,7 @@
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Triage the 24 separator-shaped assertions and make the class machine-rejectable | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Pay down the 32 exempted modules | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Pay down the 32 exempted modules | ✅ COMPLETE | 2026-07-25 | 2026-07-25 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Close out and ship 1.14.3 with both ratchets tighter | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 
 ## Outputs Registry
@@ -20,6 +20,15 @@ separator_shaped_assertions_total: 40 sites across 33 distinct `<file>::<literal
 platform_claims_remaining: 0. All 40 are message assertions. The only real instance of the class (`assert "uv/archive-v0" in m["serving_path"]` plus its sibling `... in digest`) was already fixed by commit f9f8343 in 1.14.2's aftermath, so exit criterion 3 is satisfied vacuously and honestly.
 guard_artifacts: tests/test_separator_claims.py (21 tests) + tests/fixtures/separator_claims_baseline.json (the written triage, machine-read by the ratchet). Detector = Rule A (RHS trailing identifier is path/dir/file/root/home, or a bare str() coercion; .as_posix() exempt) OR Rule B (literal is a fragment of an absolute-path literal in the same module).
 suite_after_phase_0: 1253 passed, 7 skipped (was 1232 passed at preflight; +21 from tests/test_separator_claims.py). Zero failures.
+```
+
+### Phase 1 Outputs
+
+```
+modules_with_no_subsystem_doc: 32 → 0. The exemption list is empty; every top-level module under src/clauderizer/ now maps to a subsystem doc. test_no_new_module_escapes_the_seam is therefore at maximum tightness — any new module with no doc fails immediately (arm-tested with a scratch module).
+new_subsystem_docs: 32 docs under docs/subsystems/, each a tracked entity created via cz_upsert_entity (frontmatter tool-owned, body hand-written): analyze, assets, bespoke-hosts, cli, config, contract, dreams, engine-identity, hook, hosts, hosttargets, kimidesktop, learn, listing, locking, mcp-probe, model, modernize, nesting, onboard, ops, paths, proposals, release-check, revision, session, skill-discovery, skills, telemetry, templates, tools-list, winhost.
+undocumented_per_subsystem: All 32 new docs land at 0 undocumented public callables and are locked there by the both-directions ratchet — including ops, whose 73 public callables are all named by op family. The 6 pre-existing docs are unchanged (graph 13, markdown-core 19, mutations 9, profiles 1, rituals 34, scaffold 3); none improved, so no downward re-baseline was available for them. Baseline keys: 7 → 36.
+suite_after_phase_1: 1311 passed, 7 skipped (was 1253). The +58 are the parametrized ratchet cases the 30 new baseline keys generate across test_undocumented_surface_never_grows and test_the_ratchet_tightens_when_docs_improve.
 ```
 
 ## Corrections Log

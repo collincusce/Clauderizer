@@ -59,11 +59,11 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] STANDING ORACLE: each new test demonstrated RED on the pre-1.14.3 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError. Suite >= 1232 is a precondition, never a criterion
-- [ ] modules_with_no_subsystem_doc shrinks from 32 — every module removed from the exemption list is genuinely documented under a subsystem doc, and the ratchet test proves it by refusing to let the list grow back
-- [ ] nesting.py and engine_identity.py are documented specifically — both were written during 1.14.1/1.14.2 and landed in the blind spot the ratchet was built to close
-- [ ] undocumented_per_subsystem is re-baselined DOWNWARD wherever docs improved; the both-directions ratchet already fails if a gain is not locked in
-- [ ] No module is removed from the exemption list without real prose — a one-line mention that satisfies the substring check but tells a reader nothing is the false green this whole line of work exists to end
+- [x] STANDING ORACLE: each new test demonstrated RED on the pre-1.14.3 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError. Suite >= 1232 is a precondition, never a criterion
+- [x] modules_with_no_subsystem_doc shrinks from 32 — every module removed from the exemption list is genuinely documented under a subsystem doc, and the ratchet test proves it by refusing to let the list grow back
+- [x] nesting.py and engine_identity.py are documented specifically — both were written during 1.14.1/1.14.2 and landed in the blind spot the ratchet was built to close
+- [x] undocumented_per_subsystem is re-baselined DOWNWARD wherever docs improved; the both-directions ratchet already fails if a gain is not locked in
+- [x] No module is removed from the exemption list without real prose — a one-line mention that satisfies the substring check but tells a reader nothing is the false green this whole line of work exists to end
 
 ### Phase 2: Close out and ship 1.14.3 with both ratchets tighter
 
