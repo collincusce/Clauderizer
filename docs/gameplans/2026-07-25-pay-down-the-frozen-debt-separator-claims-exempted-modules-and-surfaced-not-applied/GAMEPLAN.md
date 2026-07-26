@@ -1,7 +1,7 @@
 # pay down the frozen debt — separator claims, exempted modules, and surfaced-not-applied Gameplan
 
 > Created: 2026-07-25
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -42,12 +42,12 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] STANDING ORACLE: each new test demonstrated RED on the pre-1.14.3 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError. Suite >= 1232 is a precondition, never a criterion
-- [ ] All 24 assertions matching `assert "…/…" in …` are TRIAGED and each classified in writing as a platform claim (the right-hand side is a real filesystem path) or a message assertion (a rendered string) — a count is not a triage
-- [ ] Every site classified as a platform claim is fixed to assert the separator-agnostic token, per L-51's rule: assert the FILE, not the slash
-- [ ] The CLASS is machine-rejectable, not just the instances: a check that flags a new separator-shaped assertion, ratcheted at the post-triage count so a new one has to be justified rather than merely noticed
-- [ ] The check is demonstrated FIRING on the exact line that shipped three Windows cells red in 1.14.2 (`"uv/archive-v0" in serving_path`), reconstructed — if it would not have caught that, it is the wrong check
-- [ ] False-positive floor stated honestly: message assertions must NOT be flagged, asserted by test, or the check earns its way into the ignore list
+- [x] STANDING ORACLE: each new test demonstrated RED on the pre-1.14.3 tree BEHAVIORALLY — a probe using only APIs present on both trees, never an ImportError. Suite >= 1232 is a precondition, never a criterion
+- [x] All 24 assertions matching `assert "…/…" in …` are TRIAGED and each classified in writing as a platform claim (the right-hand side is a real filesystem path) or a message assertion (a rendered string) — a count is not a triage
+- [x] Every site classified as a platform claim is fixed to assert the separator-agnostic token, per L-51's rule: assert the FILE, not the slash
+- [x] The CLASS is machine-rejectable, not just the instances: a check that flags a new separator-shaped assertion, ratcheted at the post-triage count so a new one has to be justified rather than merely noticed
+- [x] The check is demonstrated FIRING on the exact line that shipped three Windows cells red in 1.14.2 (`"uv/archive-v0" in serving_path`), reconstructed — if it would not have caught that, it is the wrong check
+- [x] False-positive floor stated honestly: message assertions must NOT be flagged, asserted by test, or the check earns its way into the ignore list
 
 ### Phase 1: Pay down the 32 exempted modules
 
