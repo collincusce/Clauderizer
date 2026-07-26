@@ -2,6 +2,41 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.14.4] — 2026-07-26
+
+**`release-check` asks whether the code passes, not just whether the version is
+free.** The four registries answer "is this version claimed anywhere". None of
+them answers "does this code work on the platforms it says it supports" — and
+that is the question that has actually bitten: 0.14.0 and 1.14.2 both shipped
+with Windows cells red. L-51 sweep (2) named the rule for three releases and it
+stayed discipline. 1.14.3 verified CI by hand only because a phase exit criterion
+said to; nothing in the ritual would have stopped a tag otherwise (H-28).
+
+- **`CI green on this commit (every job)`** joins the ritual, gated at **JOB**
+  granularity on purpose. GitHub reports a workflow as `success` when a matrix
+  cell is *skipped*, so the workflow conclusion is exactly the false green this
+  module exists to refuse. Every job of every run for the exact HEAD sha is
+  enumerated and the run's own `conclusion` is never read — pinned by a test that
+  feeds it a `failure` run whose every job succeeded and asserts the verdict still
+  comes from the job set alone.
+- **Green means `success`; everything else is not-green.** A `skipped`,
+  `cancelled`, `timed_out`, `failure`, `stale`, `startup_failure`, `neutral` or
+  `action_required` job fails and is named; a still-running workflow fails (tagging
+  mid-run is the race); **no run at all** for the commit fails, because the absence
+  of a run is a definite fact about the code you are about to tag, not an
+  unknown. `gh` missing or the API unreachable is `unverifiable`, and a repo with
+  no workflows is `skip` — absence of CI is not a failure.
+- **The false-positive surface is stated, not implied.** A repo with a
+  job-level `if:` will see that job reported as a skipped cell and go red. That is
+  the deliberate trade: `unverifiable` renders as "*OK* with unverifiable
+  check(s)", which is too soft for a missing Windows cell. Every offending job is
+  named so the choice is actionable.
+
+Suite 1311 → 1327. Demonstrated **behaviorally** red first: the same repo and the
+same CI reality (workflow `success`, Windows cell skipped) exits 0 on the pre-fix
+tree and 2 on this one, probed through `release_check.run()` alone — an API present
+on both trees.
+
 ## [1.14.3] — 2026-07-25
 
 **The frozen debt gets paid, and the lesson gets an enforcer.** 1.14.2 froze two

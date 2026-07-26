@@ -19,6 +19,12 @@
    - ✗ anything → stop, fix, re-run. Do not tag.
    - `?` (unverifiable) → verify that registry manually before proceeding;
      an unswept registry is exactly how versions get double-claimed.
+   - The check now includes **CI green on the pushed commit, at JOB
+     granularity** (H-28) — which is why step 2 comes first: there is nothing
+     for CI to have run on until origin holds the commit. A workflow-level
+     `success` hides a *skipped* matrix cell, so the per-job enumeration is the
+     point, not a detail. Wait for the runs to finish rather than tagging
+     mid-run; a still-running workflow is a ✗, not a `?`.
 4. **Tag the pushed commit**: `git tag v<version>` on the commit origin
    already has; `git push origin v<version>`.
 5. **Cut the GitHub Release** for that tag (notes from CHANGELOG).
@@ -50,7 +56,8 @@ exists (or is named here as owed), not a vibe:
   unverifiability), and from a non-repo cwd (H-09 regression).
 - **G3 — Release ritual mechanical**: `release-check` exit 0 is a hard
   precondition for tagging; the publish gate (tag==source) present in
-  publish.yml; both pinned by tests.
+  publish.yml; CI green on the release commit enumerated per JOB, never per
+  workflow (H-28); all pinned by tests.
 - **G4 — No open high findings** in `docs/HARDENING.md`; every resolved
   finding carries dated evidence.
 - **G5 — Suite green with the structural invariants**: markdown round-trip

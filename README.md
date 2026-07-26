@@ -543,7 +543,8 @@ clauderize doctor [--deep]   # present AND runnable for the session host of reco
                              # --deep also MCP-initialize-handshakes each auto-write host's command;
                              # exit 0 ok · 1 not clauderized · 2 drift · 3 ok-but-unverifiable
 clauderize reindex           # rebuild the graph cache from markdown
-clauderize release-check     # maintainers: push ordering + the four version registries · exit 0 ok · 2 red · 3 unverifiable
+clauderize release-check     # maintainers: push ordering + the four version registries + CI
+                             # green on this commit at JOB granularity · exit 0 ok · 2 red · 3 unverifiable
 clauderize mcp               # launch the MCP server (stdio)
 clauderizer-mcp [--repo <path>]   # the server entry point; --repo / $CLAUDERIZER_REPO serve a repo
                                   # other than the cwd (for hosts that can't spawn with the repo as cwd)
