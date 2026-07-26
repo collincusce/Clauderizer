@@ -2,6 +2,46 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.14.3] — 2026-07-25
+
+**The frozen debt gets paid, and the lesson gets an enforcer.** 1.14.2 froze two
+debts visibly rather than laundering them into a passing check — 32 modules with
+no subsystem doc, and a separator-shaped assertion class L-51 had described for
+three releases. Freezing was the right call then; it is not a resting place. Both
+are paid here, and the ratchets close behind them.
+
+- **The separator class is machine-rejectable, at the point of the mistake.**
+  1.14.2 shipped three Windows cells red on `assert "uv/archive-v0" in
+  m["serving_path"]` — with L-51 already recorded, and already *surfaced* to the
+  session that wrote the line. Surfacing was not enough. `tests/test_separator_claims.py`
+  flags the two shapes the source itself gives evidence for: the compared-against
+  value announcing itself a path (`serving_path`, a bare `str()`; `.as_posix()`
+  exempt as the sanctioned fix), and a literal that is a fragment of an
+  absolute-path literal in the same module. The second rule exists because the fix
+  commit had to change **two** lines, and `... in digest` announces nothing —
+  catching only the obvious one would have missed half the regression. Verified
+  against the real pre-fix blob: 2 of 2 flagged.
+- **The triage found 40, not 24.** The count that scoped the work came from
+  grepping `assert "…/…" in …`; an AST scan sees single-quoted literals, a second
+  literal on one line, the arms of an `or` chain, and `not in` forms. All 40 are
+  classified in writing — *why* each slash holds on Windows, not a count — and
+  ratcheted both directions. Zero are platform claims: `f9f8343` had already fixed
+  the only real instance, and that is said plainly rather than dressed up as
+  repair work. The false-positive floor is a test (11 shapes plus the whole real
+  corpus), not a claim.
+- **The exemption list goes from 32 to zero.** `nesting.py` and
+  `engine_identity.py` were both written *after* the doc ratchet existed and
+  neither was ever seen by it — which is what an exemption list does. All 32
+  modules now carry a subsystem doc, each a tracked entity with real dependency
+  edges, every one at **0** undocumented public callables including `ops` with 73.
+  The tightness is discontinuous, not incremental: at zero exemptions the same
+  test flips from "the debt cannot grow" to "a new module with no doc fails
+  immediately". Both ratchets were arm-tested against a real violation.
+
+Suite 1232 → 1311. Every new guard demonstrated **behaviorally** red first — the
+separator detector against the pre-fix blob at `f9f8343^`, the doc ratchet against
+the pre-1.14.3 doc set, both using only APIs present on both trees.
+
 ## [1.14.2] — 2026-07-25
 
 **The backlog goes to zero, and the register gets a detector.** 1.14.1 closed two
