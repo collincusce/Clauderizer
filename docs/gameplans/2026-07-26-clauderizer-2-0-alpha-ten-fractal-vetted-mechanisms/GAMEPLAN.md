@@ -51,14 +51,14 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] cz_transition_phase writes `deferred`; ABANDONED/EXITED arrive as aliases mapping to deferred and no fourth phase status token exists — pinned by a new test file that passes
-- [ ] mutations._refresh_tracker_headers treats deferred as closed exactly like status_bundle._lifecycle — the runtime-demonstrated divergence (COMPLETE+DEFERRED rendering 'Executing') has a regression test that passes
-- [ ] The laundering advisory (completing with unchecked exit criteria) is advisory-only with no enable/disable flag, and the deferred path never nags about unchecked criteria — both behaviors pinned by tests (INVARIANT-05)
-- [ ] The pre-release corpus sweep exists as an executable check: re-parses all tracked gameplan trackers under the positional matcher and asserts every classification flip moves toward open/deferred, never toward complete
-- [ ] The four epistemics conflation sites are fixed with missing-arm tests written FIRST (conditions.py TimeoutExpired/OSError arms covered); an unknown probe counts in the summary string, lowers the verdict to PASS WITH WARNINGS, and says 'UNKNOWN, not pass'
-- [ ] exit-criterion `met` stays a boolean with an additive `unevaluable` field — no tri-state flip; a test locks external ops-JSON truthiness compatibility (INVARIANT-07)
-- [ ] Both skill copies (src/clauderizer/skills asset AND installed .claude/skills), the ops.py cz_transition_phase docstring, and the MCP tools_list schema updated in the same commit; reason sanitization is table-safe with the engine-owned status token leading and no crash on empty/whitespace reason
-- [ ] Healthy-repo digest byte-identical to pre-phase; full suite green at >=1253 tests plus this phase's additions
+- [x] cz_transition_phase writes `deferred`; ABANDONED/EXITED arrive as aliases mapping to deferred and no fourth phase status token exists — pinned by a new test file that passes
+- [x] mutations._refresh_tracker_headers treats deferred as closed exactly like status_bundle._lifecycle — the runtime-demonstrated divergence (COMPLETE+DEFERRED rendering 'Executing') has a regression test that passes
+- [x] The laundering advisory (completing with unchecked exit criteria) is advisory-only with no enable/disable flag, and the deferred path never nags about unchecked criteria — both behaviors pinned by tests (INVARIANT-05)
+- [x] The pre-release corpus sweep exists as an executable check: re-parses all tracked gameplan trackers under the positional matcher and asserts every classification flip moves toward open/deferred, never toward complete
+- [x] The four epistemics conflation sites are fixed with missing-arm tests written FIRST (conditions.py TimeoutExpired/OSError arms covered); an unknown probe counts in the summary string, lowers the verdict to PASS WITH WARNINGS, and says 'UNKNOWN, not pass'
+- [x] exit-criterion `met` stays a boolean with an additive `unevaluable` field — no tri-state flip; a test locks external ops-JSON truthiness compatibility (INVARIANT-07)
+- [x] Both skill copies (src/clauderizer/skills asset AND installed .claude/skills), the ops.py cz_transition_phase docstring, and the MCP tools_list schema updated in the same commit; reason sanitization is table-safe with the engine-owned status token leading and no crash on empty/whitespace reason
+- [x] Healthy-repo digest byte-identical to pre-phase; full suite green at >=1253 tests plus this phase's additions
 
 ### Phase 1: Lifecycle detectors
 

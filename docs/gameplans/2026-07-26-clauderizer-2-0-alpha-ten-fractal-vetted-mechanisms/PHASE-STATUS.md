@@ -7,7 +7,7 @@
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Honest endings and epistemics | 🟡 IN PROGRESS | 2026-07-26 | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Honest endings and epistemics | ✅ COMPLETE | 2026-07-26 | 2026-07-26 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Lifecycle detectors | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Live state and budgets | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Attention and consolidation | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
@@ -18,7 +18,12 @@
 
 ## Outputs Registry
 
-_(Concrete values produced by completed phases that later phases need.)_
+### Phase 0 Outputs
+
+```
+baseline_tests_after_phase0: 1379 passed, 7 skipped (pre-phase measured baseline was 1330, not the plan-time digest's stale 1253)
+phase0_commit: 184c353 (21 files, +1098/−238); procedure bumped 1.9.0 → 1.10.0; deferred display token "⏸️ DEFERRED"; separator baseline 40 → 42; new test files tests/test_honest_closeout.py + tests/test_epistemics_unknown_never_zero.py
+```
 
 ## Corrections Log
 
