@@ -6,16 +6,44 @@ Project DAG; this doc is the prose overview.
 
 ## Subsystems
 
-Eight tracked subsystems, each with a full entity doc in `docs/subsystems/`:
+**Every** top-level module under `src/clauderizer/` is a tracked subsystem with a
+full entity doc in `docs/subsystems/` — 40 of them, and the exemption list is
+empty (1.14.3). That is enforced, not asserted: `tests/test_subsystem_doc_seam.py`
+fails if a new module lands without a doc, and the count below is pinned against
+the directory by `tests/test_architecture_pins.py`.
+
+**The core write and read path:**
 
 - **[markdown-core](subsystems/markdown-core.md)** — the stdlib-only base of the DAG: parse, edit, and serialize Clauderizer's markdown; `writer.py` is the single idempotent write path every mutation routes through.
 - **[graph](subsystems/graph.md)** — the long-lived Project DAG of frontmatter-tracked entities with `depends_on` semver pins; answers "what depends on this?"; derived from the markdown, never authoritative.
 - **[mutations](subsystems/mutations.md)** — the single graph-aware write path behind every `cz_add_*` / `cz_upsert_*` / `cz_transition_*` tool: ID auto-numbering, append-only memory, the cross-process write lock.
+- **[listing](subsystems/listing.md)** — the read side of every append-only register, each parser single-sourcing its grammar from the writer that emits it.
+- **[ops](subsystems/ops.md)** — the shared registry: one table of `cz_*` functions, two transports (MCP and `clauderize ops`), so the surfaces cannot drift.
+- **[model](subsystems/model.md)** · **[analyze](subsystems/analyze.md)** — the parsed shapes, and the relevance/near-duplicate machinery behind the canonical tokenizer (INVARIANT-09).
+
+**Entry points:**
+
 - **[mcp-server](subsystems/mcp-server.md)** — exposes the whole `cz_*` tool surface (plus resources and prompts) over MCP; thin wrappers over `ops.py`.
+- **[cli](subsystems/cli.md)** — `clauderize`, including `ops` as the no-MCP (and cross-*model*) write fallback.
+- **[hook](subsystems/hook.md)** — the event dispatcher; read-only, always exit 0 (INVARIANT-04/06).
+
+**Rituals and scaffolding:**
+
 - **[rituals](subsystems/rituals.md)** — pre-flight, cascade, handoff assembly, the status digest, critique/audit: real engine functions that run and report, not conventions the agent is trusted to honor.
 - **[scaffold](subsystems/scaffold.md)** — `init` / `doctor` / `uninstall` / `upgrade` and the self-healing host wiring.
+- **[release-check](subsystems/release-check.md)** — the four version registries, push ordering, and CI green at job granularity (H-28).
+- **[modernize](subsystems/modernize.md)** · **[proposals](subsystems/proposals.md)** · **[onboard](subsystems/onboard.md)** — the two-tier upgrade pass, its triage ledger, and detect-then-prompt onboarding.
+
+**The two composable axes:**
+
 - **[profiles](subsystems/profiles.md)** — the **language** axis: per-language TOML data (test/build/lint/typecheck commands + baseline regex), never engine code.
 - **[kinds](subsystems/kinds.md)** — the **gameplan-kind** axis: vocabulary + phase template + preflight skin; orthogonal to and composed with profiles.
+
+**The self-improvement stack:** [telemetry](subsystems/telemetry.md) (what the engine can measure) · [dreams](subsystems/dreams.md) (what only the responding agent can observe) · [learn](subsystems/learn.md) (what a transcript happens to show) · [skill-discovery](subsystems/skill-discovery.md).
+
+**Host wiring:** [hosts](subsystems/hosts.md) (the session hook) · [hosttargets](subsystems/hosttargets.md) (per-host MCP emitters) · [bespoke-hosts](subsystems/bespoke-hosts.md) (the one sanctioned auto-write exception) · [kimidesktop](subsystems/kimidesktop.md) · [winhost](subsystems/winhost.md) · [mcp-probe](subsystems/mcp-probe.md).
+
+**Foundations:** [paths](subsystems/paths.md) · [config](subsystems/config.md) · [contract](subsystems/contract.md) · [revision](subsystems/revision.md) · [locking](subsystems/locking.md) · [session](subsystems/session.md) · [nesting](subsystems/nesting.md) · [engine-identity](subsystems/engine-identity.md) · [assets](subsystems/assets.md) · [templates](subsystems/templates.md) · [skills](subsystems/skills.md) · [tools-list](subsystems/tools-list.md).
 
 ## Capabilities
 
