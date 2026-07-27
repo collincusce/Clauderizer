@@ -80,8 +80,15 @@ def record_surfaced(telemetry_file: Path, *, gameplan: str, phase: str,
 
 def record_outcome(telemetry_file: Path, *, gameplan: str, phase: str,
                    status: str, criteria_total: int, criteria_checked: int,
-                   today: str | None = None) -> dict:
-    """Log a phase outcome: terminal status + exit-criteria checked/total."""
+                   today: str | None = None, reason: str = "") -> dict:
+    """Log a phase outcome: terminal status + exit-criteria checked/total.
+
+    Terminal statuses are complete | failed | deferred (D-070 honest terminal
+    vocabulary). ``reason`` carries the agent's own words for a deferred stop
+    (stored only when non-empty — existing records keep their shape). Note the
+    downstream ``summary()`` pass_rate keeps counting ``complete`` as passed,
+    which now honestly means GOAL-MET rate: deliberate scope-cuts land as
+    deferred instead of being booked complete."""
     rec = {
         "kind": "outcome",
         "date": _today(today),
@@ -91,6 +98,8 @@ def record_outcome(telemetry_file: Path, *, gameplan: str, phase: str,
         "criteria_total": int(criteria_total),
         "criteria_checked": int(criteria_checked),
     }
+    if reason:
+        rec["reason"] = reason
     _append(telemetry_file, rec)
     return rec
 
@@ -447,16 +456,35 @@ def curate_proposals(paths, gid: str = "") -> dict:
             jac = _jaccard(toks[i][1], toks[j][1])
             if jac >= _REDUNDANCY_THRESHOLD:
                 a, b = toks[i][0], toks[j][0]
-                ua = scores.get(a, {}).get("utility") or 0.0
-                ub = scores.get(b, {}).get("utility") or 0.0
-                keep, drop = (a, b) if ua >= ub else (b, a)
+                # D-070 epistemics: an UNMEASURED utility is never coerced to a
+                # measured 0.0. Rank only what was measured; when a side (or
+                # both) is unmeasured, the note says so instead of faking a
+                # ">= utility" comparison. Keep/drop stays deterministic so the
+                # suggested op always has a target.
+                ua = scores.get(a, {}).get("utility")
+                ub = scores.get(b, {}).get("utility")
+                if ua is None and ub is None:
+                    keep, drop = a, b
+                    note = ("capture a synthesis first if wording differs; "
+                            "utility unmeasured for both — choose keep/drop by "
+                            "content, not score")
+                elif ua is None or ub is None:
+                    keep, drop = (a, b) if ub is None else (b, a)
+                    kept_u = ua if ub is None else ub
+                    note = (f"capture a synthesis first if wording differs; "
+                            f"keep {keep} (measured utility {kept_u}; "
+                            f"{drop} unmeasured)")
+                else:
+                    keep, drop = (a, b) if ua >= ub else (b, a)
+                    note = (f"capture a synthesis first if wording differs; "
+                            f"keep {keep} (>= utility)")
                 proposals.append({
                     "action": "consolidate",
                     "lessons": [a, b],
                     "evidence": f"token-set Jaccard {round(jac, 2)} (lexical near-duplicate)",
                     "suggested_op": "cz_obsolete_lesson",
                     "suggested_args": {"number": drop, "reason": f"consolidated into {keep}"},
-                    "note": f"capture a synthesis first if wording differs; keep {keep} (>= utility)",
+                    "note": note,
                 })
 
     # obsolete / flag: from per-lesson utility.

@@ -5,7 +5,7 @@ description: Close out a completed (or explicitly deferred) gameplan. Use when a
 
 # Close a gameplan
 
-1. Confirm every phase is complete or explicitly deferred (`cz_status`).
+1. Confirm every phase is complete or explicitly deferred (`cz_status`). A phase being closed short of its goal goes to `deferred` with a `reason` (`cz_transition_phase`, D-070) — never `complete`; completion is for goal-met.
 2. Run a full cascade pass; resolve any pending reports with `cz_resolve_cascade`.
 3. **Curate the lessons** — this is where memory earns its keep:
    - `cz_promote_lesson` the few that should outlive this gameplan (they land in

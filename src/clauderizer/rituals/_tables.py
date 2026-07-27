@@ -9,9 +9,12 @@ from ..markdown import sections
 
 # Recognized status vocabulary, matched on WORD BOUNDARIES inside the cell so
 # decorated rows ("🟡 READY — kickoff", "⬜ GATED (deps)") normalize instead of
-# vanishing (field bug, 2026-07-02). Dict order is match priority. Synonyms map
-# to the canonical six; anything else normalizes to "unknown" and the
-# transition error names both what was found and this vocabulary.
+# vanishing (field bug, 2026-07-02). Matching is POSITIONAL (D-070 honest
+# terminal vocabulary): the EARLIEST word wins — the engine-authored status
+# token leads the cell, so trailing free text ("… call it done …") can never
+# reclassify a row; declaration order carries no priority. Synonyms map to the
+# canonical seven; anything else normalizes to "unknown" and the transition
+# error names both what was found and this vocabulary.
 _STATUS_WORDS = {
     "NOT STARTED": "not_started",
     "IN PROGRESS": "in_progress",
@@ -143,9 +146,17 @@ def _rows_from_table(text: str) -> list[PhaseRow]:
 
 
 def _normalize_status(raw: str) -> str:
+    """Earliest vocabulary word in the cell wins (tie at the same offset: the
+    LONGEST word, so COMPLETED beats COMPLETE and NOT STARTED beats STARTED).
+    Order-independent by construction — the same inputs classify the same
+    whichever order ``_STATUS_WORDS`` is declared in. Kills the laundering
+    path where trailing prose reclassified a leading DEFERRED/FAILED token
+    (D-070); keeps the decorated-cell tolerance (field bug, 2026-07-02)."""
     up = raw.upper()
+    best: tuple[int, int, str] | None = None
     for word, norm in _STATUS_WORDS.items():
         # Word-boundary match: "INCOMPLETE" must not read as COMPLETE.
-        if re.search(rf"(?<![A-Z]){re.escape(word)}(?![A-Z])", up):
-            return norm
-    return "unknown"
+        m = re.search(rf"(?<![A-Z]){re.escape(word)}(?![A-Z])", up)
+        if m and (best is None or (m.start(), -len(word)) < best[:2]):
+            best = (m.start(), -len(word), norm)
+    return best[2] if best else "unknown"

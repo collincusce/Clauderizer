@@ -8,6 +8,7 @@ order: instead of "read these 6 files in order", the agent gets the live state.
 from __future__ import annotations
 
 import re
+import subprocess
 import time
 from pathlib import Path
 
@@ -383,12 +384,37 @@ def unchecked_exit_criteria(gameplan_dir: Path, phase: str) -> list[dict]:
 FINDING_STALE_DAYS = 30
 
 
-def _findings_by_age(open_findings: list[dict], *, today: str | None = None) -> dict | None:
-    """``{oldest_id, oldest_days, stale_ids}`` for dated open findings, or ``None``.
+def _active_days(root, since_iso: str) -> int | None:
+    """Distinct commit DATES in this repo since ``since_iso`` — a hedged
+    working-time reading for staleness ages. ``None`` on ANY failure (no root,
+    no git, timeout, error): no claim is a different statement from a measured
+    zero (D-070 epistemics); a measured empty history IS 0.
+    """
+    if not root:
+        return None
+    try:
+        proc = subprocess.run(
+            ["git", "log", f"--since={since_iso}", "--format=%as"],
+            cwd=root, capture_output=True, text=True, timeout=10)
+        if proc.returncode != 0:
+            return None
+        return len({ln.strip() for ln in proc.stdout.splitlines() if ln.strip()})
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+
+
+def _findings_by_age(open_findings: list[dict], *, today: str | None = None,
+                     root=None) -> dict | None:
+    """``{oldest_id, oldest_days, stale_ids[, oldest_active_days]}`` for dated
+    open findings, or ``None``.
 
     Quiet by construction: no open findings, or none carrying a parseable date,
     or nothing past :data:`FINDING_STALE_DAYS`, all produce ``None`` — so a young
-    register renders byte-identically (INVARIANT-08).
+    register renders byte-identically (INVARIANT-08), and the git working-time
+    probe below runs ONLY once a stale set already exists. ``oldest_active_days``
+    (distinct commit dates across the oldest finding's lifetime, ``root`` given)
+    is additive and appears only when actually measured — a git failure makes no
+    claim rather than a fabricated number (D-070).
     """
     import datetime as _dt
 
@@ -407,8 +433,26 @@ def _findings_by_age(open_findings: list[dict], *, today: str | None = None) -> 
     if not stale:
         return None
     oldest_days, oldest_id = stale[-1]
-    return {"oldest_id": oldest_id, "oldest_days": oldest_days,
-            "stale_ids": [i for _, i in reversed(stale)]}
+    out = {"oldest_id": oldest_id, "oldest_days": oldest_days,
+           "stale_ids": [i for _, i in reversed(stale)]}
+    since = (now - _dt.timedelta(days=oldest_days)).isoformat()
+    active = _active_days(root, since)
+    if active is not None:
+        out["oldest_active_days"] = active
+    return out
+
+
+def _findings_age_phrase(age: dict) -> str:
+    """The digest's staleness phrase; the working-time hedge renders only when
+    measured (``~`` marks it as an approximation, calendar threshold unchanged
+    per D-064)."""
+    n = len(age["stale_ids"])
+    hedge = (f" (~{age['oldest_active_days']} active day(s))"
+             if age.get("oldest_active_days") is not None else "")
+    return (f" {n} open {FINDING_STALE_DAYS}+ days — oldest "
+            f"{age['oldest_id']} at {age['oldest_days']}d{hedge}. A register "
+            f"nobody empties is a backlog, not a memory: resolve, or "
+            f"record an explicit dated acceptance.")
 
 
 def _baseline_tests(index_text: str) -> str | None:
@@ -770,7 +814,7 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
         # the same write-only shape D-069 exists to catch, one level up. Age is
         # derived from the entry's own recorded date; undated entries simply do
         # not contribute (evidence read, never assumed — D-065).
-        _aged = _findings_by_age(_open)
+        _aged = _findings_by_age(_open, root=paths.root)
         if _aged:
             bundle["findings_age"] = _aged
     except Exception:  # a malformed register must never break the digest (INVARIANT-04)
@@ -897,6 +941,15 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         # engine proposes, the agent decides — nothing runs by itself.
         lines.append("⏰ Standing condition met: " + ", ".join(met)
                      + " — iteration proposed (cz_loop_step).")
+    unrun = [c["name"] for c in (bundle.get("standing_conditions") or [])
+             if c.get("unevaluable")]
+    if unrun:
+        # D-070 epistemics: an armed guard whose probe could not run can never
+        # trip — say so instead of silence. Reaches the digest only on tool
+        # paths (the hook never evaluates probes) and only when one exists, so
+        # a healthy repo stays byte-identical (INVARIANT-08).
+        lines.append("Standing condition unevaluable: " + ", ".join(unrun)
+                     + " — guard cannot trip until its probe runs.")
     mem = bundle.get("memory")
     if mem:
         tok = mem.get("handoff_est_tokens")
@@ -934,11 +987,7 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         line = f"Open findings: {len(of)} ({', '.join(of)})."
         age = bundle.get("findings_age")
         if age:
-            n = len(age["stale_ids"])
-            line += (f" {n} open {FINDING_STALE_DAYS}+ days — oldest "
-                     f"{age['oldest_id']} at {age['oldest_days']}d. A register "
-                     f"nobody empties is a backlog, not a memory: resolve, or "
-                     f"record an explicit dated acceptance.")
+            line += _findings_age_phrase(age)
         lines.append(line)
     oi = bundle.get("open_items") or []
     if oi:

@@ -50,9 +50,16 @@ def evaluate(paths: RepoPaths, gid: str) -> list[dict]:
 
     Called ONLY from tool/CLI code paths (cz_status, cz_preflight,
     cz_loop_step) — status_bundle.compute defaults to NOT evaluating, so the
-    read-only hook digest can never spawn a probe subprocess. A probe that
-    times out or errors reports unmet with the reason; corpus files are never
-    touched."""
+    read-only hook digest can never spawn a probe subprocess. Corpus files are
+    never touched.
+
+    Epistemics (D-070, D-065/D-069 lineage): a probe that could not RUN
+    (timeout / OS error) is a DIFFERENT CLAIM from a probe that ran and exited
+    nonzero. The former carries additive ``unevaluable: True`` — an armed guard
+    whose probe cannot run can never trip, and the surfaces disclose that
+    instead of reporting a measured-looking "unmet". ``met`` stays a boolean
+    (False) in both cases so external ``if c.get("met")`` consumers are
+    untouched (INVARIANT-07)."""
     out: list[dict] = []
     for name, cmd in load_conditions(paths, gid).items():
         try:
@@ -62,9 +69,11 @@ def evaluate(paths: RepoPaths, gid: str) -> list[dict]:
             met = proc.returncode == 0
             first = (proc.stdout or proc.stderr).strip().splitlines()
             detail = first[0][:160] if first else ""
+            out.append({"name": name, "met": met, "detail": detail})
         except subprocess.TimeoutExpired:
-            met, detail = False, f"probe timed out ({PROBE_TIMEOUT_S}s)"
+            out.append({"name": name, "met": False, "unevaluable": True,
+                        "detail": f"probe could not run: timed out ({PROBE_TIMEOUT_S}s)"})
         except OSError as e:
-            met, detail = False, f"probe failed: {e}"
-        out.append({"name": name, "met": met, "detail": detail})
+            out.append({"name": name, "met": False, "unevaluable": True,
+                        "detail": f"probe could not run: {e}"})
     return out

@@ -563,18 +563,24 @@ def cz_add_phase(name: str, goal: str, depends_on_phases: list[str] | None = Non
                                depends_on_phases=depends_on_phases)
 
 
-def cz_transition_phase(phase_n: str, to_status: str, gameplan_id: str = "") -> dict:
+def cz_transition_phase(phase_n: str, to_status: str, reason: str = "",
+                        gameplan_id: str = "") -> dict:
     """Advance a phase's lifecycle status so cz_status reflects reality.
 
     to_status: not_started | ready | in_progress | complete | blocked | failed
-    (aliases like start/done/block accepted). Stamps Started/Completed dates.
-    Use this at phase boundaries — it's the blessed write for phase status, which
-    otherwise has no tool and freezes cz_status at the first phase.
+    | deferred (aliases like start/done/block/exit/abandon accepted). Three-way
+    close-out (D-070): complete = goal met with criteria verified; deferred = a
+    designed stop short of the goal, resumable — the honest door; pass `reason`
+    in your own words (the engine owns the leading status token, your text
+    follows it); failed = the attempt failed (phases fail, gameplans never do).
+    Stamps Started/Completed dates. Use this at phase boundaries — it's the
+    blessed write for phase status, which otherwise has no tool and freezes
+    cz_status at the first phase.
     """
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
     return mutations.transition_phase(paths, gameplan_id=gid, phase_n=phase_n,
-                                       to_status=to_status)
+                                       to_status=to_status, reason=reason)
 
 
 def cz_add_amendment(title: str, affected_sections: str, affected_phases: str,

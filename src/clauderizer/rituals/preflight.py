@@ -209,6 +209,10 @@ class PreflightResult:
     checks: list[Check] = field(default_factory=list)
     passed: bool = True
     baseline_tests: str | None = None
+    # Command gates that did NOT execute (skipped, declared-but-unwired, or
+    # UNKNOWN because the runner itself raised) — machine-readable so "which QA
+    # never ran" needs no string parsing (D-070 epistemics; additive field).
+    gates_unrun: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -216,27 +220,36 @@ class PreflightResult:
             "passed": self.passed,
             "baseline_tests": self.baseline_tests,
             "checks": [vars(c) for c in self.checks],
+            "verdict": self._verdict(),
+            "gates_unrun": list(self.gates_unrun),
             "summary": self._summary(),
         }
+
+    def _verdict(self) -> str:
+        # A warn/unknown never fails preflight, but it must not read as a clean
+        # green (#6a: a declared gate that never ran; D-070: a gate whose runner
+        # raised is UNKNOWN, not pass). Surface both in the verdict so the
+        # result can't be misread as all-clear.
+        n_warn = sum(1 for c in self.checks if c.status == "warn")
+        n_unknown = sum(1 for c in self.checks if c.status == "unknown")
+        if not self.passed:
+            return "FAIL"
+        if n_warn or n_unknown:
+            return "PASS WITH WARNINGS"
+        return "PASS"
 
     def _summary(self) -> str:
         n_pass = sum(1 for c in self.checks if c.status == "pass")
         n_fail = sum(1 for c in self.checks if c.status == "fail")
         n_skip = sum(1 for c in self.checks if c.status == "skip")
         n_warn = sum(1 for c in self.checks if c.status == "warn")
-        # A warn never fails preflight, but it must not read as a clean green
-        # (#6a: a campaign QA gate that was DECLARED but never ran). Surface it in
-        # the verdict so the result can't be misread as all-clear.
-        if not self.passed:
-            verdict = "FAIL"
-        elif n_warn:
-            verdict = "PASS WITH WARNINGS"
-        else:
-            verdict = "PASS"
+        n_unknown = sum(1 for c in self.checks if c.status == "unknown")
         parts = f"{n_pass} passed, {n_fail} failed, {n_skip} skipped"
         if n_warn:
             parts += f", {n_warn} warned"
-        return f"preflight {verdict}: {parts}"
+        if n_unknown:
+            parts += f", {n_unknown} unknown"
+        return f"preflight {self._verdict()}: {parts}"
 
 
 def _git(args: str, cwd: Path, runner: Runner) -> tuple[int, str]:
@@ -414,6 +427,7 @@ def run(
         gate with no wired command skips with a hint rather than failing."""
         cmd = _gate_command(name)
         if not cmd:
+            result.gates_unrun.append(name)
             if name in ("tests", "build"):
                 kind_cmd = "test" if name == "tests" else "build"
                 hint = (_generic_profile_hint(root, kind_cmd)
@@ -434,7 +448,16 @@ def run(
                     f".clauderizer/preflight.{kind_name}.toml (see the shipped "
                     f".clauderizer/preflight.{kind_name}.toml.example) to enable it.")
             return
-        code, out = runner(cmd, root)
+        try:
+            code, out = runner(cmd, root)
+        except (subprocess.TimeoutExpired, OSError) as e:
+            # D-070 epistemics: a gate whose runner RAISED did not evaluate
+            # anything — that is UNKNOWN, not pass and not a preflight crash.
+            # Contain it so every other check's result survives (degrade,
+            # don't crash — O-03); the verdict lowers to PASS WITH WARNINGS.
+            result.gates_unrun.append(name)
+            add(name, "unknown", f"gate could not run: {e} — UNKNOWN, not pass")
+            return
         if name == "tests":
             count = None
             if profile.baseline_test_regex:
@@ -516,7 +539,18 @@ def run(
         if not conds:
             return
         met = [c["name"] for c in conds if c["met"]]
-        if met:
+        unrun = [c for c in conds if c.get("unevaluable")]
+        if unrun:
+            # D-070 epistemics: an armed guard whose probe could not run can
+            # never trip — disclose that instead of a measured-looking "none
+            # met". WARN (visible, lowers the verdict), never fail
+            # (INVARIANT-05: the agent decides what to do about it).
+            names = "; ".join(f"'{c['name']}' ({c['detail']})" for c in unrun)
+            add("standing_conditions", "warn",
+                f"declared condition(s) could not be evaluated — {names} — "
+                "an armed guard whose probe cannot run cannot trip until fixed"
+                + (f"; met: {', '.join(met)}" if met else ""))
+        elif met:
             add("standing_conditions", "pass",
                 f"met: {', '.join(met)} — iteration proposed (cz_loop_step)")
         else:

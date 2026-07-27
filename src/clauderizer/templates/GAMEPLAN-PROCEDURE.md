@@ -1,6 +1,6 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.9.0
+**Procedure version**: 1.10.0
 **Last updated**: 2026-07-24
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
@@ -595,6 +595,17 @@ If any check fails: STOP. Report to user. Do not proceed.
 | 1 | <Name> | 🟡 IN PROGRESS | YYYY-MM-DD | — | handoffs/PHASE-1-HANDOFF.md |
 | 2 | <Name> | ⬜ NOT STARTED | — | — | — |
 | 3 | <Name> | ⚠️ BLOCKED | — | — | <reason> |
+| 4 | <Name> | ⏸️ DEFERRED — <reason in your own words> | — | YYYY-MM-DD | — |
+
+**Status vocabulary** (write through `cz_transition_phase`, never by hand):
+`not_started | ready | in_progress | complete | blocked | failed | deferred`.
+Three-way close-out (D-070): **complete** = goal met with criteria verified;
+**deferred** = a designed stop short of the goal, resumable — the honest door:
+pass a `reason` in your own words (the engine owns the leading status token,
+your text follows the em-dash); **failed** = the attempt failed (phases fail,
+gameplans never do). Closing a phase short of its goal is `deferred` with a
+reason — never `complete`. `exited` / `abandoned` / `superseded` / `wontfix`
+are doors into `deferred`, not statuses of their own.
 
 ## Per-Phase Completion Summaries
 <Added by coordinator after each merge. 1–2 paragraphs per phase

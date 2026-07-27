@@ -1125,13 +1125,32 @@ _PHASE_DISPLAY = {
     "complete": "✅ COMPLETE",
     "blocked": "⚠️ BLOCKED",
     "failed": "🔴 FAILED",
+    # D-070 honest terminal vocabulary: deferred is the honest DOOR for a phase
+    # deliberately stopped short of its goal — complete stays goal-met-only.
+    # The read side has understood the word since H-21; this is its writer.
+    "deferred": "⏸️ DEFERRED",
 }
 _PHASE_ALIASES = {
     "start": "in_progress", "started": "in_progress", "active": "in_progress",
     "wip": "in_progress", "begin": "in_progress",
     "done": "complete", "completed": "complete", "finish": "complete", "finished": "complete",
     "todo": "not_started", "pending": "not_started", "block": "blocked", "fail": "failed",
+    # Doors INTO deferred, never statuses of their own (D-070): Fractal's
+    # "exited", the procedure's abandoned/superseded/wontfix — a process-death
+    # status has no writer in a memory layer (that detection is memory-lag's).
+    "defer": "deferred", "exited": "deferred", "exit": "deferred",
+    "abandon": "deferred", "abandoned": "deferred", "superseded": "deferred",
+    "supersede": "deferred", "wontfix": "deferred", "scope_cut": "deferred",
 }
+
+
+def _sanitize_reason(reason: str) -> str:
+    """Table-safe reason text: pipes become slashes (a pipe would split the
+    markdown cell), the first non-empty line only, capped at 100 chars. Empty
+    or whitespace-only input yields "" rather than crashing — the cell then
+    carries the bare engine-owned status token."""
+    lines = [ln.strip() for ln in reason.replace("|", "/").splitlines() if ln.strip()]
+    return lines[0][:100] if lines else ""
 
 
 def _set_phase_row(path, heading: str, phase_n: str, display: str, norm: str,
@@ -1161,7 +1180,9 @@ def _set_phase_row(path, heading: str, phase_n: str, display: str, norm: str,
                 if (len(cells) > 3 and norm in ("in_progress", "complete")
                         and cells[3] in ("—", "")):
                     cells[3] = today
-                if len(cells) > 4 and norm == "complete":
+                # Closed dispositions stamp Completed; deferred never fabricates
+                # a Started date (an unstarted phase can be honestly deferred).
+                if len(cells) > 4 and norm in ("complete", "deferred"):
                     cells[4] = today
                 line = "| " + " | ".join(cells) + " |"
         out.append(line)
@@ -1191,18 +1212,28 @@ def _refresh_tracker_headers(paths: RepoPaths, gameplan_id: str, today: str) -> 
     total = len(rows)
     cur = next((r for r in rows if r.status == "in_progress"), None)
     nxt = next((r for r in rows if r.status in ("ready", "not_started")), None)
+    # "Closed" mirrors status_bundle._lifecycle EXACTLY (D-070): deferred is a
+    # closed disposition too. The pre-fix divergence rendered a COMPLETE+
+    # DEFERRED gameplan as "Executing" here while the portfolio called it
+    # complete — two derivations of one truth (L-65), now pinned by test.
+    n_deferred = sum(1 for r in rows if r.status == "deferred")
     if not total:
         tracker = "Planning"
     elif all(r.status == "complete" for r in rows):
         tracker = f"All {total} phases complete"
+    elif all(r.status in ("complete", "deferred") for r in rows):
+        tracker = (f"All {total} phases deferred" if n_deferred == total
+                   else f"All {total} phases closed ({n_deferred} deferred)")
     elif cur:
         tracker = f"Phase {cur.number} of {total} in progress"
     elif nxt:
         tracker = f"Phase {nxt.number} ready"
     else:
         tracker = "Executing"
-    started = ("in_progress", "complete", "blocked", "failed")
-    if total and all(r.status == "complete" for r in rows):
+    started = ("in_progress", "complete", "blocked", "failed", "deferred")
+    if total and all(r.status == "deferred" for r in rows):
+        gp_status = "Deferred"
+    elif total and all(r.status in ("complete", "deferred") for r in rows):
         gp_status = "Complete"
     elif any(r.status in started for r in rows):
         gp_status = "Executing"
@@ -1225,13 +1256,20 @@ def _refresh_tracker_headers(paths: RepoPaths, gameplan_id: str, today: str) -> 
 
 @_locked
 def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
-                     to_status: str, today: str | None = None) -> dict:
+                     to_status: str, today: str | None = None,
+                     reason: str = "") -> dict:
     """Move a phase's lifecycle status in the gameplan trackers.
 
     ``to_status`` accepts the normalized words (not_started, ready, in_progress,
-    complete, blocked, failed) or friendly aliases (start, done, block, …).
-    Starting/completing stamps the Started/Completed dates. This is the write
-    that keeps ``cz_status`` / ``cz_next_phase_context`` honest.
+    complete, blocked, failed, deferred) or friendly aliases (start, done,
+    block, exit, abandon, …). Three-way close-out (D-070): ``complete`` = goal
+    met with criteria verified; ``deferred`` = a designed stop short of the
+    goal, resumable — the honest door, pass ``reason`` in your own words;
+    ``failed`` = the attempt failed (phases fail, gameplans never do). The
+    engine owns the leading status token in the written cell; the sanitized
+    reason follows after an em-dash. Starting/closing stamps the
+    Started/Completed dates. This is the write that keeps ``cz_status`` /
+    ``cz_next_phase_context`` honest.
     """
     err = _require_gameplan(paths, gameplan_id)
     if err:
@@ -1243,6 +1281,9 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
                            f"{', '.join(_PHASE_DISPLAY)}"}
     today = _today(today)
     display = _PHASE_DISPLAY[norm]
+    clean_reason = _sanitize_reason(reason)
+    if norm == "deferred" and clean_reason:
+        display = f"{display} — {clean_reason}"
     files: list[str] = []
     for fname, heading in (("CHAT-HANDOFF-INDEX.md", "Phase Status Table"),
                            ("PHASE-STATUS.md", "Phase Status")):
@@ -1318,10 +1359,29 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
                 "message": (
                     f"{len(items)} unchecked exit criteria for phase {phase_n} — verify each "
                     f"and cz_check_exit_criterion it, or confirm done: " + "; ".join(items)
+                    + " Completing records goal-met over unverified evidence — if this "
+                    "phase is deliberately stopping short, transition it deferred "
+                    "(with a reason) instead; completion is for goal-met (D-070)."
                 ),
             })
         if advisories:
             result["advisories"] = advisories
+    elif norm in ("deferred", "failed"):
+        # The honest door never nags (D-070 / INVARIANT-05): no unchecked-
+        # criteria imperative, no open-items scold — closing short is the
+        # CORRECT move being recorded. One context line preserves the evidence
+        # trail (checked/total at close) with nothing to act on.
+        from .rituals.status_bundle import exit_criteria as _crits
+
+        crits = _crits(paths.gameplan_dir(gameplan_id), str(phase_n))
+        if crits:
+            checked = sum(1 for c in crits if c["checked"])
+            result["advisories"] = [{
+                "kind": "exit_criteria_context",
+                "message": (
+                    f"closed as {norm} with {checked}/{len(crits)} exit criteria "
+                    f"checked — recorded as context; nothing further required."),
+            }]
     if norm == "complete":
         # Refresh the TRACKED baseline from what pre-flight last measured. This
         # is the write preflight.py's own comment promises and the pre-ship
@@ -1337,18 +1397,21 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
                 writer.set_labeled_value(idx_p, "Current baseline test count", measured)
         except Exception:  # never let bookkeeping fail a transition (INVARIANT-05)
             pass
-    if norm in ("complete", "failed"):
+    if norm in ("complete", "failed", "deferred"):
         # Telemetry (Phase 0): log the phase outcome + its exit-criteria
         # checked/total so 'which surfaced lessons preceded a pass/fail' becomes
-        # computable. We already hold the H-05 write lock (@_locked); the append
-        # is append-only (INVARIANT-03) and never auto-acted-on (INVARIANT-05).
+        # computable. Deferred is a terminal outcome too (D-070) — pass_rate
+        # thereby becomes an honest goal-met rate. We already hold the H-05
+        # write lock (@_locked); the append is append-only (INVARIANT-03) and
+        # never auto-acted-on (INVARIANT-05).
         from . import telemetry
         from .rituals.status_bundle import exit_criteria
         crits = exit_criteria(paths.gameplan_dir(gameplan_id), str(phase_n))
         telemetry.record_outcome(
             paths.telemetry_file, gameplan=gameplan_id, phase=str(phase_n),
             status=norm, criteria_total=len(crits),
-            criteria_checked=sum(1 for c in crits if c["checked"]), today=today)
+            criteria_checked=sum(1 for c in crits if c["checked"]), today=today,
+            reason=clean_reason)
         result["telemetry"] = "outcome"
     return result
 
