@@ -20,7 +20,14 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 ## Amendments
 
-_(None yet. Append A-NNN entries here once Phase 0 starts.)_
+### A-001 — Fleet pattern joins the alpha: glossary, clauderizer-fleet skill, fleet-vs-solo matrix leg
+
+- **Date**: 2026-07-26
+- **Affected sections in GAMEPLAN.md**: Phases (new phase "Fleet pattern: glossary, skill, productization" — appended as Phase 7, ordered by dependency to execute after phases 0-2 and alongside/before phase 4's ladder finalization); Phase 5 exit criteria (fleet-vs-solo hypothesis leg added); new canonical doc docs/GLOSSARY.md (seeded now, productized in the new phase); repo-local skill .claude/skills/clauderizer-fleet (created now, shipped-asset productization in the new phase)
+- **Affected phases**: 5, 7 (new)
+- **Triggered by**: User direction 2026-07-26 after the D-070 plan review: make the multi-agent fan-out pattern part of the glossary, create skills to manage the use case; thesis "the more agents work on a problem, the better the results" — recorded via D-071
+- **What changed**: Adds D-071's three artifacts to the alpha scope: (1) docs/GLOSSARY.md canonical vocabulary with the fleet cluster (fleet, hub, worker, worker briefing, assignment, hub-and-spoke law) plus core terms; (2) the clauderizer-fleet skill — repo-local immediately, productized into the shipped asset set (src source + installed render + init/uninstall wiring + dual-copy seam test) by Phase 7; (3) a fleet-vs-solo leg in Phase 5's matrix with D-071's pre-named signal. ENFORCEMENT.md gains fleet rows from whichever of Phase 4 / Phase 7 lands second — both phases carry the criterion so ordering cannot drop it.
+- **Why**: The ten adopted mechanisms' primary use case IS the fleet: heal-on-proof handles dead workers, stamps propagate hub state to workers, budgets aggregate fleet spend, merge-audit guards the worktree edge, and the engine's existing locking/assignment/--repo substrate already carries hub-and-spoke fan-out today. Making the pattern canonical vocabulary + a managed skill turns an implicit capability into a supported one, while D-071 keeps the "more agents = better" thesis a measured hypothesis rather than shipped doctrine (L-50, D-064).
 
 ## Decisions
 
@@ -143,6 +150,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 - [ ] Stranded-state: zero false positives across same-host-MCP-stranding vs A-alive and cross-host controls, or the mechanism stays advisory-dormant — verdict recorded with counts
 - [ ] Backstop detector fires on seeded abandoned work and stays quiet on healthy closes across the matrix; never-engaged advisory fires on a genuinely ignored finding and stays quiet on engaged ones — both with counts
 - [ ] Merge audit seeded-fault protocol run: detection rate on true merges, clean-merge false-positive rate, and healthy-repo digest byte-identity all recorded
+- [ ] Fleet-vs-solo leg run per D-071's pre-named signal: the same seeded task solo vs an N-worker fleet (hub-and-spoke, cz_assign partitioning) — exit-criteria pass quality, wall-clock, LockHeld/collision counts, and independent-verifier-found defects recorded; the 'more agents = better' hypothesis confirmed, refuted, or bounded, and the clauderizer-fleet skill's guidance updated to match the figures
 - [ ] Per-mechanism verdict written for ALL TEN (graduate as default / documented-dormant / withdraw), each with its pre-named signal's measured figure (L-50) — recorded as decisions/amendments; discards documented as successful outcomes
 
 ### Phase 6: Close-out and ship 2.0.0a1
@@ -160,3 +168,21 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 - [ ] L-51 three sweeps + H-28 does-the-CODE-pass check green before tagging; no Fractal outcome numbers cited anywhere in release materials (D-070)
 - [ ] Published to PyPI; fresh-venv `pip install --pre clauderizer==2.0.0a1` succeeds and `clauderize doctor` is green
 - [ ] Post-mortem written; cz_audit (D-051) run with findings triaged; gameplan closed via the close-gameplan procedure
+
+### Phase 7: Fleet pattern: glossary, skill, productization
+
+**Goal**: Productize the D-071 fleet pattern (A-001). Harden docs/GLOSSARY.md into the canonical vocabulary surface (fleet cluster + core terms, each entry pointing at its owning doc) and sweep the non-single-sourced doc listings that should reference it (L-65). Move clauderizer-fleet from repo-local to shipped asset: src/clauderizer/skills source + installed render identical under the dual-copy seam test, assets.py ships it on init, uninstall removes only clauderizer-owned skills. Audit the skill capability-honest: every 2.0-mechanism reference names its landing phase and degrades gracefully where absent. Add the fleet discipline rows to ENFORCEMENT.md (hub-and-spoke law = instructions-floor; assignment ownership = advisory) if phase 4 already landed, else leave them to phase 4's exhaustive sweep. Dogfood one real fleet run in this repo (N>=2 workers, hub-and-spoke, cz_assign partitioning) and record its figures.
+**Depends on**: Honest endings and epistemics, Lifecycle detectors, Live state and budgets.
+
+| Task | Description | Effort |
+|------|-------------|--------|
+| 7.1 | _(describe)_ | _(est)_ |
+
+**Exit criteria**:
+- [ ] docs/GLOSSARY.md carries the fleet cluster (fleet, hub, worker, worker briefing, assignment, hub-and-spoke law) + core vocabulary, every entry pointing at its owning doc; the L-65 sweep ran over non-single-sourced doc listings (README, ARCHITECTURE) so the new canonical doc is referenced, with an executable pin where one fits
+- [ ] clauderizer-fleet exists in BOTH copies (src/clauderizer/skills source + installed .claude/skills render) byte-identical, covered by the dual-copy seam test alongside the existing nine skills
+- [ ] assets.py ships clauderizer-fleet on init; golden init test updated; uninstall removes only clauderizer-owned skills — all pinned by tests
+- [ ] Capability-honesty audit green: every reference in the skill to a 2.0 mechanism names the phase that lands it and specifies the degraded behavior when absent — no unbuilt feature described as present (L-65 claim-needs-artifact)
+- [ ] ENFORCEMENT.md carries the fleet rows (hub-and-spoke law = instructions-floor; assignment ownership = advisory) regardless of whether this phase landed before or after phase 4
+- [ ] Dogfood fleet run recorded via cz_add_output: N>=2 host-spawned workers over independent work in THIS repo, cz_assign partitioning, all tracked writes through the hub — figures captured: memory collision count (must be 0), LockHeld retry count, honest-close outcomes per worker
+- [ ] Full suite green; healthy-repo digest byte-identical

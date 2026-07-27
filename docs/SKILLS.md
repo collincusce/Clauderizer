@@ -26,6 +26,8 @@
 
 **S-08.** clauderizer-modernize — Triage the advisory upgrade proposals cz_modernize surfaces — walk each one with the user to handle, dismiss, or defer. Use when the session digest says "N upgrade proposals awaiting triage", after `clauderize upgrade`, or when the user asks to finish/action a modernization. *(source: .claude/skills/clauderizer-modernize)*
 
+**S-10.** clauderizer-fleet — Fan out multiple host-spawned agents over one gameplan with Clauderizer as the shared memory hub. Use when the user says "fan out", "fleet", "parallelize this gameplan", or "put more agents on it". Orchestrates partitioning (cz_assign), worker briefings, hub-and-spoke memory writes, honest close-out, and dead-worker cleanup. Repo-local until 2.0-alpha Phase 7 productizes it into the shipped asset set (D-071, A-001). *(source: .claude/skills/clauderizer-fleet)*
+
 ### Category: Memory maintenance
 
 **S-09.** clauderizer-dream — Run the dreaming ritual: triage staged dream proposals (handle/dismiss/defer), then if the journal is ripe run cz_dream, judge the clusters, and stage new proposals via cz_dream_propose with reviewed_note_ids. Use when the digest shows "Dreams: N note(s) awaiting the dreamer" or "(N dream)" proposals awaiting triage, or on "dream" / "run the dreamer". *(source: src/clauderizer/skills/clauderizer-dream/SKILL.md)*
