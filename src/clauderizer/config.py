@@ -46,7 +46,10 @@ _KNOWN_SECTIONS = set(_MODELED_KEYS) | {"rituals"}
 # matrix, but as a real dial instead of prose advice.
 SIZE_MANIFESTS: dict[str, dict[str, Any]] = {
     "pet": {
-        "modules": ["VISION"],
+        # GLOSSARY + ENFORCEMENT ride every size: the shipped stanza and the
+        # clauderizer-fleet skill reference both by path, and a dangling
+        # pointer in a fresh repo is worse than two small docs (L-65).
+        "modules": ["VISION", "GLOSSARY", "ENFORCEMENT"],
         "rituals": {"preflight": True, "cascade": False, "amendments": False},
         "preflight_checks": ["clean_tree", "tests"],
     },
@@ -58,6 +61,8 @@ SIZE_MANIFESTS: dict[str, dict[str, Any]] = {
             "INVARIANTS",
             "TESTING",
             "HARDENING",
+            "GLOSSARY",
+            "ENFORCEMENT",
         ],
         "rituals": {"preflight": True, "cascade": True, "amendments": False},
         "preflight_checks": [
@@ -87,6 +92,7 @@ SIZE_MANIFESTS: dict[str, dict[str, Any]] = {
             "DECISIONS",
             "INVARIANTS",
             "GLOSSARY",
+            "ENFORCEMENT",
         ],
         "rituals": {"preflight": True, "cascade": True, "amendments": True},
         "preflight_checks": [

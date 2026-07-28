@@ -128,6 +128,16 @@ numbers from either project appear here or in any release material, by rule
   laundered complete — dashboards consuming outcome telemetry should read
   pass_rate as "phases that met their goal", with deferrals visible beside it.
 
+### Fresh-repo parity
+
+- Every init size now scaffolds **`docs/GLOSSARY.md`** (core memory + fleet
+  vocabulary, seeded generic with a Domain section to fill) and
+  **`docs/ENFORCEMENT.md`** (the four-tier ladder for the engine's shipped
+  disciplines) — the shipped stanza and the fleet skill reference both by
+  path, and until now a fresh repo received the pointers without the files
+  (found by smoke-testing a fresh init during this release's own gate; the
+  L-65 dangling-claim class).
+
 ### Hardening shipped with the alpha
 
 - **Version stamps never ratchet backward** (H-30, observed live during the

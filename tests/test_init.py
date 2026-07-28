@@ -22,7 +22,8 @@ def test_init_creates_expected_layout(empty_python_repo):
     assert (r / ".clauderizer" / "config.toml").exists()
     assert (r / ".clauderizer" / "profile.lock.toml").exists()
     assert (r / "docs" / "gameplans" / "GAMEPLAN-PROCEDURE.md").exists()
-    for doc in ("VISION", "ARCHITECTURE", "DECISIONS", "INVARIANTS", "TESTING", "HARDENING"):
+    for doc in ("VISION", "ARCHITECTURE", "DECISIONS", "INVARIANTS", "TESTING",
+                "HARDENING", "GLOSSARY", "ENFORCEMENT"):
         assert (r / "docs" / f"{doc}.md").exists(), doc
     assert (r / "CLAUDE.md").exists()
     assert "<!-- clauderizer:start -->" in (r / "CLAUDE.md").read_text(encoding="utf-8")
