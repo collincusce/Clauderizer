@@ -2,6 +2,17 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [1.14.5] — 2026-07-28
+
+**Hotfix: the `mcp` dependency is now constrained `>=1.2,<2`.** mcp 2.0.0
+(released 2026-07-28) removes `mcp.server.fastmcp`, which broke every fresh
+`clauderizer[mcp]` install the same day — the MCP server died at import and
+doctor's identity handshake reported no serverInfo (H-31). This release also
+ships the 1.14.4 feature set below: 1.14.4 was staged in-tree but never
+tagged or published, so its first appearance on any registry is inside this
+version. Adapting to the mcp 2.x SDK is deliberate follow-up work; the pin
+is the honest immediate contract.
+
 ## [1.14.4] — 2026-07-26
 
 **`release-check` asks whether the code passes, not just whether the version is

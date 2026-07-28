@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clauderizer"
-version = "1.14.4"
+version = "1.14.5"
 description = "Drop-in, MCP-native working memory for AI agents: gameplans, phases, a dependency graph, and post-hoc cascade — over plain markdown."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -28,7 +28,7 @@ dependencies = []
 [project.optional-dependencies]
 # The MCP server is the only thing that needs the official SDK. Install with
 # `pipx install "clauderizer[mcp]"` to expose the agentic tool surface.
-mcp = ["mcp>=1.2"]
+mcp = ["mcp>=1.2,<2"]
 dev = ["pytest>=7"]
 
 [project.scripts]
