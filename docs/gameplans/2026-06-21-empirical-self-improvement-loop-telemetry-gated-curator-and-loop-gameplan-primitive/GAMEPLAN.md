@@ -74,6 +74,8 @@ gameplan body. Account IDs, ARNs, baseline test counts, versions.)_
 
 **O-03.** _(phase 4)_ Cadence wiring for the standing loop: SessionStart 'curator due' nudge vs CI/cron propose-pass that opens a confirm queue vs purely manual invocation - which cadence is both autonomous and constitution-safe? _(resolved 2026-06-21: Addressed by Phase 4 + D5: the iteration engine is cz_loop_step (agent-invoked today). Documented cadence options: Claude Code Routines (cloud cron, runs while the laptop is closed), a SessionStart 'curator due' nudge, or manual invocation. The loop is autonomous-in-cadence once wired to any trigger; wiring a specific cadence is a deployment choice for the operator, not an engine requirement - so it does not block the primitive.)_
 
+**O-04.** Loop convergence is unreachable on a corpus at its consolidation floor (dream evidence from the live 2026-07-28 curator iteration): judgment-DECLINED promotes re-propose forever because declined is neither dismissed nor deferred and no blessed write records a declination — converged stayed false solely from 3 declined promotions. The id+ledger queue needs a declined verb (or the loop's converged definition must exclude judgment-declined candidates) so a settled corpus can honestly report settling (D-015/D-016, INVARIANT-05: the record is judgment evidence, never an auto-gate)
+
 ## Phase Breakdown
 
 ### Phase 0: Telemetry substrate & baseline

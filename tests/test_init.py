@@ -121,8 +121,9 @@ def test_resolve_invocation_refuses_uv_cache_paths(tmp_path, monkeypatch):
     # H-14: the MCP command requests the [mcp] extra (the server needs the SDK);
     # the hook command stays extra-free. The durable uvx form is wired, never the
     # uv-cache path.
-    assert mcp == ["/opt/tools/uvx", "-q", "--from", "clauderizer[mcp]", "clauderizer-mcp"]
-    assert hook == ["/opt/tools/uvx", "-q", "--from", "clauderizer", "clauderizer-hook"]
+    from clauderizer import portable_from_spec
+    assert mcp == ["/opt/tools/uvx", "-q", "--from", portable_from_spec("mcp"), "clauderizer-mcp"]
+    assert hook == ["/opt/tools/uvx", "-q", "--from", portable_from_spec(), "clauderizer-hook"]
 
 
 def test_resolve_invocation_archive_marker_alone_suffices(tmp_path, monkeypatch):

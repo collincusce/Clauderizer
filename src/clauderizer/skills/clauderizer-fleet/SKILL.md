@@ -23,7 +23,11 @@ issue-#9 corruption class.
    do not chain (check `cz_phase_detail` / GAMEPLAN.md). One phase = one
    worker. `cz_assign` each phase to a named assignee (`worker-1`…,
    or descriptive names); review with `cz_assignments`. Never fan out phases
-   that share a dependency edge — sequence those.
+   that share a dependency edge — sequence those. Prefer REAL portfolio work
+   over seeded toys: production assignments exercise assignment + locking
+   under realistic contention, yield honest LockHeld/collision/close figures,
+   and often satisfy another phase's criterion as a side effect (D-079's own
+   dogfood did).
 2. **Brief.** Give each worker the briefing template below, filled in. Workers
    in worktrees get the hub path explicitly.
 3. **Spawn** via the host, all workers in parallel. Prefer few well-scoped
@@ -57,6 +61,11 @@ You are worker <NAME> in a Clauderizer fleet. Hub repo: <HUB_PATH>.
 Your assignment: gameplan <GAMEPLAN_ID>, phase <N> "<PHASE_NAME>" (already
 bound to you via cz_assign — do not take other phases).
 1. Read the phase handoff and cz_next_phase_context; honor CLAUDE.md.
+   FIRST ACT in any worktree/clone: verify your branch point against the
+   briefed baseline (git merge-base vs the hub's HEAD; run the suite and
+   compare the count) — a briefed baseline number is a checkable claim about
+   your checkout, and building on a stale branch point builds phase-N work
+   on phase-0 code.
 2. ALL tracked writes (cz_* / clauderize ops) go to the hub. If you work in a
    worktree, write memory ONLY via `clauderize --repo <HUB_PATH>` or the
    hub-rooted MCP server. NEVER edit any docs/ copy by hand.

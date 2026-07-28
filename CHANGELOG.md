@@ -2,6 +2,24 @@
 
 All notable changes to Clauderizer are documented here.
 
+## Unreleased (will ship as 2.0.0a2)
+
+- **Pre-release engines pin their portable wiring** (`portable_from_spec`):
+  every portable/committable command (`.mcp.json`, host emitters, the Grok
+  hook string, the kimi-desktop entry, the uvx fallback) now emits
+  `clauderizer[mcp]==<version>` when the running engine is a PEP 440
+  pre-release — an unpinned resolve only sees stable, so alpha-inited repos
+  were silently served by the older stable engine (the documented 2.0.0a1
+  caveat, now closed at init time). Stable engines keep the bare spec.
+  `__version__` stays 2.0.0a1 until a2 actually publishes, so pins always
+  reference a version that exists.
+- The audit's CHANGELOG version parser speaks PEP 440 (`2.0.0a1` no longer
+  reads as `2.0.0` — the false version-drift finding at the alpha's own
+  close).
+- `clauderizer-fleet` guidance: partition step now prefers real portfolio
+  work over seeded toys (with the D-079 rationale), and the worker briefing's
+  first act is verifying the branch point against the briefed baseline.
+
 ## [2.0.0a1] — 2026-07-28
 
 **The measured alpha: fourteen externally-vetted mechanisms, built advisory-first

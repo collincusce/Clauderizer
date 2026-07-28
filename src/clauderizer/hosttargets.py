@@ -19,13 +19,16 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import portable_from_spec
 from .markdown.writer import refuse_if_symlink
 
 # The portable launch command for a COMMITTABLE config — no absolute path, no shim.
 # The MCP server needs the optional `mcp` extra (H-14/H-15); without [mcp] the
 # process exits with a missing-package notice and never serves. The local
-# dogfood .mcp.json may use an absolute path; an emitted one may not.
-PORTABLE_COMMAND = ["uvx", "--from", "clauderizer[mcp]", "clauderizer-mcp"]
+# dogfood .mcp.json may use an absolute path; an emitted one may not. On a
+# pre-release engine the spec is ==-pinned (portable_from_spec): a bare spec
+# resolves to the latest STABLE and would wire a different serving engine.
+PORTABLE_COMMAND = ["uvx", "--from", portable_from_spec("mcp"), "clauderizer-mcp"]
 
 
 @dataclass(frozen=True)
@@ -167,7 +170,7 @@ GROK_HOOK_EVENTS = ("SessionStart", "UserPromptSubmit")
 # Portable, native-safe hook command — no wsl.exe, no absolute repo path (D3).
 # Grok expands env vars in command strings; GROK_WORKSPACE_ROOT is runner-injected.
 PORTABLE_HOOK_COMMAND = (
-    'cd "${GROK_WORKSPACE_ROOT}" && uvx --from clauderizer clauderizer-hook'
+    f'cd "${{GROK_WORKSPACE_ROOT}}" && uvx --from {portable_from_spec()} clauderizer-hook'
 )
 
 

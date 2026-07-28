@@ -46,7 +46,8 @@ def test_wire_autowrites_non_destructively(tmp_path):
     servers = json.loads(cfg.read_text(encoding="utf-8"))["mcpServers"]
     assert servers["other"] == {"command": "x"}                 # preserved
     assert servers["clauderizer"]["command"] == "/usr/bin/uvx"  # absolute uvx
-    assert servers["clauderizer"]["args"] == ["--from", "clauderizer[mcp]", "clauderizer-mcp"]
+    from clauderizer import portable_from_spec
+    assert servers["clauderizer"]["args"] == ["--from", portable_from_spec("mcp"), "clauderizer-mcp"]
 
 
 def test_wire_not_detected_when_app_absent(tmp_path):
@@ -171,7 +172,7 @@ def test_server_entry_pin_ignored_on_non_windows(tmp_path):
     entry, _ = kd.server_entry(cfg, in_wsl=False, platform="linux",
                                which=lambda n: "/usr/bin/uvx", pin=r"\\wsl.localhost\U\x")
     assert entry == {"command": "/usr/bin/uvx",
-                     "args": ["--from", "clauderizer[mcp]", "clauderizer-mcp"]}
+                     "args": ["--from", __import__("clauderizer").portable_from_spec("mcp"), "clauderizer-mcp"]}
 
 
 def _pin_setup(tmp_path):

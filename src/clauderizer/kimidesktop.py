@@ -106,7 +106,11 @@ def _is_windows_side(cfg: Path, users_dir: Path) -> bool:
         return False
 
 
-_ARGS = ["--from", "clauderizer[mcp]", "clauderizer-mcp"]
+def _args() -> list[str]:
+    # Recomputed per call so the ==-pin follows the running engine's version
+    # (pre-releases pin, stable stays bare — portable_from_spec).
+    from . import portable_from_spec
+    return ["--from", portable_from_spec("mcp"), "clauderizer-mcp"]
 
 # Windows-native command composition (Windows/WSL path translation + clauderizer-mcp.exe
 # probing) is the host-agnostic winhost primitive (D-056), reused by any bespoke host.
@@ -170,9 +174,9 @@ def server_entry(cfg: Path, *, in_wsl: bool, windows_side: bool | None = None,
         return ({"command": exe, "args": []}, [])
     uvx = which("uvx")
     if uvx is None:
-        return ({"command": "uvx", "args": list(_ARGS)},
+        return ({"command": "uvx", "args": _args()},
                 ["uvx is not on PATH — wrote a bare 'uvx'; install uv so the server launches"])
-    return ({"command": uvx, "args": list(_ARGS)}, [])
+    return ({"command": uvx, "args": _args()}, [])
 
 
 # The guidance surfaced when the app is detected but can't serve THIS repo: a WSL repo
@@ -373,7 +377,7 @@ wrapper). What the `command` must be depends on where the app runs:
   ```json
   {{
     "mcpServers": {{
-      "clauderizer": {{ "command": "/usr/bin/uvx", "args": ["--from", "clauderizer[mcp]", "clauderizer-mcp"] }}
+      "clauderizer": {{ "command": "/usr/bin/uvx", "args": {json.dumps(_args())} }}
     }}
   }}
   ```

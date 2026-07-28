@@ -32,6 +32,8 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 **O-02.** _(phase 0)_ Should the shipped .mcp.json pin a version floor for `uvx --from clauderizer[mcp]`? Unpinned is what let uv serve 1.12.0 to a 1.13.0 repo. Pinning a floor (clauderizer[mcp]>=X) prevents the skew but couples the emitted config to the release cadence and may fight uv's cache; the D-060 decision is that the WARNING is the fix, not repointing. Decide in Phase 0 whether a floor is additionally warranted, and whether `clauderize init` should stamp the emitting engine's version as that floor. Constraint: whatever ships must stay portable across all 12 wired hosts (D-031 / L-48).
 
+**O-03.** Short-lesson near-dup blindness (dream 09033b98b104): the promote trailer's ~7 ancestry/provenance tokens dilute the Jaccard union enough that a PERFECT-SUBSET probe against a ~5-token lesson scored 0.38 vs the 0.40 threshold — terse lessons are effectively immune to the near-dup/correction advisory while long ones are not. When this gameplan re-registers the threshold (its ranker length-bias phase), add a short-lesson fixture: ~5-token lesson + enriched trailer, asserting the advisory fires on a perfect subset (L-50 pre-registered fixture process; INVARIANT-09 single-sourcing)
+
 ## Phase Breakdown
 
 ### Phase 0: Engine identity — doctor certifies what it launched

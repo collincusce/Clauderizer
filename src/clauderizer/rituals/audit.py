@@ -35,7 +35,9 @@ from . import status_bundle as sb
 _VERSION_RE = re.compile(r"""^__version__\s*=\s*['"]([^'"]+)['"]""", re.MULTILINE)
 # First version-looking token in a top-level Markdown heading, e.g. "## [1.7.0]"
 # or "## 1.7.0 — title". Deliberately loose: any "## ..." with an X.Y[.Z] token.
-_CHANGELOG_HEADING_RE = re.compile(r"^##\s+\[?v?(\d+\.\d+(?:\.\d+)?)", re.MULTILINE)
+_CHANGELOG_HEADING_RE = re.compile(
+    r"^##\s+\[?v?(\d+\.\d+(?:\.\d+)?(?:(?:a|b|rc)\d+|\.post\d+|\.dev\d+)?)",
+    re.MULTILINE)  # PEP 440 pre/post/dev suffixes: 2.0.0a1 is not "2.0.0"
 
 
 def _run_git(args: list[str], root: Path) -> tuple[int, str]:

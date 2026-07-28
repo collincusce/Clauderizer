@@ -127,9 +127,10 @@ def test_resolve_invocation_falls_back_to_path_then_uvx(monkeypatch, tmp_path):
     # `--from clauderizer` never installs the optional mcp SDK, so the wired server
     # refused to serve on every zero-install (found across the pet/standard/saas
     # stranger-readiness dogfood). The hook command stays extra-free.
+    from clauderizer import portable_from_spec
     mcp_argv, hook_argv = _resolve_invocation(None)
-    assert mcp_argv == ["uvx", "-q", "--from", "clauderizer[mcp]", "clauderizer-mcp"]
-    assert hook_argv == ["uvx", "-q", "--from", "clauderizer", "clauderizer-hook"]
+    assert mcp_argv == ["uvx", "-q", "--from", portable_from_spec("mcp"), "clauderizer-mcp"]
+    assert hook_argv == ["uvx", "-q", "--from", portable_from_spec(), "clauderizer-hook"]
 
 
 def test_doctor_flags_mcp_wiring_missing_the_mcp_extra():
