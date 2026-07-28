@@ -1,7 +1,7 @@
 # Standing curator loop - memory maintenance Gameplan
 
 > Created: 2026-06-21
-> Status: Planning
+> Status: Complete
 > Kind: loop
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -36,6 +36,7 @@ _(Auto-numbered O-NN via cz_add_open_item; close with cz_resolve_open_item. Bloc
 
 **Goal**: _(one sentence.)_
 **Depends on**: nothing (first phase).
+**Assigned**: worker-curator
 
 | Task | Description | Effort |
 |------|-------------|--------|
