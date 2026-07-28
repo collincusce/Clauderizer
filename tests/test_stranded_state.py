@@ -212,6 +212,7 @@ def _tree_digest(*roots: Path) -> str:
     return h.hexdigest()
 
 
+@pytest.mark.skipif(os.name != "posix", reason="real-pid liveness grading needs POSIX kill(pid, 0); the win32 arm (probe can never signal) is pinned by its own monkeypatched test")
 def test_detect_read_path_writes_zero_bytes(temp_repo):
     paths, _ = _ctx(temp_repo)
     gid = _gameplan(paths)
@@ -234,6 +235,7 @@ def _phase1_in_progress(paths, gid):
     _stamp_line(paths, gid, "1", pid=_freed_pid())
 
 
+@pytest.mark.skipif(os.name != "posix", reason="real-pid liveness grading needs POSIX kill(pid, 0); the win32 arm (probe can never signal) is pinned by its own monkeypatched test")
 def test_digest_carries_the_shared_wording_and_is_quiet_when_healthy(temp_repo):
     paths, config = _ctx(temp_repo)
     gid = _gameplan(paths)
@@ -248,6 +250,7 @@ def test_digest_carries_the_shared_wording_and_is_quiet_when_healthy(temp_repo):
     assert "⚠ Stranded: " + stranded.describe(bundle["stranded"]) in digest
 
 
+@pytest.mark.skipif(os.name != "posix", reason="real-pid liveness grading needs POSIX kill(pid, 0); the win32 arm (probe can never signal) is pinned by its own monkeypatched test")
 def test_preflight_warns_never_fails_and_words_identically(temp_repo):
     paths, config = _ctx(temp_repo)
     gid = _gameplan(paths)
