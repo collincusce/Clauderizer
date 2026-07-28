@@ -531,6 +531,9 @@ def init(
     # history of THIS machine, never team memory (D-067).
     changed = _ensure_gitignore(gi, ".clauderizer/sessions.jsonl") or changed
     changed = _ensure_gitignore(gi, ".clauderizer/refusals.jsonl") or changed
+    # D-073: seen-vs-open engagement receipts — personal labeling state, the
+    # sole sanctioned write on a read-declared op; never team memory (D-067).
+    changed = _ensure_gitignore(gi, ".clauderizer/seen.local.jsonl") or changed
     # D-067: per-machine state is gitignored, team memory is tracked. These four
     # were TRACKED — the dream watermark and proposal store index a journal that
     # is itself gitignored, revision.json is a local counter bumped on every

@@ -31,8 +31,11 @@ def _chdir(path):
 
 # A READ may legitimately (re)build these — disposable caches, the write lock,
 # python bytecode — so they are excluded from the "tracked file" snapshot. Anything
-# else changing means the op was not actually read-only.
-_DISPOSABLE = {"index.json", "abstract_index.json", "telemetry.jsonl", "write.lock"}
+# else changing means the op was not actually read-only. seen.local.jsonl is
+# D-073's sole sanctioned read-op write (the engagement-receipt sidecar) — the
+# edit is scoped to exactly that filename, so everything else stays gated.
+_DISPOSABLE = {"index.json", "abstract_index.json", "telemetry.jsonl", "write.lock",
+               "seen.local.jsonl"}
 
 
 def _snapshot(root: Path) -> dict:

@@ -455,6 +455,19 @@ def _findings_age_phrase(age: dict) -> str:
             f"record an explicit dated acceptance.")
 
 
+def _engagement_phrase(eng: dict) -> str:
+    """The seen-vs-open split body (D-073): never-engaged foregrounded first,
+    engaged-but-open after; every id prints in exactly one bucket (D-068) —
+    labeling only, never removal. Rendered only when receipts exist."""
+    parts = []
+    if eng.get("never"):
+        parts.append(f"{len(eng['never'])} never-engaged ({', '.join(eng['never'])})")
+    if eng.get("engaged"):
+        parts.append(f"{len(eng['engaged'])} engaged-but-open "
+                     f"({', '.join(eng['engaged'])})")
+    return "; ".join(parts)
+
+
 def _baseline_tests(index_text: str) -> str | None:
     m = re.search(r"baseline test count\D*(\d+)", index_text, re.IGNORECASE)
     return m.group(1) if m else None
@@ -820,6 +833,25 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
     except Exception:  # a malformed register must never break the digest (INVARIANT-04)
         bundle["open_findings"] = []
     bundle["open_items"] = [it["id"] for it in unresolved_open_items(gdir)]
+    # Seen-vs-open receipts (D-073): partition the open registers by ANY-reader
+    # engagement — labeling only, both buckets keep every id (D-068). Purely a
+    # READ: this path never creates or writes the sidecar (INVARIANT-06), and
+    # with no receipts recorded the bundle stays byte-identical (INVARIANT-08
+    # conditional emission — the split keys simply do not exist).
+    try:
+        from .. import receipts as _receipts
+
+        _seen = _receipts.load_seen(paths)
+        if _seen:
+            if bundle["open_findings"]:
+                _nv, _en = _receipts.split_seen(bundle["open_findings"], _seen)
+                bundle["findings_engagement"] = {"never": _nv, "engaged": _en}
+            if bundle["open_items"]:
+                _nv, _en = _receipts.split_seen(bundle["open_items"], _seen,
+                                                prefix=f"{gid}:")
+                bundle["open_items_engagement"] = {"never": _nv, "engaged": _en}
+    except Exception:  # a garbled sidecar must never break the digest
+        pass
 
     cur = bundle["current_phase"]
     nxt = bundle["next_phase"]
@@ -1025,14 +1057,22 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
     # 1.13.0's (INVARIANT-08 keeps injected status focused and minimal).
     of = bundle.get("open_findings") or []
     if of:
-        line = f"Open findings: {len(of)} ({', '.join(of)})."
+        # With receipts (D-073) the line splits by engagement — every id still
+        # prints, in exactly one bucket (D-068 drop-nothing); without them the
+        # historical form renders byte-identically (INVARIANT-08).
+        line = (f"Open findings: {len(of)} — {_engagement_phrase(eng)}."
+                if (eng := bundle.get("findings_engagement"))
+                else f"Open findings: {len(of)} ({', '.join(of)}).")
         age = bundle.get("findings_age")
         if age:
             line += _findings_age_phrase(age)
         lines.append(line)
     oi = bundle.get("open_items") or []
     if oi:
-        lines.append(f"Open items: {len(oi)} unresolved ({', '.join(oi)}).")
+        lines.append(
+            f"Open items: {len(oi)} unresolved — {_engagement_phrase(eng)}."
+            if (eng := bundle.get("open_items_engagement"))
+            else f"Open items: {len(oi)} unresolved ({', '.join(oi)}).")
     mz = bundle.get("modernization")
     if mz:
         # "carries" on purpose: the PROCEDURE version is the methodology

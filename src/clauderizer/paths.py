@@ -68,6 +68,13 @@ class RepoPaths:
         return self.clauderizer_dir / "telemetry.jsonl"
 
     @property
+    def seen_file(self) -> Path:
+        """Append-only seen-vs-open engagement receipts (D-073) — per-machine,
+        gitignored, disposable labeling state; see ``receipts.py``. The sole
+        sanctioned write on a read-declared op (lock-free O_APPEND)."""
+        return self.clauderizer_dir / "seen.local.jsonl"
+
+    @property
     def dreams_file(self) -> Path:
         """Append-only dream journal (experiential notes, D-058); see
         ``dreams.py``. Local-only like telemetry.jsonl — gitignored, written

@@ -190,7 +190,9 @@ def cz_get(id: str, kind: str = "auto") -> dict:
     status, anchor, kind}; ok is False when the id is unknown. Works for any corpus
     id — a decision (D-NNN), invariant (INVARIANT-NN), finding (H-NN), or lesson
     (L-NN); `kind` is an optional hint, normally inferred since ids are globally
-    unique. Read-only — no write lock on the read path (L-03).
+    unique. Read-only — no write lock on the read path (L-03). A successful fetch
+    records a seen-receipt in the gitignored per-machine sidecar (D-073) so the
+    digest can foreground never-engaged findings; labeling only, drop nothing.
     """
     paths, _ = repo_ctx()
     from . import analyze
@@ -200,6 +202,8 @@ def cz_get(id: str, kind: str = "auto") -> dict:
     # (.clauderizer/abstract_index.json) as any graph read does — same as
     # cz_graph_query; that cache is rebuilt from markdown and safe to discard, so it
     # does not make this a mutating op. (test_cz_get_mutates_no_tracked_markdown.)
+    # The seen-receipt append (D-073) rides the REGISTRY seam, not this function —
+    # direct library callers stay byte-free (C-02); see _receipted.
     entry = analyze.get_entry(paths, id, kind=kind)
     if entry is None:
         return {"ok": False, "id": id,
@@ -1604,6 +1608,60 @@ def _stamped(name: str, fn: Callable[..., dict]) -> Callable[..., dict]:
     return wrapper
 
 
+# The four genuine-engagement receipt sources (D-073) and how each names what it
+# engaged. Receipts attach HERE, at the registry seam beside the refusal journal,
+# so run_op, the MCP server's direct REGISTRY access and in-process callers all
+# receipt identically while the underlying library functions stay byte-free
+# (C-02). Everything below is best-effort: a receipt failure never alters the
+# op's own result. Extractors read kwargs first and fall back to the result —
+# both transports call with kwargs; the result carries the resolved id anyway.
+def _receipt_ids(name: str, kwargs: dict, result: dict) -> list[str]:
+    if name == "cz_get":
+        rid = result.get("id") or kwargs.get("id")
+        return [str(rid)] if rid else []
+    if name == "cz_resolve_finding":
+        rid = kwargs.get("finding_id") or result.get("id")
+        return [str(rid)] if rid else []
+    _paths, _cfg = repo_ctx()
+    gid = kwargs.get("gameplan_id") or _cfg.active_gameplan or ""
+    if name == "cz_resolve_open_item":
+        rid = result.get("id") or kwargs.get("id")
+        # O-NN numbers restart per gameplan — receipts qualify them (D-073).
+        return [f"{gid}:{rid}"] if rid and gid else []
+    if name == "cz_check_exit_criterion":
+        phase = kwargs.get("phase") or result.get("phase")
+        # Synthetic key: collision-free with register ids by construction, so
+        # the digest split ignores it while the D-064 matrix can count it.
+        return [f"criteria:{gid}:{phase}"] if phase and gid else []
+    return []
+
+
+_RECEIPT_OPS = {"cz_get", "cz_resolve_finding", "cz_resolve_open_item",
+                "cz_check_exit_criterion"}
+
+
+def _receipted(name: str, fn: Callable[..., dict]) -> Callable[..., dict]:
+    if name not in _RECEIPT_OPS:
+        return fn
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        result = fn(*args, **kwargs)
+        try:
+            if isinstance(result, dict) and result.get("ok") is True:
+                ids = _receipt_ids(name, kwargs, result)
+                if ids:
+                    from . import receipts as _receipts
+
+                    paths, _ = repo_ctx()
+                    _receipts.record_seen(paths, ids, via=name)
+        except Exception:
+            pass
+        return result
+
+    return wrapper
+
+
 def _journaled(fn: Callable[..., dict], writes: bool) -> Callable[..., dict]:
     """Refusal journal (D-070 P1): a writes=True op that returns ok:False is a
     REFUSED write — evidence the curator/miner can read later, which today
@@ -1636,7 +1694,8 @@ def _journaled(fn: Callable[..., dict], writes: bool) -> Callable[..., dict]:
     return wrapper
 
 
-REGISTRY = {name: Op(_journaled(_stamped(name, spec.fn), spec.writes), spec.writes)
+REGISTRY = {name: Op(_journaled(_receipted(name, _stamped(name, spec.fn)), spec.writes),
+                     spec.writes)
             for name, spec in REGISTRY.items()}
 
 

@@ -261,6 +261,13 @@ LOCAL_STATE_IGNORES = (
     ".clauderizer/hook.cmd",
     ".clauderizer/write.lock",
     ".clauderizer/baseline.json",
+    # P1's session evidence + refusal journal were gitignored by init but never
+    # joined this tier-1 list, so existing repos could not converge on them —
+    # the exact gap D-067's "ships as a tier-1 action" rule exists to prevent.
+    ".clauderizer/sessions.jsonl",
+    ".clauderizer/refusals.jsonl",
+    # D-073: seen-vs-open engagement receipts.
+    ".clauderizer/seen.local.jsonl",
 )
 
 
