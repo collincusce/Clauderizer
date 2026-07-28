@@ -1,11 +1,26 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.10.0
-**Last updated**: 2026-07-24
+**Procedure version**: 1.11.0
+**Last updated**: 2026-07-27
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.11.0** (2026-07-27): **Corrections reach their source; survivors carry
+  their ancestry.** A correction that contradicts an accumulated lesson must
+  REACH that lesson — mark it `cz_obsolete_lesson(number, reason="superseded by
+  C-NN")` — not merely append a new entry, or the refuted lesson keeps riding
+  every handoff beside its own refutation. `cz_add_correction` now runs an
+  executable detector for this discipline (D-069/D-074): its result may carry
+  `possibly_contradicted` naming lexically-overlapping active project AND
+  gameplan lessons — a detector, not a completeness guarantee; the agent judges,
+  nothing auto-obsoletes (INVARIANT-05). Symmetrically, consolidation/promotion
+  survivors now record what they condensed inline (`*(consolidated from #a, #b,
+  date)*`; `*(from <gameplan> #N, date)*` survives a text override), so ancestry
+  is answerable from the surviving line without opening cold storage — surface
+  self-containedness; INVARIANT-03 still deletes nothing. Curator and miner
+  proposals join the unified id+ledger triage queue (dismissals stick until the
+  content materially changes; `suppressed_count` is always named).
 - **v1.9.0** (2026-07-24): **Truth repair.** Corrections where this document had
   drifted from the system it describes, found by a six-agent audit. "Execute a
   Phase" no longer instructs reading every prior handoff — that contradicted the
@@ -713,6 +728,16 @@ Examples of what belongs here: baseline test counts, deployed resource
 ## Corrections Log
 
 Every divergence from the gameplan, captured in real-time.
+
+**A correction must reach the lesson it contradicts.** Recording C-NN and
+stopping leaves the contradicted lesson ACTIVE — surfacing in every future
+handoff beside its own refutation, and on re-consolidation the stale claim can
+resurface from the source with no conflict to warn you. When a correction
+supersedes an accumulated lesson (the `cz_add_correction` result's
+`possibly_contradicted` advisory names lexical candidates; it may also miss
+paraphrases — judge beyond the list), write it back:
+`cz_obsolete_lesson(number, reason="superseded by C-NN")`. The log keeps the
+line; handoffs stop carrying it.
 
 ### C1 — <Phase, brief title>
 **Phase**: <number>

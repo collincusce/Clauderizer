@@ -36,6 +36,7 @@ That invariant exists because a fork was found. Relevance ranking, the abstract 
 ## Near-duplicates length-normalize
 
 - **`near_duplicate_lessons(paths, text)`** / **`near_duplicate_invariants(paths, text)`** — active entries whose distinctive-token **Jaccard** with `text` clears the threshold.
+- **`near_duplicate_gameplan_lessons(paths, gameplan_id, text)`** — the same scan over a gameplan's accumulated numbered lessons (which the abstract index cannot see); the correction-advisory's second corpus (D-074), same tokenizer and threshold.
 
 Jaccard (`|A∩B| / |A∪B|`) rather than a raw overlap count, and the distinction is load-bearing: raw overlap is the *relevance* signal, and a long, entirely distinct entry trips it by sheer size. Length-normalizing is what separates "these say the same thing" from "this one is big".
 

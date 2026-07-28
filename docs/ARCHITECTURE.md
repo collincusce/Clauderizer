@@ -7,7 +7,7 @@ Project DAG; this doc is the prose overview.
 ## Subsystems
 
 **Every** top-level module under `src/clauderizer/` is a tracked subsystem with a
-full entity doc in `docs/subsystems/` — 42 of them, and the exemption list is
+full entity doc in `docs/subsystems/` — 43 of them, and the exemption list is
 empty (1.14.3). That is enforced, not asserted: `tests/test_subsystem_doc_seam.py`
 fails if a new module lands without a doc, and the count below is pinned against
 the directory by `tests/test_architecture_pins.py`.
@@ -39,7 +39,7 @@ the directory by `tests/test_architecture_pins.py`.
 - **[profiles](subsystems/profiles.md)** — the **language** axis: per-language TOML data (test/build/lint/typecheck commands + baseline regex), never engine code.
 - **[kinds](subsystems/kinds.md)** — the **gameplan-kind** axis: vocabulary + phase template + preflight skin; orthogonal to and composed with profiles.
 
-**The self-improvement stack:** [telemetry](subsystems/telemetry.md) (what the engine can measure) · [dreams](subsystems/dreams.md) (what only the responding agent can observe) · [learn](subsystems/learn.md) (what a transcript happens to show) · [skill-discovery](subsystems/skill-discovery.md).
+**The self-improvement stack:** [telemetry](subsystems/telemetry.md) (what the engine can measure) · [dreams](subsystems/dreams.md) (what only the responding agent can observe) · [learn](subsystems/learn.md) (what a transcript happens to show) · [receipts](subsystems/receipts.md) (what this machine has engaged — the seen-vs-open split, D-073) · [skill-discovery](subsystems/skill-discovery.md).
 
 **Host wiring:** [hosts](subsystems/hosts.md) (the session hook) · [hosttargets](subsystems/hosttargets.md) (per-host MCP emitters) · [bespoke-hosts](subsystems/bespoke-hosts.md) (the one sanctioned auto-write exception) · [kimidesktop](subsystems/kimidesktop.md) · [winhost](subsystems/winhost.md) · [mcp-probe](subsystems/mcp-probe.md).
 

@@ -719,7 +719,9 @@ def cz_consolidate_lessons(numbers: list[int], text: str, category: str = "Proce
 
     Adds <text> as a new lesson and marks each source lesson
     "(obsolete: consolidated into #N)" — every future handoff carries one
-    line instead of many, and the log keeps the full audit trail. Use when
+    line instead of many, and the log keeps the full audit trail. The survivor
+    line records what it condensed inline ("*(consolidated from #a, #b, date)*",
+    D-074) so its ancestry is answerable without opening the sources. Use when
     the accumulated lessons start repeating themselves.
     """
     paths, config = repo_ctx()
@@ -755,8 +757,11 @@ def cz_promote_lesson(number: str, text: str = "", category: str = "",
     entry with provenance in a compact project doc that every future
     handoff carries (across gameplans). The source line is marked
     "(promoted <date>: L-NN)" and stops rolling up individually. Optional
-    text rewrites the wording (promotion is a chance to distill); category
-    defaults to the source lesson's. Typical moment: gameplan close-out.
+    text rewrites the wording (promotion is a chance to distill) — the
+    engine-written ancestry trailer "*(from <gameplan> #N, <date>)*" survives
+    the override (D-074), so the L-NN line alone answers what it condensed and
+    when. category defaults to the source lesson's. Typical moment: gameplan
+    close-out.
     """
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
@@ -791,7 +796,14 @@ def cz_obsolete_skill(skill_id: str, reason: str = "") -> dict:
 
 def cz_add_correction(phase: str, gameplan_said: str, actually: str, why: str,
                       lesson: str = "", gameplan_id: str = "") -> dict:
-    """Record a divergence from the gameplan (C-NN); optionally promote a lesson."""
+    """Record a divergence from the gameplan (C-NN); optionally promote a lesson.
+
+    The result may carry `possibly_contradicted` + an `advisory` (D-074): a
+    lexical scan of the correction against active project AND gameplan lessons —
+    a detector, not a completeness guarantee. If the correction supersedes a
+    lesson, write it back to the source (cz_obsolete_lesson with reason
+    "superseded by C-NN") instead of leaving the stale lesson riding every
+    handoff beside its own refutation. Nothing is auto-obsoleted."""
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
     return mutations.add_correction(paths, gameplan_id=gid, phase=phase,
@@ -992,12 +1004,13 @@ def cz_modernize(apply: bool = False) -> dict:
 
 
 def cz_dismiss_proposal(proposal_id: str) -> dict:
-    """Dismiss an advisory proposal (modernize or dream) by its ``id`` — it
-    will NOT re-surface (in cz_modernize/cz_dream or the session digest) until
-    it materially changes and hashes to a new id. Recorded in a per-user,
-    gitignored ledger (.clauderizer/proposals.local.toml); this is a personal
-    "seen it", not a team-wide gate off-switch (D-052/D-059). Get ids from
-    cz_modernize or cz_dream's blocked_on_triage state."""
+    """Dismiss an advisory proposal (modernize, dream, curator or miner) by its
+    ``id`` — it will NOT re-surface (in cz_modernize/cz_dream/cz_curate/
+    cz_loop_step/cz_mine_failures or the session digest) until it materially
+    changes and hashes to a new id. Recorded in a per-user, gitignored ledger
+    (.clauderizer/proposals.local.toml); this is a personal "seen it", not a
+    team-wide gate off-switch (D-052/D-059/D-074). Get ids from cz_modernize,
+    cz_dream's blocked_on_triage state, or the curator/miner proposal lists."""
     paths, _ = repo_ctx()
     from . import proposals as _proposals
 
@@ -1098,12 +1111,15 @@ def cz_mine_failures(transcripts_dir: str = "", max_proposals: int = 40) -> dict
     transcript JSONL and SURFACES candidates — a tool error then a same-tool
     success, a pytest fail→pass, or a short explicit user correction — and never
     writes. Confirm a genuine proposal by recording it through cz_add_correction
-    (or cz_add_lesson); discard the rest. `transcripts_dir` defaults to this
+    (or cz_add_lesson); dismiss noise by id (cz_dismiss_proposal) — mined
+    candidates carry stable content-hash ids through the unified triage ledger
+    (D-074), so a judged pattern stops re-surfacing. `transcripts_dir` defaults to this
     project's Claude Code transcript directory (set $CLAUDERIZER_TRANSCRIPTS_DIR,
     or pass it explicitly when auto-resolution fails). Deterministic, stdlib-only,
     no enable/disable flag.
     """
     from . import learn
+    from . import proposals as _proposals
 
     d = transcripts_dir.strip() or _default_transcripts_dir()
     if not d or not Path(d).exists():
@@ -1113,23 +1129,39 @@ def cz_mine_failures(transcripts_dir: str = "", max_proposals: int = 40) -> dict
             "hint": "pass transcripts_dir (the ~/.claude/projects/<slug> path) "
                     "or set $CLAUDERIZER_TRANSCRIPTS_DIR",
         }
+    paths, _ = repo_ctx()
     by_file = learn.mine_dir(d)
-    proposals = [{**p, "source": fname}
+    # Merge-base (D-074): mined candidates join the unified id+ledger queue, so
+    # a reviewed-and-discarded pattern stops re-surfacing forever — the id hashes
+    # the candidate's material content; a new occurrence is a new id.
+    proposals = [{**p, "source": fname,
+                  "id": _proposals.proposal_id("mine", fname, p.get("kind", ""),
+                                               p.get("evidence", ""),
+                                               p.get("draft", ""))}
                  for fname, props in by_file.items() for p in props]
-    capped = proposals[:max_proposals]
+    led = _proposals.load_ledger(paths)
+    pending = _proposals.filter_pending(proposals, led)
+    suppressed = len(proposals) - len(pending)
+    capped = pending[:max_proposals]
     return {
         "ok": True,
         "transcripts_dir": str(d),
         "files_scanned": len(by_file),
-        "proposal_count": len(proposals),
+        "proposal_count": len(pending),
         "shown": len(capped),
         "proposals": capped,
+        # Display, never authority (D-013): the unfiltered set stays readable.
+        "all_proposals": proposals[:max_proposals],
+        "suppressed_count": suppressed,
         "prompt": ("Each proposal is a DRAFT, not a write. For genuine failure→fix "
                    "patterns, confirm and record via cz_add_correction (or "
-                   "cz_add_lesson); discard the rest. The engine proposes; you decide."),
-        "summary": (f"mined {len(proposals)} failure→fix proposal(s) from "
+                   "cz_add_lesson); dismiss noise with cz_dismiss_proposal(id) — it "
+                   "stays suppressed until the pattern recurs. The engine proposes; "
+                   "you decide."),
+        "summary": (f"mined {len(pending)} failure→fix proposal(s) from "
                     f"{len(by_file)} transcript(s)"
-                    + (f"; showing {len(capped)}" if len(capped) < len(proposals) else "")),
+                    + (f"; showing {len(capped)}" if len(capped) < len(pending) else "")
+                    + (f" ({suppressed} suppressed by your ledger)" if suppressed else "")),
     }
 
 
@@ -1167,8 +1199,12 @@ def cz_curate() -> dict:
     """PROPOSE a corpus-maintenance batch from telemetry-derived health, read-only
     like cz_mine_failures: consolidate redundant lessons, obsolete never-surfaced
     or low-utility ones, flag high-failure-risk ones for review, and promote
-    high-utility gameplan lessons. Each proposal carries evidence + the blessed
-    cz_* op to apply it; the agent confirms. No writes, no ML.
+    high-utility gameplan lessons. Each proposal carries evidence, a stable
+    content-hash id + the blessed cz_* op to apply it; the agent confirms.
+    Judged false positives stay suppressed via cz_dismiss_proposal until a
+    participating lesson's text materially changes (D-074 merge-base);
+    `all_proposals` keeps the unfiltered set and `suppressed_count` names the
+    machine-local suppression. No writes, no ML.
     """
     from . import telemetry
 
@@ -1178,7 +1214,10 @@ def cz_curate() -> dict:
 
 def cz_loop_step() -> dict:
     """Run one iteration of a loop gameplan (read-only): the convergence metric
-    (corpus_health), the curator's proposals, a `converged` flag, and an
+    (corpus_health), the curator's PENDING proposals (ledger-filtered — dismiss a
+    false positive and the loop can actually converge, D-074), a `converged` flag
+    with `converged_with_suppression` named distinctly when the ledger did the
+    work, `suppressed_count`/`all_proposals` for the unfiltered view, and an
     escape-hatch `spawn_gameplan` suggestion for structural work. The agent applies
     the actionable proposals via blessed cz_* writes and calls this again until
     converged. No writes, no ML.

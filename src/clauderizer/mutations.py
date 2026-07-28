@@ -549,10 +549,20 @@ def resolve_finding(paths: RepoPaths, *, finding_id: str, status: str = "resolve
             "summary": f"{finding_id} → {status.strip()}"}
 
 
+def _inline_trailer(text: str) -> str:
+    """The single renderer for every state-inert inline trailer a lesson line
+    carries (evidence, audience, ancestry — D-074). One home, no ad-hoc
+    concatenation at call sites: the rendered form ends with ``*``, which the
+    end-anchored lesson-state grammar (``lesson_state._STATE_RE``, H-18) can
+    never match, so a trailer can never flip a line's parsed state."""
+    return f" *({text})*"
+
+
 @_locked
 def add_lesson(
     paths: RepoPaths, *, gameplan_id: str, text: str, category: str = "Process",
     evidence: str | None = None, audience: str | None = None,
+    provenance: str | None = None,
 ) -> dict:
     err = _require_gameplan(paths, gameplan_id)
     if err:
@@ -569,11 +579,16 @@ def add_lesson(
     # italic marker is NOT a lesson-state marker (lesson_state reads an
     # (obsolete|promoted …) marker at line end), so state parsing is unaffected.
     if evidence and evidence.strip():
-        lesson_line += f" *(evidence: {evidence.strip()})*"
+        lesson_line += _inline_trailer(f"evidence: {evidence.strip()}")
     if audience and audience.strip():
         # Audience rides inline like evidence (D-043); read paths filter on it
         # via abstract_index.parse_audience. Not a lesson-state marker either.
-        lesson_line += f" *(audience: {audience.strip()})*"
+        lesson_line += _inline_trailer(f"audience: {audience.strip()}")
+    if provenance and provenance.strip():
+        # Survivor ancestry (D-074): what this line condensed, answerable from
+        # the line alone — surface self-containedness, never loss-prevention
+        # (INVARIANT-03 deletes nothing; the sources carry their own back-links).
+        lesson_line += _inline_trailer(provenance.strip())
     new_section = _insert_under_category(body, category, lesson_line)
     writer.upsert_section(path, "Accumulated Lessons", new_section)
     result = {"ok": True, "number": n, "path": str(path),
@@ -716,7 +731,12 @@ def promote_lesson(
     ldoc = paths.doc("LESSONS")
     _ensure_doc(ldoc, "LESSONS")
     new_id = next_numbered_id(writer.full_text(ldoc), "L", sep="-", width=2)
-    entry = f"**{new_id}.** {lesson_text} *(from {gameplan_id})*"
+    # Ancestry survives a text override by construction — the trailer is
+    # engine-written OUTSIDE lesson_text, so a hand-distilled promotion cannot
+    # silently drop which lesson it condensed and when (D-074). Older entries
+    # keep the short *(from gid)* form; nothing in src/ parses either shape.
+    entry = (f"**{new_id}.** {lesson_text}"
+             + _inline_trailer(f"from {gameplan_id} #{n}, {_today(today)}"))
     lessons_body = sections.get_section(writer.full_text(ldoc), "Lessons") or ""
     writer.upsert_section(ldoc, "Lessons", _insert_under_category(lessons_body, category, entry))
 
@@ -760,7 +780,9 @@ def consolidate_lessons(
     if problems:
         return {"ok": False, "summary": "cannot consolidate: " + "; ".join(problems)}
 
-    added = add_lesson(paths, gameplan_id=gameplan_id, text=text.strip(), category=category)
+    added = add_lesson(paths, gameplan_id=gameplan_id, text=text.strip(), category=category,
+                       provenance=(f"consolidated from "
+                                   f"{', '.join('#' + n for n in uniq)}, {_today(today)}"))
     new_n = added["number"]
     files = list(added["files_changed"])
     for n in uniq:
@@ -1068,8 +1090,35 @@ def add_correction(
     if lesson:
         lesson_result = add_lesson(paths, gameplan_id=gameplan_id, text=lesson, category=category)
         files += lesson_result["files_changed"]
-    return {"ok": True, "id": new_id, "files_changed": files,
-            "lesson": lesson_result, "summary": f"added correction {new_id}"}
+    result = {"ok": True, "id": new_id, "files_changed": files,
+              "lesson": lesson_result, "summary": f"added correction {new_id}"}
+    # Correction-advisory detector (D-074, the D-069 executable check for the
+    # write-corrections-back-to-source discipline): a correction recorded only as
+    # a new entry leaves the contradicted lesson ACTIVE, riding every handoff
+    # beside its own refutation. Scan the correction's substance against active
+    # project AND gameplan lessons through the one canonical tokenizer/threshold
+    # (INVARIANT-09). Lexical, so a detector, not a guarantee (D-065) — the
+    # phrasing stays conditional; nothing is auto-obsoleted (INVARIANT-05), and
+    # zero overlap adds no keys (honest empty).
+    try:
+        from . import analyze as _analyze
+
+        probe = " ".join(x for x in (gameplan_said, actually, lesson or "") if x)
+        hits = (_analyze.near_duplicate_lessons(paths, probe)
+                + _analyze.near_duplicate_gameplan_lessons(paths, gameplan_id, probe))
+        if hits:
+            result["possibly_contradicted"] = hits
+            result["advisory"] = (
+                "This correction may contradict active lesson(s) — a lexical "
+                "scan, not a completeness guarantee: "
+                + ", ".join(f"{d['id']} (Jaccard {d['jaccard']})" for d in hits)
+                + f". If {new_id} supersedes one, write the correction back to "
+                f"its source: cz_obsolete_lesson(number, reason=\"superseded by "
+                f"{new_id}\") — otherwise the stale lesson keeps riding every "
+                "handoff beside its own refutation.")
+    except Exception:
+        pass
+    return result
 
 
 @_locked

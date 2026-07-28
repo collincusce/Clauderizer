@@ -237,7 +237,9 @@ def test_promote_lesson_round_trip(temp_repo):
     assert r["category"] == "Testing"  # derived from the source category block
     ldoc = paths.doc("LESSONS").read_text(encoding="utf-8")
     assert "# Distilled Lessons" in ldoc  # created on demand from the template
-    assert "**L-01.** Keep fixtures small and hand-verifiable. *(from 2026-05-01-bootstrap)*" in ldoc
+    # D-074 survivor ancestry: which lesson and when, answerable from the line.
+    assert ("**L-01.** Keep fixtures small and hand-verifiable. "
+            "*(from 2026-05-01-bootstrap #3, 2026-06-09)*") in ldoc
     assert "### Category: Testing" in ldoc
     # source line marked, not deleted
     idx = (paths.gameplan_dir(GID) / "CHAT-HANDOFF-INDEX.md").read_text(encoding="utf-8")
@@ -340,3 +342,85 @@ def test_transition_status_runs_cascade(temp_repo):
     # report written
     reports = list((paths.gameplan_dir(GID) / "_cascade-reports").glob("*.md"))
     assert reports
+
+
+# --- survivor ancestry + correction advisory (D-074) ---------------------------
+
+def test_consolidate_survivor_carries_ancestry_and_stays_grammar_safe(temp_repo):
+    from clauderizer.markdown import lesson_state
+    from clauderizer.rituals import handoff
+
+    paths, _ = _ctx(temp_repo)
+    idx_path = paths.gameplan_dir(GID) / "CHAT-HANDOFF-INDEX.md"
+    r = M.consolidate_lessons(paths, gameplan_id=GID, numbers=[1, 2],
+                              text="One synthesized rule.", today="2026-06-09")
+    assert r["ok"] and r["number"] == 4
+    text = idx_path.read_text(encoding="utf-8")
+    survivor = next(ln for ln in text.splitlines()
+                    if ln.strip().startswith("**4.**"))
+    # ancestry answerable from the survivor line alone (self-containedness)
+    assert survivor.strip().endswith("*(consolidated from #1, #2, 2026-06-09)*")
+    # the trailer is state-inert: the survivor parses ACTIVE (H-18 grammar)
+    assert lesson_state.is_active(survivor)
+    rolled, count = handoff.collect_lessons(text)
+    assert count == 2  # survivor #3 + synthesized #4 — trailer changes nothing
+    # grammar interplay: a LATER obsolete mark still wins over the trailer
+    M.obsolete_lesson(paths, gameplan_id=GID, number=4, reason="test",
+                      today="2026-06-10")
+    marked = next(ln for ln in idx_path.read_text(encoding="utf-8").splitlines()
+                  if ln.strip().startswith("**4.**"))
+    assert lesson_state.parse_state(marked)[0] == lesson_state.OBSOLETE
+
+
+def test_promote_text_override_keeps_engine_written_ancestry(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    M.promote_lesson(paths, gameplan_id=GID, number=1,
+                     text="Hand-distilled wording.", today="2026-06-09")
+    ldoc = paths.doc("LESSONS").read_text(encoding="utf-8")
+    # the Fractal caveat: ancestry must not depend on the agent's rewrite
+    assert ("**L-01.** Hand-distilled wording. "
+            "*(from 2026-05-01-bootstrap #1, 2026-06-09)*") in ldoc
+
+
+def test_add_correction_advisory_names_contradicted_lessons_and_writes_nothing_back(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    # a project lesson the correction will lexically contradict
+    ldoc = paths.doc("LESSONS")
+    ldoc.parent.mkdir(parents=True, exist_ok=True)
+    ldoc.write_text("## Lessons\n\n**L-01.** always run the full pytest suite "
+                    "before any irreversible release step\n", encoding="utf-8")
+    ldoc_before = ldoc.read_text(encoding="utf-8")
+    r = M.add_correction(
+        paths, gameplan_id=GID, phase="1",
+        gameplan_said="always run the full pytest suite before any irreversible release step",
+        actually="run the full pytest suite except for docs-only release steps",
+        why="docs-only releases cannot regress code")
+    assert r["ok"]
+    hits = r.get("possibly_contradicted") or []
+    assert any(d["id"] == "L-01" for d in hits)
+    assert "may contradict" in r["advisory"]          # conditional, not a claim
+    assert f'superseded by {r["id"]}' in r["advisory"]
+    # advisory only: the contradicted lesson is untouched on disk (INVARIANT-05)
+    assert ldoc.read_text(encoding="utf-8") == ldoc_before
+
+
+def test_add_correction_advisory_sees_gameplan_lessons_too(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    r = M.add_correction(
+        paths, gameplan_id=GID, phase="1",
+        gameplan_said="cascade is predictive of downstream breakage",
+        actually="cascade is post-hoc reconciliation, not predictive analysis",
+        why="the gameplan misread the cascade design")
+    hits = r.get("possibly_contradicted") or []
+    assert any(d["id"].startswith("#") for d in hits)  # gameplan lesson #2
+
+
+def test_add_correction_with_zero_overlap_is_an_honest_empty(temp_repo):
+    paths, _ = _ctx(temp_repo)
+    r = M.add_correction(
+        paths, gameplan_id=GID, phase="1",
+        gameplan_said="deploy artifacts to the staging bucket first",
+        actually="deploy artifacts to the canary bucket first",
+        why="staging was retired")
+    assert r["ok"]
+    assert "possibly_contradicted" not in r and "advisory" not in r  # D-065

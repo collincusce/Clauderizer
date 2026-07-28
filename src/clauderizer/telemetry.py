@@ -466,10 +466,23 @@ def curate_proposals(paths, gid: str = "") -> dict:
       * obsolete    — a never-surfaced or consistently low-utility project lesson;
       * flag        — a mediocre-utility lesson to review (no auto-op);
       * promote     — a high-utility GAMEPLAN lesson worth an L-NN in LESSONS.md.
+
+    Merge-base (D-074, executing D-059's tracked unification): every proposal
+    carries a stable content-hash ``id`` over its action + participating lesson
+    ids + their TEXTS — never the drifting utility figures — and the per-user
+    triage ledger filters the pending set, so a judged proposal stays suppressed
+    (cz_dismiss_proposal / cz_defer_proposal, unchanged) until a participating
+    lesson's text materially changes and it resurfaces under a new id. Filtering
+    is display, never authority (D-013): ``all_proposals`` keeps the unfiltered
+    list and ``suppressed_count`` is named in the summary, because the gitignored
+    ledger makes suppression machine-local.
     """
+    from . import proposals as _proposals
+
     health = lesson_health(paths)
     scores = {r["id"]: r for r in health["scores"]}
     lessons = _active_project_lessons(paths)
+    txt = {l["id"]: l["text"] for l in lessons}
     proposals: list[dict] = []
 
     # consolidate: lexically redundant project-lesson pairs. Same-audience only
@@ -504,8 +517,12 @@ def curate_proposals(paths, gid: str = "") -> dict:
                     keep, drop = (a, b) if ua >= ub else (b, a)
                     note = (f"capture a synthesis first if wording differs; "
                             f"keep {keep} (>= utility)")
+                pair = sorted((a, b))
                 proposals.append({
                     "action": "consolidate",
+                    # The content hash IS the merge-base: texts, not scores.
+                    "id": _proposals.proposal_id("curate", "consolidate", *pair,
+                                                 *(txt.get(p, "") for p in pair)),
                     "lessons": [a, b],
                     "evidence": f"token-set Jaccard {round(jac, 2)} (lexical near-duplicate)",
                     "suggested_op": "cz_obsolete_lesson",
@@ -529,7 +546,10 @@ def curate_proposals(paths, gid: str = "") -> dict:
         # property from evidence it never read).
         if n >= 2 and u is not None and u <= 0.2:
             proposals.append({
-                "action": "obsolete", "lessons": [r["id"]],
+                "action": "obsolete",
+                "id": _proposals.proposal_id("curate", "obsolete", r["id"],
+                                             txt.get(r["id"], "")),
+                "lessons": [r["id"]],
                 "evidence": f"utility {u} over {n} resolved surfacing(s)",
                 "suggested_op": "cz_obsolete_lesson",
                 "suggested_args": {"number": r["id"],
@@ -537,7 +557,10 @@ def curate_proposals(paths, gid: str = "") -> dict:
             })
         elif n >= 2 and u is not None and u <= 0.5:
             proposals.append({
-                "action": "flag", "lessons": [r["id"]],
+                "action": "flag",
+                "id": _proposals.proposal_id("curate", "flag", r["id"],
+                                             txt.get(r["id"], "")),
+                "lessons": [r["id"]],
                 "evidence": f"utility {u} over {n} resolved surfacing(s)",
                 "suggested_op": None,
                 "note": "review: surfaced but the phase often failed — the wording may mislead, "
@@ -550,26 +573,39 @@ def curate_proposals(paths, gid: str = "") -> dict:
         u = gl_util.get(gl["id"], {})
         if u.get("utility") is not None and u["utility"] >= 0.8 and u.get("resolved", 0) >= 2:
             proposals.append({
-                "action": "promote", "lessons": [gl["id"]],
+                "action": "promote",
+                "id": _proposals.proposal_id("curate", "promote", gid, gl["id"],
+                                             gl["text"]),
+                "lessons": [gl["id"]],
                 "evidence": f"gameplan-lesson utility {u['utility']} over {u['resolved']} resolved surfacing(s)",
                 "suggested_op": "cz_promote_lesson",
                 "suggested_args": {"number": gl["id"]},
             })
 
+    led = _proposals.load_ledger(paths)
+    pending = _proposals.filter_pending(proposals, led)
+    suppressed = len(proposals) - len(pending)
     by_action: dict = {}
-    for p in proposals:
+    for p in pending:
         by_action[p["action"]] = by_action.get(p["action"], 0) + 1
     return {
         "ok": True,
-        "proposal_count": len(proposals),
+        "proposal_count": len(pending),
         "by_action": by_action,
-        "proposals": proposals,
+        "proposals": pending,
+        # Display, never authority (D-013): the unfiltered set stays readable.
+        "all_proposals": proposals,
+        "suppressed_count": suppressed,
         "prompt": ("Each item is a PROPOSAL, not a write. Confirm genuine ones via the "
                    "named blessed cz_* op (the engine proposes; you decide — INVARIANT-05). "
-                   "consolidate/obsolete/promote keep the append-only audit trail; flag is review-only."),
-        "summary": ((f"{len(proposals)} curation proposal(s): "
+                   "consolidate/obsolete/promote keep the append-only audit trail; flag is "
+                   "review-only. Dismiss a false positive with cz_dismiss_proposal(id) — it "
+                   "stays suppressed until a participating lesson's text materially changes."),
+        "summary": ((f"{len(pending)} curation proposal(s): "
                      + ", ".join(f"{k} x{v}" for k, v in sorted(by_action.items())))
-                    if proposals else "0 curation proposals"),
+                    if pending else "0 curation proposals")
+                   + (f" ({suppressed} suppressed by your ledger — machine-local)"
+                      if suppressed else ""),
     }
 
 
@@ -593,7 +629,9 @@ def loop_step(paths, gid: str = "") -> dict:
     """
     health = corpus_health(paths)
     _has_tel = bool(read_events(paths.telemetry_file))
-    proposals = curate_proposals(paths, gid)["proposals"]
+    curated = curate_proposals(paths, gid)
+    proposals = curated["proposals"]          # pending only (merge-base, D-074)
+    suppressed = curated.get("suppressed_count", 0)
     actionable = [p for p in proposals if p["action"] in ("consolidate", "obsolete", "promote")]
     flags = [p for p in proposals if p["action"] == "flag"]
     spawn = None
@@ -604,9 +642,14 @@ def loop_step(paths, gid: str = "") -> dict:
                        "bigger than a maintenance pass; consider a driven gameplan to fix the root cause"),
             "lessons": sorted(f["lessons"][0] for f in flags),
         }
+    converged = not actionable
     return {
         "ok": True,
-        "converged": not actionable,
+        "converged": converged,
+        # A ledger-suppressed proposal is judged, not gone (D-063/D-065): the
+        # convergence a dismissal buys is machine-local, so it is a NAMED state
+        # distinct from a clean corpus, and the summary says so.
+        "converged_with_suppression": bool(converged and suppressed),
         "metric": {
             "redundant_pairs": health["redundant_pairs"],
             "never_surfaced": health["never_surfaced"],
@@ -614,6 +657,8 @@ def loop_step(paths, gid: str = "") -> dict:
         },
         "actionable_proposals": len(actionable),
         "proposals": proposals,
+        "all_proposals": curated.get("all_proposals", proposals),
+        "suppressed_count": suppressed,
         "spawn_gameplan": spawn,
         "prompt": ("One loop iteration (read-only). Apply the actionable proposals via their "
                    "blessed cz_* ops, then call cz_loop_step again; the loop ends when converged "
@@ -629,5 +674,9 @@ def loop_step(paths, gid: str = "") -> dict:
                      else f"loop iteration: {len(actionable)} actionable proposal(s)")
                     + f"; metric redundant={health['redundant_pairs']} "
                       f"never_surfaced={health['never_surfaced']}"
+                    + (f"; {suppressed} suppressed by your ledger "
+                       "(converged-with-suppression — machine-local)"
+                       if converged and suppressed
+                       else (f"; {suppressed} suppressed by your ledger" if suppressed else ""))
                     + (f"; spawn-gameplan suggested ({len(flags)} flags)" if spawn else "")),
     }

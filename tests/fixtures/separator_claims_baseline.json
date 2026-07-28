@@ -1,182 +1,187 @@
 {
- "_README": "Triage of every separator-shaped assertion in this repo \u2014 an asserted string literal containing '/' compared with in/not in/== (L-51). Keys are '<file>::<literal>' so they survive line moves. 'platform' means the right-hand side is a real filesystem path and the assertion is a platform claim that must be fixed; 'message' means the slash is guaranteed on every OS and why. Generated from a real AST scan; see tests/test_separator_claims.py.",
- "total": 42,
- "platform_claims": 0,
+ "_README": "Triage of every separator-shaped assertion in this repo — an asserted string literal containing '/' compared with in/not in/== (L-51). Keys are '<file>::<literal>' so they survive line moves. 'platform' means the right-hand side is a real filesystem path and the assertion is a platform claim that must be fixed; 'message' means the slash is guaranteed on every OS and why. Generated from a real AST scan; see tests/test_separator_claims.py.",
  "classified": {
   "tests/test_abstract_index_upgrade.py::.clauderizer/abstract_index.json": {
-   "count": 1,
    "class": "message",
-   "why": "an authored .gitignore line \u2014 init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
+   "count": 1,
+   "why": "an authored .gitignore line — init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
   },
   "tests/test_blessed_surfaces.py::(handoff n/a: gameplan complete).": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "not a separator: the prose abbreviation 'n/a' in a digest line"
   },
   "tests/test_deliverable_matrix.py::Deliverables: 1/2 shipped.": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "not a separator: a fraction in a rendered digest line"
   },
   "tests/test_dreams.py::.clauderizer/dreams.jsonl": {
-   "count": 2,
    "class": "message",
-   "why": "an authored .gitignore line \u2014 init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
+   "count": 2,
+   "why": "an authored .gitignore line — init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
   },
   "tests/test_dreams.py::.clauderizer/dreams.schedule.toml": {
-   "count": 1,
    "class": "message",
-   "why": "an authored .gitignore line \u2014 init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
+   "count": 1,
+   "why": "an authored .gitignore line — init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
   },
   "tests/test_dreams.py::.clauderizer/telemetry.jsonl": {
-   "count": 1,
    "class": "message",
-   "why": "an authored .gitignore line \u2014 init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
+   "count": 1,
+   "why": "an authored .gitignore line — init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
   },
   "tests/test_dreams.py::/clauderizer-dream right now": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "not a separator: a slash command name in authored digest prose"
   },
   "tests/test_dreams.py::claude -p \"/clauderizer-dream\"": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "not a separator: a slash command inside an authored shell example"
   },
   "tests/test_honest_closeout.py::0/2": {
-   "count": 1,
    "class": "message",
-   "why": "a checked/total ratio in the deferred-close context advisory \u2014 arithmetic notation the engine renders, not a path; identical on every OS"
+   "count": 1,
+   "why": "a checked/total ratio in the deferred-close context advisory — arithmetic notation the engine renders, not a path; identical on every OS"
   },
   "tests/test_honest_closeout.py::scope cut / resume in 1.16": {
-   "count": 1,
    "class": "message",
-   "why": "the sanitized deferred-reason cell \u2014 _sanitize_reason REPLACES pipes with '/' by design, so the slash IS the engine-authored output under test; no filesystem path involved"
+   "count": 1,
+   "why": "the sanitized deferred-reason cell — _sanitize_reason REPLACES pipes with '/' by design, so the slash IS the engine-authored output under test; no filesystem path involved"
   },
   "tests/test_hook_wrapper.py::# engine-hook: /v/bin/clauderizer-hook": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "the test's own argv literal echoed verbatim into a /bin/sh wrapper template; POSIX shell text, never a Path render"
   },
   "tests/test_hook_wrapper.py::cd '/repo' 2>/dev/null || {": {
-   "count": 1,
    "class": "message",
-   "why": "render_hook_wrapper's POSIX branch interpolates root.as_posix(), and the rest is /bin/sh syntax \u2014 the slashes are guaranteed on every OS"
+   "count": 1,
+   "why": "render_hook_wrapper's POSIX branch interpolates root.as_posix(), and the rest is /bin/sh syntax — the slashes are guaranteed on every OS"
   },
   "tests/test_hook_wrapper.py::cd /d \"C:\\repo\" 2>nul": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "not a separator: the cmd.exe /d flag; the path beside it is backslashed, and windows=True is an explicit argument, not the host OS"
   },
   "tests/test_hook_wrapper.py::exit /b 0": {
-   "count": 2,
    "class": "message",
+   "count": 2,
    "why": "not a separator: the cmd.exe /b flag inside the rendered .cmd wrapper"
   },
   "tests/test_host_target_init.py::.clauderizer/hook.": {
-   "count": 1,
    "class": "message",
-   "why": "a negative assertion over the same authored literals \u2014 asserts the hook wrapper is absent from a dumped config, not a filesystem render"
+   "count": 1,
+   "why": "a negative assertion over the same authored literals — asserts the hook wrapper is absent from a dumped config, not a filesystem render"
   },
   "tests/test_host_target_init.py::.codex/config.toml": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "an authored HostEmitter.config_path constant echoed into the codex setup guide; a str literal, never a Path"
   },
   "tests/test_host_target_init.py::.cursor/mcp.json": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "an authored HostEmitter.config_path constant in hosttargets.py, printed by `init --list-hosts`; a str literal, never a Path"
   },
   "tests/test_hosttargets.py::.cursor/mcp.json": {
-   "count": 2,
    "class": "message",
-   "why": "path_safety_audit formats f'{rel}: {argv}' where rel iterates the authored em.config_path constants \u2014 the slash is never a Path render"
+   "count": 2,
+   "why": "path_safety_audit formats f'{rel}: {argv}' where rel iterates the authored em.config_path constants — the slash is never a Path render"
   },
   "tests/test_init.py::.agents/skills": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "authored setup-guide prose naming a foreign tool's config path; the guide text is a template constant, never a rendered Path"
   },
   "tests/test_init.py::.clauderizer/index.json": {
-   "count": 1,
    "class": "message",
-   "why": "an authored .gitignore line \u2014 init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
+   "count": 1,
+   "why": "an authored .gitignore line — init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
   },
   "tests/test_init.py::.kimi-code/skills": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "authored setup-guide prose naming a foreign tool's config path; the guide text is a template constant, never a rendered Path"
   },
   "tests/test_init.py::NOT edit your global `~/.kimi-code/config.toml`": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "authored setup-guide prose naming a foreign tool's config path; the guide text is a template constant, never a rendered Path"
   },
   "tests/test_init.py::does NOT edit your global `~/.kimi-code/config.toml`": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "authored setup-guide prose naming a foreign tool's config path; the guide text is a template constant, never a rendered Path"
   },
   "tests/test_init.py::not edit your global `~/.kimi-code/config.toml`": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "authored setup-guide prose naming a foreign tool's config path; the guide text is a template constant, never a rendered Path"
   },
   "tests/test_init.py::~/.kimi-code/config.toml": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "authored setup-guide prose naming a foreign tool's config path; the guide text is a template constant, never a rendered Path"
   },
   "tests/test_kimidesktop.py::docs/": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "authored recovery-playbook prose in kimidesktop.setup_guide(), telling the agent to read memory from docs/ directly"
   },
   "tests/test_lesson_state.py::already obsolete/promoted": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "not a separator: prose alternation in an error summary string"
   },
   "tests/test_mutations.py::**Affected**: src/example.py:handler": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "the test supplies this exact string as the `affected` field value; the markdown writer echoes it unchanged"
   },
   "tests/test_mutations.py::_cascade-reports/2026-06-02-A-001.md": {
-   "count": 1,
    "class": "message",
-   "why": "a negative assertion over engine-authored markdown \u2014 pins that no per-amendment filename is promised; the literal is never produced"
+   "count": 1,
+   "why": "a negative assertion over engine-authored markdown — pins that no per-amendment filename is promised; the literal is never produced"
   },
   "tests/test_mutations.py::already obsolete/promoted": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "not a separator: prose alternation in an error summary string"
   },
   "tests/test_onboard.py::docs/VISION.md": {
-   "count": 5,
    "class": "message",
-   "why": "onboard.unseeded_docs builds f'{paths.docs.name}/{name}.md' \u2014 the slash is a literal in the f-string, not a separator from the filesystem"
+   "count": 5,
+   "why": "onboard.unseeded_docs builds f'{paths.docs.name}/{name}.md' — the slash is a literal in the f-string, not a separator from the filesystem"
   },
   "tests/test_onboard.py::docs/studio.md": {
-   "count": 1,
    "class": "message",
-   "why": "onboard.spec_candidates emits p.relative_to(root).as_posix() \u2014 the producer normalizes, so the forward slash is a contract not an accident"
+   "count": 1,
+   "why": "onboard.spec_candidates emits p.relative_to(root).as_posix() — the producer normalizes, so the forward slash is a contract not an accident"
   },
   "tests/test_proposals.py::.clauderizer/proposals.local.toml": {
-   "count": 1,
    "class": "message",
-   "why": "an authored .gitignore line \u2014 init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
+   "count": 1,
+   "why": "an authored .gitignore line — init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
   },
   "tests/test_provenance.py::**Evidence**: benchmark in docs/PERF.md": {
-   "count": 1,
    "class": "message",
+   "count": 1,
    "why": "the test supplies this exact string as the `evidence` field value; the markdown writer echoes it unchanged"
   },
-  "tests/test_toolcall_write_guard.py::</text>": {
-   "count": 1,
+  "tests/test_receipts.py::.clauderizer/seen.local.jsonl": {
    "class": "message",
+   "count": 2,
+   "why": "an authored .gitignore line — init writes this exact literal via _ensure_gitignore; git requires forward slashes in .gitignore on every OS"
+  },
+  "tests/test_toolcall_write_guard.py::</text>": {
+   "class": "message",
+   "count": 1,
    "why": "not a separator: an XML closing tag in an index rendering"
   }
- }
+ },
+ "platform_claims": 0,
+ "total": 44
 }

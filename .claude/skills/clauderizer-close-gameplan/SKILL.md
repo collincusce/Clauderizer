@@ -12,6 +12,16 @@ description: Close out a completed (or explicitly deferred) gameplan. Use when a
      `docs/LESSONS.md` and ride in every future handoff, across gameplans).
      Promotion is a chance to distill: pass `text` to tighten the wording.
    - `cz_consolidate_lessons` overlapping ones first, then promote the synthesis.
+   - The survivor records what it absorbed (D-074): the engine writes the
+     ancestry trailer — `*(consolidated from #a, #b, date)*` on a synthesis,
+     `*(from <gameplan> #N, date)*` on a promotion, preserved even when you pass
+     a distilled `text` — so a future session answers what an L-NN condensed
+     from the line itself, without opening the archived gameplan.
+   - A correction that contradicts a lesson must REACH that lesson: mark it
+     `cz_obsolete_lesson(number, reason="superseded by C-NN")` rather than only
+     appending the correction — an unreached lesson keeps riding every handoff
+     beside its own refutation (`cz_add_correction`'s `possibly_contradicted`
+     advisory names lexical candidates; it may miss paraphrases — judge).
    - The rest stay archived with the closed gameplan — promote deliberately, not in bulk.
 4. Update project-level docs (CHANGELOG, ARCHITECTURE, REQUIREMENTS) to reflect final state.
 5. **Self-audit your work (`cz_audit`).** Before you write the post-mortem, run

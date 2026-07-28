@@ -222,6 +222,34 @@ def near_duplicate_invariants(paths: RepoPaths, text: str, *,
                             exclude_ids=exclude_ids)
 
 
+def near_duplicate_gameplan_lessons(paths: RepoPaths, gameplan_id: str, text: str, *,
+                                    threshold: float = _LESSON_DUP_JACCARD,
+                                    k: int = 3) -> list[dict]:
+    """Active GAMEPLAN lessons (the accumulated numbered entries, not L-NN)
+    whose distinctive-token Jaccard with ``text`` meets the single near-duplicate
+    threshold — the correction-advisory's second corpus (D-074): a correction
+    most often contradicts the gameplan's own recent lessons, which the
+    abstract-index scan cannot see. Same tokenizer, same threshold
+    (INVARIANT-09); ids render as ``#N`` to match the gameplan-lesson grammar."""
+    from .telemetry import _active_gameplan_lessons  # lazy: telemetry imports analyze
+
+    nt = _tokens(text)
+    if not nt or not gameplan_id:
+        return []
+    out: list[dict] = []
+    for gl in _active_gameplan_lessons(paths, gameplan_id):
+        et = _tokens(gl["text"])
+        union = nt | et
+        if not union:
+            continue
+        j = len(nt & et) / len(union)
+        if j >= threshold:
+            out.append({"id": f"#{gl['id']}", "title": gl["text"][:80],
+                        "jaccard": round(j, 3)})
+    out.sort(key=lambda d: (-d["jaccard"], d["id"]))
+    return out[:k]
+
+
 # --- gap-finder: one-hop graph adjacency (D-018) ---------------------------------
 #
 # The keyword ranker above answers "what might this CONTRADICT?"; the gap-finder

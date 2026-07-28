@@ -116,3 +116,27 @@ def test_cz_mine_failures_op_missing_dir_is_graceful():
     from clauderizer import ops
     res = ops.cz_mine_failures(transcripts_dir="/nonexistent/path/xyz")
     assert res["ok"] is False and "not found" in res["error"]
+
+
+def test_mined_proposals_join_the_id_ledger_queue(tmp_path, temp_repo, monkeypatch):
+    """D-074 merge-base: mined candidates carry stable content-hash ids and a
+    dismissal suppresses re-surfacing until the pattern's content changes."""
+    from clauderizer import ops
+    from clauderizer import proposals as PR
+    from clauderizer import paths as P
+
+    recs = [_use("a1", "Bash"), _result("a1", "fatal: boom"),
+            _use("a2", "Bash"), _result("a2", "ok")]
+    (tmp_path / "s.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in recs), encoding="utf-8")
+    monkeypatch.chdir(temp_repo)  # the triage ledger lives in the repo, not the transcripts
+    first = ops.cz_mine_failures(transcripts_dir=str(tmp_path))
+    assert first["proposals"] and first["proposals"][0]["id"].startswith("mine:")
+    again = ops.cz_mine_failures(transcripts_dir=str(tmp_path))
+    assert [p["id"] for p in first["proposals"]] == [p["id"] for p in again["proposals"]]
+    PR.dismiss(P.resolve(temp_repo), first["proposals"][0]["id"])
+    after = ops.cz_mine_failures(transcripts_dir=str(tmp_path))
+    assert first["proposals"][0]["id"] not in [p["id"] for p in after["proposals"]]
+    assert after["suppressed_count"] == 1
+    assert "1 suppressed by your ledger" in after["summary"]
+    assert first["proposals"][0]["id"] in [p["id"] for p in after["all_proposals"]]

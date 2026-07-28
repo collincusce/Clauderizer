@@ -51,3 +51,6 @@ env/
 .clauderizer/hook.cmd
 .clauderizer/write.lock
 .clauderizer/baseline.json
+.clauderizer/sessions.jsonl
+.clauderizer/refusals.jsonl
+.clauderizer/seen.local.jsonl

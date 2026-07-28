@@ -146,3 +146,78 @@ def test_ab_curation_improves_health_without_recall_regression(temp_repo):
     ranked = [r["id"] for r in analyze.rank_relevant(
         "run the full pytest suite before an irreversible release", entries, k=3)]
     assert kept in ranked
+
+
+# --- merge-base: the id+ledger queue (D-074, executing D-059 / dreaming O-02) ---
+
+def test_curator_proposal_ids_are_stable_across_calls(tmp_path):
+    paths = _bare_repo_with_lessons(tmp_path, [
+        "**L-01.** always run the full pytest suite before any irreversible release *(from g)*",
+        "**L-02.** always run the full pytest suite before every irreversible release step *(from g)*",
+    ])
+    a = telemetry.curate_proposals(paths)["proposals"]
+    b = telemetry.curate_proposals(paths)["proposals"]
+    assert [p["id"] for p in a] == [p["id"] for p in b]
+    assert all(p["id"].startswith("curate:") for p in a)
+
+
+def test_dismissal_ends_recurrence_and_a_text_edit_resurfaces_once(tmp_path):
+    from clauderizer import proposals as PR
+
+    paths = _bare_repo_with_lessons(tmp_path, [
+        "**L-01.** always run the full pytest suite before any irreversible release *(from g)*",
+        "**L-02.** always run the full pytest suite before every irreversible release step *(from g)*",
+    ])
+    first = telemetry.curate_proposals(paths)
+    cons = next(p for p in first["proposals"] if p["action"] == "consolidate")
+    PR.dismiss(paths, cons["id"])
+    # the judged pair stops re-deriving; the suppression is named, not hidden
+    after = telemetry.curate_proposals(paths)
+    assert cons["id"] not in [p["id"] for p in after["proposals"]]
+    assert after["suppressed_count"] == 1
+    assert "1 suppressed by your ledger" in after["summary"]
+    # display never authority (D-013): the include-suppressed read path
+    assert cons["id"] in [p["id"] for p in after["all_proposals"]]
+    # merge-base advance: a material text edit resurfaces the pair as a NEW id
+    doc = paths.doc("LESSONS")
+    doc.write_text(doc.read_text(encoding="utf-8").replace(
+        "before every irreversible release step",
+        "before every irreversible release step and tag push"), encoding="utf-8")
+    again = telemetry.curate_proposals(paths)
+    resurfaced = [p for p in again["proposals"] if p["action"] == "consolidate"]
+    assert len(resurfaced) == 1 and resurfaced[0]["id"] != cons["id"]
+    assert again["suppressed_count"] == 0
+
+
+def test_corrupt_or_absent_ledger_suppresses_nothing(tmp_path):
+    from clauderizer import proposals as PR
+
+    paths = _bare_repo_with_lessons(tmp_path, [
+        "**L-01.** always run the full pytest suite before any irreversible release *(from g)*",
+        "**L-02.** always run the full pytest suite before every irreversible release step *(from g)*",
+    ])
+    PR.ledger_path(paths).parent.mkdir(parents=True, exist_ok=True)
+    PR.ledger_path(paths).write_text("not [valid toml", encoding="utf-8")
+    props = telemetry.curate_proposals(paths)
+    assert props["suppressed_count"] == 0
+    assert any(p["action"] == "consolidate" for p in props["proposals"])
+
+
+def test_loop_step_converged_with_suppression_is_a_named_state(tmp_path):
+    from clauderizer import proposals as PR
+
+    paths = _bare_repo_with_lessons(tmp_path, [
+        "**L-01.** always run the full pytest suite before any irreversible release *(from g)*",
+        "**L-02.** always run the full pytest suite before every irreversible release step *(from g)*",
+    ])
+    _surface(paths, "1", project=["L-01"]); _outcome(paths, "1", "complete")
+    step = telemetry.loop_step(paths)
+    assert step["converged"] is False and step["actionable_proposals"] == 1
+    PR.dismiss(paths, step["proposals"][0]["id"])
+    step = telemetry.loop_step(paths)
+    assert step["converged"] is True
+    assert step["converged_with_suppression"] is True
+    assert step["suppressed_count"] == 1
+    assert "converged-with-suppression — machine-local" in step["summary"]
+    # the unfiltered view survives (D-013)
+    assert len(step["all_proposals"]) == 1

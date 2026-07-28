@@ -11,6 +11,6 @@ Route the capture to the correct tool so the graph stays consistent — never ha
 - **A rule that must always hold** → `cz_add_invariant`.
 - **A reusable lesson** → `cz_add_lesson` (pick a category; it rolls into every future handoff).
 - **A lesson that no longer applies** → `cz_obsolete_lesson` (marks it; the log keeps the line, handoffs stop carrying it).
-- **A divergence from the plan** → `cz_add_correction` (optionally promote a `lesson` in the same call).
+- **A divergence from the plan** → `cz_add_correction` (optionally promote a `lesson` in the same call). **Write the correction back to its source**: if it supersedes an existing lesson, follow up with `cz_obsolete_lesson(number, reason="superseded by C-NN")` — the result's `possibly_contradicted` advisory names lexical candidates (a detector, not a guarantee; judge beyond the list). A refuted lesson left active keeps riding every handoff beside its own refutation.
 - **A persistent risk / audit finding** → `cz_add_finding`; resolve later with `cz_resolve_finding` (append-only; never delete entries).
 - **A new subsystem/feature/external service** → `cz_upsert_entity`.
