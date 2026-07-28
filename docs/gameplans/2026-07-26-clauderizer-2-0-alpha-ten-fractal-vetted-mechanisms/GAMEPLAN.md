@@ -90,14 +90,14 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 2.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] The INVARIANT-08 amendment is recorded as an append-only supersession (figures-only, change-triggered structured notices on tool results defined as a category distinct from status injection) BEFORE any stamp code lands — the amendment's D-NNN/INVARIANT entry predates the first stamp commit in git history
-- [ ] cz_state stamp is change-triggered: attached only when the figure set or revision differs from the last emission in this server session (in-memory last-stamp, no persisted flag) — pinned by test
-- [ ] Wrapper isolation pinned in both directions: a stamp exception never converts an op success into failure, and an op exception is never masked by stamp attachment; plus the figures key-whitelist ratchet test
-- [ ] Stamp read cost bounded: the exit-criteria figure skips or byte-caps approval-row artifact_hash recomputation — no full-file sha256 per call on large artifacts, pinned by test
-- [ ] Budgets: exactly two tiers (gameplan-sessions, phase-sessions); spend unit is host-stable distinct-DATE stints with proc tag as tiebreaker only; template guidance says declare phase budgets only when >1
-- [ ] WIND_DOWN is derived at read time, never persisted, no enable/disable flag, reserve fraction a module constant; phase-aware advisory wording distinguishes 'IN the final budgeted stint — land the Ending Protocol' from 'recorded spend exceeds budget' — both pinned
-- [ ] pre_compact convergence surfacing ships in this phase (L-68 clause 1: session-start surfacing alone does not survive session distance) — test proves the wind-down advisory reaches the pre-compact payload when armed
-- [ ] Budgets ship dormant: no filled template default anywhere; O-item on recording coverage carried forward or resolved; healthy-repo digest byte-identical; suite green
+- [x] The INVARIANT-08 amendment is recorded as an append-only supersession (figures-only, change-triggered structured notices on tool results defined as a category distinct from status injection) BEFORE any stamp code lands — the amendment's D-NNN/INVARIANT entry predates the first stamp commit in git history
+- [x] cz_state stamp is change-triggered: attached only when the figure set or revision differs from the last emission in this server session (in-memory last-stamp, no persisted flag) — pinned by test
+- [x] Wrapper isolation pinned in both directions: a stamp exception never converts an op success into failure, and an op exception is never masked by stamp attachment; plus the figures key-whitelist ratchet test
+- [x] Stamp read cost bounded: the exit-criteria figure skips or byte-caps approval-row artifact_hash recomputation — no full-file sha256 per call on large artifacts, pinned by test
+- [x] Budgets: exactly two tiers (gameplan-sessions, phase-sessions); spend unit is host-stable distinct-DATE stints with proc tag as tiebreaker only; template guidance says declare phase budgets only when >1
+- [x] WIND_DOWN is derived at read time, never persisted, no enable/disable flag, reserve fraction a module constant; phase-aware advisory wording distinguishes 'IN the final budgeted stint — land the Ending Protocol' from 'recorded spend exceeds budget' — both pinned
+- [x] pre_compact convergence surfacing ships in this phase (L-68 clause 1: session-start surfacing alone does not survive session distance) — test proves the wind-down advisory reaches the pre-compact payload when armed
+- [x] Budgets ship dormant: no filled template default anywhere; O-item on recording coverage carried forward or resolved; healthy-repo digest byte-identical; suite green
 
 ### Phase 3: Attention and consolidation
 
