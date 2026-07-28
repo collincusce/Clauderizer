@@ -13,7 +13,7 @@
 | 3 | Attention and consolidation | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Integrity and enforcement | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Evidence matrix and graduation | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Close-out and ship 2.0.0a1 | 🟡 IN PROGRESS | 2026-07-28 | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | Close-out and ship 2.0.0a1 | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Fleet pattern: glossary, skill, productization | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-7-HANDOFF.md |
 | 8 | jcode-vetted attention mechanisms: gap detection, reinforce verb, negative-space, jcode host | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-8-HANDOFF.md |
 
@@ -75,6 +75,13 @@ phase7_artifacts: Commits 61c35d2 (feat: skill productized src+render byte-ident
 ```
 matrix_artifacts: matrix-p5-harness.py + matrix-p5-results.json (this dir, committed): 12 legs, all run or named-gap. Verdicts: D-077 (Fractal ten: 7 graduate incl. merge audit un-silenced on 3/3 detection 0/4 FP; stamp dormant on the DrvFs +86%/op figure; budgets dormant on 0.0 recording coverage with capability proven), D-078 (jcode: gap/reinforce/negative-space graduate, jcode-host named gap), D-079 (fleet-vs-solo BOUNDED: quality tie 0-defects both arms under independent verification, wall 1.57×, compute ~1.7×, 0 LockHeld/collisions). First production reinforce: L-66 x1 via tree CLI. O-01+O-02 resolved with figures
 baseline_tests_after_phase5: 1554 passed, 7 skipped (unchanged from post-P7/P8 — phase 5 added measurement artifacts and skill-guidance text, no engine code)
+```
+
+### Phase 6 Outputs
+
+```
+shipped_artifacts: v2.0.0a1 tagged at 2347fa5 (release-check ALL green: 11 jobs/2 runs on the sha, four registries swept), GitHub pre-release cut, PyPI publish run 30390413098 success (Trusted Publishing + attestations). Verified: fresh-venv pip install --pre clauderizer[mcp]==2.0.0a1 → 2.0.0a1; plain uvx resolve stays 1.14.5 (PEP 440 invisibility holds); fresh init scaffolds GLOSSARY+ENFORCEMENT; doctor green with the honest portable-wiring skew note (serves stable until pinned — release-notes caveat added). PLUS unplanned emergency ship: v1.14.5 hotfix (20f02d4 on release/1.14.x, PR #24 10/10 matrix evidence, publish run 30389824233) healing the worldwide mcp-2.0 break (H-31) — stable channel verified healed by cold uvx resolve + doctor identity probe
+baseline_tests_after_phase6: 1561 passed, 7 skipped locally (1568 collected); CI matrix green on 2347fa5 (Tests 10 jobs + Quickstart) after the mcp<2 pin, 9 POSIX/proc capability gates (stranded/interrupted), and the Windows parity-normalizer fix (escaped-backslash root anchoring)
 ```
 
 ## Corrections Log

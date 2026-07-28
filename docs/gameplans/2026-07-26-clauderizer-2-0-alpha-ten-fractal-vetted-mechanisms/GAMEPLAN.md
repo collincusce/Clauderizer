@@ -1,7 +1,7 @@
 # clauderizer 2.0 alpha — ten fractal-vetted mechanisms Gameplan
 
 > Created: 2026-07-26
-> Status: Executing
+> Status: Complete
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -177,11 +177,11 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 6.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] CHANGELOG documents all ten mechanisms with their binding conditions and matrix verdicts, the pass_rate semantic shift (goal-met rate once deferred outcomes log), and the receipts sidecar classification
-- [ ] pyproject version = 2.0.0a1; release notes state PEP 440 pre-release semantics (pip installs only with --pre)
-- [ ] L-51 three sweeps + H-28 does-the-CODE-pass check green before tagging; no Fractal outcome numbers cited anywhere in release materials (D-070)
-- [ ] Published to PyPI; fresh-venv `pip install --pre clauderizer==2.0.0a1` succeeds and `clauderize doctor` is green
-- [ ] Post-mortem written; cz_audit (D-051) run with findings triaged; gameplan closed via the close-gameplan procedure
+- [x] CHANGELOG documents all ten mechanisms with their binding conditions and matrix verdicts, the pass_rate semantic shift (goal-met rate once deferred outcomes log), and the receipts sidecar classification
+- [x] pyproject version = 2.0.0a1; release notes state PEP 440 pre-release semantics (pip installs only with --pre)
+- [x] L-51 three sweeps + H-28 does-the-CODE-pass check green before tagging; no Fractal outcome numbers cited anywhere in release materials (D-070)
+- [x] Published to PyPI; fresh-venv `pip install --pre clauderizer==2.0.0a1` succeeds and `clauderize doctor` is green
+- [x] Post-mortem written; cz_audit (D-051) run with findings triaged; gameplan closed via the close-gameplan procedure
 
 ### Phase 7: Fleet pattern: glossary, skill, productization
 
