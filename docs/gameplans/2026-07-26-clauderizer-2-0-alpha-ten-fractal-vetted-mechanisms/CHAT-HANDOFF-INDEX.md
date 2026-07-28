@@ -68,3 +68,7 @@ obsolete items — mark with "(obsolete)" rather than deleting.)_
 ### Category: Process
 
 _(none yet)_
+
+**1.** Vetted assessments scope MECHANISMS; the suite's own goldens find their BLAST RADIUS. Twice in consecutive phases (C-01, C-02) the vetted sketch's placement of a component violated suite-level principles (read-only fixtures, green-preflight-never-dirties) that no assessor had in frame — the correction came from the suite, not the review. When implementing an externally-vetted design, treat PLACEMENT as unvetted even where the mechanism is sound: run the affected suite's cross-cutting principle tests against the sketch before building on it. *(evidence: C-01 (phase 1), C-02 (phase 2); binding order proven by git: INVARIANT-10 at 6215726 precedes stamp code at cabbd3e)*
+
+**2.** Adversarial vetting binds tighter when refuters argue from RECORDED LAW rather than taste: baking the invariant register and key decisions into refuter prompts produced binding conditions citing L-68, D-066 and D-013 more precisely than the assessors' judgment did, and a dedicated external-reviews lens kept the source repo's unverifiable claimed outcomes out of the evidence base entirely. The binding conditions — not the adopt/reject verdicts — are the vetting pass's real deliverable. *(evidence: research-fractal-vetting.json (phase 0); D-070)*
