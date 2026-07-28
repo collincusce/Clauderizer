@@ -6,6 +6,7 @@ description: Execute or continue the current gameplan phase end-to-end — pre-f
 # Execute a phase
 
 1. Call `cz_next_phase_context` to load the phase bundle (tasks, key files, lessons, exit criteria). Read the key files it lists.
+   - If the digest or bundle shows a **Stranded** or **Interrupted session** advisory (D-070), walk its judgment menu out loud BEFORE preflight: adopt the prior work (continue the phase; a same-status `cz_transition_phase` to `in_progress` re-stamps your claim) or close it honestly (`deferred` with a reason). Review the dead session's diff as unverified prior work — never `git clean` it unreviewed; a backstop is a signal, not a license to skip the Ending Protocol.
 2. Call `cz_preflight`. If any enabled check fails, STOP and report — do not write code.
 3. Execute the phase tasks. Honor every rule in `CLAUDE.md` and the accumulated lessons.
 4. Closing protocol:

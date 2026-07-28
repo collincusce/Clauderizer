@@ -578,4 +578,43 @@ def run(
         add("memory_lag", "warn", _lag.describe(lag))
 
     check_memory_lag()
+
+    def check_stranded_state() -> None:
+        """Appended ONLY when the current phase's claimant is provably dead
+        (heal-on-proof, D-070 P1) — a healthy repo keeps a byte-identical check
+        list (INVARIANT-07). WARN, never fail: the judgment menu belongs to the
+        agent (INVARIANT-05); the shared describe() is the single wording."""
+        if not gid:
+            return
+        try:
+            bundle = status_bundle.compute(paths, config)
+            found = bundle.get("stranded")
+        except Exception:
+            return
+        if not found:
+            return
+        from . import stranded as _stranded
+
+        add("stranded_state", "warn", _stranded.describe(found))
+
+    check_stranded_state()
+
+    def check_interrupted_session() -> None:
+        """Appended ONLY when work landed and the closing writes never ran
+        (D-070 P1). WARN, never fail — adoption guidance, not enforcement; the
+        shared describe() explains the clean_tree interaction itself."""
+        if not gid:
+            return
+        try:
+            bundle = status_bundle.compute(paths, config)
+            found = bundle.get("interrupted")
+        except Exception:
+            return
+        if not found:
+            return
+        from . import interrupted as _interrupted
+
+        add("interrupted_session", "warn", _interrupted.describe(found))
+
+    check_interrupted_session()
     return result

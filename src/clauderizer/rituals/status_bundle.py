@@ -840,6 +840,31 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
                 bundle["memory_lag"] = _found
         except Exception:
             pass
+    # Lifecycle detectors (D-070 P1) — same shape, same safety posture as
+    # memory-lag: each in its own try so one detector's failure never silences
+    # another, each silent when healthy (INVARIANT-08). Disjoint predicates
+    # (unstarted vs in_progress) keep the three from ever speaking together.
+    if target:
+        try:
+            from . import stranded as _stranded
+
+            _state = next((p["status"] for p in bundle["phases"]
+                           if p["number"] == target["number"]), None)
+            _sfound = _stranded.detect(paths, gid, target, _state)
+            if _sfound:
+                bundle["stranded"] = _sfound
+        except Exception:
+            pass
+        try:
+            from . import interrupted as _interrupted
+
+            _state = next((p["status"] for p in bundle["phases"]
+                           if p["number"] == target["number"]), None)
+            _ifound = _interrupted.detect(paths, gid, target, _state)
+            if _ifound:
+                bundle["interrupted"] = _ifound
+        except Exception:
+            pass
     if target:
         # Size what the next session would actually load (in-memory; no write).
         from . import handoff as handoff_mod
@@ -1051,6 +1076,17 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         from . import memory_lag as _lag
 
         lines.append(f"⚠ Memory lag: {_lag.describe(lag)}")
+    # Lifecycle detectors (D-070 P1): conditional, zero bytes when healthy.
+    _str = bundle.get("stranded")
+    if _str:
+        from . import stranded as _stranded
+
+        lines.append(f"⚠ Stranded: {_stranded.describe(_str)}")
+    _int = bundle.get("interrupted")
+    if _int:
+        from . import interrupted as _interrupted
+
+        lines.append(f"⚠ Interrupted session: {_interrupted.describe(_int)}")
     for warn in bundle.get("drift") or []:
         lines.append(f"⚠ Drift: {warn}")
     ident = bundle.get("engine_identity")

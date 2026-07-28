@@ -1565,7 +1565,40 @@ def _stamped(fn: Callable[..., dict]) -> Callable[..., dict]:
     return wrapper
 
 
-REGISTRY = {name: Op(_stamped(spec.fn), spec.writes) for name, spec in REGISTRY.items()}
+def _journaled(fn: Callable[..., dict], writes: bool) -> Callable[..., dict]:
+    """Refusal journal (D-070 P1): a writes=True op that returns ok:False is a
+    REFUSED write — evidence the curator/miner can read later, which today
+    vanishes with the session. Applied at this single construction seam so the
+    CLI runner (run_op), the MCP server's direct REGISTRY access, and in-process
+    callers all journal identically. Append-only, gitignored, capped summary
+    (engine-authored text only — no user payloads); best-effort: journaling can
+    never mask or alter the op's own result."""
+    if not writes:
+        return fn
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        result = fn(*args, **kwargs)
+        try:
+            if isinstance(result, dict) and result.get("ok") is False:
+                from . import telemetry as _t
+
+                paths, _cfg = repo_ctx()
+                _t._append(paths.clauderizer_dir / "refusals.jsonl", {
+                    "kind": "refusal",
+                    "op": getattr(fn, "__name__", "unknown"),
+                    "date": _t._today(None),
+                    "summary": str(result.get("summary", ""))[:300],
+                })
+        except Exception:
+            pass
+        return result
+
+    return wrapper
+
+
+REGISTRY = {name: Op(_journaled(_stamped(spec.fn), spec.writes), spec.writes)
+            for name, spec in REGISTRY.items()}
 
 
 def run_op(name: str, **kwargs) -> dict:

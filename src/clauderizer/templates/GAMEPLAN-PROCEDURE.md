@@ -587,6 +587,24 @@ If any check fails: STOP. Report to user. Do not proceed.
 5. Run exit verification (full test suite + build/validate) — in a **clean environment** for release-bearing work, not just your working install (a stale editable install can hide a real defect)
 6. Report final test count and any new corrections
 
+### Interrupted sessions (D-070)
+
+A session can die mid-phase. The engine surfaces two advisory detectors —
+**Stranded** (the tracker says `in_progress` but the claiming session is
+provably dead) and **Interrupted session** (work commits landed, yet no
+closing write of this protocol ever ran). Both are display-only judgment
+menus, never enforcement (INVARIANT-05):
+
+- **Adopt**: review the dead session's diff as unverified prior work, continue
+  the phase, and re-stamp your claim (a same-status `cz_transition_phase` to
+  `in_progress` is the blessed healing touch). Then run the FULL Ending
+  Protocol — a backstop is a signal, not a license to skip steps.
+- **Close honestly**: `cz_transition_phase` to `deferred` with a reason
+  (`complete` only if the exit criteria are genuinely met).
+- **Re-authorization rule**: re-opening a phase that already ended
+  (complete / failed / deferred) needs a fresh recorded commitment —
+  `cz_add_amendment` naming the new scope, or `cz_add_phase` for new work.
+
 ## Phase Status Table
 
 | Phase | Name | Status | Started | Completed | Handoff |

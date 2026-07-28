@@ -148,6 +148,12 @@ def test_digest_byte_identical_when_there_is_no_lag(temp_repo):
     memory is current — the detector is conditionally emitted, not merely quiet
     (INVARIANT-08 keeps injected status focused and minimal)."""
     repo = _git_repo(temp_repo)
+    # D-070 P1: "ordinary in-phase work" means a LIVE session holds the phase —
+    # stamp this process as the claimant, exactly as transition_phase now does.
+    # Without a live claimant this repo shape is honestly an interrupted
+    # session and the digest SHOULD say so (test_interrupted_session.py).
+    from clauderizer import session_ledger
+    session_ledger.stamp(P.resolve(repo), GAMEPLAN, "1", today="2026-07-27")
     (repo / "src").mkdir(exist_ok=True)
     (repo / "src" / "app.py").write_text("x = 1\n", encoding="utf-8")
     _commit(repo, "feat: ordinary in-phase work")

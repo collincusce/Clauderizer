@@ -1,14 +1,14 @@
 # clauderizer 2.0 alpha — ten fractal-vetted mechanisms — Phase Status Tracker
 
 > Living document. Updated after each phase completes.
-> Last updated: 2026-07-26
+> Last updated: 2026-07-27
 
 ## Phase Status
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Honest endings and epistemics | ✅ COMPLETE | 2026-07-26 | 2026-07-26 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Lifecycle detectors | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Lifecycle detectors | 🟡 IN PROGRESS | 2026-07-27 | — | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Live state and budgets | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Attention and consolidation | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Integrity and enforcement | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |

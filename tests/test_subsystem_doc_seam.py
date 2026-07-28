@@ -31,7 +31,8 @@ SRC = ROOT / "src" / "clauderizer"
 #: Doc stem -> module/package under src/. Only for the few where the doc name is
 #: not the module name; `test_every_subsystem_doc_maps_to_real_code` fails loudly
 #: if a new doc appears without a mapping, so this cannot silently go stale.
-ALIASES = {"markdown-core": "markdown", "mcp-server": "mcp_server"}
+ALIASES = {"markdown-core": "markdown", "mcp-server": "mcp_server",
+           "session-ledger": "session_ledger"}
 
 #: Public callables so generic that a doc naming them proves nothing.
 _UNINFORMATIVE = {"main", "run", "load", "parse", "build", "read", "write"}

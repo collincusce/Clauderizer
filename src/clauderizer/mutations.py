@@ -1284,6 +1284,18 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
     clean_reason = _sanitize_reason(reason)
     if norm == "deferred" and clean_reason:
         display = f"{display} — {clean_reason}"
+    # Read the row's PRIOR status before rewriting it — evidence for the
+    # re-authorization advisory below (D-070 P1), read before write.
+    prev_status: str | None = None
+    from .rituals import _tables as _tbl
+    for fname in ("CHAT-HANDOFF-INDEX.md", "PHASE-STATUS.md"):
+        p = paths.gameplan_dir(gameplan_id) / fname
+        if p.exists():
+            prev_status = next(
+                (r.status for r in _tbl.parse_phase_table(writer.full_text(p))
+                 if r.number == str(phase_n)), None)
+            if prev_status:
+                break
     files: list[str] = []
     for fname, heading in (("CHAT-HANDOFF-INDEX.md", "Phase Status Table"),
                            ("PHASE-STATUS.md", "Phase Status")):
@@ -1313,6 +1325,23 @@ def transition_phase(paths: RepoPaths, *, gameplan_id: str, phase_n: str,
     result = {"ok": True, "phase": str(phase_n), "to_status": norm,
               "files_changed": list(dict.fromkeys(files)),
               "summary": f"Phase {phase_n} → {norm}"}
+    if norm == "in_progress":
+        # Stamp this session's claim (D-070 P1 heal-on-proof) — best-effort
+        # per-machine evidence, already inside the write lock; a same-status
+        # re-transition is the blessed healing touch that re-stamps adoption.
+        from . import session_ledger
+        session_ledger.stamp(paths, gameplan_id, str(phase_n), today)
+        if prev_status in ("complete", "failed", "deferred"):
+            # Re-authorization advisory (INVARIANT-05: surfaced, never blocked):
+            # re-opening exhausted scope deserves a fresh recorded commitment.
+            result.setdefault("advisories", []).append({
+                "kind": "reauthorization",
+                "message": (
+                    f"phase {phase_n} already ended ({prev_status}); re-opening "
+                    f"exhausted scope needs a fresh commitment — cz_add_amendment "
+                    f"naming the new scope, or cz_add_phase for genuinely new "
+                    f"work. Re-opening without one blurs what 'done' meant."),
+            })
     # Advisory surfacing (D-015 / INVARIANT-05): completing a phase surfaces its
     # unresolved open items so they aren't silently left behind. It NEVER blocks
     # — the agent rules. Shared `advisories` shape reused by later gates.

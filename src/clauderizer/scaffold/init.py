@@ -527,6 +527,10 @@ def init(
     changed = _ensure_gitignore(gi, ".clauderizer/telemetry.jsonl") or changed
     changed = _ensure_gitignore(gi, ".clauderizer/dreams.jsonl") or changed
     changed = _ensure_gitignore(gi, ".clauderizer/dreams.schedule.toml") or changed
+    # D-070 P1: per-machine session evidence + the refusal journal — operational
+    # history of THIS machine, never team memory (D-067).
+    changed = _ensure_gitignore(gi, ".clauderizer/sessions.jsonl") or changed
+    changed = _ensure_gitignore(gi, ".clauderizer/refusals.jsonl") or changed
     # D-067: per-machine state is gitignored, team memory is tracked. These four
     # were TRACKED — the dream watermark and proposal store index a journal that
     # is itself gitignored, revision.json is a local counter bumped on every
