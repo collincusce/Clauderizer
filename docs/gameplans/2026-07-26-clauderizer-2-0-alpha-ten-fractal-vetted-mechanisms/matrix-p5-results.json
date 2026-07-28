@@ -1,0 +1,415 @@
+{
+ "generated": "2026-07-28",
+ "harness": "matrix-p5-harness.py",
+ "engine": "tree venv (editable)",
+ "workdir": "/tmp/cz-matrix-p5-fshidj05",
+ "legs": [
+  {
+   "leg": "recording_coverage(O-01)",
+   "status": "run",
+   "figures": {
+    "stint_events": 0,
+    "telemetry_kinds": {
+     "surfaced": 58,
+     "outcome": 76
+    },
+    "sessions_ledger_exists": false,
+    "sessions_since_recorder_landed": 6,
+    "coverage_fraction": 0.0,
+    "by_host_kind": {
+     "claude-code": {
+      "sessions": 6,
+      "stints": 0
+     }
+    }
+   },
+   "notes": "0 stints across every real session since the recorder landed — cause is the serving-engine capability gap (H-30: session MCP is the published 1.14.3 engine, which predates record_run_stint), NOT agent non-compliance (every phase ran cz_preflight). Commit evidence: 18 commits / sessions ['P3-build', 'dream-distill', 'P4+A002-build', 'P7-hub', 'P8-worker (fleet)', 'curator-worker (fleet)']. Wind-down math over this ledger is fiction today; see the budgets_ops_mode leg for live capability proof on the tree engine."
+  },
+  {
+   "leg": "stranded_state",
+   "status": "run",
+   "figures": {
+    "false_positives": 0,
+    "detections": 1,
+    "controls": 4,
+    "cases": [
+     {
+      "case": "A-alive (live claimant)",
+      "expect_fire": false,
+      "fired": false,
+      "grade": null
+     },
+     {
+      "case": "own-pid claimant",
+      "expect_fire": false,
+      "fired": false,
+      "grade": null
+     },
+     {
+      "case": "cross-host claimant",
+      "expect_fire": false,
+      "fired": false,
+      "grade": null
+     },
+     {
+      "case": "cli-transport claimant",
+      "expect_fire": false,
+      "fired": false,
+      "grade": null
+     },
+     {
+      "case": "same-host-mcp dead claimant",
+      "expect_fire": true,
+      "fired": true,
+      "grade": "dead"
+     }
+    ]
+   },
+   "notes": "zero-FP requirement: false_positives must be 0 with detection on the dead case."
+  },
+  {
+   "leg": "backstop_detector",
+   "status": "run",
+   "figures": {
+    "cases": [
+     {
+      "case": "seeded abandoned work",
+      "expect_fire": true,
+      "fired": true,
+      "never_ran": [
+       "post-mortem",
+       "cz_add_phase_summary",
+       "cz_add_output"
+      ]
+     },
+     {
+      "case": "healthy close (summary present)",
+      "expect_fire": false,
+      "fired": false,
+      "never_ran": null
+     },
+     {
+      "case": "alive claimant (liveness gate)",
+      "expect_fire": false,
+      "fired": false,
+      "never_ran": null
+     },
+     {
+      "case": "no work commits",
+      "expect_fire": false,
+      "fired": false,
+      "never_ran": null
+     }
+    ],
+    "geometry_holds": true
+   },
+   "notes": "fire on seeded abandoned work; quiet on healthy close, live claimant, no-work."
+  },
+  {
+   "leg": "gap_detection",
+   "status": "run",
+   "figures": {
+    "advisory_on_empty_registers": {
+     "memory_gap": true,
+     "has_advisory": true,
+     "decisions": 0,
+     "invariants": 0
+    },
+    "quiet_on_hit": {
+     "memory_gap": false,
+     "decisions": 1
+    },
+    "fixture_gap_events": 1,
+    "event_key_violations": [],
+    "probe_text_leaked": false,
+    "corpus_health_gap_events": 1,
+    "production_gap_events": 0,
+    "production_gap_conversion": null
+   },
+   "notes": "capability proven on fixture; production events are 0 because the serving engine cannot emit them until 2.0.0a1 publishes — gap-conversion rate is a NULL RESULT recorded as successful outcome (L-50), trend baseline 0 at verb birth."
+  },
+  {
+   "leg": "reinforce_verb",
+   "status": "run",
+   "figures": {
+    "near_dup_offers_reinforce": true,
+    "advisory_payload": {
+     "advisory": "This lesson strongly overlaps existing project lesson(s) — consider consolidating instead of appending (cz_consolidate_lessons / cz_obsolete_lesson): L-01 (Jaccard 0.444). Or, if the existing lesson already says this and yours is a re-derivation, strengthen IT instead: cz_reinforce_lesson(number='L-01') records the re-derivation on the surviving line (and cz_obsolete_lesson the twin you just appended). Nothing happens unless you choose.",
+     "related": [
+      {
+       "id": "L-01",
+       "title": "Always pin the framistat calibration before the widget assembly run, because uncalibrated framistats corrupt the widget tolerance ledger.",
+       "jaccard": 0.444
+      }
+     ]
+    },
+    "reinforce_1": false,
+    "reinforce_2": false,
+    "trailer_x2_present": false,
+    "telemetry_reinforced_events": 0,
+    "production_token_weight": {
+     "canonical_before_after_curator": [
+      6884,
+      6913
+     ],
+     "handoff_estimate_before_after": [
+      6035,
+      5988
+     ],
+     "entries_before_after": [
+      21,
+      20
+     ],
+     "provenance": "curator-loop iteration outputs, 2026-07-28"
+    },
+    "production_re_derivation_priors": "P3-era curator: 6 re-derivation proposals; L-69 write-time advisory fired at Jaccard 0.505 (threshold 0.40)",
+    "production_verb_uses": 0
+   },
+   "notes": "capability proven on fixture (offer -> blessed write -> xN trailer -> telemetry); production before/after re-derivation rate is a NULL RESULT at verb birth (unservable until 2.0.0a1 ships) — successful outcome per L-50."
+  },
+  {
+   "leg": "merge_audit_seeded_fault",
+   "status": "run",
+   "figures": {
+    "seeded_faults": 3,
+    "detected": 3,
+    "detection_rate": "3/3",
+    "clean_merges": 4,
+    "false_positives": 0,
+    "fp_rate": "0/4",
+    "healthy_digest_byte_identical": true,
+    "trials": [
+     {
+      "trial": "lost-update-1",
+      "expect_finding": true,
+      "found": true,
+      "kinds": [
+       "lost_update"
+      ]
+     },
+     {
+      "trial": "lost-update-2",
+      "expect_finding": true,
+      "found": true,
+      "kinds": [
+       "lost_update"
+      ]
+     },
+     {
+      "trial": "lost-update-3",
+      "expect_finding": true,
+      "found": true,
+      "kinds": [
+       "lost_update"
+      ]
+     },
+     {
+      "trial": "clean-1",
+      "expect_finding": false,
+      "found": false,
+      "kinds": []
+     },
+     {
+      "trial": "clean-2-samefile",
+      "expect_finding": false,
+      "found": false,
+      "kinds": []
+     },
+     {
+      "trial": "clean-3-samefile",
+      "expect_finding": false,
+      "found": false,
+      "kinds": []
+     },
+     {
+      "trial": "clean-4-fenced",
+      "expect_finding": false,
+      "found": false,
+      "kinds": []
+     }
+    ],
+    "production_true_negative": "P8 merge 784ccd9 (docs-touching, audit silent)"
+   },
+   "notes": "squash blind spot remains stated-unclaimed (D-076); fenced quoted markers must not flag."
+  },
+  {
+   "leg": "never_engaged_advisory",
+   "status": "run",
+   "figures": {
+    "pre_sidecar_no_engagement_keys": true,
+    "seen_keys": [
+     "H-01"
+    ],
+    "fires_on_ignored": true,
+    "quiet_on_engaged": true,
+    "digest_mentions_never_engaged": false
+   },
+   "notes": "emission is sidecar-gated by design (D-068 drop-nothing): no receipts -> no keys; with one cz_get receipt the split fires on the genuinely ignored finding only."
+  },
+  {
+   "leg": "budgets_ops_mode",
+   "status": "run",
+   "figures": {
+    "stints_recorded": 1,
+    "stint_sample": [
+     {
+      "date": "2026-07-28",
+      "gameplan": "2026-07-28-matrix-target",
+      "kind": "stint",
+      "phase": "0",
+      "proc": "99349acc"
+     }
+    ],
+    "assess": [
+     {
+      "tier": "gameplan",
+      "state": "wind_down",
+      "budget": 1,
+      "spent": 1,
+      "reserve": 1,
+      "detail": "1/1 session-date(s), reserve 1"
+     }
+    ],
+    "context_wind_down": {
+     "wind_down": [
+      {
+       "tier": "gameplan",
+       "state": "wind_down",
+       "budget": 1,
+       "spent": 1,
+       "reserve": 1,
+       "detail": "1/1 session-date(s), reserve 1",
+       "advisory": "you are IN the final budgeted stint for this gameplan (1/1 session-dates; reserve 1 priced for the ending) — land the Ending Protocol before this session closes, or raise the `Budget:` line in markdown. Advisory only; nothing blocks."
+      }
+     ],
+     "keys": [
+      "wind_down"
+     ]
+    },
+    "ops_exit": 0,
+    "ops_stdout_tail": "l\": \"clean working tree\"\n          },\n          {\n            \"n\": 2,\n            \"name\": \"tests\",\n            \"status\": \"pass\",\n            \"detail\": \"`pytest -q` ok (1 tests); baseline updated 0 -> 1\"\n          }\n        ],\n        \"verdict\": \"PASS\",\n        \"gates_unrun\": [],\n        \"summary\": \"preflight PASS: 2 passed, 0 failed, 0 skipped\",\n        \"schema_version\": \"1.1\"\n      }\n    }\n  ]\n}\n",
+    "ops_stderr_tail": ""
+   },
+   "notes": "ops-mode (CLI, no MCP): the cz_preflight OP must record a host-stable distinct-DATE stint; with '> Budget: 1 session' declared, spent=1 lands in the reserve window -> wind_down derived at read time. This is the live capability proof that the production 0% coverage is a serving-engine gap, not a recorder defect."
+  },
+  {
+   "leg": "stamp_slow_fs_wsl",
+   "status": "run",
+   "figures": {
+    "ext4": {
+     "armed": {
+      "exit": 0,
+      "batch_s": 0.09,
+      "per_op_ms": 11.7,
+      "stamped_results": 2,
+      "first_status_stamped": true,
+      "middle_statuses_stamped": 0,
+      "post_change_stamped": false
+     },
+     "unarmed": {
+      "exit": 0,
+      "batch_s": 0.09,
+      "per_op_ms": 11.6,
+      "stamped_results": 0,
+      "first_status_stamped": false,
+      "middle_statuses_stamped": 0,
+      "post_change_stamped": false
+     }
+    },
+    "drvfs": {
+     "armed": {
+      "exit": 0,
+      "batch_s": 1.01,
+      "per_op_ms": 126.2,
+      "stamped_results": 2,
+      "first_status_stamped": true,
+      "middle_statuses_stamped": 0,
+      "post_change_stamped": false
+     },
+     "unarmed": {
+      "exit": 0,
+      "batch_s": 0.54,
+      "per_op_ms": 67.8,
+      "stamped_results": 0,
+      "first_status_stamped": false,
+      "middle_statuses_stamped": 0,
+      "post_change_stamped": false
+     }
+    },
+    "drvfs_arm_status": "run"
+   },
+   "notes": "armed arm expects: first cz_status stamped, the five identical repeats silent (change-trigger), the post-mutation cz_status stamped again; unarmed arm expects zero stamps (silent-by-default, INVARIANT-10). Overhead = armed vs unarmed batch time, ext4 vs DrvFs."
+  },
+  {
+   "leg": "kimi_pinned_budgets",
+   "status": "run",
+   "figures": {
+    "host": "kimi CLI 1.49.0 (--print --yolo, K-series model; non-Claude host)",
+    "session": "completed one turn, followed the CLI-ops instruction verbatim, TurnEnd clean",
+    "stint_recorded": {
+     "date": "2026-07-28",
+     "gameplan": "2026-07-28-matrix-target",
+     "kind": "stint",
+     "phase": "0",
+     "proc": "74aa047e"
+    },
+    "distinct_date_identity": true
+   },
+   "notes": "A real kimi-hosted session drove `clauderize ops` cz_preflight against the fixture and the stint landed with the D-072 spend-unit shape. Doubles as a non-Claude-host leg and as live evidence for the L-66 CLI-fallback claim (a non-Claude model completed a tracked engine write with zero MCP)."
+  },
+  {
+   "leg": "leg_availability(O-02)",
+   "status": "run",
+   "figures": {
+    "claude-code": "available (this session, hub + 6 spawned agents)",
+    "kimi-cli": "available headless (--print) — RAN (kimi_pinned_budgets leg)",
+    "cursor": "GUI launcher only; cursor-agent CLI absent -> NAMED GAP for a live Cursor leg",
+    "jcode": "not installed/installable here -> honestly-unverifiable row recorded by P8 (jcode_host_row output)",
+    "under_adhering_live_host": "NAMED GAP: no live under-adhering host drivable on demand (kimi adhered; cursor headless absent). The backstop leg covers the SHAPE such a host leaves (seeded work-without-closeout) with full fire/quiet geometry; the live-host arm awaits a real occurrence.",
+    "slow_fs_wsl": "RAN both arms (ext4 + DrvFs /mnt/c)",
+    "ops_mode": "RAN (budgets_ops_mode leg)"
+   },
+   "notes": "Every unrunnable leg is a named gap with its blocking reason, never a silent skip (O-02)."
+  },
+  {
+   "leg": "fleet_vs_solo",
+   "status": "run",
+   "figures": {
+    "task": "seeded 3-module contract-fix repo (7 failing tests), clauderized gameplan, identical clones per arm",
+    "solo": {
+     "wall_s": 359,
+     "phases": "3/3 complete, 6/6 criteria checked honestly",
+     "suite": "11/11",
+     "lockheld": 0
+    },
+    "fleet": {
+     "workers": 3,
+     "wall_s_max_worker": 229,
+     "hub_merge_s": 0.13,
+     "worker_wall_s": [
+      175,
+      205,
+      229
+     ],
+     "summed_agent_s": 609,
+     "phases": "3/3 complete, 6/6 criteria checked honestly",
+     "suite_after_merge": "11/11",
+     "lockheld": 0,
+     "collisions": 0,
+     "ledger_stamps": 3
+    },
+    "independent_verifier": {
+     "defects_solo": 0,
+     "defects_fleet": 0,
+     "probes": "~50 adversarial per-module battery + diff hygiene + test-file integrity",
+     "test_files_intact_both_arms": true,
+     "comparison": "extensionally equivalent; fleet ahead on commit hygiene, solo on one error message"
+    },
+    "speedup_wall": 1.57,
+    "compute_multiplier": 1.7,
+    "verdict": "BOUNDED (D-079): N buys wall-clock on independent work, not quality; parity from discipline"
+   },
+   "notes": "Ceiling caveat per L-50: 0-defects-both-arms saturates the quality metric — this proves parity on a task both arms could saturate, not that fleets can never out-quality solo on harder tasks; the follow-on hypothesis is named in D-079."
+  }
+ ]
+}

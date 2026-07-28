@@ -12,7 +12,7 @@
 | 2 | Live state and budgets | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Attention and consolidation | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Integrity and enforcement | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Evidence matrix and graduation | 🟡 IN PROGRESS | 2026-07-28 | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Evidence matrix and graduation | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Close-out and ship 2.0.0a1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Fleet pattern: glossary, skill, productization | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-7-HANDOFF.md |
 | 8 | jcode-vetted attention mechanisms: gap detection, reinforce verb, negative-space, jcode host | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-8-HANDOFF.md |
@@ -68,6 +68,13 @@ jcode_host_row: UNVERIFIABLE (honest, per the vetted or-branch). Blocking reason
 dogfood_fleet_run: N=2 host-spawned workers + hub (manager=fable-hub), cz_assign partitioning: worker-jcode → alpha phase 8 (worktree isolation, code via branch e5b9335 merged 784ccd9, memory via hub MCP), worker-curator → curator-loop iteration (memory-only). Figures: memory collisions 0 (duplicate-id scan DECISIONS/LESSONS/HARDENING clean), LockHeld 0 across 27 hub writes (16 jcode + 11 curator) under real concurrency (revision 1012→1030 mid-run), honest-close outcomes: both workers complete with negative-space sections, both verified against engine state (fleet step 5). Wall-clock: curator ~16min, jcode ~33min. Worktree bootstrap surprise recorded as gameplan lesson #4 (worker had to fast-forward a v1-bootstrap-pinned worktree)
 baseline_tests_after_phase7: 1554 passed, 7 skipped post-merge of P7+P8 (was 1516; +4 seam tests from P7, +34 from P8); P7-only hub tree measured 1520 passed pre-merge
 phase7_artifacts: Commits 61c35d2 (feat: skill productized src+render byte-identical, tests/test_skill_asset_seam.py 4 pins armed-once-red, test_init fleet assertion, README+ARCHITECTURE glossary refs, GLOSSARY status refresh) + 71f8805 (curator writes) + 703727d (P8 close writes) + 784ccd9 (P8 merge). Briefing contract gained the D-075 negative-space clause (send-back = hub judgment). H-30 filed: serving-engine backward-stamp (published 1.14.3 MCP vs 2.0-alpha tree) — recovered via .venv/bin/clauderize upgrade, stamp now 1.12.0
+```
+
+### Phase 5 Outputs
+
+```
+matrix_artifacts: matrix-p5-harness.py + matrix-p5-results.json (this dir, committed): 12 legs, all run or named-gap. Verdicts: D-077 (Fractal ten: 7 graduate incl. merge audit un-silenced on 3/3 detection 0/4 FP; stamp dormant on the DrvFs +86%/op figure; budgets dormant on 0.0 recording coverage with capability proven), D-078 (jcode: gap/reinforce/negative-space graduate, jcode-host named gap), D-079 (fleet-vs-solo BOUNDED: quality tie 0-defects both arms under independent verification, wall 1.57×, compute ~1.7×, 0 LockHeld/collisions). First production reinforce: L-66 x1 via tree CLI. O-01+O-02 resolved with figures
+baseline_tests_after_phase5: 1554 passed, 7 skipped (unchanged from post-P7/P8 — phase 5 added measurement artifacts and skill-guidance text, no engine code)
 ```
 
 ## Corrections Log

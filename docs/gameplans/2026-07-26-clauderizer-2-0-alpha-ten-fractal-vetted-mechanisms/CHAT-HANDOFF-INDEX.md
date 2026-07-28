@@ -1,7 +1,7 @@
 # Chat Handoff Index — clauderizer 2.0 alpha — ten fractal-vetted mechanisms
 
 > Last updated: 2026-07-28
-> Status: Phase 5 of 9 in progress
+> Status: Phase 6 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 1516
+**Current baseline test count**: 1554
 
 ## Ending Protocol
 
@@ -34,7 +34,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 2 | Live state and budgets | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Attention and consolidation | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Integrity and enforcement | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | Evidence matrix and graduation | 🟡 IN PROGRESS | 2026-07-28 | — | handoffs/PHASE-5-HANDOFF.md |
+| 5 | Evidence matrix and graduation | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Close-out and ship 2.0.0a1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Fleet pattern: glossary, skill, productization | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-7-HANDOFF.md |
 | 8 | jcode-vetted attention mechanisms: gap detection, reinforce verb, negative-space, jcode host | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-8-HANDOFF.md |
@@ -79,6 +79,12 @@ Productized the D-071 fleet pattern end-to-end and proved it by running one. cla
 
 What I did not check: the shipped skill rendering on a FRESH init of a foreign repo (only this repo's dual-copy state is pinned); the fleet skill's guidance under a worker that actually violates the hub-and-spoke law (both workers complied); LockHeld behavior under genuinely simultaneous write bursts (0 observed may reflect low write overlap, not lock fairness); the merge audit's verdict on the P8 merge (advisory-silent by design this phase — the seeded-fault protocol is phase 5's); non-Claude hosts spawning fleets (Claude Code Agent tool only).
 
+### Phase 5 — completed 2026-07-28
+
+Ran the D-064 evidence matrix over all fourteen adopted mechanisms with their pre-named signals, measuring FIRST and manufacturing nothing. Recording coverage came first per O-01: 0.0 (0 stints / 6 real sessions; cause H-30's serving-engine gap, capability proven live by the ops-mode and kimi legs) — the budgets verdict cites it. The committed harness (matrix-p5-harness.py, 12 legs in matrix-p5-results.json) delivered: stranded-state 0 FP across four controls with 1/1 dead-claimant detection; backstop fire/quiet 4/4; receipts drop-nothing + correct split at the production seam; merge audit 3/3 detection, 0/4 FP, digest byte-identical (its advisory-silent restriction lifts); stamp change-trigger geometry exact with the DrvFs figure (+58ms/op, +86%) that keeps it env-armed dormant; budgets wind-down derived live with the phase-aware advisory; gap and reinforce capability legs exact with production signals honestly null (pre-publish); a REAL kimi CLI session as the non-Claude/kimi-pinned leg; and the fleet-vs-solo experiment — quality tie at 0 defects both arms under independent adversarial verification, wall-clock 1.57× for ~1.7× compute, 0 LockHeld/collisions — verdict BOUNDED (D-079), skill guidance updated to the figures in both copies. Verdicts recorded as D-077 (seven Fractal graduate; stamp+budgets documented-dormant with the exact figures keeping them so) and D-078 (three jcode graduate; jcode-host a named gap with recipe). First production use of the reinforce verb: L-66 x1, via the tree CLI, for the harness's own thrice-re-derived probe-the-real-seam mistake.
+
+What I did not check: post-publish production telemetry for gap-conversion and re-derivation rates (structurally impossible pre-publish — signals armed, nulls recorded); a live under-adhering host and a live Cursor/jcode session (named gaps with reasons); fleet behavior at N large enough to contend the engine lock; the quality ceiling caveat (0-defects-both-arms saturates the fleet-vs-solo quality metric per L-50 — parity proven on a saturable task, superiority on harder tasks stays an open hypothesis named in D-079); DrvFs numbers reflect one machine's WSL2, not a population.
+
 ## Accumulated Lessons
 
 _(Numbered sequentially across the whole gameplan. Categorized. Pruned of
@@ -97,3 +103,5 @@ _(none yet)_
 **4.** A fleet worker's first act in its worktree must be verifying the branch point against the briefed baseline (git log/merge-base vs the baseline test count) BEFORE building: this phase's worktree had been created at the v1 bootstrap commit — hundreds of commits and ~1300 tests behind the briefed 1516 baseline, missing every seam the phase extends — and only a merge-base check caught it (fixed by ff-merging main before any work; the branch had no unique commits so the fix was free). A briefed baseline number is a checkable claim about the worktree, not trivia: check it, or build phase-N work on phase-0 code. *(evidence: worker-jcode P8: worktree branch worktree-agent-af68c07562fb35d36 found at 1c0d430 (v1 bootstrap) vs main 9c5e0d6; git merge --ff-only main then uv pip reinstall; suite went from would-be-v1 to the true 1516+7 baseline)*
 
 **5.** A fleet dogfood criterion is best satisfied with PRODUCTION work, not seeded toys: assigning a real ready phase (worktree worker) and a real standing-loop iteration (memory-only worker) produced the required figures (collisions, LockHeld, honest-close) as a byproduct of work that had to happen anyway — and the incidental load was the only reason the serving-vs-tree engine split-brain surfaced at all (H-30: a stamp op through the stale published MCP going backward). Hub mechanics that made it clean: cut the worktree BEFORE hub edits so the worker baselines on HEAD; brief workers to leave next-phase handoffs and shared-file clauses to the hub (the lands-second rule resolves concurrent-phase file ownership); commit hub tracked-writes in path-separable slices (worker A's docs, worker B's close-out, then the code merge) so attribution survives; and run trust-but-verify against engine state, not the worker's prose. *(evidence: P7 dogfood: commits 71f8805/703727d/784ccd9; H-30; 0 LockHeld across 27 writes, revision 1012→1030 mid-run)*
+
+**6.** Measure a Clauderizer mechanism at the REGISTRY seam it ships on, never the raw ops.* function: receipts (_receipted), cz_state stamps (_stamped), and the refusal journal (_journaled) all attach as wrappers built into REGISTRY construction, so an in-process ops.cz_get()/cz_status() call is byte-free by design and a harness probing it reads false negatives — three matrix legs failed exactly this way before switching to `clauderize ops` batches (env CLAUDERIZER_REPO; there is no global --repo flag). Two sibling seam facts the same legs surfaced: status-shaped ops (cz_status, cz_next_phase_context) are _NO_STATE_STAMP-excluded because they ARE the state; and a fixture built by calling mutations.create_gameplan directly is NOT init-equivalent until config.active_gameplan is set — stint recording and default-gameplan ops silently no-op on such a fixture. *(evidence: matrix-p5-harness.py evolution (never_engaged/stamp_wsl/budgets_ops legs: raw-call false negatives → cli_ops green); ops.py:1857 REGISTRY composition; L-66 reinforced x1 for the class)*

@@ -28,8 +28,8 @@ issue-#9 corruption class.
    in worktrees get the hub path explicitly.
 3. **Spawn** via the host, all workers in parallel. Prefer few well-scoped
    workers over many thin ones: coordination overhead grows with fleet size
-   (Fractal's measured outbox tax), and the "more agents = better" thesis is
-   under test (D-071), not proven.
+   (Fractal's measured outbox tax), and the measured verdict (D-079) is that
+   N buys wall-clock, not quality — see Capability notes.
 4. **Monitor.** `cz_status` / `cz_assignments` from the orchestrator. Tracked
    writes serialize through the engine lock; workers seeing `LockHeld` retry
    with backoff — it is contention, not failure.
@@ -94,10 +94,16 @@ where it is absent (older engine, or dormant pending graduation):
   lost-update shape on docs-touching merges after the fact; its squash blind
   spot is stated in its own docs. It does NOT make memory-in-worktrees safe —
   the hub-and-spoke law stands regardless.
-- "More agents = better results" remains a **hypothesis under test** (D-071):
-  the phase-5 fleet-vs-solo verdict updates this skill's guidance with
-  measured figures. Until then, pick N from the number of genuinely
-  independent phases.
+- "More agents = better results" is **measured and BOUNDED** (D-079, the
+  D-071 fleet-vs-solo matrix leg): on the same seeded three-phase task,
+  fleet and solo tied on quality — zero defects in both under independent
+  adversarial verification — while the fleet ran 1.57× faster wall-clock at
+  ~1.7× total compute, with 0 LockHeld and 0 collisions under the
+  hub-and-spoke law. N buys wall-clock on genuinely independent phases,
+  never quality; the quality parity came from the fleet DISCIPLINE (disjoint
+  assignments, honest closes, independent verification), so the hub's
+  verification pass is where fleet quality is actually made. Pick N from the
+  number of genuinely independent phases.
 
 ## Anti-patterns
 
@@ -107,5 +113,6 @@ where it is absent (older engine, or dormant pending graduation):
 - Unassigned fan-out — two workers, one phase, interleaved half-truths.
 - Complete-laundering by a worker that ran out of context: the honest door is
   deferred, and the orchestrator must not "helpfully" flip it.
-- Scaling N because more feels better: pick N from the number of genuinely
-  independent phases, then let the D-071 matrix verdict tune the guidance.
+- Scaling N because more feels better: the measured verdict (D-079) is a
+  quality TIE with a wall-clock win — pick N from the number of genuinely
+  independent phases, and spend the saved time on the verification pass.
