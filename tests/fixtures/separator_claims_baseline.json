@@ -41,6 +41,11 @@
    "count": 1,
    "why": "not a separator: a slash command inside an authored shell example"
   },
+  "tests/test_enforcement_ladder.py::they surface findings in tool results for the agent to act on, and MUST NOT hard-block a mutation or phase transition, nor introduce an enable/disable config flag. The engine surfaces candidates; the agent decides.": {
+   "class": "message",
+   "count": 1,
+   "why": "the INVARIANT-05 verbatim restatement pinned against ENFORCEMENT.md — 'clarify/open-items' is prose alternation inside quoted law, never a filesystem path; identical on every OS"
+  },
   "tests/test_honest_closeout.py::0/2": {
    "class": "message",
    "count": 1,
@@ -183,5 +188,5 @@
   }
  },
  "platform_claims": 0,
- "total": 44
+ "total": 45
 }

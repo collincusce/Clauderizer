@@ -215,7 +215,19 @@ def audit(paths: RepoPaths, config: Config) -> dict:
     release = _release_signals(root)
     git = _git_signals(root)
     graph = _graph_signals(paths, gid)
-    finding_count = len(release) + len(git) + len(graph)
+    # Merge-integrity signals (2.0 P4): git evidence only, quiet on a healthy
+    # history; the shared describe() states the squash blind spot to the user.
+    merge_integrity: list[str] = []
+    try:
+        from . import merge_audit as _merge_audit
+
+        _ma = _merge_audit.compute(paths)
+        if _ma:
+            merge_integrity = [f["detail"] for f in _ma["findings"]]
+            merge_integrity.append(_merge_audit.describe(_ma["findings"]))
+    except Exception:
+        pass
+    finding_count = len(release) + len(git) + len(graph) + len(merge_integrity)
 
     if finding_count:
         summary = (f"self-audit ({scope}): {finding_count} mechanical finding(s) "
@@ -239,6 +251,7 @@ def audit(paths: RepoPaths, config: Config) -> dict:
         "release": release,
         "git": git,
         "graph": graph,
+        "merge_integrity": merge_integrity,
         "checklist": CHECKLIST,
         "finding_count": finding_count,
         "summary": summary,

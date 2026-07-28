@@ -172,6 +172,12 @@ Everything here is **advisory** — the second-most important word in the system
   <img src="docs/assets/how-it-works.svg" alt="How it works: markdown source of truth → engine → MCP + hooks → your agent" width="840">
 </p>
 
+What enforces each discipline — and the honest tier when the answer is "only
+the instructions text" — is mapped in [docs/ENFORCEMENT.md](docs/ENFORCEMENT.md).
+On hosts without a session hook nothing is injected automatically: the
+instructions-floor disciplines ride the CLAUDE.md/AGENTS.md stanza plus a
+one-time status note on the first tool result.
+
 ---
 
 ## Quickstart: from an empty folder

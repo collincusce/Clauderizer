@@ -897,6 +897,18 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
                 bundle["interrupted"] = _ifound
         except Exception:
             pass
+    # Merge-integrity audit (2.0 P4): git evidence only, O(1) bounded subprocess
+    # cost, present ONLY when the most recent docs-touching TRUE merge shows a
+    # lost update or committed conflict markers — healthy histories (and squash
+    # workflows, which this audit cannot see) keep a byte-identical bundle.
+    try:
+        from . import merge_audit as _merge_audit
+
+        _ma = _merge_audit.compute(paths)
+        if _ma:
+            bundle["merge_audit"] = _ma
+    except Exception:
+        pass
     # Budgets (D-072): present ONLY when a budget is declared — undeclared
     # repos keep a byte-identical bundle and digest (dormant default).
     if gid:
@@ -1138,6 +1150,11 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         from . import stranded as _stranded
 
         lines.append(f"⚠ Stranded: {_stranded.describe(_str)}")
+    _ma = bundle.get("merge_audit")
+    if _ma:
+        from . import merge_audit as _merge_audit
+
+        lines.append(f"⚠ Merge integrity: {_merge_audit.describe(_ma['findings'])}")
     _int = bundle.get("interrupted")
     if _int:
         from . import interrupted as _interrupted

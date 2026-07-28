@@ -72,6 +72,17 @@ exceeds vs UNTRACKED-never-zero). The stint ledger is written by the
 `cz_preflight` op through `preflight.record_run_stint()` — the library `run()`
 stays write-free so tests and read-only fixtures never accrue telemetry.
 
+## Merge-integrity audit (`merge_audit.py`, 2.0 P4)
+
+Git evidence only: **`compute(paths)`** audits the single most recent
+docs-touching TRUE merge (`--full-history` — default simplification would drop
+exactly the TREESAME lost-update shape it hunts) for three-way lost updates and
+committed conflict-marker triads (fence-quoted markers exempt), with O(1)
+batched subprocess cost and no persisted state — findings self-clear from
+history (D-065/D-069). **`describe(findings)`** is the one shared wording
+(L-55) across digest, pre-flight warn and cz_audit, and it states the squash
+blind spot to the user: squash commits have one parent and are invisible here.
+
 ## Self-critique (`critique.py`, D-019)
 
 **`critique()` assembles a reference-free rubric** over a target — a phase, the whole gameplan, or the in-progress handoff — across three dimensions, each backed by signals the engine already computes:

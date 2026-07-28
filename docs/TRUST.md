@@ -17,7 +17,12 @@ detected-only, non-destructive, and fully disabled by
 shell profile or your system. Two of the repo files register commands
 that your agent harness (e.g. Claude Code) executes: an MCP server
 registration and SessionStart + UserPromptSubmit hooks (the same wrapper
-command, registered under two events). Clauderizer itself never installs a
+command, registered under two events). On harnesses with no session-hook
+support, nothing runs automatically at all — the disciplines
+`docs/ENFORCEMENT.md` marks instructions-floor are carried entirely by the
+CLAUDE.md/AGENTS.md stanza text plus a one-time status note attached to the
+first MCP tool result; there is deliberately no standing digest line about
+missing capabilities (D-076). Clauderizer itself never installs a
 daemon, never phones home, has **zero runtime dependencies**, and contains
 no self-executing path: everything it registers runs only when *your*
 harness, under *your* trust settings, chooses to run it.

@@ -9,6 +9,10 @@ already loaded. **If no digest appeared, call `cz_status` now, before anything
 else** — many hosts have no session hook, and `cz_status` is your durable project
 memory (where the gameplan stands, the baseline, open items). Either way, to
 begin or continue a phase, call `cz_next_phase_context` then `cz_preflight`.
+On a host with no session hook NOTHING is injected automatically: the
+disciplines marked instructions-floor in `docs/ENFORCEMENT.md` are carried by
+this very text plus a one-time status note on your first tool result — keep
+this block in your agent-instructions file.
 
 **If the `cz_*` tools themselves are absent** (the call fails, not just a missing
 digest), the wiring is broken, not the memory: run `clauderize doctor` in a shell,

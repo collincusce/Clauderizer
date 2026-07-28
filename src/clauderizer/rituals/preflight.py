@@ -617,6 +617,24 @@ def run(
         add("interrupted_session", "warn", _interrupted.describe(found))
 
     check_interrupted_session()
+
+    def check_merge_integrity() -> None:
+        """Appended ONLY when the most recent docs-touching true merge shows a
+        lost update or committed conflict markers (2.0 P4) — a healthy history
+        keeps a byte-identical check list (INVARIANT-07). WARN, never fail
+        (INVARIANT-05); the shared describe() carries the squash blind spot."""
+        try:
+            bundle = status_bundle.compute(paths, config)
+            found = bundle.get("merge_audit")
+        except Exception:
+            return
+        if not found:
+            return
+        from . import merge_audit as _merge_audit
+
+        add("merge_integrity", "warn", _merge_audit.describe(found["findings"]))
+
+    check_merge_integrity()
     return result
 
 
