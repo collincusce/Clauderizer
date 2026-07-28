@@ -54,6 +54,111 @@ _(none yet)_
 
 **3.** Three gate-design rules from the jcode extraction, each grounded in their measured practice: (1) prefer WORK-COUNTERS over wall-clock in quality gates — a tight timing gate is a flaky gate, a flaky gate gets muted, and a muted gate is no gate; their decisive perf gate asserts relayouts equal zero, a statement about work that generous slack cannot tune away. (2) The sabotage ritual is STANDING, not one-time: whenever a gate changes in a way that could weaken it, inject the violation, watch it go red, revert — L-68 step 4 made recurring. (3) Advisory TIMING is part of advisory design: defer repeatable advisories to one end-of-turn digest, collapse repeats, drop the ones the agent already resolved — nagging on every write punishes the common healthy case where understanding starts low and rises while working. *(evidence: research-jcode-vetting.json design notes; jcode profile.rs (relayouts==0 gate + gate-integrity meta-tests), FINDING_SLOWNESS.md sabotage procedure, todo.rs turn-end gate-digest rationale)*
 
+**4.** A fleet worker's first act in its worktree must be verifying the branch point against the briefed baseline (git log/merge-base vs the baseline test count) BEFORE building: this phase's worktree had been created at the v1 bootstrap commit — hundreds of commits and ~1300 tests behind the briefed 1516 baseline, missing every seam the phase extends — and only a merge-base check caught it (fixed by ff-merging main before any work; the branch had no unique commits so the fix was free). A briefed baseline number is a checkable claim about the worktree, not trivia: check it, or build phase-N work on phase-0 code. *(evidence: worker-jcode P8: worktree branch worktree-agent-af68c07562fb35d36 found at 1c0d430 (v1 bootstrap) vs main 9c5e0d6; git merge --ff-only main then uv pip reinstall; suite went from would-be-v1 to the true 1516+7 baseline)*
+
+**5.** A fleet dogfood criterion is best satisfied with PRODUCTION work, not seeded toys: assigning a real ready phase (worktree worker) and a real standing-loop iteration (memory-only worker) produced the required figures (collisions, LockHeld, honest-close) as a byproduct of work that had to happen anyway — and the incidental load was the only reason the serving-vs-tree engine split-brain surfaced at all (H-30: a stamp op through the stale published MCP going backward). Hub mechanics that made it clean: cut the worktree BEFORE hub edits so the worker baselines on HEAD; brief workers to leave next-phase handoffs and shared-file clauses to the hub (the lands-second rule resolves concurrent-phase file ownership); commit hub tracked-writes in path-separable slices (worker A's docs, worker B's close-out, then the code merge) so attribution survives; and run trust-but-verify against engine state, not the worker's prose. *(evidence: P7 dogfood: commits 71f8805/703727d/784ccd9; H-30; 0 LockHeld across 27 writes, revision 1012→1030 mid-run)*
+
+## Project Lessons (most relevant to this phase)
+
+_(5 of 20 shown in full — ranked by keyword + entity-id overlap with this phase, no ML. Every other active lesson is indexed below; nothing is dropped (D-068). The full text is canonical in `docs/LESSONS.md` — fetch any entry with `cz_get`.)_
+
+**L-50.** Treat every claim, borrowed idea, audit finding, or "realize-the-win" as a FALSIFIABLE hypothesis with a pre-named machine-checkable metric, and MEASURE before building or fixing — a discard/null is a successful outcome; the deliverable is the verdicts plus the survivors. Build the adversarial measuring-stick FIRST: (a) an eval concludes only what its fixtures permit — a cleanly-separable corpus saturates at the 1.0 ceiling so no scoring change can show lift (proves "no regression", never "no value"), so target the mechanism with length-bias/term-skew/near-duplicate confounds up front; (b) when you author BOTH fixture and detector, a 100%-detection/0-FP result is suspicious by construction (teaching to the test) — seed adversarial NEAR-MISSES and run a NAIVE strawman beside the real detector, credibility = beating the strawman ON the near-misses, not beating a no-check baseline (anything beats zero); (c) an audit finding names a symptom + a HYPOTHESIZED cause — measure the hypothesis before fixing (a predicted tokenizer under-count was falsified; the real defect was incoherence, fixed by single-sourcing, not by lowering a threshold to manufacture pairs); (d) near-DUPLICATE detection length-normalizes overlap (Jaccard |A∩B|/|A∪B|), never the raw count (the relevance signal) that a long distinct entry trips by sheer size. Corollaries: when a gate's TARGET metric is already SATURATED by an earlier phase, PREDICT the zero and park the feature by analysis WITHOUT building it (cite the saturated metric + absent need + cost); when a "realize-the-win" phase finds the win already banked, deliver a measurement + a regression guard that LOCKS the property + an honest AMENDMENT, never a manufactured change that regresses validated behavior; and when an exit criterion is over-specified vs what is soundly buildable, record the honest amendment rather than faking the checkbox. (Consolidates L-28, L-32, L-38, L-39, L-40, L-44, L-45, L-46.) *(from 2026-07-16-hotpatch-lesson-redistill-and-proposal-triage)*
+**L-65.** Independent surfaces that must stay in agreement drift SILENTLY, and the fix is an EXECUTABLE seam at exactly the boundary — a test that diffs the surface against its source of truth — never sweep discipline, which is a promise to remember. Where a doc enumerates a code-owned surface (a tool list, a version header, a shipped-artifact claim), pin it: the prose sweep found README's MCP surface silently 14 tools behind — it listed 24 tools against TOOL_NAMES' 31, the whole 1.12.0 listing contract missing — and the pin test (README backticked names vs TOOL_NAMES plus the count line) and the procedure-version parity test kill the drift CLASS rather than the instance. That pin was the first dream-sourced promotion: the gap was captured as a dream note mid-build, distilled by the dreamer, staged, triaged and accepted. Four recurring seams. (1) Generated/managed content has a SOURCE template — edit the source, not just the render (CLAUDE.md's stanza and .claude/skills render from src/ templates at init, so editing only the render leaves the source stale and a future init overwrites it); update both, source first. (2) The phase that ADDS a field/branch/event is NOT the phase that OWNS the shared function it threads through (config merge, markdown writer, graph builder, hook dispatcher, status_bundle) — per-phase TDD misses the cross-cutting integration, and independent reviews repeatedly caught merge_missing dropping host_target, a doctor false-failing non-claude repos, unthreaded native event names. (3) A changelog line or in-code hint claiming a shipped ARTIFACT needs a test asserting the artifact actually ships — prose and code drift independently and the claim reads as true until someone looks (1.3.1 referenced a .example no code scaffolded). (4) Reference docs drift together on a taxonomy change: when hook events or the tool surface change, sweep every non-single-sourced present-tense doc as one set — README's tool list, TRUST.md (what init writes / what executes), UPGRADING.md's uninstall script, SECURITY.md's scope line, and the preflight 7-vs-8 checks count — wherever no executable pin exists yet; all four still described the pre-0.14 SessionStart-only lifecycle long after it changed. The single-sourced CLAUDE.md/AGENTS.md stanza is safe by construction; those are not. Append-only history (CHANGELOG, handoffs, cascade reports) records the OLD counts on purpose — never 'correct' it to the new number. (Consolidates L-21, L-55, L-62.) *(evidence: thematic re-distill under L-26's coverage gate; consolidates L-21, L-55, L-62 at 10/10 pre-apply coverage)* *(from 2026-07-25-the-ending-protocol-needs-a-detector-memory-lag-nested-repos-the-unbuilt-write-guard)*
+**L-68.** Turning a repeatedly-unapplied lesson into an ENFORCER is a five-step discipline, and each step has its own failure. (1) DIAGNOSE the gap as temporal, not informational. L-51 was the most-surfaced lesson in the corpus — 42 surfacings, utility 1.0 — and was ranked into the handoff of the very session that then wrote the assertion it forbids. More forceful wording and higher ranking cannot help, because surfacing lands at session/phase start and the mistake happens at line 64 of a test file; the lesson has to survive that distance. So find the moment the mistake is made and put the check THERE, with the remedy in the failure message. (2) SCOPE the class with the instrument that will enforce it. A grep found 24 separator-shaped assertions where an AST scan found 40 — text search cannot see single-quoted literals, a second literal on one line, the arms of an `or` chain, or `not in` forms. The count is load-bearing because the ratchet gets pinned to it, so a scoping count from the wrong instrument bakes the blind spot into the guard. (3) Pay any EXEMPTION LIST to zero rather than shrinking it. An exemption list is the enforcer's own blind spot and it grows silently — two modules written *after* the doc ratchet existed were never seen by it. The tightness is discontinuous, not incremental: at zero the same test flips from "the debt cannot grow" to "a new instance fails immediately", which is a different guarantee. It is usually affordable because the material already exists (module docstrings carried the design rationale; all 32 docs reached 0 undocumented callables by distillation, not invention). (4) ARM it — inject a real violation, watch it go red, remove it. A ratchet at zero that was never tested against a violation is just a list that happens to be empty. (5) STATE what is still unenforced, because two residues always survive. The UNDECIDABLE remainder: a detector keyed on evidence the source supplies cannot classify input that supplies none, and the honest backstop is an inventory ratchet that refuses to let a new instance appear UNCLASSIFIED — converting silence into forced judgment rather than pretending to decide. And the SIBLING clauses: enforcing one clause of a multi-part lesson reads as enforcing the lesson, so name the ones still on discipline (L-51's "verify CI at job granularity" was still prose after the separator half shipped — H-28). Finally, be honest about evidence: a check that fired on a reconstruction and an injected probe has demonstrated CAPABILITY, not EFFECT. Until it fires on a mistake someone was actually making, "the check changed behaviour" is a hypothesis, and claiming more is the same false green the check exists to prevent. (Consolidates this gameplan's #1, #2, #3.) *(from 2026-07-25-pay-down-the-frozen-debt-separator-claims-exempted-modules-and-surfaced-not-applied)*
+**L-64.** When the HOST owns the config file your wiring lives in, treat that file as VOLATILE and design three things around it. (1) SHAPE: a per-user config shared by every repo the host opens must get a REPO-AGNOSTIC server command that discovers the repo from the host's working directory — never a repo-pinned `cd <repo>` wrapper, or the last `init` wins and re-init from another repo silently repoints it. (2) DURABILITY: a host that REGENERATES its config on context-switch cannot bootstrap its own re-heal — once the entry is wiped that host's MCP server is not loaded, so nothing on it runs to re-register. Durable registration must ride EXTERNAL write-permitted entry points (other CLI runs on the same machine: init/doctor/status), idempotent and atomic so re-applying is a safe no-op; never a hook (INVARIANT-06) nor an MCP read op (L-03). Per-host OVERRIDE state (a --repo pin, a custom cwd) must live in a durable SIDECAR the host leaves alone, with self-heal RE-COMPOSING the override from the sidecar and re-probing the volatile bits; reading the override back from the live config is a same-session fallback, never durability — when the kimi-desktop daimon's regeneration wipes its mcp.json to {} the override is simply gone, and self-heal that reads it back from the current config finds nothing and silently reverts to the default. (3) PROOF: verify such a registration by capability, not presence (L-25) — spawn the command the way the consumer will and complete a real MCP `initialize` handshake asserting serverInfo.name. A cross-OS command IS verifiable this way (a Windows clauderizer-mcp.exe registered for a desktop app spawns from WSL by translating its C:\ path to the /mnt/<drive> interop path), so that is a real green; reserve `unverifiable` for a target genuinely unreachable from the probing host. MCP stdio is newline-delimited JSON-RPC, not Content-Length framed. And before building on a hypothesized host capability, verify it against the host's ACTUAL source plus a live probe rather than assuming — a per-server cwd was confirmed by reading the app bundle's config normalizer AND a live handshake, and the tempting-but-absent alternative (an in-WSL 'executor' value) was ruled out by reading the bundle's validated executor set, not guessed — confirmed by grepping the app bundle's config normalizer AND a live initialize+cz_status handshake serving a real WSL repo over UNC. Test hazard throughout (L-29): any init/emit step writing an ABSOLUTE per-user path outside the repo will mutate real machine state from the suite — guard it behind an env opt-out the detector honors plus an autouse fixture, and prove isolation by asserting the real file is byte-unchanged after a full run. (Consolidates L-58, L-59, L-61.) *(evidence: thematic re-distill under L-26's coverage gate; consolidates L-58, L-59, L-61 at 10/10 pre-apply coverage)* *(from 2026-07-25-the-ending-protocol-needs-a-detector-memory-lag-nested-repos-the-unbuilt-write-guard)*
+**L-66.** Your environment never exercises the real thing, and a host or model never behaves as assumed — execute the real surface before claiming it works. A monkeypatched-platform test is not the platform and an editable venv is not `uvx --from PyPI`: preview a foreign CI cell in a native venv on the target OS (one local cycle caught every win32 defect nine months of mocked-platform tests missed) and walk the published install path from a fresh environment (the README's first command was broken in four places while every test passed), then pin each as a CI job running the doc-exact text with assertions that self-arm when the fix they guard is unreleased. The same rule applies to other agents' behavior and to paths that merely LOOK stale. Cross-model adherence is not bought by exposing MCP tools — Cursor's Composer 2.5 Fast made 0 MCP calls across 142 tool calls, finding the `uvx … clauderize ops` CLI fallback on its own (which is why a CLI-reachable fallback for every tracked write is load-bearing for cross-MODEL, not just no-MCP, sessions) while also hand-editing tracked docs — so trust but VERIFY a non-Claude model's self-reported close-out against engine state, since a reindex showed its plausible summary claimed entities that were never created — validating that a CLI-reachable fallback for every tracked write is load-bearing, and that discovering it unaided is not adherence. And when a host's config paths merely LOOK stale, verify the reality first: confirm whether it is ONE product that moved or TWO distinct products (predecessor/successor) before repointing — Moonshot's Kimi CLI (~/.kimi/, pip) and Kimi Code CLI (.kimi-code/, npm) are different tools; verify the split from upstream docs, and note that a successor may drop conventions the predecessor had (Kimi Code CLI does not read .claude/skills). Corollary for input contracts: capture one REAL payload before building on a field of it. (Consolidates L-23, L-54.) *(evidence: thematic re-distill under L-26's coverage gate; consolidates L-23, L-54 at 10/10 pre-apply coverage)* *(from 2026-07-25-the-ending-protocol-needs-a-detector-memory-lag-nested-repos-the-unbuilt-write-guard)*
+
+### All Active Project Lessons (20)
+
+_(id + first line. The ranker above chooses what to render in full; it does not choose what you are allowed to know — a pointer, never an authority (D-013).)_
+
+- **L-11** — Declare phase dependencies by technical need, not narrative order — and expect a restart-gated exit criterion to split its phase across sessions by…
+- **L-14** — A dependency's footprint relative to the data it serves is a first-class go/no-go axis — it can disqualify a tool before functional quality is ever…
+- **L-29** — Isolate destructive/irreversible operations from the real repo BEFORE running them, and prove the isolation — never assume it.
+- **L-33** — A subagent's output needs two guards.
+- **L-41** — An identity default (driven kind = identity lexicon, empty preflight list) lets a large generalization land with ZERO behavior change for the exist…
+- **L-60** — A registry populated by IMPORT SIDE-EFFECTS (module-top `register(Impl())`) is EMPTY until something imports the implementation module — and an in-…
+- **L-63** — Reject a CLASS of malformed input by a STRUCTURAL PROPERTY, never by a list of the bad values.
+- **L-65** — Independent surfaces that must stay in agreement drift SILENTLY, and the fix is an EXECUTABLE seam at exactly the boundary — a test that diffs the…
+- **L-67** — Curating append-only memory DOWN is consolidate + obsolete, gated on COVERAGE rather than taste.
+- **L-68** — Turning a repeatedly-unapplied lesson into an ENFORCER is a five-step discipline, and each step has its own failure.
+- **L-25** — A health check / guard must verify CAPABILITY, not presence - a green check on a non-launchable setup is worse than none.
+- **L-07** — Design failure reporting backward from the channel the consumer actually reads, then place the reliability wrapper on the deepest layer whose failu…
+- **L-53** — A self-improving memory system rests on two pillars.
+- **L-56** — The memory tool surface has two load-bearing contracts.
+- **L-69** — The file boundary is adversarial in BOTH directions, and the tests belong in the same phase that makes the robustness claim.
+- **L-66** — Your environment never exercises the real thing, and a host or model never behaves as assumed — execute the real surface before claiming it works.
+- **L-50** — Treat every claim, borrowed idea, audit finding, or "realize-the-win" as a FALSIFIABLE hypothesis with a pre-named machine-checkable metric, and ME…
+- **L-51** — Before any irreversible release step (tag → GitHub Release → PyPI publish), gate on three sweeps.
+- **L-48** — Exclusive --host is the wrong default for multi-AI repos: wire all project-level hosts by default (enabled=["*"]), keep --host as a scope filter, d…
+- **L-64** — When the HOST owns the config file your wiring lives in, treat that file as VOLATILE and design three things around it.
+
+## Ending Protocol
+
+1. `cz_transition_phase` the finished phase to complete.
+2. `cz_add_output` each concrete produced value; `cz_add_phase_summary` the recap; `cz_add_correction` / `cz_add_lesson` as earned.
+3. `cz_transition_status` on touched entities (fires cascade); `cz_resolve_cascade` the verdicts.
+4. `cz_write_handoff` for the next phase.
+5. Run exit verification; report the test count.
+<!-- clauderizer:handoff:end -->
+
+<!-- moved out of the clauderizer-managed block by clauderize init -->
+
+# Phase 5 Handoff
+
+> For: next Clauderizer session
+> Gameplan: 2026-07-26-clauderizer-2-0-alpha-ten-fractal-vetted-mechanisms
+> Generated by: cz_write_handoff
+
+## What This Phase Does
+
+_(see GAMEPLAN.md for the phase definition)_
+
+## Pre-Flight Verification (MANDATORY)
+
+Run `cz_preflight` before touching code. All enabled checks must pass.
+
+## Key Files You Must Read
+
+- `docs/gameplans/2026-07-26-clauderizer-2-0-alpha-ten-fractal-vetted-mechanisms/GAMEPLAN.md`
+- `docs/gameplans/2026-07-26-clauderizer-2-0-alpha-ten-fractal-vetted-mechanisms/PHASE-STATUS.md`
+- `CLAUDE.md`
+
+## Governing Invariants for This Phase
+
+_(5 of 10 surfaced — the must-hold rules whose text overlaps this phase (keyword + entity-id, no ML). Honor these; the full set is in `docs/INVARIANTS.md`.)_
+
+- **INVARIANT-10** — Figures-only, change-triggered `cz_state` notices attached to TOOL RESULTS are a category DISTINCT from status injection — an explicit append-only amendment to INVARIANT-08, which stands unchanged for status injection proper (hook, auto-resource, prompt, AGENTS.md floor, server bootstrap: still at most once per session). Five bounds keep the category honest: (1) FIGURES ONLY — machine-readable keys pinned by a whitelist ratchet test; never prose, never lesson/decision/advisory content (those belong to the injection tiers or the ops' own results); (2) CHANGE-TRIGGERED — attached only when the figure set or revision differs from the last emission in this server session, deduplicated via an in-memory, session-scoped signal, never a persisted/config flag (per INVARIANT-05); (3) ADVISORY-ONLY — nothing reads the stamp to gate, cap, or block (per INVARIANT-05); (4) BYTE-BOUNDED read cost — the stamp path performs no unbounded artifact hashing (the exit-criteria figure counts raw checkboxes; approval-state recompute is excluded); (5) SILENT-BY-DEFAULT until D-064 matrix evidence graduates it — experiment legs arm it per-process via environment, never a persisted toggle. A stamp failure never alters the op result it rides on, in either direction.
+- **INVARIANT-09** — All lexical-overlap and similarity computations in the engine use the single canonical tokenizer analyze._tokens — there is exactly one token-splitter definition under src/, and the near-duplicate-lesson threshold is single-sourced (analyze._LESSON_DUP_JACCARD), so relevance ranking, the abstract-index token_set, the write-time near-duplicate advisory, and the corpus-health/curator redundancy metric all share one definition of "near-duplicate". Promotes D-041 from a project decision to a hard, machine-checked rule now that tests/test_canonical_tokenizer.py enforces it (exactly one `def _tokens` in src/ + import identity + threshold parity); a second fork makes the suite fail.
+- **INVARIANT-08** — Cross-host status injection reaches the model at most once per session, across all active tiers (hook, auto-resource, prompt, AGENTS.md floor, and the server-side bootstrap), deduplicated via an in-memory, read-only, session-scoped signal — never a persisted/config flag (per INVARIANT-05) and never from a path that mutates docs or blocks the session (per INVARIANT-06). Injected status stays focused and minimal (per D-027).
+- **INVARIANT-05** — Discipline gates (clarify/open-items, exit-criteria, analyze-against-invariants) are advisory and judgment-based: they surface findings in tool results for the agent to act on, and MUST NOT hard-block a mutation or phase transition, nor introduce an enable/disable config flag. The engine surfaces candidates; the agent decides.
+- **INVARIANT-07** — Claude Code parity never regresses: any change that degrades the current Claude Code experience (hook-driven SessionStart/UserPromptSubmit auto-injection, the cz_* tool surface, skills, or the status digest) is a release blocker. Cross-host generalization is strictly additive.
+
+## Skills for This Phase
+
+_(Agent Skills registered for this project whose trigger overlaps this phase — invoke the relevant ones. The full inventory is in `docs/SKILLS.md`; discover more with cz_discover_skills, register with cz_register_skill.)_
+
+- **clauderizer-fleet** — Fan out multiple host-spawned agents over one gameplan with Clauderizer as the shared memory hub. Use when the user say…
+- **clauderizer-new-gameplan** — Plan a new multi-phase gameplan from a goal. Use when the user wants to start a new initiative, project, or large featu…
+- **clauderizer-amend** — Change a gameplan after it has started executing. Use when scope shifts mid-flight — a phase needs a task it's missing,…
+- **clauderizer-modernize** — Triage the advisory upgrade proposals cz_modernize surfaces — walk each one with the user to handle, dismiss, or defer.…
+- **clauderizer-onboard** — Seed a freshly clauderized project's memory from its existing documentation. Use right after `clauderize init` on a rep…
+
+## Accumulated Lessons (Cumulative — All Prior Phases)
+
+_(Numbered sequentially across the whole gameplan. Categorized. Pruned of
+obsolete items — mark with "(obsolete)" rather than deleting.)_
+
+### Category: Process
+
+_(none yet)_
+
+**1.** Vetted assessments scope MECHANISMS; the suite's own goldens find their BLAST RADIUS. Twice in consecutive phases (C-01, C-02) the vetted sketch's placement of a component violated suite-level principles (read-only fixtures, green-preflight-never-dirties) that no assessor had in frame — the correction came from the suite, not the review. When implementing an externally-vetted design, treat PLACEMENT as unvetted even where the mechanism is sound: run the affected suite's cross-cutting principle tests against the sketch before building on it. *(evidence: C-01 (phase 1), C-02 (phase 2); binding order proven by git: INVARIANT-10 at 6215726 precedes stamp code at cabbd3e)*
+
+**2.** Adversarial vetting binds tighter when refuters argue from RECORDED LAW rather than taste: baking the invariant register and key decisions into refuter prompts produced binding conditions citing L-68, D-066 and D-013 more precisely than the assessors' judgment did, and a dedicated external-reviews lens kept the source repo's unverifiable claimed outcomes out of the evidence base entirely. The binding conditions — not the adopt/reject verdicts — are the vetting pass's real deliverable. *(evidence: research-fractal-vetting.json (phase 0); D-070)*
+
+**3.** Three gate-design rules from the jcode extraction, each grounded in their measured practice: (1) prefer WORK-COUNTERS over wall-clock in quality gates — a tight timing gate is a flaky gate, a flaky gate gets muted, and a muted gate is no gate; their decisive perf gate asserts relayouts equal zero, a statement about work that generous slack cannot tune away. (2) The sabotage ritual is STANDING, not one-time: whenever a gate changes in a way that could weaken it, inject the violation, watch it go red, revert — L-68 step 4 made recurring. (3) Advisory TIMING is part of advisory design: defer repeatable advisories to one end-of-turn digest, collapse repeats, drop the ones the agent already resolved — nagging on every write punishes the common healthy case where understanding starts low and rises while working. *(evidence: research-jcode-vetting.json design notes; jcode profile.rs (relayouts==0 gate + gate-integrity meta-tests), FINDING_SLOWNESS.md sabotage procedure, todo.rs turn-end gate-digest rationale)*
+
 ## Project Lessons (most relevant to this phase)
 
 _(5 of 21 shown in full — ranked by keyword + entity-id overlap with this phase, no ML. Every other active lesson is indexed below; nothing is dropped (D-068). The full text is canonical in `docs/LESSONS.md` — fetch any entry with `cz_get`.)_
@@ -97,7 +202,6 @@ _(id + first line. The ranker above chooses what to render in full; it does not 
 3. `cz_transition_status` on touched entities (fires cascade); `cz_resolve_cascade` the verdicts.
 4. `cz_write_handoff` for the next phase.
 5. Run exit verification; report the test count.
-<!-- clauderizer:handoff:end -->
 
 ## Phase Notes (agent-owned)
 
@@ -105,23 +209,34 @@ _(Enrich here: what exists / what does not yet, key constraints, captured
 source-of-truth values for this phase. Everything outside the marker block
 above survives `cz_write_handoff` regeneration.)_
 
-### ⚠ EXECUTION ORDER — do NOT start phase 5 yet
+### ✅ EXECUTION ORDER RESOLVED — phase 5 is GO (2026-07-28)
 
-Phases 7 (fleet productization, A-001) and 8 (jcode mechanisms, A-002) execute
-BEFORE this matrix phase even though the tracker's numeric next-ready points
-here: the matrix writes verdicts for ALL adopted mechanisms (ten Fractal +
-four jcode, criterion 10), so the jcode four must exist first, and the
-fleet-vs-solo leg needs Phase 7's productized skill. Run 7 and 8, then this.
+Phases 7 AND 8 are complete (the old do-not-start warning is obsolete): 7 at
+61c35d2 + close writes, 8 via fleet worker branch merged at 784ccd9. All
+FOURTEEN mechanisms exist; criterion 10's verdict list is fully buildable.
 
-### State handed off by Phase 4 (commit e25d36d; P3+P4 span d33a882..e25d36d)
+### State handed off by Phases 4+7+8 (P3+P4 span d33a882..e25d36d; P7/P8 span 61c35d2..784ccd9)
 
-- Baseline: **1516 passed, 7 skipped**. Phases 0–4 complete; 7, 8 pending.
+- Baseline: **1554 passed, 7 skipped** (1516 after P4; +4 P7 seam, +34 P8).
 - Mechanisms landed and DORMANT/advisory awaiting this matrix: stamp
   (env-armed CLAUDERIZER_STATE_STAMP), budgets (declared-dormant), receipts
   split, merge-base suppression, correction advisory, merge audit
   (advisory-silent — the seeded-fault protocol here is what may give it a
-  value claim), gap detection + reinforce verb + negative-space + jcode host
-  (phase 8, pending).\n- The parity matrix (test_transport_parity.py) and its
+  value claim), gap detection (cz_analyze advisory + telemetry gap events +
+  corpus_health.gap_events), reinforce verb (cz_reinforce_lesson, trailer via
+  _inline_trailer, telemetry reinforced events), negative-space text
+  (procedure v1.12.0 + fleet briefing clause), jcode host (row already
+  recorded HONESTLY UNVERIFIABLE — see P8 output jcode_host_row; no binary/
+  toolchain/credential here; recipe recorded).
+- ⚠ SPLIT-BRAIN SERVING ENGINE (H-30): this repo's session MCP server is the
+  PUBLISHED 1.14.3 engine (portable uvx wiring, by design per D-031 until
+  2.0.0a1 ships) — it has NONE of the 2.0 mechanisms and its stamps can move
+  BACKWARD. Every matrix leg that exercises a 2.0 mechanism must run against
+  the TREE: .venv/bin/pytest harnesses, .venv/bin/clauderize (ops mode), or
+  spawned processes on this venv with env arming (CLAUDERIZER_STATE_STAMP=1
+  per INVARIANT-10 bound 5). Never measure a 2.0 mechanism through the
+  session's cz_* MCP surface — it cannot serve them.
+- The parity matrix (test_transport_parity.py) and its
   allowlist are the transport ground truth for any ops-mode legs.
 - O-01 (recording coverage FIRST — it gates budget meaning) and O-02 (leg
   availability: kimi-pinned, ops-mode, non-Claude host incl. the jcode
@@ -130,3 +245,11 @@ fleet-vs-solo leg needs Phase 7's productized skill. Run 7 and 8, then this.
 - Every mechanism's pre-named signal lives in its adoption decision (D-070
   P0–P4 records, D-072, D-073, D-074, D-075) — L-50: metric named before
   measuring; discards are successful outcomes.
+- Evidence already banked for legs: fleet dogfood figures (P7 output
+  dogfood_fleet_run: 0 collisions, 0 LockHeld/27 writes, 2 honest closes) —
+  context for the fleet-vs-solo leg, NOT the leg itself (that needs the same
+  seeded task run both ways); curator iteration figures (loop gameplan
+  outputs: canonical 6884→6913 tok, handoff est 6035→5988, entries 21→20) —
+  the BEFORE side of the reinforce-verb leg's H-26 token-weight measurement;
+  the P8 merge 784ccd9 = one observed clean-merge true-negative for the
+  merge-audit protocol (audit stayed silent on it).

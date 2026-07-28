@@ -198,8 +198,8 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 - [x] assets.py ships clauderizer-fleet on init; golden init test updated; uninstall removes only clauderizer-owned skills — all pinned by tests
 - [x] Capability-honesty audit green: every reference in the skill to a 2.0 mechanism names the phase that lands it and specifies the degraded behavior when absent — no unbuilt feature described as present (L-65 claim-needs-artifact)
 - [x] ENFORCEMENT.md carries the fleet rows (hub-and-spoke law = instructions-floor; assignment ownership = advisory) regardless of whether this phase landed before or after phase 4
-- [ ] Dogfood fleet run recorded via cz_add_output: N>=2 host-spawned workers over independent work in THIS repo, cz_assign partitioning, all tracked writes through the hub — figures captured: memory collision count (must be 0), LockHeld retry count, honest-close outcomes per worker
-- [ ] Full suite green; healthy-repo digest byte-identical
+- [x] Dogfood fleet run recorded via cz_add_output: N>=2 host-spawned workers over independent work in THIS repo, cz_assign partitioning, all tracked writes through the hub — figures captured: memory collision count (must be 0), LockHeld retry count, honest-close outcomes per worker
+- [x] Full suite green; healthy-repo digest byte-identical
 
 ### Phase 8: jcode-vetted attention mechanisms: gap detection, reinforce verb, negative-space, jcode host
 
