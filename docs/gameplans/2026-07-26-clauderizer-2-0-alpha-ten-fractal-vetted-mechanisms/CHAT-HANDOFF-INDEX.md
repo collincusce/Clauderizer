@@ -1,7 +1,7 @@
 # Chat Handoff Index — clauderizer 2.0 alpha — ten fractal-vetted mechanisms
 
 > Last updated: 2026-07-27
-> Status: Phase 1 of 8 in progress
+> Status: Phase 2 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 1330
+**Current baseline test count**: 1379
 
 ## Ending Protocol
 
@@ -30,7 +30,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
 | 0 | Honest endings and epistemics | ✅ COMPLETE | 2026-07-26 | 2026-07-26 | handoffs/PHASE-0-HANDOFF.md |
-| 1 | Lifecycle detectors | 🟡 IN PROGRESS | 2026-07-27 | — | handoffs/PHASE-1-HANDOFF.md |
+| 1 | Lifecycle detectors | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Live state and budgets | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Attention and consolidation | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Integrity and enforcement | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
@@ -47,6 +47,12 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 Both phase-0 mechanisms landed under their binding conditions (research-fractal-vetting.json), tests-first. Honest terminal vocabulary: the status matcher became positional (earliest word-boundary match wins, longest on tie) — killing a LIVE laundering path where dict-order matching read "DEFERRED — call it done" as COMPLETE via the trailing word; `deferred` joined the write vocabulary (⏸️ DEFERRED, reason after the em-dash, engine token leads, empty-safe sanitizer) with exited/abandoned/superseded/wontfix as aliases INTO it and a ratchet test pinning exactly seven statuses; tracker headers now mirror _lifecycle's closed set (COMPLETE+DEFERRED renders "Complete", all-deferred "Deferred"); completing over unchecked criteria names the deferred alternative while the deferred door itself never nags (INVARIANT-05, no flags); deferred is a telemetry terminal outcome carrying reason, making pass_rate an honest goal-met rate. Procedure 1.9.0→1.10.0 (three-way close-out documented), both skill copies + ops docstring in the same commit (MCP schema auto-derives).
 
 Unknowable-never-zero epistemics: the four conflation sites are fixed with the missing-arm tests written first and RED confirmed before implementation — probes that could not run are `unevaluable` (met stays boolean, additive field); preflight warns "cannot trip" on armed-but-unrunnable guards, contains a raising runner as UNKNOWN-not-pass with additive verdict/gates_unrun fields; curator consolidation stops coercing unmeasured utility to 0.0 (evidence text names the unmeasured side); staleness ages carry a hedged "~N active day(s)" only once a stale set exists, with no claim on any git failure. The corpus sweep ratchet ran green over the real trackers (all flips move toward open/deferred). Bonus proof the enforcement stack works: the L-68 separator ratchet fired on two new message-class assertions mid-phase and forced their classification (baseline 40→42). Suite 1330→1379, zero failures; commit 184c353.
+
+### Phase 1 — completed 2026-07-27
+
+Both lifecycle detectors landed under their binding conditions, with one earned design delta. Heal-on-proof stranded-state: session_ledger.py stamps claimant identity (pid, /proc starttime, host, agent, transport) on every in_progress transition inside the existing write lock; the probe grades dead/alive/inconclusive with a hard POSIX gate (a spy test proves win32 can never reach os.kill) and PID-reuse detection via starttime mismatch; stranded.py fires only on provable death — never for its own process, never on parked states — and renders one shared judgment-menu describe() across digest and preflight (adopt via the blessed same-status re-stamp, or close honestly as deferred using phase 0's vocabulary). Reopening a closed phase now surfaces a re-authorization advisory. The read path's zero-bytes contract is pinned by tree-hash test.
+
+Backstop landings: interrupted.py fires when non-docs commits landed after the tracker anchor and no closing write exists — and the phase's one real design change was forced by our own INVARIANT-08 golden: the literal vetted geometry fired on ORDINARY LIVE work, so the detector gained a liveness gate (alive-or-viewer claimant = quiet; provably dead = stranded's finding; the backstop speaks only where the ledger cannot grade — no stamp or inconclusive). That keeps exactly one voice per repo state, pinned by disjointness tests. Its describe() subsumes memory-lag's claim and explains the clean_tree FAIL and do-phase STOP interactions, with a greppable one-phrase-only pin. The refusal journal shipped at the REGISTRY construction seam (both run_op and MCP direct paths journal ok:False writes; reader integration deliberately deferred to phase 3). Mid-phase the enforcement stack again collected its own dues: subsystem doc + ratchet enrollment at 0 omissions, ARCHITECTURE count 40→41, and the memory-lag byte-identity fixture updated to truthfully model a live claimant. Suite 1379→1424, commit 586d572.
 
 ## Accumulated Lessons
 

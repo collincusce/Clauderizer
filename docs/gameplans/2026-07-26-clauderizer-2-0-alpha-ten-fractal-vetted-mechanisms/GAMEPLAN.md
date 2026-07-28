@@ -39,6 +39,8 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 **O-02.** _(phase Evidence matrix and graduation)_ Matrix harness legs required by the vetting conditions — kimi-pinned, ops-mode, ≥1 non-Claude host, slow-FS WSL row, an under-adhering host — need confirmed availability/harness before phase 5 begins. A leg that cannot run becomes a named gap in that mechanism's graduation verdict, never a silent skip.
 
+**O-03.** _(phase Attention and consolidation)_ refusals.jsonl has a writer (P1, REGISTRY seam) but no reader yet — D-069's spirit wants the journal consumed. Wire it as a read source in cz_mine_failures (and/or a read-only count in cz_corpus_health) during phase "Attention and consolidation", or explicitly decide it stays a dormant evidence store until the matrix.
+
 ## Phase Breakdown
 
 ### Phase 0: Honest endings and epistemics
@@ -70,13 +72,13 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Stranded-state probe is POSIX-gated: on non-posix platforms it grades inconclusive without any os.kill call — a test proves the win32 path can never signal a live process
-- [ ] Display-only contract pinned: the detect/read path writes zero bytes under both docs/ and .clauderizer/ (sessions.jsonl untouched on read), stated in the module docstring memory_lag-style and proven by test
-- [ ] The judgment menu's 'close honestly (deferred)' disposition is reachable end-to-end using phase 0's vocabulary, and adopting 'continue' re-stamps evidence via the blessed same-status in_progress transition
-- [ ] Backstop landing detector fires ONLY when: phase in_progress AND >=1 non-docs commit since the tracker anchor AND every closing residue absent; any post-anchor handoff refresh or phase summary keeps it silent — the full fire/quiet geometry is a test matrix
-- [ ] One voice (L-55): when the detector fires, its describe() subsumes the memory_lag wording and explains clean_tree's dirty-tree FAIL and do-phase's STOP-and-report step — no fourth phrasing exists (greppable assertion)
-- [ ] Refusal journal either ships (ok:False wrapper at Op/REGISTRY construction covering BOTH run_op and the MCP server's direct REGISTRY path) or is recorded as explicitly deferred — not silently dropped
-- [ ] All new surfacing is advisory with no recommended-default claim (that waits for phase 5); healthy-repo digest byte-identical; suite green
+- [x] Stranded-state probe is POSIX-gated: on non-posix platforms it grades inconclusive without any os.kill call — a test proves the win32 path can never signal a live process
+- [x] Display-only contract pinned: the detect/read path writes zero bytes under both docs/ and .clauderizer/ (sessions.jsonl untouched on read), stated in the module docstring memory_lag-style and proven by test
+- [x] The judgment menu's 'close honestly (deferred)' disposition is reachable end-to-end using phase 0's vocabulary, and adopting 'continue' re-stamps evidence via the blessed same-status in_progress transition
+- [x] Backstop landing detector fires ONLY when: phase in_progress AND >=1 non-docs commit since the tracker anchor AND every closing residue absent; any post-anchor handoff refresh or phase summary keeps it silent — the full fire/quiet geometry is a test matrix
+- [x] One voice (L-55): when the detector fires, its describe() subsumes the memory_lag wording and explains clean_tree's dirty-tree FAIL and do-phase's STOP-and-report step — no fourth phrasing exists (greppable assertion)
+- [x] Refusal journal either ships (ok:False wrapper at Op/REGISTRY construction covering BOTH run_op and the MCP server's direct REGISTRY path) or is recorded as explicitly deferred — not silently dropped
+- [x] All new surfacing is advisory with no recommended-default claim (that waits for phase 5); healthy-repo digest byte-identical; suite green
 
 ### Phase 2: Live state and budgets
 
