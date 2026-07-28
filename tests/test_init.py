@@ -29,6 +29,7 @@ def test_init_creates_expected_layout(empty_python_repo):
     assert (r / ".mcp.json").exists()
     assert (r / ".claude" / "settings.json").exists()
     assert (r / ".claude" / "skills" / "clauderizer-do-phase" / "SKILL.md").exists()
+    assert (r / ".claude" / "skills" / "clauderizer-fleet" / "SKILL.md").exists()
     assert ".clauderizer/index.json" in (r / ".gitignore").read_text(encoding="utf-8")
 
     cfg = Config.load(r / ".clauderizer" / "config.toml")

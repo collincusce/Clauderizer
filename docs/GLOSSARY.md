@@ -63,10 +63,12 @@
   each worker (assignment, hub coordinates, close-out contract); template
   lives in the `clauderizer-fleet` skill.
 
-*Status (2026-07-26):* the fleet substrate ships today — portable exclusive
-locking (`locking.py`), assignments, `--repo` hub decoupling. The 2.0-alpha
-gameplan strengthens it: dead-worker detection (phase 1), live-state stamps
-and fleet spend aggregation (phase 2), the worktree-edge audit (phase 4).
+*Status (2026-07-28):* the fleet substrate is landed — portable exclusive
+locking (`locking.py`), assignments, `--repo` hub decoupling, plus the
+2.0-alpha mechanisms: dead-worker detection (phase 1), live-state stamps
+(phase 2, env-armed dormant per INVARIANT-10), fleet spend aggregation
+(phase 2, budgets declared-dormant), and the worktree-edge merge audit
+(phase 4, advisory-silent). Defaults wait on the phase-5 matrix.
 "More agents = better results" is a **hypothesis under test** — D-071
 pre-names the fleet-vs-solo matrix signal; the phase-5 verdict, whatever it
 is, updates the skill's guidance.

@@ -379,6 +379,9 @@ is append-only and all-resolved, each finding with dated evidence.
   — upgrades are two moves; uninstalling keeps `docs/` (your memory, not the tool's).
 - **[RELEASING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/RELEASING.md)**
   — the mechanical release ritual and the 1.0 readiness gates with their evidence table.
+- **[GLOSSARY.md](https://github.com/collincusce/Clauderizer/blob/main/docs/GLOSSARY.md)**
+  — the canonical vocabulary (gameplans, phases, cascades, fleets); each term points at
+  the doc that owns its full story.
 
 ## Install
 

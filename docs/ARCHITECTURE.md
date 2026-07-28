@@ -164,6 +164,18 @@ a **portfolio** view across every open gameplan:
   fans a pending cross-reference into the consuming gameplan, even when a different
   axis holds focus.
 
+### Fleet fan-out (D-071, 2.0)
+
+N host-spawned workers over one gameplan with the engine as the shared memory
+hub: the host owns every agent loop (Clauderizer never spawns), `cz_assign`
+partitions phases to named assignees, the portable exclusive lock serializes
+every tracked write, and the hub-and-spoke law (memory writes target the hub
+only; worktrees hold code, never memory) keeps concurrent workers from minting
+colliding IDs. Managed end-to-end by the shipped `clauderizer-fleet` skill;
+vocabulary — fleet, hub, worker, briefing, assignment — is canonical in
+[GLOSSARY.md](GLOSSARY.md). "More agents = better" stays a measured hypothesis
+(D-071), not doctrine.
+
 ### Fast retrieval — the abstract index (1.3.0)
 
 A compact, addressable record per corpus entry (id, title, a one-line abstract, an

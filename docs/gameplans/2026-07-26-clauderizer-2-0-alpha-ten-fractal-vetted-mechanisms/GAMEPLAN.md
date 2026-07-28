@@ -205,6 +205,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 **Goal**: Implement the four D-075/A-002 mechanisms under their vetting conditions (research-jcode-vetting.json): memory-gap detection (advisory in the cz_analyze result at the moment of the gap; text-free telemetry gap events; corpus_health read-only count; never a digest line — INVARIANT-08), reinforce-instead-of-duplicate (third verb on the write-time near-duplicate advisory; blessed reinforcement trailer on the existing lesson through the single grammar-safe renderer; telemetry reinforced events; strength surfaces as curator evidence, never authority — INVARIANT-05/09), negative-space close-out text (GAMEPLAN-PROCEDURE + fleet briefing contract clause if Phase 7 already landed, else left to Phase 7; engine detector explicitly recorded as deferred-unenforced per L-68 clause 5), and jcode-host verification (live capability probe of repo-root .mcp.json + AGENTS.md + .claude/skills against a real jcode session; captured env markers before any detect_session_agent arm; matrix row recorded verified or honestly unverifiable). All advisory, no flags, healthy-repo digest byte-identical; D-064 signals pre-named in phase 5.
 **Depends on**: Phase 3.
+**Assigned**: worker-jcode
 
 | Task | Description | Effort |
 |------|-------------|--------|

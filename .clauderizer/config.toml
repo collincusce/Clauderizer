@@ -29,3 +29,6 @@ amendments = false
 
 [focus]
 id = "2026-07-26-clauderizer-2-0-alpha-ten-fractal-vetted-mechanisms"
+
+[assignment]
+manager = "fable-hub"
