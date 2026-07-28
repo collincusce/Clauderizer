@@ -193,11 +193,11 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 7.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] docs/GLOSSARY.md carries the fleet cluster (fleet, hub, worker, worker briefing, assignment, hub-and-spoke law) + core vocabulary, every entry pointing at its owning doc; the L-65 sweep ran over non-single-sourced doc listings (README, ARCHITECTURE) so the new canonical doc is referenced, with an executable pin where one fits
-- [ ] clauderizer-fleet exists in BOTH copies (src/clauderizer/skills source + installed .claude/skills render) byte-identical, covered by the dual-copy seam test alongside the existing nine skills
-- [ ] assets.py ships clauderizer-fleet on init; golden init test updated; uninstall removes only clauderizer-owned skills — all pinned by tests
-- [ ] Capability-honesty audit green: every reference in the skill to a 2.0 mechanism names the phase that lands it and specifies the degraded behavior when absent — no unbuilt feature described as present (L-65 claim-needs-artifact)
-- [ ] ENFORCEMENT.md carries the fleet rows (hub-and-spoke law = instructions-floor; assignment ownership = advisory) regardless of whether this phase landed before or after phase 4
+- [x] docs/GLOSSARY.md carries the fleet cluster (fleet, hub, worker, worker briefing, assignment, hub-and-spoke law) + core vocabulary, every entry pointing at its owning doc; the L-65 sweep ran over non-single-sourced doc listings (README, ARCHITECTURE) so the new canonical doc is referenced, with an executable pin where one fits
+- [x] clauderizer-fleet exists in BOTH copies (src/clauderizer/skills source + installed .claude/skills render) byte-identical, covered by the dual-copy seam test alongside the existing nine skills
+- [x] assets.py ships clauderizer-fleet on init; golden init test updated; uninstall removes only clauderizer-owned skills — all pinned by tests
+- [x] Capability-honesty audit green: every reference in the skill to a 2.0 mechanism names the phase that lands it and specifies the degraded behavior when absent — no unbuilt feature described as present (L-65 claim-needs-artifact)
+- [x] ENFORCEMENT.md carries the fleet rows (hub-and-spoke law = instructions-floor; assignment ownership = advisory) regardless of whether this phase landed before or after phase 4
 - [ ] Dogfood fleet run recorded via cz_add_output: N>=2 host-spawned workers over independent work in THIS repo, cz_assign partitioning, all tracked writes through the hub — figures captured: memory collision count (must be 0), LockHeld retry count, honest-close outcomes per worker
 - [ ] Full suite green; healthy-repo digest byte-identical
 
@@ -212,11 +212,11 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 8.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Gap advisory fires in the cz_analyze result when decisions+invariants are both empty for the probe, with the record-it-now nudge; NO digest line anywhere (INVARIANT-08 zero-bytes pinned by test); gap telemetry events carry counts and ids only, never probe text — pinned by test
-- [ ] corpus_health reports gap_events read-only; zero gap events render nothing extra (byte-identical summary pinned)
-- [ ] The write-time near-duplicate advisory offers reinforce as a third verb; the blessed reinforcement write updates the existing lesson's trailer through the single _inline_trailer renderer (grammar interplay with lesson_state._STATE_RE pinned — H-18) and appends a telemetry reinforced event; nothing auto-reinforces (INVARIANT-05)
-- [ ] Reinforcement strength surfaces in lesson_health/curator output as evidence with the wording-may-not-land inverse reading; no ranking or deletion consumes it as authority (D-013/D-063) — pinned by test
-- [ ] Canonical tokenizer and threshold reused verbatim for the reinforce path (INVARIANT-09; test_canonical_tokenizer green)
-- [ ] Negative-space close-out text landed in GAMEPLAN-PROCEDURE.md (source template + blessed render refresh) and, if Phase 7 has landed, the fleet briefing contract clause in BOTH skill copies; the engine-side detector recorded as deferred-unenforced in the phase summary (L-68 clause 5)
-- [ ] jcode-host verification executed as a live capability probe (MCP initialize + cz_status + AGENTS.md stanza reach) or recorded honestly unverifiable with the blocking reason; env markers captured from a real session BEFORE any detect_session_agent change; no native emitter added unless the compat path demonstrably failed
-- [ ] ENFORCEMENT.md rows for the four mechanisms if Phase 4 already landed (A-001/A-002 lands-second rule); healthy-repo digest byte-identical; suite green
+- [x] Gap advisory fires in the cz_analyze result when decisions+invariants are both empty for the probe, with the record-it-now nudge; NO digest line anywhere (INVARIANT-08 zero-bytes pinned by test); gap telemetry events carry counts and ids only, never probe text — pinned by test
+- [x] corpus_health reports gap_events read-only; zero gap events render nothing extra (byte-identical summary pinned)
+- [x] The write-time near-duplicate advisory offers reinforce as a third verb; the blessed reinforcement write updates the existing lesson's trailer through the single _inline_trailer renderer (grammar interplay with lesson_state._STATE_RE pinned — H-18) and appends a telemetry reinforced event; nothing auto-reinforces (INVARIANT-05)
+- [x] Reinforcement strength surfaces in lesson_health/curator output as evidence with the wording-may-not-land inverse reading; no ranking or deletion consumes it as authority (D-013/D-063) — pinned by test
+- [x] Canonical tokenizer and threshold reused verbatim for the reinforce path (INVARIANT-09; test_canonical_tokenizer green)
+- [x] Negative-space close-out text landed in GAMEPLAN-PROCEDURE.md (source template + blessed render refresh) and, if Phase 7 has landed, the fleet briefing contract clause in BOTH skill copies; the engine-side detector recorded as deferred-unenforced in the phase summary (L-68 clause 5)
+- [x] jcode-host verification executed as a live capability probe (MCP initialize + cz_status + AGENTS.md stanza reach) or recorded honestly unverifiable with the blocking reason; env markers captured from a real session BEFORE any detect_session_agent change; no native emitter added unless the compat path demonstrably failed
+- [x] ENFORCEMENT.md rows for the four mechanisms if Phase 4 already landed (A-001/A-002 lands-second rule); healthy-repo digest byte-identical; suite green
