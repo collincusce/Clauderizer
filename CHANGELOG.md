@@ -2,6 +2,139 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [2.0.0a1] — 2026-07-28
+
+**The measured alpha: fourteen externally-vetted mechanisms, built advisory-first
+under binding conditions, then graduated — or deliberately kept dormant — by an
+evidence matrix instead of by taste.** This is a **PEP 440 pre-release**: `pip`
+and `uvx` resolve it **only with an explicit `--pre`** (or an exact `==2.0.0a1`
+pin); existing installs keep resolving 1.14.4 until 2.0.0 finals. Every verdict
+below is recorded with its figures in D-077 (Fractal ten), D-078 (jcode four)
+and D-079 (fleet-vs-solo); the committed matrix instruments live in the gameplan
+directory (`matrix-p5-harness.py`, `matrix-p5-results.json`). Mechanism ideas
+were vetted from Fractal and jcode on **code evidence only** — no outcome
+numbers from either project appear here or in any release material, by rule
+(D-070/D-075).
+
+### Graduated as shipped defaults (matrix figures behind each)
+
+- **Honest terminal vocabulary** (P0): phases close `deferred` with a reason —
+  a first-class, non-laundered ending; completing with unchecked exit criteria
+  draws an advisory (never a block, no flags — INVARIANT-05). ABANDONED/EXITED
+  arrive as aliases; there is no fourth status token.
+- **Unknowable-never-zero epistemics** (P0): an unmeasurable probe reports
+  UNKNOWN and demotes the verdict to pass-with-warnings — it never counts as a
+  pass and never fabricates a zero.
+- **Stranded-state heal-on-proof** (P1): a provably-dead session claimant (POSIX
+  liveness probe, mcp-transport stamps only, display-only read path) surfaces a
+  judgment menu — adopt / continue / close honestly. Matrix: **0 false
+  positives** across A-alive, own-pid, cross-host and cli-transport controls;
+  detection on the dead claimant.
+- **Interrupted-session backstop** (P1): fires only when a phase is
+  `in_progress` AND non-docs commits landed since the tracker anchor AND every
+  closing write is absent AND the session ledger cannot vouch for the claimant —
+  errs silent. Matrix: fire/quiet geometry 4/4 (fires on seeded abandonment;
+  quiet on healthy close, live claimant, no-work).
+- **Refusal journal** (P1 writer, P3 reader): failed ops append to a gitignored
+  local journal; `cz_mine_failures` consumes it as a second source and
+  `cz_corpus_health` counts it — the journal is read, not just written (D-069).
+- **Seen-vs-open receipts** (P3): reading `cz_get` / resolving findings, open
+  items and criteria appends engagement receipts; the digest splits open ids
+  into *never-engaged* vs *engaged-but-open*. **Receipts sidecar
+  classification**: `.clauderizer/seen.local.jsonl` is a machine-local,
+  rebuildable, **gitignored** sidecar — the sole sanctioned append on a read op
+  (D-073); display, never authority; with no sidecar the digest is byte-identical
+  to the pre-receipts shape (drop-nothing, D-068). Matrix: split correct at the
+  production seam, pre-sidecar byte-silence pinned.
+- **Two-speed consolidation with merge-base** (P3): curator/miner proposals join
+  one id+ledger queue; dismissed candidates are suppressed with
+  `suppressed_count` reported and an `all_proposals` unfiltered read; a
+  recurrence re-arms a dismissal. Production-exercised by a live curator
+  iteration during the alpha itself.
+- **Merge-integrity audit** (P4): the single most recent docs-touching merge is
+  audited from git evidence alone (merge parents + merge-base + blob compare,
+  O(1) subprocess cost) for lost-update and committed-conflict-marker damage.
+  The advisory-silent restriction **lifts with this release**: seeded-fault
+  protocol measured **3/3 detection, 0/4 clean-merge false positives**, healthy
+  digest byte-identical, plus a production true-negative. The **squash blind
+  spot stands**: squash merges are invisible to this audit, stated in the module
+  and the finding wording — no issue-catching claim beyond true merges.
+- **Enforcement ladder** (P4): `docs/ENFORCEMENT.md` maps every discipline to
+  hard-NORMALIZE / advisory / instructions-floor with capabilities derived from
+  session host facts, never config flags; a 15-op CLI-vs-MCP transport-parity
+  matrix pins zero undocumented divergences.
+- **Memory-gap detection** (P8, from jcode): when `cz_analyze` finds zero
+  relevant decisions AND invariants for a contentful probe, the tool result says
+  so with a record-it-now nudge; a **text-free** gap event ({kind, surface,
+  gameplan, phase, date, query_terms-count} — never probe text) lands in
+  telemetry and `cz_corpus_health` counts it. Never a digest line
+  (INVARIANT-08). Gap-conversion rate ships armed; its production value is an
+  honest null until post-publish telemetry accrues.
+- **Reinforce-instead-of-duplicate** (P8, from jcode): the write-time
+  near-duplicate advisory offers a third verb beside consolidate/append —
+  **`cz_reinforce_lesson`** (new tool; the MCP surface is now **68 tools**)
+  strengthens the EXISTING lesson with a compact tracked trailer
+  (`*(reinforced xN, last <date>)*`) through the single grammar-safe renderer,
+  plus a telemetry event. Strength is curator EVIDENCE (with the inverse
+  reading: a lesson repeatedly re-derived may be worded so it does not land),
+  never ranking authority (D-013/D-063). Deterministic Jaccard on the canonical
+  tokenizer (INVARIANT-09); nothing auto-reinforces. First production use
+  happened during the alpha's own matrix phase.
+- **Negative-space close-outs** (P7/P8, from jcode): completion reports and
+  phase summaries declare **"What I did not check"**; the fleet briefing
+  contract requires it of workers (hub judgment sends back reports lacking it —
+  never an engine gate); the engine-side detector is explicitly
+  deferred-unenforced (L-68 clause 5).
+- **Fleet pattern, productized** (P7): `clauderizer-fleet` ships as a wheel
+  skill (dual-copy seam test), `docs/GLOSSARY.md` is the canonical vocabulary,
+  and the hub-and-spoke law is on the enforcement ladder. The
+  "more agents = better" thesis is now **measured and BOUNDED** (D-079): on the
+  same seeded task, fleet and solo **tied on quality** (zero defects in both
+  under independent adversarial verification) while the fleet ran **1.57×
+  faster wall-clock at ~1.7× total compute**, 0 LockHeld / 0 collisions —
+  N buys wall-clock on genuinely independent phases; quality comes from the
+  discipline, and the skill's guidance now says exactly that.
+
+### Kept documented-dormant, with the figures that keep them so
+
+- **Per-call live-state stamp** (P2, INVARIANT-10): figures-only,
+  change-triggered `cz_state` notices on tool results. Geometry verified exact
+  (session-first emission + write-result emission, identical reads silent,
+  status-shaped ops excluded, zero when unarmed) — but the slow-FS row prices
+  default-on out: **+0.1 ms/op on ext4 vs +58 ms/op (+86%) on WSL DrvFs**.
+  Stays **env-armed** (`CLAUDERIZER_STATE_STAMP=1`, per-process, sanctioned for
+  fleet/experiment legs) until a cheaper read path earns a re-vote.
+- **Reserve-window wind-down budgets** (P2): `> Budget: N sessions` declarations
+  (gameplan + phase tiers, distinct-DATE stints, WIND_DOWN derived at read
+  time, reserve fraction a constant, no flags). Capability proven live
+  (ops-mode and a real kimi CLI session both recorded stints; the wind-down
+  advisory renders with phase-aware wording) — but **recording coverage
+  measured FIRST was 0.0** over the alpha's own development sessions (the
+  serving-engine gap, H-30), so production wind-down math would be fiction
+  today. Dormant with a post-publish re-measure gate.
+
+### Named gaps (recorded, not claimed)
+
+- **jcode-host verification**: unverifiable in the build environment (no
+  binary, no toolchain, no session credential) — the row ships open with a
+  verification-session recipe instead of a wiring claim.
+- Live under-adhering-host and live-Cursor matrix arms: named gaps with
+  reasons; the seeded-fixture legs cover the shapes they would produce.
+
+### Semantics
+
+- **`pass_rate` now reads as goal-met rate**: with `deferred` a first-class
+  logged outcome, a deferred phase is an honest non-goal-met ending, not a
+  laundered complete — dashboards consuming outcome telemetry should read
+  pass_rate as "phases that met their goal", with deferrals visible beside it.
+
+### Verification
+
+- Suite grew **1330 → 1554 passing** (7 skips) across the alpha; every new
+  guard was armed once (violation injected, red observed, reverted).
+  Transport-parity, enforcement-ladder, dual-copy skill seam, procedure-version
+  parity and README tool-list pins are all live.
+
 ## [1.14.4] — 2026-07-26
 
 **`release-check` asks whether the code passes, not just whether the version is

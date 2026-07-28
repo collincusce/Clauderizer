@@ -13,7 +13,7 @@
 | 3 | Attention and consolidation | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Integrity and enforcement | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Evidence matrix and graduation | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Close-out and ship 2.0.0a1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
+| 6 | Close-out and ship 2.0.0a1 | 🟡 IN PROGRESS | 2026-07-28 | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Fleet pattern: glossary, skill, productization | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-7-HANDOFF.md |
 | 8 | jcode-vetted attention mechanisms: gap detection, reinforce verb, negative-space, jcode host | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-8-HANDOFF.md |
 
