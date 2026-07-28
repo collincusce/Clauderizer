@@ -1,7 +1,7 @@
 # Chat Handoff Index — clauderizer 2.0 alpha — ten fractal-vetted mechanisms
 
 > Last updated: 2026-07-28
-> Status: Phase 4 of 9 in progress
+> Status: Phase 5 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 1457
+**Current baseline test count**: 1487
 
 ## Ending Protocol
 
@@ -33,7 +33,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Lifecycle detectors | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Live state and budgets | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Attention and consolidation | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Integrity and enforcement | 🟡 IN PROGRESS | 2026-07-28 | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Integrity and enforcement | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Evidence matrix and graduation | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Close-out and ship 2.0.0a1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Fleet pattern: glossary, skill, productization | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
@@ -64,6 +64,10 @@ Budgets are declared-derived-dormant: `> Budget: N sessions` (+ phase-block tier
 ### Phase 3 — completed 2026-07-27
 
 Landed both attention/consolidation mechanisms under their vetting conditions, decisions-first (D-073 and D-074 committed before any implementation code — git order provable, the P2 discipline repeated). Seen-vs-open receipts: genuine-engagement-only appends (the conditions stripped the sketch's handoff/phase_context auto-receipts) at the ops REGISTRY seam beside the refusal journal — C-02's op-boundary lesson applied at design time rather than discovered as a correction; the digest splits open findings/items into never-engaged vs engaged-but-open (any-reader, labeling only, conditional emission — no sidecar means byte-identical), and D-067 ships complete including closing P1's tier-1 gap (sessions/refusals were init-only). Two-speed consolidation: curator, loop and miner proposals join the unified id+ledger queue (executing D-059's tracked unification + dreaming-loop O-02 — curate's re-deriving obsoletion proposals now dismissible once), survivors carry engine-written ancestry trailers (state-inert against the H-18 end-anchored grammar), and cz_add_correction gained the D-069 detector for write-corrections-back-to-source, landing in the same commit as its discipline text (procedure 1.11.0 + both skill copies). O-03 resolved: refusals.jsonl has its reader (miner second source that works transcript-less; corpus_health count). The L-68 enforcement stack fired live three ways on this phase's own additions — new module, new public callable, new separator-shaped assertion — each forcing enrollment (receipts.md at 0 omissions, ARCHITECTURE count 43, classified baseline). Suite 1457 → 1487; everything advisory, capability-not-effect until the phase-5 matrix.
+
+### Phase 4 — completed 2026-07-28
+
+Landed both integrity/enforcement mechanisms under their vetting conditions, decisions-first (D-076 before ENFORCEMENT.md). The merge audit is git-evidence-only with no persisted state — findings self-clear from history — and the build surfaced a real detection subtlety the vetting never named: git's default history simplification drops merges that are TREESAME to one parent for the filtered path, which is precisely the lost-update shape the audit hunts; --full-history is load-bearing and the first fixture caught it by returning empty. Squash blindness is stated in the docstring and the one shared user wording; fenced-quoted markers are exempt by construction; subprocess count is pinned ≤8. The enforcement ladder ships with FOUR honest tiers — flattening preflight into "advisory" would have misstated D-024's deliberate blocking carve-out — restates D-066 and INVARIANT-05 verbatim, cites jcode's documentary-binding evidence for the instructions-floor tier being real, and the negative-capability disclosure landed on the floor itself (stanza source + both renders + README + TRUST) with the no-digest-line rule pinned by test per D-076. The transport parity matrix (15 ops, twin repos, direct-fixture preludes) found ZERO undocumented divergences — the REGISTRY-seam architecture the P3 receipts bet on holds across transports — and the P7 clauderizer_status bootstrap is pinned as REQUIRED, so its silent death would fail the suite. Mid-phase, the A-002 amendment landed from the jcode research (D-075: four new mechanisms into Phase 8, evidence routed to sibling gameplans); its ENFORCEMENT rows follow with Phase 8 per the lands-second rule. The enforcement stack fired twice more on this phase's own additions (io-discipline encoding pin, separator classification of the INVARIANT-05 verbatim quote) — routine now. Suite 1487 → 1516; merge audit ships advisory-silent, value claims wait for phase 5's seeded-fault protocol.
 
 ## Accumulated Lessons
 

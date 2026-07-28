@@ -137,14 +137,14 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 4.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Merge audit ground truth is git evidence only (merge parents + merge-base + blob comparison); no writer-side per-file audit ledger and no persisted finding state exist anywhere in the change (revision.py's no-audit-log stance holds)
-- [ ] Hook-path subprocess cost is O(1) per compute(): capped at the single most recent docs-touching merge with batched blob resolution (~4 calls) — pinned by a subprocess-count test
-- [ ] The squash blind spot is stated in the module docstring AND in user-facing finding/digest wording; no claim anywhere that the audit catches Fractal issue #9's exact squash scenario
-- [ ] Conflict-marker scan handles docs that QUOTE markers: fenced code blocks skipped or the quoted-marker behavior pinned by an explicit test
-- [ ] Audit surfaces through existing cz_audit/cz_preflight/cz_status only — no new MCP tool; tool-description token cost measured flat; ships advisory-silent with no value claim (that waits for phase 5's seeded-fault protocol)
-- [ ] ENFORCEMENT.md exists, maps every discipline (including the nine mechanisms from phases 0-3) to hard-NORMALIZE (D-066) / advisory / instructions-floor, restates D-066 and INVARIANT-05 verbatim, and expresses preflight's real semantics (D-024 blocking default + config.preflight_advisory downgrade)
-- [ ] Capabilities in the ladder are derived host facts (session._HOOK_HOSTS/_PROMPT_HOSTS + CROSS-HOST descriptors), never config flags; the negative-capability disclosure lives on the instructions floor (claude_stanza.md/README/TRUST.md) and NO digest line was added (INVARIANT-08)
-- [ ] Transport parity matrix test green: CLI ops vs MCP payloads equal after JSON-normalizing BOTH, against an explicit pinned divergence allowlist; stateful ops (resolve_cascade, dismiss/defer, …) get identical staged-state preludes via direct fixture setup; test_enforcement_ladder parses row name + tier column only; suite green
+- [x] Merge audit ground truth is git evidence only (merge parents + merge-base + blob comparison); no writer-side per-file audit ledger and no persisted finding state exist anywhere in the change (revision.py's no-audit-log stance holds)
+- [x] Hook-path subprocess cost is O(1) per compute(): capped at the single most recent docs-touching merge with batched blob resolution (~4 calls) — pinned by a subprocess-count test
+- [x] The squash blind spot is stated in the module docstring AND in user-facing finding/digest wording; no claim anywhere that the audit catches Fractal issue #9's exact squash scenario
+- [x] Conflict-marker scan handles docs that QUOTE markers: fenced code blocks skipped or the quoted-marker behavior pinned by an explicit test
+- [x] Audit surfaces through existing cz_audit/cz_preflight/cz_status only — no new MCP tool; tool-description token cost measured flat; ships advisory-silent with no value claim (that waits for phase 5's seeded-fault protocol)
+- [x] ENFORCEMENT.md exists, maps every discipline (including the nine mechanisms from phases 0-3) to hard-NORMALIZE (D-066) / advisory / instructions-floor, restates D-066 and INVARIANT-05 verbatim, and expresses preflight's real semantics (D-024 blocking default + config.preflight_advisory downgrade)
+- [x] Capabilities in the ladder are derived host facts (session._HOOK_HOSTS/_PROMPT_HOSTS + CROSS-HOST descriptors), never config flags; the negative-capability disclosure lives on the instructions floor (claude_stanza.md/README/TRUST.md) and NO digest line was added (INVARIANT-08)
+- [x] Transport parity matrix test green: CLI ops vs MCP payloads equal after JSON-normalizing BOTH, against an explicit pinned divergence allowlist; stateful ops (resolve_cascade, dismiss/defer, …) get identical staged-state preludes via direct fixture setup; test_enforcement_ladder parses row name + tier column only; suite green
 
 ### Phase 5: Evidence matrix and graduation
 

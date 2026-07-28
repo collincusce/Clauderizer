@@ -11,7 +11,7 @@
 | 1 | Lifecycle detectors | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Live state and budgets | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Attention and consolidation | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Integrity and enforcement | 🟡 IN PROGRESS | 2026-07-28 | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Integrity and enforcement | ✅ COMPLETE | 2026-07-28 | 2026-07-28 | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Evidence matrix and graduation | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Close-out and ship 2.0.0a1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Fleet pattern: glossary, skill, productization | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
@@ -45,6 +45,13 @@ phase2_artifacts: INVARIANT-10 + D-072 (amendment predates stamp code in git: 62
 ```
 baseline_tests_after_phase3: 1487 passed, 7 skipped (was 1457); commits d33a882 (decisions first) + 8f29e0f (receipts) + 63fbbb9 (merge-base/ancestry/correction-advisory + procedure 1.11.0) + 2361e0c (refusals reader)
 phase3_artifacts: D-073 + D-074 (both predate implementation in git: d33a882 < 8f29e0f/63fbbb9). New: receipts.py (record_seen/load_seen/split_seen; seen.local.jsonl O_APPEND sidecar), ops._receipted REGISTRY-seam wrapper (allowlist exactly cz_get/cz_resolve_finding/cz_resolve_open_item/cz_check_exit_criterion; open items receipt gid-qualified; criteria under synthetic criteria:gid:phase key), digest never-engaged/engaged-but-open split (conditional emission), paths.seen_file + paths.refusals_file, ops._refusal_candidates (miner second source), analyze.near_duplicate_gameplan_lessons, mutations._inline_trailer + survivor ancestry + correction advisory, curate/loop_step/mine id+ledger with suppressed_count + all_proposals + converged_with_suppression, GAMEPLAN-PROCEDURE 1.11.0 (write-corrections-back discipline), close-gameplan/record skills both copies, subsys.receipts (ratchet-enrolled at 0 omissions). Tier-1 gitignore gap closed: sessions.jsonl/refusals.jsonl joined LOCAL_STATE_IGNORES (P1 had init-only). RECEIPTS AND MERGE-BASE ARE ADVISORY-ONLY; capability-not-effect until the phase-5 matrix (dismissal-recurrence + stale-lesson-surfacing signals pre-named in D-074).
+```
+
+### Phase 4 Outputs
+
+```
+baseline_tests_after_phase4: 1516 passed, 7 skipped (was 1487); commits d33a882..e25d36d span P3+P4; phase-4 commit e25d36d (16 files, +859); D-076 recorded before ENFORCEMENT.md
+phase4_artifacts: New: rituals/merge_audit.py (compute/describe; --full-history is LOAD-BEARING — default git history simplification drops merges TREESAME to a parent, which is exactly the lost-update shape; discovered live when the first fixture returned empty), docs/ENFORCEMENT.md (31 rows, four tiers per D-076, D-066+INVARIANT-05 verbatim, fleet rows per A-001, jcode rows deferred to P8 per A-002), tests/test_merge_audit.py (7: lost-update/self-clear/squash-invisible/fenced-exempt/subprocess<=8/surfacing), tests/test_enforcement_ladder.py (row+tier parse only), tests/test_transport_parity.py (15-op matrix, twin repos, direct-fixture preludes; allowlist = clauderizer_status REQUIRED + cz_state stripped + JSON/root normalization; ZERO undocumented divergences found). Disclosure landed on the instructions floor: claude_stanza.md source + CLAUDE.md/AGENTS.md renders byte-identical + README + TRUST.md; NO digest line (pinned). Merge audit surfaces: digest ⚠ line, preflight merge_integrity warn-never-fail, cz_audit merge_integrity list. ADVISORY-SILENT; seeded-fault value claims wait for phase 5.
 ```
 
 ## Corrections Log

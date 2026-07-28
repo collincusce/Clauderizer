@@ -290,7 +290,9 @@ def cz_audit() -> dict:
     Read-only and advisory like cz_analyze/cz_critique (INVARIANT-05): the engine
     ASSEMBLES the deterministic signals it can compute — version single-sourcing
     (pyproject vs the package __version__ vs the top CHANGELOG entry), an
-    uncommitted working tree, and unresolved cascades/open items — and prompts a
+    uncommitted working tree, unresolved cascades/open items, and merge-integrity
+    findings on the most recent docs-touching true merge (lost updates /
+    committed conflict markers; squash merges are invisible to it) — and prompts a
     judgment checklist for the failure modes a green suite cannot catch: verify in
     a CLEAN environment (not a stale editable install), re-audit every CONSUMER of
     a changed entity (incl. untracked ones), and claim only what you verified. It
