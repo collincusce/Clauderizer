@@ -10,7 +10,7 @@
 | 0 | Honest endings and epistemics | ✅ COMPLETE | 2026-07-26 | 2026-07-26 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Lifecycle detectors | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Live state and budgets | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Attention and consolidation | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Attention and consolidation | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Integrity and enforcement | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Evidence matrix and graduation | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Close-out and ship 2.0.0a1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
@@ -37,6 +37,13 @@ phase1_artifacts: New: src/clauderizer/session_ledger.py (stamp/last_stamp/probe
 ```
 baseline_tests_after_phase2: 1457 passed, 7 skipped (was 1424); commits 6215726 (amendment first) + cabbd3e (implementation)
 phase2_artifacts: INVARIANT-10 + D-072 (amendment predates stamp code in git: 6215726 < cabbd3e). New: state_stamp.py (FIGURE_KEYS 8-key ratchet, ARM_ENV=CLAUDERIZER_STATE_STAMP, emit() change-trigger), rituals/budgets.py (RESERVE_FRACTION=0.10, declarations/assess/describe, distinct-DATE spend), telemetry.record_stint + PROC_TAG, preflight.record_run_stint (op-called; library run() write-free — C-02), pre_compact wind-down convergence, cz_next_phase_context wind_down attachment, contract 1.1, dormant template comment. STAMP IS ENV-ARMED DORMANT; BUDGETS DECLARED-DORMANT — phase-5 matrix decides both defaults. O-01 (recording coverage) deliberately left open for phase 5: stints only began accruing this phase.
+```
+
+### Phase 3 Outputs
+
+```
+baseline_tests_after_phase3: 1487 passed, 7 skipped (was 1457); commits d33a882 (decisions first) + 8f29e0f (receipts) + 63fbbb9 (merge-base/ancestry/correction-advisory + procedure 1.11.0) + 2361e0c (refusals reader)
+phase3_artifacts: D-073 + D-074 (both predate implementation in git: d33a882 < 8f29e0f/63fbbb9). New: receipts.py (record_seen/load_seen/split_seen; seen.local.jsonl O_APPEND sidecar), ops._receipted REGISTRY-seam wrapper (allowlist exactly cz_get/cz_resolve_finding/cz_resolve_open_item/cz_check_exit_criterion; open items receipt gid-qualified; criteria under synthetic criteria:gid:phase key), digest never-engaged/engaged-but-open split (conditional emission), paths.seen_file + paths.refusals_file, ops._refusal_candidates (miner second source), analyze.near_duplicate_gameplan_lessons, mutations._inline_trailer + survivor ancestry + correction advisory, curate/loop_step/mine id+ledger with suppressed_count + all_proposals + converged_with_suppression, GAMEPLAN-PROCEDURE 1.11.0 (write-corrections-back discipline), close-gameplan/record skills both copies, subsys.receipts (ratchet-enrolled at 0 omissions). Tier-1 gitignore gap closed: sessions.jsonl/refusals.jsonl joined LOCAL_STATE_IGNORES (P1 had init-only). RECEIPTS AND MERGE-BASE ARE ADVISORY-ONLY; capability-not-effect until the phase-5 matrix (dismissal-recurrence + stale-lesson-surfacing signals pre-named in D-074).
 ```
 
 ## Corrections Log

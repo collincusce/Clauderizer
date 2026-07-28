@@ -39,7 +39,7 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 **O-02.** _(phase Evidence matrix and graduation)_ Matrix harness legs required by the vetting conditions — kimi-pinned, ops-mode, ≥1 non-Claude host, slow-FS WSL row, an under-adhering host — need confirmed availability/harness before phase 5 begins. A leg that cannot run becomes a named gap in that mechanism's graduation verdict, never a silent skip.
 
-**O-03.** _(phase Attention and consolidation)_ refusals.jsonl has a writer (P1, REGISTRY seam) but no reader yet — D-069's spirit wants the journal consumed. Wire it as a read source in cz_mine_failures (and/or a read-only count in cz_corpus_health) during phase "Attention and consolidation", or explicitly decide it stays a dormant evidence store until the matrix.
+**O-03.** _(phase Attention and consolidation)_ refusals.jsonl has a writer (P1, REGISTRY seam) but no reader yet — D-069's spirit wants the journal consumed. Wire it as a read source in cz_mine_failures (and/or a read-only count in cz_corpus_health) during phase "Attention and consolidation", or explicitly decide it stays a dormant evidence store until the matrix. _(resolved 2026-07-27: Wired as decided, not left dormant: cz_mine_failures reads refusals.jsonl as a second source (grouped per op, count + latest summary, id+ledger merge-base — a new refusal re-arms a dismissed candidate; works with no transcripts at all, the ops-mode/non-Claude case) and cz_corpus_health carries the read-only refusal_events count. Commit 2361e0c; H-29's write-time-echo half stays open on H-29.)_
 
 ## Phase Breakdown
 
@@ -109,14 +109,14 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Receipts appended ONLY on genuine engagement (cz_get success, cz_resolve_finding, cz_resolve_open_item, cz_check_exit_criterion) — no via='handoff'/'phase_context' auto-receipts — pinned by test
-- [ ] Receipt writes are lock-free O_APPEND single-line JSONL to .clauderizer/seen.local.jsonl; the file is gitignored by init AND added to modernize's ensure_gitignore_current tier-1 so existing repos converge (D-067 complete)
-- [ ] A new D-NNN recording the read-op purity erosion (cz_get stays writes=False; rebuildable-local-sidecar append is the sole sanctioned exception) is in DECISIONS.md before the write path lands
-- [ ] Digest split is ANY-reader engagement (never-engaged vs engaged-but-open); golden gates pass: with no sidecar the bundle and digest are byte-identical to pre-phase, with receipts every open id prints in exactly one bucket and resolved ids in neither (D-068 drop-nothing)
-- [ ] Merge-base convergence is implemented and its adoption decision cites D-059 and dreaming-loop O-02 as the executed lineage (not a novel borrow); the dismissal-recurrence signal for phase 5 is named in the decision
-- [ ] suppressed_count is reported in every cz_curate and cz_loop_step summary; the all_proposals include-suppressed read path exists — ledger filtering stays display, never authority (D-013) — pinned by test
-- [ ] Correction-advisory detector and its discipline text land in the SAME change: GAMEPLAN-PROCEDURE.md + close-gameplan/record skills, both src template and installed .claude render (L-16/L-55)
-- [ ] Contradiction scan imports analyze._tokens and analyze._LESSON_DUP_JACCARD — no second tokenizer or threshold constant (INVARIANT-09; test_canonical_tokenizer stays green); suite green; digest byte-identical healthy
+- [x] Receipts appended ONLY on genuine engagement (cz_get success, cz_resolve_finding, cz_resolve_open_item, cz_check_exit_criterion) — no via='handoff'/'phase_context' auto-receipts — pinned by test
+- [x] Receipt writes are lock-free O_APPEND single-line JSONL to .clauderizer/seen.local.jsonl; the file is gitignored by init AND added to modernize's ensure_gitignore_current tier-1 so existing repos converge (D-067 complete)
+- [x] A new D-NNN recording the read-op purity erosion (cz_get stays writes=False; rebuildable-local-sidecar append is the sole sanctioned exception) is in DECISIONS.md before the write path lands
+- [x] Digest split is ANY-reader engagement (never-engaged vs engaged-but-open); golden gates pass: with no sidecar the bundle and digest are byte-identical to pre-phase, with receipts every open id prints in exactly one bucket and resolved ids in neither (D-068 drop-nothing)
+- [x] Merge-base convergence is implemented and its adoption decision cites D-059 and dreaming-loop O-02 as the executed lineage (not a novel borrow); the dismissal-recurrence signal for phase 5 is named in the decision
+- [x] suppressed_count is reported in every cz_curate and cz_loop_step summary; the all_proposals include-suppressed read path exists — ledger filtering stays display, never authority (D-013) — pinned by test
+- [x] Correction-advisory detector and its discipline text land in the SAME change: GAMEPLAN-PROCEDURE.md + close-gameplan/record skills, both src template and installed .claude render (L-16/L-55)
+- [x] Contradiction scan imports analyze._tokens and analyze._LESSON_DUP_JACCARD — no second tokenizer or threshold constant (INVARIANT-09; test_canonical_tokenizer stays green); suite green; digest byte-identical healthy
 
 ### Phase 4: Integrity and enforcement
 

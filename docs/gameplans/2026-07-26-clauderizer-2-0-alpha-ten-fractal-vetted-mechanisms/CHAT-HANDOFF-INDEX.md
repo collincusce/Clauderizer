@@ -1,7 +1,7 @@
 # Chat Handoff Index — clauderizer 2.0 alpha — ten fractal-vetted mechanisms
 
 > Last updated: 2026-07-27
-> Status: Phase 3 ready
+> Status: Phase 4 ready
 
 ## How This Works
 
@@ -13,7 +13,7 @@ then calls `cz_next_phase_context` for the active phase. No manual reading order
 
 Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
-**Current baseline test count**: 1424
+**Current baseline test count**: 1457
 
 ## Ending Protocol
 
@@ -32,7 +32,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 0 | Honest endings and epistemics | ✅ COMPLETE | 2026-07-26 | 2026-07-26 | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Lifecycle detectors | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Live state and budgets | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-2-HANDOFF.md |
-| 3 | Attention and consolidation | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
+| 3 | Attention and consolidation | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Integrity and enforcement | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Evidence matrix and graduation | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Close-out and ship 2.0.0a1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
@@ -59,6 +59,10 @@ Backstop landings: interrupted.py fires when non-docs commits landed after the t
 Both mechanisms landed under the binding order: the INVARIANT-10 amendment (with D-072) committed BEFORE any stamp code existed — the append-only supersession defines figures-only, change-triggered cz_state notices as a category distinct from status injection, with five bounds all pinned by test. The stamp itself lives at the single ops dispatch seam (now three wrappers deep: contract stamp, refusal journal, state stamp): an 8-key whitelist-ratcheted figure set recomputed from canonical markdown, emitted only when the figures moved this session, byte-bounded (raw checkbox counts — a spy test proves the approval-hashing path is never called), isolated in both directions, and env-armed dormant (CLAUDERIZER_STATE_STAMP=1) until the phase-5 stamped-vs-unstamped matrix decides the default. Contract bumped 1.0→1.1 additively.
 
 Budgets are declared-derived-dormant: `> Budget: N sessions` (+ phase-block tier) read live from markdown, spend counted as DISTINCT RECORDED DATES of preflight stints (proc tags never the unit), reserve = ceil(10%) as a module constant, wind_down/over derived at read time with nothing persisted and no flags, UNTRACKED-never-zero epistemics, and one phase-aware describe() across the digest line, the cz_next_phase_context wind_down attachment, and the pre_compact convergence (L-68 clause 1). The phase's earned correction (C-02): the stint writer moved from preflight.run() to the cz_preflight op after the literal assessment placement mutated the read-only sample_repo fixture across suite runs and broke the green-preflight-never-dirties principle — the library function is now pinned write-free by test. Suite 1424→1457; commits 6215726 + cabbd3e.
+
+### Phase 3 — completed 2026-07-27
+
+Landed both attention/consolidation mechanisms under their vetting conditions, decisions-first (D-073 and D-074 committed before any implementation code — git order provable, the P2 discipline repeated). Seen-vs-open receipts: genuine-engagement-only appends (the conditions stripped the sketch's handoff/phase_context auto-receipts) at the ops REGISTRY seam beside the refusal journal — C-02's op-boundary lesson applied at design time rather than discovered as a correction; the digest splits open findings/items into never-engaged vs engaged-but-open (any-reader, labeling only, conditional emission — no sidecar means byte-identical), and D-067 ships complete including closing P1's tier-1 gap (sessions/refusals were init-only). Two-speed consolidation: curator, loop and miner proposals join the unified id+ledger queue (executing D-059's tracked unification + dreaming-loop O-02 — curate's re-deriving obsoletion proposals now dismissible once), survivors carry engine-written ancestry trailers (state-inert against the H-18 end-anchored grammar), and cz_add_correction gained the D-069 detector for write-corrections-back-to-source, landing in the same commit as its discipline text (procedure 1.11.0 + both skill copies). O-03 resolved: refusals.jsonl has its reader (miner second source that works transcript-less; corpus_health count). The L-68 enforcement stack fired live three ways on this phase's own additions — new module, new public callable, new separator-shaped assertion — each forcing enrollment (receipts.md at 0 omissions, ARCHITECTURE count 43, classified baseline). Suite 1457 → 1487; everything advisory, capability-not-effect until the phase-5 matrix.
 
 ## Accumulated Lessons
 
