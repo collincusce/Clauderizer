@@ -1,11 +1,27 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.11.0
-**Last updated**: 2026-07-27
+**Procedure version**: 1.12.0
+**Last updated**: 2026-07-28
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.12.0** (2026-07-28): **Negative-space close-outs: declare what you did
+  NOT check.** Every close-out surface — the Ending Protocol, per-phase
+  completion summaries (`cz_add_phase_summary`), and fleet worker completion
+  reports — now names the UNKNOWN residue alongside the known: a short "What I
+  did not check" declaration listing what was never looked at (paths not
+  exercised, hosts not run, claims taken on trust). Deferred status, unchecked
+  criteria and open items already name the KNOWN residue; this is its honest
+  complement — forcing the closing agent to list unexplored crannies is what
+  surfaces them (D-075, adopted from jcode's swarm-artifact validation under
+  INVARIANT-05 translation: never a hard block). Enforcement is judgment, not
+  engine: a fleet hub sends back worker reports lacking the section (the
+  clauderizer-fleet briefing contract); solo close-outs carry it on this
+  procedure's word. The engine-side detector for the section is explicitly
+  DEFERRED-UNENFORCED (L-68 clause 5): a deterministic engine cannot classify
+  free text, and pretending otherwise would be the false green this discipline
+  exists to prevent.
 - **v1.11.0** (2026-07-27): **Corrections reach their source; survivors carry
   their ancestry.** A correction that contradicts an accumulated lesson must
   REACH that lesson — mark it `cz_obsolete_lesson(number, reason="superseded by
@@ -601,6 +617,13 @@ If any check fails: STOP. Report to user. Do not proceed.
 4. Update CLAUDE.md if any critical-rule context changed
 5. Run exit verification (full test suite + build/validate) — in a **clean environment** for release-bearing work, not just your working install (a stale editable install can hide a real defect)
 6. Report final test count and any new corrections
+7. Declare the **negative space** — a short "What I did not check" list naming
+   what was never looked at (paths not exercised, hosts/platforms not run,
+   consumers not re-audited, claims taken on trust). Deferred status and open
+   items name the KNOWN residue; this names the UNKNOWN residue, and listing it
+   is what surfaces the unexplored crannies (D-075). Judgment-enforced only —
+   a fleet hub sends back completion reports lacking it; no engine check exists
+   (deferred-unenforced, L-68 clause 5)
 
 ### Interrupted sessions (D-070)
 
@@ -659,7 +682,9 @@ are doors into `deferred`, not statuses of their own.
 
 ## Per-Phase Completion Summaries
 <Added by coordinator after each merge. 1–2 paragraphs per phase
-covering what landed, key corrections, and follow-ups.>
+covering what landed, key corrections, and follow-ups — plus a
+"What I did not check" line naming the phase's negative space
+(what was never exercised or verified), per the Ending Protocol.>
 
 ## User Working Style
 See ~/.claude/CLAUDE.md (global) — symlinked, not copied.
@@ -1220,7 +1245,9 @@ operations run via `clauderize ops <file.json|->`.
 2. `cz_transition_phase` the phase to `complete`. It surfaces whatever is still
    unchecked or unresolved as advisories — never blocking.
 3. `cz_add_output` for each concrete value the phase produced (counts, paths,
-   ids) and `cz_add_phase_summary` for the recap.
+   ids) and `cz_add_phase_summary` for the recap — include a "What I did not
+   check" section declaring the negative space (what was never looked at),
+   per the Ending Protocol.
 4. `cz_add_correction` for any divergence from the plan; `cz_add_lesson` for
    anything generalizable; `cz_obsolete_lesson` for what this phase made
    irrelevant.

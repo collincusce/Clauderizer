@@ -130,6 +130,44 @@ def record_stint(telemetry_file: Path, *, gameplan: str, phase: str,
     return rec
 
 
+def record_gap(telemetry_file: Path, *, surface: str, gameplan: str, phase: str,
+               query_terms: int, today: str | None = None) -> dict:
+    """Log one MEMORY GAP: a probe for which decisions+invariants were both
+    empty (D-075). TEXT-FREE by construction — the record carries the surface,
+    scope ids, date and a token COUNT, never the probe itself (the dream
+    journal is the PII-linted channel for content; this is a counter the
+    dreamer/curator reads, D-069). Written best-effort by the cz_analyze OP
+    only — never by the analyze library function, which the UserPromptSubmit
+    hook calls (INVARIANT-06 keeps hook handlers byte-free)."""
+    rec = {
+        "kind": "gap",
+        "date": _today(today),
+        "surface": surface,
+        "gameplan": gameplan,
+        "phase": str(phase),
+        "query_terms": int(query_terms),
+    }
+    _append(telemetry_file, rec)
+    return rec
+
+
+def record_reinforced(telemetry_file: Path, *, gameplan: str, lesson: str,
+                      count: int, today: str | None = None) -> dict:
+    """Log one lesson REINFORCEMENT (D-075): the blessed write strengthened an
+    existing lesson instead of appending a near-duplicate twin. Ids and counts
+    only — the tracked trailer on the lesson line is the team-memory record;
+    this machine-local event just lets lesson_health see the activity."""
+    rec = {
+        "kind": "reinforced",
+        "date": _today(today),
+        "gameplan": gameplan,
+        "lesson": str(lesson),
+        "count": int(count),
+    }
+    _append(telemetry_file, rec)
+    return rec
+
+
 def read_events(telemetry_file: Path) -> list[dict]:
     """All telemetry events in append order; tolerant of partial/garbled lines."""
     if not telemetry_file.exists():
@@ -176,8 +214,14 @@ def _active_project_lessons(paths) -> list[dict]:
         parsed = parse_lesson_line(s)
         if parsed and lesson_state.is_active(s):
             eid, title, body = parsed
+            # Reinforcement strength (D-075) rides along from the tracked
+            # trailer — team memory, so it reads the same on every clone
+            # (unlike telemetry, which is machine-local — the D-063 trap).
+            r = lesson_state.parse_reinforcement(s)
             out.append({"id": eid, "text": f"{title} {body}".strip(),
-                        "audience": parse_audience(s)})
+                        "audience": parse_audience(s),
+                        "reinforced_count": r[0] if r else 0,
+                        "last_reinforced": r[1] if r else None})
     return out
 
 
@@ -253,6 +297,10 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
     # and no reader is a dormant evidence store). Zero renders nothing extra.
     refusals = [e for e in read_events(paths.refusals_file)
                 if e.get("kind") == "refusal"]
+    # Memory-gap events (D-075), same contract as refusals: a read-only count,
+    # zero renders nothing extra. Each is a probe cz_analyze found NOTHING for —
+    # coverage the corpus lacked, which nothing recorded until now.
+    gaps = [e for e in events if e.get("kind") == "gap"]
 
     toks = [(l["id"], _tokens(l["text"]), l.get("audience", "")) for l in lessons]
     redundant: list[tuple[str, str]] = []
@@ -286,6 +334,7 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
         "pass_rate": pass_rate,
         "telemetry_events": len(events),
         "refusal_events": len(refusals),
+        "gap_events": len(gaps),
         "parse_reconciliation": parse_reconciliation(paths),
         # The graph's own honesty report: entity-shaped docs it could not index,
         # and duplicate-id shadowings. Both were previously silent, which made a
@@ -299,6 +348,9 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
             + (f", pass_rate {pass_rate}" if pass_rate is not None else "") + ")"
             + (f"; {len(refusals)} refused write(s) journaled — cz_mine_failures "
                "reads them" if refusals else "")
+            + (f"; {len(gaps)} memory gap(s) recorded — probes nothing recorded "
+               "speaks to (record the decision/lesson when the area matters)"
+               if gaps else "")
             + (f"; PARSE FAULT — {_recon['offenders'][0]}"
                if not (_recon := parse_reconciliation(paths))["ok"] else "")
             + (f"; GRAPH FAULT — {_gi['summary']}"
@@ -395,17 +447,31 @@ def lesson_health(paths, *, window: int = 0) -> dict:
         n = len(resolved)
         utility = round(passed / n, 4) if n else None
         failure_risk = round(1 - utility, 4) if utility is not None else None
-        scores.append({
+        row = {
             "id": l["id"],
             "surfaced_count": len(hits),
             "resolved_count": n,
             "utility": utility,
             "failure_risk": failure_risk,
             "last_surfaced": last_surfaced,
+            # Reinforcement strength (D-075) from the tracked trailer: EVIDENCE
+            # for the curator's judgment, never authority — nothing below (or
+            # anywhere) ranks, keeps, or deletes on it (D-013/D-063).
+            "reinforced_count": l.get("reinforced_count", 0),
             "signal": _lesson_signal(surfaced_count=len(hits), resolved=n,
                                      utility=utility,
                                      has_telemetry=bool(events)),
-        })
+        }
+        if row["reinforced_count"]:
+            row["reinforcement"] = (
+                f"reinforced x{row['reinforced_count']} (last "
+                f"{l.get('last_reinforced')}) — evidence, not authority "
+                f"(D-013/D-063): repeated re-derivation can mean the lesson "
+                f"keeps earning its place, or the INVERSE — a lesson "
+                f"repeatedly re-derived instead of applied may be worded so "
+                f"it does not land. You judge; nothing acts on this count."
+            )
+        scores.append(row)
     scores.sort(key=lambda r: r["id"])
     with_signal = sum(1 for r in scores if r["signal"])
     return {
@@ -588,6 +654,21 @@ def curate_proposals(paths, gid: str = "") -> dict:
                 "suggested_op": "cz_promote_lesson",
                 "suggested_args": {"number": gl["id"]},
             })
+
+    # Reinforcement strength as EVIDENCE on any proposal touching a reinforced
+    # lesson (D-075): display only — it created none of the proposals above,
+    # suppresses none, and no keep/drop choice read it (D-013/D-063). The
+    # inverse reading rides along so the agent weighs both directions.
+    rmap = {l["id"]: l.get("reinforced_count", 0) for l in lessons}
+    for p in proposals:
+        noted = [f"{lid} reinforced x{rmap[lid]}" for lid in p["lessons"]
+                 if rmap.get(lid)]
+        if noted:
+            p["reinforcement"] = (
+                ", ".join(noted) + " — evidence only (D-013/D-063): a lesson "
+                "repeatedly re-derived instead of applied may be worded so it "
+                "does not land; nothing ranks or deletes on this count."
+            )
 
     led = _proposals.load_ledger(paths)
     pending = _proposals.filter_pending(proposals, led)

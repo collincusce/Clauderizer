@@ -25,6 +25,7 @@ TOOL_NAMES = [
     "cz_obsolete_lesson",
     "cz_consolidate_lessons",
     "cz_promote_lesson",
+    "cz_reinforce_lesson",
     "cz_register_skill",
     "cz_obsolete_skill",
     "cz_add_correction",

@@ -84,10 +84,15 @@ below is carried by the stanza text plus the MCP server-side bootstrap
 | Correction-discipline text (obsolete superseded lessons rather than appending beside them) | instructions-floor | GAMEPLAN-PROCEDURE v1.11 + close-gameplan/record skills; paired detector is the advisory row above |
 | Fleet hub-and-spoke law (all tracked writes through the hub) | instructions-floor | clauderizer-fleet skill briefing contract; D-071; no engine detector — collisions surface via LockHeld counts |
 | Fleet assignment ownership (respect cz_assign partitions) | advisory | cz_assignments surfacing; D-071; hub judgment resolves conflicts |
+| Memory-gap recording (record the decision/lesson when memory had nothing on a probe) | advisory | cz_analyze result gap advisory + text-free telemetry gap events + corpus_health read-only count; never a digest line (INVARIANT-08); D-075 |
+| Reinforce-instead-of-duplicate (strengthen the surviving lesson rather than appending a twin) | advisory | cz_add_lesson near-duplicate advisory offers the third verb; cz_reinforce_lesson is the blessed write; strength is curator EVIDENCE, never authority (D-013/D-063); INVARIANT-09 canonical detector; D-075 |
+| Negative-space close-outs (declare "What I did not check") | instructions-floor | GAMEPLAN-PROCEDURE v1.12 Ending Protocol + phase-summary guidance; fleet briefing contract (hub sends back reports lacking it — Phase 7); engine detector explicitly deferred-unenforced (L-68 clause 5) — none exists; D-075 |
+| jcode-host wiring claims (verify by live capability probe before claiming wired) | instructions-floor | D-075 vetting conditions (research-jcode-vetting.json) + the phase-5 matrix row; L-25/L-66 capability-not-presence; no engine detector — the matrix row records verified or honestly unverifiable |
 
-The four jcode-vetted mechanisms (D-075/A-002 — gap detection, reinforce verb,
-negative-space close-outs, jcode-host wiring) receive their rows when Phase 8
-lands, per the lands-second rule this table inherits from A-001.
+The four rows above landed with Phase 8 (D-075/A-002 — gap detection, reinforce
+verb, negative-space close-outs, jcode-host wiring), per the lands-second rule
+this table inherits from A-001: Phase 4 shipped the ladder first, so the
+later-landing phase carried its own rows.
 
 ## Engine guarantees (by construction — not agent disciplines)
 

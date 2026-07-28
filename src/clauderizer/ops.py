@@ -257,6 +257,42 @@ def cz_analyze(text: str, k: int = 5) -> dict:
         f"surfaced {n} relevant entr{'y' if n == 1 else 'ies'} "
         f"+ {len(adj)} adjacent + {len(edges)} suggested edge(s) for review"
     )
+    # Memory-gap detection (D-075): both registers empty for a probe that HAS
+    # content is a fact about the corpus worth recording at the moment it is
+    # discovered — nothing here recorded "memory had nothing to say" until now.
+    # Advisory in THIS result only, never a digest line (INVARIANT-08); the
+    # persisted event is TEXT-FREE (a token count, never the probe). Lives on
+    # the OP so the UserPromptSubmit hook's direct analyze.analyze() call stays
+    # byte-free (INVARIANT-06). An empty/contentless probe is vacuity, not a gap.
+    probe_terms = _analyze._tokens(text)
+    if not res["decisions"] and not res["invariants"] and probe_terms:
+        res["memory_gap"] = True
+        res["gap_advisory"] = (
+            "Memory had nothing on this: zero relevant decisions and zero "
+            "invariants matched the probe. If this area matters, record the "
+            "decision or lesson NOW (cz_add_decision / cz_add_lesson) so the "
+            "corpus stops being blind here — a gap recorded at the moment it "
+            "is found is how memory learns its edges. Advisory only; you "
+            "decide (INVARIANT-05, D-075)."
+        )
+        res["summary"] += "; memory gap — nothing recorded speaks to this probe"
+        try:
+            from . import telemetry as _t
+            from .rituals import status_bundle as _sb
+
+            gid = config.active_gameplan or ""
+            phase = ""
+            if gid:
+                rows = _sb._phase_rows(paths.gameplan_dir(gid))
+                cur = (next((r for r in rows if r.status == "in_progress"), None)
+                       or next((r for r in rows
+                                if r.status in ("ready", "not_started")), None))
+                phase = cur.number if cur is not None else ""
+            _t.record_gap(paths.telemetry_file, surface="cz_analyze",
+                          gameplan=gid, phase=phase,
+                          query_terms=len(probe_terms))
+        except Exception:
+            pass  # best-effort: the journal never degrades the read
     return res
 
 
@@ -771,6 +807,29 @@ def cz_promote_lesson(number: str, text: str = "", category: str = "",
         return {"ok": False, "error": "no gameplan specified or active"}
     return mutations.promote_lesson(paths, gameplan_id=gid, number=number,
                                     text=text or None, category=category or None)
+
+
+def cz_reinforce_lesson(number: str, gameplan_id: str = "") -> dict:
+    """Strengthen an EXISTING lesson in place instead of appending a
+    near-duplicate twin.
+
+    The third verb beside consolidate/append (D-075): when cz_add_lesson's
+    near-duplicate advisory shows the lesson already exists and yours was a
+    re-derivation, record that ON the surviving line — a compact tracked
+    trailer "*(reinforced xN, last <date>)*" updated in place (one trailer,
+    count bumped; the line stays active and append-only history is untouched)
+    plus a machine-local telemetry `reinforced` event for lesson_health.
+    Strength surfaces in lesson_health/curator output as EVIDENCE — a lesson
+    repeatedly re-derived instead of applied may be worded so it does not
+    land — never authority: nothing ranks, keeps, or deletes on it
+    (D-013/D-063), and nothing auto-reinforces; you decide (INVARIANT-05).
+    `number` is a gameplan lesson ("4") or a project lesson id ("L-04").
+    """
+    paths, config = repo_ctx()
+    gid = gameplan_id or config.active_gameplan
+    if not gid:
+        return {"ok": False, "error": "no gameplan specified or active"}
+    return mutations.reinforce_lesson(paths, gameplan_id=gid, number=number)
 
 
 def cz_register_skill(name: str, description: str, source: str = "",
@@ -1625,6 +1684,7 @@ REGISTRY: dict[str, Op] = {
     "cz_obsolete_lesson": Op(cz_obsolete_lesson, writes=True),
     "cz_consolidate_lessons": Op(cz_consolidate_lessons, writes=True),
     "cz_promote_lesson": Op(cz_promote_lesson, writes=True),
+    "cz_reinforce_lesson": Op(cz_reinforce_lesson, writes=True),
     "cz_register_skill": Op(cz_register_skill, writes=True),
     "cz_obsolete_skill": Op(cz_obsolete_skill, writes=True),
     "cz_add_correction": Op(cz_add_correction, writes=True),

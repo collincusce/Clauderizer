@@ -50,7 +50,7 @@ Every public mutation carries `@_locked`, which wraps the **whole** function (no
 
 - **Planning** — `create_gameplan` (scaffolds the gameplan tree from templates), `add_phase`, `transition_phase` (phase lifecycle in the markdown trackers, with self-healing of fractured tables and tracker headers), `add_amendment`.
 - **Records (append-only)** — `add_decision` (project `D-NNN` or gameplan-internal `D1`), `add_invariant`, `add_finding`/`add_risk` + `resolve_finding`, `add_correction`.
-- **Lesson curation** — `add_lesson`, `obsolete_lesson`, `promote_lesson` (to `docs/LESSONS.md`), `consolidate_lessons`; the anti-bloat half of `D-009`.
+- **Lesson curation** — `add_lesson`, `obsolete_lesson`, `promote_lesson` (to `docs/LESSONS.md`), `consolidate_lessons`, `reinforce_lesson` (D-075: the third verb beside consolidate/append — strengthens the EXISTING lesson with an in-place `*(reinforced xN, last <date>)*` trailer through the single `_inline_trailer` renderer instead of keeping a near-duplicate twin; only the agent ever calls it, INVARIANT-05); the anti-bloat half of `D-009`.
 - **Phase outputs** — `add_output` (the PHASE-STATUS Outputs Registry, upsert-by-key), `add_phase_summary`, `resolve_cascade` (fill a cascade report's verdicts).
 - **Entities / status** — `upsert_entity`, `transition_status` (the cascade trigger).
 - **Discipline gates** (`D-015`, advisory, never block) — `add_open_item` / `resolve_open_item` (clarify), `set_exit_criteria` / `check_exit_criterion` (machine-checkable `- [ ]` exit criteria). `add_decision` also runs the `D-016` analyze enrichment, returning related existing entries for contradiction judgment.

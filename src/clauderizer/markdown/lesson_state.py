@@ -59,3 +59,23 @@ def mark(line: str, state: str, date: str, detail: str = "") -> str:
     """
     payload = f"{state} {date}" + (f": {detail}" if detail else "")
     return f"{line.rstrip()} ({payload})"
+
+
+# The reinforcement trailer (D-075): ``*(reinforced xN, last <date>)*`` — a
+# STATE-INERT inline trailer like evidence/audience/ancestry, rendered ONLY by
+# ``mutations._inline_trailer`` (the single trailer renderer) and updated in
+# place by ``mutations.reinforce_lesson`` (the blessed write). Its trailing
+# ``*`` is exactly what the end-anchored ``_STATE_RE`` above can never match
+# (H-18 family), so reinforcement can never flip a line's parsed state — and a
+# state marker appended AFTER it still wins, because ``_STATE_RE`` reads the
+# line end. The grammar lives here, beside the state grammar it must never
+# collide with, so the interplay has one home.
+REINFORCED_RE = re.compile(r"\*\(reinforced x(\d+), last (\d{4}-\d{2}-\d{2})\)\*")
+
+
+def parse_reinforcement(line: str) -> tuple[int, str] | None:
+    """``(count, last_date)`` from a line's reinforcement trailer, else None."""
+    m = REINFORCED_RE.search(line)
+    if not m:
+        return None
+    return int(m.group(1)), m.group(2)

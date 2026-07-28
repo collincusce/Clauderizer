@@ -73,6 +73,7 @@ MATRIX = [
     ("cz_curate", {}, None),
     ("cz_loop_step", {}, None),
     ("cz_add_lesson", {"text": "parity lesson", "gameplan_id": GID}, None),
+    ("cz_reinforce_lesson", {"number": "1", "gameplan_id": GID}, None),
     ("cz_add_output", {"phase": "1", "key": "parity_key", "value": "v"}, None),
     ("cz_check_exit_criterion", {"phase": "1", "criterion": "works", "gameplan_id": GID},
      _prelude_criteria),
