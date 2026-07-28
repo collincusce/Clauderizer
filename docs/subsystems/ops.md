@@ -41,7 +41,7 @@ Mutation-backed ops lock inside `mutations.*`. The ops that write through other 
 - **Gates, advisory by construction** (INVARIANT-05) — `cz_analyze`, `cz_critique`, `cz_audit`, `cz_preflight`, `cz_cascade`, `cz_resolve_cascade`.
 - **Gameplan lifecycle** — `cz_create_gameplan`, `cz_focus`, `cz_add_phase`, `cz_transition_phase`, `cz_add_amendment`, `cz_write_handoff`, `cz_add_output`, `cz_add_phase_summary`, `cz_approve_gate`, `cz_assign`.
 - **Memory writes** — `cz_add_decision`, `cz_add_invariant`, `cz_add_finding`, `cz_resolve_finding`, `cz_add_lesson`, `cz_add_correction`, `cz_upsert_entity`, `cz_consumes`, `cz_transition_status`, `cz_register_skill`, `cz_obsolete_skill`.
-- **Curation** — `cz_consolidate_lessons`, `cz_obsolete_lesson`, `cz_promote_lesson`, `cz_corpus_health`, `cz_lesson_health`, `cz_curate`, `cz_loop_step`.
+- **Curation** — `cz_consolidate_lessons`, `cz_obsolete_lesson`, `cz_promote_lesson`, `cz_reinforce_lesson` (D-075: strengthen the existing lesson instead of appending a near-duplicate twin), `cz_corpus_health`, `cz_lesson_health`, `cz_curate`, `cz_loop_step`.
 - **Discipline gates** — `cz_add_open_item`, `cz_resolve_open_item`, `cz_set_exit_criteria`, `cz_check_exit_criterion`.
 - **Reads over the registers** — `cz_list_open_items`, `cz_list_decisions`, `cz_list_invariants`, `cz_list_findings`, `cz_list_lessons`, `cz_list_corrections`, `cz_list_amendments`, `cz_phase_detail`, `cz_list_cascade_reports`, `cz_docs_index`, `cz_doc`, `cz_assignments`.
 - **Upgrade and discovery** — `cz_modernize`, `cz_dismiss_proposal`, `cz_defer_proposal`, `cz_onboard`, `cz_discover_skills`, `cz_mine_failures`.

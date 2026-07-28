@@ -606,11 +606,20 @@ def add_lesson(
         dups = _analyze.near_duplicate_lessons(paths, text)
         if dups:
             result["related_lessons"] = dups
+            # Three verbs, agent's choice (INVARIANT-05; D-075 added the third):
+            # consolidate the cluster, obsolete the stale twin, or — when the
+            # existing lesson already says it and this was a re-derivation —
+            # REINFORCE the survivor instead of keeping the twin.
             result["advisory"] = (
                 "This lesson strongly overlaps existing project lesson(s) — consider "
                 "consolidating instead of appending (cz_consolidate_lessons / "
                 "cz_obsolete_lesson): "
                 + ", ".join(f"{d['id']} (Jaccard {d['jaccard']})" for d in dups)
+                + ". Or, if the existing lesson already says this and yours is a "
+                "re-derivation, strengthen IT instead: cz_reinforce_lesson(number="
+                f"{dups[0]['id']!r}) records the re-derivation on the surviving "
+                "line (and cz_obsolete_lesson the twin you just appended). "
+                "Nothing happens unless you choose."
             )
     except Exception:
         pass
@@ -686,6 +695,81 @@ def obsolete_lesson(
     return {"ok": True, "number": n, "already_obsolete": False,
             "files_changed": [str(path)],
             "summary": f"{label} marked obsolete"}
+
+
+@_locked
+def reinforce_lesson(
+    paths: RepoPaths,
+    *,
+    gameplan_id: str,
+    number: int | str,
+    today: str | None = None,
+) -> dict:
+    """Strengthen an EXISTING lesson instead of appending a near-duplicate twin.
+
+    The third verb beside consolidate/append (D-075): when the write-time
+    near-duplicate advisory shows the lesson already exists, this blessed write
+    records the re-derivation ON the surviving line as a compact tracked
+    trailer — ``*(reinforced xN, last <date>)*`` — updated IN PLACE through the
+    single :func:`_inline_trailer` renderer, so the trailer is state-inert by
+    construction (its trailing ``*`` can never match the end-anchored
+    ``lesson_state._STATE_RE`` — H-18 family) and reinforcing twice yields one
+    trailer at x2, never two trailers. Re-derivation evidence is TEAM memory
+    (the tracked line), so it reads the same on every clone; a machine-local
+    telemetry ``reinforced`` event rides along for lesson_health. Strength is
+    EVIDENCE for the curator, never authority (D-013/D-063), and nothing ever
+    calls this automatically — the agent decides (INVARIANT-05). Only an
+    ACTIVE lesson can be reinforced: re-deriving an obsoleted lesson means the
+    live successor is the line to strengthen.
+
+    ``number`` may be a gameplan lesson number (``4``) or a project lesson id
+    (``L-04``), exactly like :func:`obsolete_lesson`.
+    """
+    n = str(number).strip()
+    if n.upper().startswith("L-"):
+        n = n.upper()
+        path = paths.doc("LESSONS")
+        section, label = "Lessons", f"project lesson {n}"
+    else:
+        path = paths.gameplan_dir(gameplan_id) / "CHAT-HANDOFF-INDEX.md"
+        section, label = "Accumulated Lessons", f"lesson #{n}"
+    body = sections.get_section(writer.full_text(path), section)
+    if body is None:
+        return {"ok": False, "summary": f"no {section} section found"}
+    prefix = f"**{n}.**"
+    lines = body.splitlines()
+    idx = next((i for i, ln in enumerate(lines) if ln.strip().startswith(prefix)), None)
+    if idx is None:
+        return {"ok": False, "summary": f"{label} not found"}
+    state, detail = lesson_state.parse_state(lines[idx])
+    if state != lesson_state.ACTIVE:
+        return {"ok": False, "number": n,
+                "summary": f"{label} is {state}"
+                           + (f" ({detail})" if detail else "")
+                           + " — reinforce the surviving line it points at instead"}
+    date = _today(today)
+    existing = lesson_state.parse_reinforcement(lines[idx])
+    count = (existing[0] + 1) if existing else 1
+    trailer = _inline_trailer(f"reinforced x{count}, last {date}")
+    if existing:
+        # In place: replace the one trailer, never accumulate a second (L-52).
+        lines[idx] = lesson_state.REINFORCED_RE.sub(
+            lambda _m: trailer.strip(), lines[idx], count=1)
+    else:
+        lines[idx] = lines[idx].rstrip() + trailer
+    writer.upsert_section(path, section, "\n".join(lines))
+    # Best-effort telemetry (machine-local; the tracked trailer above is the
+    # durable record) — a journal hiccup never fails the blessed write.
+    try:
+        from . import telemetry as _telemetry
+
+        _telemetry.record_reinforced(paths.telemetry_file, gameplan=gameplan_id,
+                                     lesson=n, count=count, today=date)
+    except Exception:
+        pass
+    return {"ok": True, "number": n, "count": count,
+            "files_changed": [str(path)],
+            "summary": f"{label} reinforced x{count} (last {date})"}
 
 
 @_locked

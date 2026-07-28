@@ -20,6 +20,8 @@ Two kinds of event, one compact JSON object per line in `.clauderizer/telemetry.
 - **`record_surfaced(...)`** — which project lessons and invariants a handoff surfaced for a phase.
 - **`record_outcome(...)`** — a phase outcome: terminal status plus exit-criteria checked/total.
 
+Two further event kinds ride the same journal (D-075), counters rather than joins: **`record_gap(...)`** — a memory gap, written best-effort by the `cz_analyze` OP alone (never the analyze library the UserPromptSubmit hook calls — INVARIANT-06) when decisions+invariants both came back empty for a probe with content; TEXT-FREE by construction (surface, scope ids, date, a token *count* — never the probe), surfaced as `corpus_health`'s read-only `gap_events` count (zero renders nothing, the `refusal_events` precedent). And **`record_reinforced(...)`** — a lesson reinforcement (ids and counts only); the durable record is the tracked trailer on the lesson line itself, which is also where `lesson_health` reads strength from (so a fresh clone sees it — the D-063 trap telemetry-only state falls into), the event just marking the activity.
+
 Separately, neither is interesting. **Joined over time**, they are the only way to ask whether surfacing a particular lesson correlated with a phase that passed — which is what per-lesson utility and the curator are built on. Before this existed, every proposer recomputed from a stateless disk read, so nothing in the system remembered whether any of its advice had ever helped.
 
 ## The reads
