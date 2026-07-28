@@ -112,10 +112,73 @@ def test_cz_mine_failures_op_on_explicit_dir(tmp_path):
     assert "decide" in res["prompt"]
 
 
-def test_cz_mine_failures_op_missing_dir_is_graceful():
+def test_cz_mine_failures_op_missing_dir_is_graceful(temp_repo, monkeypatch):
     from clauderizer import ops
+    # hermetic cwd: a repo with an empty refusal journal, so the graceful-error
+    # contract is pinned independent of this machine's live journal
+    monkeypatch.chdir(temp_repo)
     res = ops.cz_mine_failures(transcripts_dir="/nonexistent/path/xyz")
     assert res["ok"] is False and "not found" in res["error"]
+
+
+# --- the refusal journal's read side (O-03 / D-069) -----------------------------
+
+def _journal_refusal(repo, op, summary, date="2026-07-27"):
+    p = repo / ".clauderizer" / "refusals.jsonl"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with open(p, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"kind": "refusal", "op": op, "date": date,
+                            "summary": summary}) + "\n")
+
+
+def test_refusals_surface_grouped_even_without_transcripts(temp_repo, monkeypatch):
+    from clauderizer import ops
+    monkeypatch.chdir(temp_repo)
+    _journal_refusal(temp_repo, "cz_resolve_open_item", "no Open Items section")
+    _journal_refusal(temp_repo, "cz_resolve_open_item", "O-09 not found")
+    _journal_refusal(temp_repo, "cz_promote_lesson", "lesson #7 not found")
+    res = ops.cz_mine_failures(transcripts_dir="/nonexistent/path/xyz")
+    assert res["ok"] is True          # journal evidence beats the missing dir
+    assert res["refusal_events"] == 3
+    by_op = {p["op"]: p for p in res["proposals"] if p["kind"] == "refusal"}
+    assert set(by_op) == {"cz_resolve_open_item", "cz_promote_lesson"}
+    assert by_op["cz_resolve_open_item"]["count"] == 2
+    assert "O-09 not found" in by_op["cz_resolve_open_item"]["evidence"]  # latest wins
+    assert all(p["id"].startswith("mine:") for p in by_op.values())
+    assert "refusal journal" in res["summary"]
+
+
+def test_dismissed_refusal_candidate_rearms_on_the_next_refusal(temp_repo, monkeypatch):
+    from clauderizer import ops
+    from clauderizer import paths as P
+    from clauderizer import proposals as PR
+    monkeypatch.chdir(temp_repo)
+    _journal_refusal(temp_repo, "cz_promote_lesson", "lesson #7 not found")
+    first = ops.cz_mine_failures(transcripts_dir="/nonexistent/path/xyz")
+    pid = first["proposals"][0]["id"]
+    PR.dismiss(P.resolve(temp_repo), pid)
+    after = ops.cz_mine_failures(transcripts_dir="/nonexistent/path/xyz")
+    assert after["ok"] is True and after["proposals"] == []
+    assert after["suppressed_count"] == 1     # suppressed, and named as such
+    # a NEW refusal of the same op re-arms the candidate under a new id
+    _journal_refusal(temp_repo, "cz_promote_lesson", "lesson #9 not found")
+    rearmed = ops.cz_mine_failures(transcripts_dir="/nonexistent/path/xyz")
+    ids = [p["id"] for p in rearmed["proposals"]]
+    assert ids and pid not in ids
+    assert rearmed["proposals"][0]["count"] == 2
+
+
+def test_corpus_health_counts_refusals_read_only(temp_repo):
+    from clauderizer import paths as P
+    from clauderizer import telemetry
+    paths = P.resolve(temp_repo)
+    quiet = telemetry.corpus_health(paths)
+    assert quiet["refusal_events"] == 0
+    assert "refused" not in quiet["summary"]      # zero renders nothing extra
+    _journal_refusal(temp_repo, "cz_add_output", "no such phase")
+    loud = telemetry.corpus_health(paths)
+    assert loud["refusal_events"] == 1
+    assert "1 refused write(s) journaled" in loud["summary"]
 
 
 def test_mined_proposals_join_the_id_ledger_queue(tmp_path, temp_repo, monkeypatch):

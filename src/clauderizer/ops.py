@@ -1110,27 +1110,40 @@ def cz_mine_failures(transcripts_dir: str = "", max_proposals: int = 40) -> dict
     Read-only and advisory like cz_analyze/cz_critique: the engine scans the
     transcript JSONL and SURFACES candidates — a tool error then a same-tool
     success, a pytest fail→pass, or a short explicit user correction — and never
-    writes. Confirm a genuine proposal by recording it through cz_add_correction
-    (or cz_add_lesson); dismiss noise by id (cz_dismiss_proposal) — mined
-    candidates carry stable content-hash ids through the unified triage ledger
-    (D-074), so a judged pattern stops re-surfacing. `transcripts_dir` defaults to this
-    project's Claude Code transcript directory (set $CLAUDERIZER_TRANSCRIPTS_DIR,
-    or pass it explicitly when auto-resolution fails). Deterministic, stdlib-only,
-    no enable/disable flag.
+    writes. The repo-local refusal journal (.clauderizer/refusals.jsonl —
+    writes=True ops that returned ok:False) is a second read source (O-03/D-069:
+    the journal is consumed, not just written): refusals surface grouped per op,
+    so a session with no transcripts at all (ops-mode, non-Claude hosts) still
+    mines its own refused writes. Confirm a genuine proposal by recording it
+    through cz_add_correction (or cz_add_lesson); dismiss noise by id
+    (cz_dismiss_proposal) — all candidates carry stable content-hash ids through
+    the unified triage ledger (D-074), so a judged pattern stops re-surfacing
+    (a NEW refusal of the same op re-arms it as a new id). `transcripts_dir`
+    defaults to this project's Claude Code transcript directory (set
+    $CLAUDERIZER_TRANSCRIPTS_DIR, or pass it explicitly when auto-resolution
+    fails). Deterministic, stdlib-only, no enable/disable flag.
     """
     from . import learn
     from . import proposals as _proposals
 
+    paths, _ = repo_ctx()
+    refusal_props = _refusal_candidates(paths)
     d = transcripts_dir.strip() or _default_transcripts_dir()
     if not d or not Path(d).exists():
-        return {
-            "ok": False,
-            "error": f"transcripts dir not found: {d or '(unresolved)'}",
-            "hint": "pass transcripts_dir (the ~/.claude/projects/<slug> path) "
-                    "or set $CLAUDERIZER_TRANSCRIPTS_DIR",
-        }
-    paths, _ = repo_ctx()
-    by_file = learn.mine_dir(d)
+        if not refusal_props:
+            return {
+                "ok": False,
+                "error": f"transcripts dir not found: {d or '(unresolved)'}",
+                "hint": "pass transcripts_dir (the ~/.claude/projects/<slug> path) "
+                        "or set $CLAUDERIZER_TRANSCRIPTS_DIR",
+            }
+        # No transcripts, but the repo's own refusal journal has evidence —
+        # mine that instead of erroring (the journal exists precisely for
+        # sessions transcripts cannot see).
+        by_file: dict = {}
+        d = ""
+    else:
+        by_file = learn.mine_dir(d)
     # Merge-base (D-074): mined candidates join the unified id+ledger queue, so
     # a reviewed-and-discarded pattern stops re-surfacing forever — the id hashes
     # the candidate's material content; a new occurrence is a new id.
@@ -1139,6 +1152,7 @@ def cz_mine_failures(transcripts_dir: str = "", max_proposals: int = 40) -> dict
                                                p.get("evidence", ""),
                                                p.get("draft", ""))}
                  for fname, props in by_file.items() for p in props]
+    proposals += refusal_props
     led = _proposals.load_ledger(paths)
     pending = _proposals.filter_pending(proposals, led)
     suppressed = len(proposals) - len(pending)
@@ -1146,6 +1160,7 @@ def cz_mine_failures(transcripts_dir: str = "", max_proposals: int = 40) -> dict
     return {
         "ok": True,
         "transcripts_dir": str(d),
+        "refusal_events": sum(p.get("count", 0) for p in refusal_props),
         "files_scanned": len(by_file),
         "proposal_count": len(pending),
         "shown": len(capped),
@@ -1160,9 +1175,52 @@ def cz_mine_failures(transcripts_dir: str = "", max_proposals: int = 40) -> dict
                    "you decide."),
         "summary": (f"mined {len(pending)} failure→fix proposal(s) from "
                     f"{len(by_file)} transcript(s)"
+                    + (f" + the refusal journal ({len(refusal_props)} op(s) with "
+                       "refused writes)" if refusal_props else "")
                     + (f"; showing {len(capped)}" if len(capped) < len(pending) else "")
                     + (f" ({suppressed} suppressed by your ledger)" if suppressed else "")),
     }
+
+
+def _refusal_candidates(paths) -> list[dict]:
+    """The refusal journal's read side (O-03/D-069) — grouped per op.
+
+    Each writes=True op with journaled ok:False refusals yields ONE candidate
+    carrying the count and the latest engine-authored summary. The content-hash
+    id includes count + latest entry, so dismissing a candidate suppresses it
+    only until the NEXT refusal of that op re-arms it as a new id (merge-base
+    semantics, D-074). Read-only, torn-line-tolerant; an absent journal yields
+    []."""
+    from . import proposals as _proposals
+    from . import telemetry as _t
+
+    events = [e for e in _t.read_events(paths.refusals_file)
+              if e.get("kind") == "refusal"]
+    per: dict[str, list[dict]] = {}
+    for e in events:
+        per.setdefault(str(e.get("op") or "unknown"), []).append(e)
+    out: list[dict] = []
+    for op, evs in sorted(per.items()):
+        latest = evs[-1]
+        date, summary = str(latest.get("date") or ""), str(latest.get("summary") or "")
+        out.append({
+            "kind": "refusal",
+            "op": op,
+            "count": len(evs),
+            "evidence": (f"{len(evs)} refused write(s) of {op}"
+                         + (f"; latest {date}: {summary}" if summary else "")),
+            "draft": {
+                "gameplan_said": f"{op} writes succeed as invoked",
+                "actually": (f"{op} was refused {len(evs)} time(s)"
+                             + (f" — latest: {summary}" if summary else "")),
+                "why": ("inspect the refusal journal; if the pattern is systemic, "
+                        "record the correction/lesson or fix the calling pattern"),
+            },
+            "source": "refusals.jsonl",
+            "id": _proposals.proposal_id("mine", "refusals.jsonl", op,
+                                         len(evs), date, summary),
+        })
+    return out
 
 
 def cz_corpus_health() -> dict:
@@ -1170,10 +1228,11 @@ def cz_corpus_health() -> dict:
 
     Read-only and advisory: active project-lesson count, a lexical
     near-duplicate redundancy estimate (no ML), how many active lessons
-    have never been surfaced in a handoff, and the surfacing/outcome counts from
-    the append-only telemetry log (.clauderizer/telemetry.jsonl). The empirical
-    baseline that lesson-utility scoring and the curator read; the agent
-    decides what to consolidate/promote/obsolete.
+    have never been surfaced in a handoff, the surfacing/outcome counts from
+    the append-only telemetry log (.clauderizer/telemetry.jsonl), and the
+    refused-write count from the refusal journal (O-03/D-069 — mined in detail
+    by cz_mine_failures). The empirical baseline that lesson-utility scoring
+    and the curator read; the agent decides what to consolidate/promote/obsolete.
     """
     from . import telemetry
 
@@ -1720,7 +1779,7 @@ def _journaled(fn: Callable[..., dict], writes: bool) -> Callable[..., dict]:
                 from . import telemetry as _t
 
                 paths, _cfg = repo_ctx()
-                _t._append(paths.clauderizer_dir / "refusals.jsonl", {
+                _t._append(paths.refusals_file, {
                     "kind": "refusal",
                     "op": getattr(fn, "__name__", "unknown"),
                     "date": _t._today(None),

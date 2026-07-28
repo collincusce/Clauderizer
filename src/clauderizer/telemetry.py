@@ -249,6 +249,10 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
     events = read_events(paths.telemetry_file)
     surfaced = [e for e in events if e.get("kind") == "surfaced"]
     outcomes = [e for e in events if e.get("kind") == "outcome"]
+    # The refusal journal's read-only count (O-03/D-069: a journal with a writer
+    # and no reader is a dormant evidence store). Zero renders nothing extra.
+    refusals = [e for e in read_events(paths.refusals_file)
+                if e.get("kind") == "refusal"]
 
     toks = [(l["id"], _tokens(l["text"]), l.get("audience", "")) for l in lessons]
     redundant: list[tuple[str, str]] = []
@@ -281,6 +285,7 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
         "outcome_events": len(outcomes),
         "pass_rate": pass_rate,
         "telemetry_events": len(events),
+        "refusal_events": len(refusals),
         "parse_reconciliation": parse_reconciliation(paths),
         # The graph's own honesty report: entity-shaped docs it could not index,
         # and duplicate-id shadowings. Both were previously silent, which made a
@@ -292,6 +297,8 @@ def corpus_health(paths, *, today: str | None = None) -> dict:
             f"pair(s); {len(never)} never surfaced; {len(events)} telemetry event(s) "
             f"({len(surfaced)} surfaced, {len(outcomes)} outcome"
             + (f", pass_rate {pass_rate}" if pass_rate is not None else "") + ")"
+            + (f"; {len(refusals)} refused write(s) journaled — cz_mine_failures "
+               "reads them" if refusals else "")
             + (f"; PARSE FAULT — {_recon['offenders'][0]}"
                if not (_recon := parse_reconciliation(paths))["ok"] else "")
             + (f"; GRAPH FAULT — {_gi['summary']}"

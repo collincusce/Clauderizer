@@ -68,6 +68,13 @@ class RepoPaths:
         return self.clauderizer_dir / "telemetry.jsonl"
 
     @property
+    def refusals_file(self) -> Path:
+        """Append-only refusal journal (D-070 P1): writes=True ops returning
+        ok:False, journaled at the ops REGISTRY seam. Gitignored per-machine
+        evidence; read by cz_mine_failures / cz_corpus_health (O-03/D-069)."""
+        return self.clauderizer_dir / "refusals.jsonl"
+
+    @property
     def seen_file(self) -> Path:
         """Append-only seen-vs-open engagement receipts (D-073) — per-machine,
         gitignored, disposable labeling state; see ``receipts.py``. The sole
