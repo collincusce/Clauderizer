@@ -605,6 +605,23 @@ menus, never enforcement (INVARIANT-05):
   (complete / failed / deferred) needs a fresh recorded commitment —
   `cz_add_amendment` naming the new scope, or `cz_add_phase` for new work.
 
+### Budgets & Wind-Down (advisory, D-072)
+
+A gameplan may price itself in working sessions; the engine never enforces it.
+Declare `> Budget: N sessions` in the GAMEPLAN.md header, and optionally
+`**Budget**: N sessions` inside a `### Phase N` block (declare phase budgets
+only when a phase prices at more than one session — the procedure's own
+guidance is that a phase is usually one). Spend is counted at read time as
+DISTINCT RECORDED DATES carrying pre-flight stints — recorded, never
+estimated; a declared budget with no stints reads UNTRACKED, not zero. The
+last ~10% (minimum one session) is the **reserve**, priced for the Ending
+Protocol: once spend enters the reserve window the surfaces say "you are IN
+the final budgeted stint — land the Ending Protocol before this session
+closes". The advisory's only remedies are (a) run the Ending Protocol, or
+(b) raise the `Budget:` line in markdown — that edit IS the sanctioned
+retune. Sovereignty clause: nothing blocks, nothing kills, no flags exist;
+the host owns execution and the agent owns the judgment (INVARIANT-05).
+
 ## Phase Status Table
 
 | Phase | Name | Status | Started | Completed | Handoff |

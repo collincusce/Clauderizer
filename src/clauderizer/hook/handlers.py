@@ -115,6 +115,21 @@ def pre_compact(payload: dict | None) -> str | None:
     bundle = _active_bundle(payload)
     if bundle is None:
         return None
+    # Wind-down convergence (D-072 / L-68 clause 1): session-start surfacing
+    # alone does not survive the session distance — when the reserve window is
+    # open, the reactive capacity signal and the prospective budget signal
+    # converge in this one reminder. Read-only, exit-0, silent when no tier is
+    # in its window (INVARIANT-04/06/08).
+    budget_note = ""
+    try:
+        from ..rituals import budgets as _budgets
+
+        for _tier in bundle.get("budgets") or []:
+            if _tier.get("state") in ("wind_down", "over"):
+                budget_note = " ⏳ " + _budgets.describe(_tier)
+                break
+    except Exception:
+        pass
     return (
         "[Clauderizer] Context is about to compact. Durable memory in docs/ is "
         "safe, but anything discovered this turn and not yet recorded will leave "
@@ -122,6 +137,7 @@ def pre_compact(payload: dict | None) -> str | None:
         "a concrete value, record it now (cz_add_decision / cz_add_lesson / "
         "cz_add_correction / cz_add_output) — and leave a dream note for the "
         f"dreamer (cz_add_dream). State: {bundle.get('summary', '')}"
+        f"{budget_note}"
     )
 
 

@@ -96,6 +96,21 @@ def cz_next_phase_context(audience: str = "") -> dict:
                               write=False, audience=audience)
     result["phase"] = target
     result["status_summary"] = bundle.get("summary")
+    # Wind-down attachment (D-072): a fresh session opening a phase in its
+    # reserve window is told up front that this stint is the priced ending.
+    # Present only when a declared tier is out of its ok state — dormant repos
+    # carry no key at all.
+    try:
+        from .rituals import budgets as _budgets
+
+        notable = [t for t in bundle.get("budgets") or []
+                   if t.get("state") in ("wind_down", "over", "untracked",
+                                         "malformed")]
+        if notable:
+            result["wind_down"] = [
+                {**t, "advisory": _budgets.describe(t)} for t in notable]
+    except Exception:
+        pass
     result["next_action"] = bundle.get("next_action")
     return result
 
@@ -299,7 +314,11 @@ def cz_preflight() -> dict:
     # No op-level lock: preflight runs the host's test/build commands for
     # minutes — holding the write lock that long would trip stale takeover.
     # Its single tracked write (the baseline refresh) locks at the write site.
-    return preflight.run(paths, config, profile).to_dict()
+    result = preflight.run(paths, config, profile).to_dict()
+    # Budget stint (D-072): the OP is the spend recorder — the run() library
+    # function stays write-free for tests/embedders/read-only fixtures.
+    preflight.record_run_stint(paths, config)
+    return result
 
 
 def _pending_report_for(reports_dir, entity_id: str):
@@ -1558,10 +1577,30 @@ REGISTRY: dict[str, Op] = {
 # op_schema and the MCP layer (both follow __wrapped__).
 
 
-def _stamped(fn: Callable[..., dict]) -> Callable[..., dict]:
+# Ops whose bundles are strict supersets of the stamp (D-027): attaching
+# cz_state to them would duplicate figures they already carry in full.
+_NO_STATE_STAMP = {"cz_status", "cz_next_phase_context"}
+
+
+def _stamped(name: str, fn: Callable[..., dict]) -> Callable[..., dict]:
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
-        return contract.stamp(fn(*args, **kwargs))
+        result = contract.stamp(fn(*args, **kwargs))
+        # cz_state (INVARIANT-10 / D-072): figures-only, change-triggered,
+        # env-armed until D-064 graduation. Attachment is best-effort in BOTH
+        # directions — a stamp failure never alters the op result, and an op
+        # exception above propagates before this code runs (never masked).
+        if (isinstance(result, dict) and name not in _NO_STATE_STAMP
+                and "cz_state" not in result):
+            try:
+                from . import state_stamp
+                if state_stamp.armed():
+                    stamp = state_stamp.emit(*repo_ctx())
+                    if stamp is not None:
+                        result["cz_state"] = stamp
+            except Exception:
+                pass
+        return result
     return wrapper
 
 
@@ -1597,7 +1636,7 @@ def _journaled(fn: Callable[..., dict], writes: bool) -> Callable[..., dict]:
     return wrapper
 
 
-REGISTRY = {name: Op(_journaled(_stamped(spec.fn), spec.writes), spec.writes)
+REGISTRY = {name: Op(_journaled(_stamped(name, spec.fn), spec.writes), spec.writes)
             for name, spec in REGISTRY.items()}
 
 

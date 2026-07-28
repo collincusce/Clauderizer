@@ -14,7 +14,9 @@ format) and from ``config.CONFIG_VERSION`` — this constant versions the
 
 from __future__ import annotations
 
-CONTRACT_SCHEMA_VERSION = "1.0"
+# 1.1 (D-072): additive — results MAY carry a figures-only `cz_state` notice
+# (INVARIANT-10's category), present only when armed AND the figures changed.
+CONTRACT_SCHEMA_VERSION = "1.1"
 
 
 def stamp(result):

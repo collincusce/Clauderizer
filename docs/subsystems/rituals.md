@@ -53,6 +53,25 @@ The claim is derived from **git**, never from the tracker asserting itself (D-06
 
 **Honest scope limit**: the phase-state gate is what keeps it quiet enough to read — an `in_progress` phase is *supposed* to accumulate commits — but the cost is that a phase left marked `in_progress` long after it was really finished is **not** detected, because git cannot distinguish "still working" from "done but unrecorded".
 
+## Lifecycle detectors & budgets (D-070 P1–P2)
+
+Three siblings extend the detector family, one voice per repo state.
+`stranded.py` closes memory-lag's stated blind spot with OS evidence the
+session ledger stamps: `detect()` fires only on a provably dead claimant and
+`describe()` renders the judgment menu (adopt via the blessed same-status
+re-stamp, or close honestly as deferred). `interrupted.py` is the backstop for
+work that landed with no closing write — its liveness gate defers to a live
+claimant or to stranded's finding, so the two can never speak together.
+`budgets.py` (D-072) is declared-derived-dormant session pricing:
+`declarations()` reads `> Budget: N sessions` (and the phase-block variant)
+live from GAMEPLAN.md, `assess()` compares against spend counted as DISTINCT
+RECORDED DATES of stints, `reserve()` prices the ending tail
+(`RESERVE_FRACTION`, a module constant — retuning is a markdown edit), and
+`describe()` is the one phase-aware advisory sentence (IN-the-final-stint vs
+exceeds vs UNTRACKED-never-zero). The stint ledger is written by the
+`cz_preflight` op through `preflight.record_run_stint()` — the library `run()`
+stays write-free so tests and read-only fixtures never accrue telemetry.
+
 ## Self-critique (`critique.py`, D-019)
 
 **`critique()` assembles a reference-free rubric** over a target — a phase, the whole gameplan, or the in-progress handoff — across three dimensions, each backed by signals the engine already computes:

@@ -618,3 +618,26 @@ def run(
 
     check_interrupted_session()
     return result
+
+
+def record_run_stint(paths: RepoPaths, config: Config) -> None:
+    """Budget stint ledger (D-072): one raw line per RITUAL run for the focus
+    gameplan's current/next phase, deduped to DISTINCT DATES at read time
+    (budgets._spent_dates). Called by the cz_preflight OP — the sanctioned
+    writer — never by :func:`run` itself, so library callers (tests, embedders,
+    read-only fixtures) stay write-free. Best-effort: never raises."""
+    gid = config.active_gameplan
+    if not gid:
+        return
+    try:
+        from .. import telemetry as _telemetry
+
+        rows = status_bundle._phase_rows(paths.gameplan_dir(gid))
+        _t = (next((r for r in rows if r.status == "in_progress"), None)
+              or next((r for r in rows
+                       if r.status in ("ready", "not_started")), None))
+        if _t is not None:
+            _telemetry.record_stint(paths.telemetry_file, gameplan=gid,
+                                    phase=_t.number)
+    except Exception:
+        pass

@@ -104,6 +104,32 @@ def record_outcome(telemetry_file: Path, *, gameplan: str, phase: str,
     return rec
 
 
+# One MCP-server process = one working session; the tag lets a reader break a
+# same-date tie without ever being the spend unit itself (D-072: spend is
+# denominated in DISTINCT RECORDED DATES — a proc tag is an estimate of a
+# session and estimates are never counted).
+import uuid as _uuid  # noqa: E402  (scoped import keeps the top of file stable)
+
+PROC_TAG = _uuid.uuid4().hex[:8]
+
+
+def record_stint(telemetry_file: Path, *, gameplan: str, phase: str,
+                 today: str | None = None) -> dict:
+    """Log one working stint touching (gameplan, phase) — the budget ledger's
+    raw material (D-072). Appended best-effort by cz_preflight, so the
+    procedure's own mandated ritual is the spend recorder; readers dedupe by
+    distinct date at read time (append-only raw, INVARIANT-03)."""
+    rec = {
+        "kind": "stint",
+        "date": _today(today),
+        "gameplan": gameplan,
+        "phase": str(phase),
+        "proc": PROC_TAG,
+    }
+    _append(telemetry_file, rec)
+    return rec
+
+
 def read_events(telemetry_file: Path) -> list[dict]:
     """All telemetry events in append order; tolerant of partial/garbled lines."""
     if not telemetry_file.exists():

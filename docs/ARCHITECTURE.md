@@ -7,7 +7,7 @@ Project DAG; this doc is the prose overview.
 ## Subsystems
 
 **Every** top-level module under `src/clauderizer/` is a tracked subsystem with a
-full entity doc in `docs/subsystems/` — 41 of them, and the exemption list is
+full entity doc in `docs/subsystems/` — 42 of them, and the exemption list is
 empty (1.14.3). That is enforced, not asserted: `tests/test_subsystem_doc_seam.py`
 fails if a new module lands without a doc, and the count below is pinned against
 the directory by `tests/test_architecture_pins.py`.
@@ -43,7 +43,7 @@ the directory by `tests/test_architecture_pins.py`.
 
 **Host wiring:** [hosts](subsystems/hosts.md) (the session hook) · [hosttargets](subsystems/hosttargets.md) (per-host MCP emitters) · [bespoke-hosts](subsystems/bespoke-hosts.md) (the one sanctioned auto-write exception) · [kimidesktop](subsystems/kimidesktop.md) · [winhost](subsystems/winhost.md) · [mcp-probe](subsystems/mcp-probe.md).
 
-**Foundations:** [paths](subsystems/paths.md) · [config](subsystems/config.md) · [contract](subsystems/contract.md) · [revision](subsystems/revision.md) · [locking](subsystems/locking.md) · [session](subsystems/session.md) · [session-ledger](subsystems/session-ledger.md) · [nesting](subsystems/nesting.md) · [engine-identity](subsystems/engine-identity.md) · [assets](subsystems/assets.md) · [templates](subsystems/templates.md) · [skills](subsystems/skills.md) · [tools-list](subsystems/tools-list.md).
+**Foundations:** [paths](subsystems/paths.md) · [config](subsystems/config.md) · [contract](subsystems/contract.md) · [revision](subsystems/revision.md) · [locking](subsystems/locking.md) · [session](subsystems/session.md) · [session-ledger](subsystems/session-ledger.md) · [state-stamp](subsystems/state-stamp.md) · [nesting](subsystems/nesting.md) · [engine-identity](subsystems/engine-identity.md) · [assets](subsystems/assets.md) · [templates](subsystems/templates.md) · [skills](subsystems/skills.md) · [tools-list](subsystems/tools-list.md).
 
 ## Capabilities
 

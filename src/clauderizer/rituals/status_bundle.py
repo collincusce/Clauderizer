@@ -865,6 +865,22 @@ def compute(paths: RepoPaths, config: Config, *, conditions: bool = False) -> di
                 bundle["interrupted"] = _ifound
         except Exception:
             pass
+    # Budgets (D-072): present ONLY when a budget is declared — undeclared
+    # repos keep a byte-identical bundle and digest (dormant default).
+    if gid:
+        try:
+            from . import budgets as _budgets
+
+            _in_flight = bool(target) and any(
+                p["status"] == "in_progress" and p["number"] == target["number"]
+                for p in bundle["phases"])
+            _b = _budgets.assess(paths, gid,
+                                 target["number"] if target else None,
+                                 phase_in_flight=_in_flight)
+            if _b:
+                bundle["budgets"] = _b
+        except Exception:
+            pass
     if target:
         # Size what the next session would actually load (in-memory; no write).
         from . import handoff as handoff_mod
@@ -1087,6 +1103,13 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         from . import interrupted as _interrupted
 
         lines.append(f"⚠ Interrupted session: {_interrupted.describe(_int)}")
+    # Budget wind-down (D-072): one line, only when the reserve window is open
+    # or exceeded — declared-but-ok and undeclared repos emit zero bytes.
+    for _tier in bundle.get("budgets") or []:
+        if _tier.get("state") in ("wind_down", "over"):
+            from . import budgets as _budgets
+
+            lines.append(f"⏳ Wind-down: {_budgets.describe(_tier)}")
     for warn in bundle.get("drift") or []:
         lines.append(f"⚠ Drift: {warn}")
     ident = bundle.get("engine_identity")

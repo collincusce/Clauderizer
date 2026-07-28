@@ -2,6 +2,9 @@
 
 > Created: $date
 > Status: Planning
+<!-- Optional, advisory-only (D-072) — declare to arm the wind-down advisory:
+     "> Budget: N sessions" here, and/or "**Budget**: N sessions" inside a
+     "### Phase N" block. Dormant by default; nothing blocks, ever. -->
 > Kind: $kind
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
