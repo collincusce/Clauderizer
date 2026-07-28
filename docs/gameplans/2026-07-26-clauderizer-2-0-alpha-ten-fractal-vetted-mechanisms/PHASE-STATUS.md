@@ -1,7 +1,7 @@
 # clauderizer 2.0 alpha — ten fractal-vetted mechanisms — Phase Status Tracker
 
 > Living document. Updated after each phase completes.
-> Last updated: 2026-07-27
+> Last updated: 2026-07-28
 
 ## Phase Status
 
@@ -11,10 +11,11 @@
 | 1 | Lifecycle detectors | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Live state and budgets | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Attention and consolidation | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Integrity and enforcement | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Integrity and enforcement | 🟡 IN PROGRESS | 2026-07-28 | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Evidence matrix and graduation | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Close-out and ship 2.0.0a1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Fleet pattern: glossary, skill, productization | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 8 | jcode-vetted attention mechanisms: gap detection, reinforce verb, negative-space, jcode host | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
 
 ## Outputs Registry
 

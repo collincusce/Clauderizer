@@ -1,7 +1,7 @@
 # Chat Handoff Index — clauderizer 2.0 alpha — ten fractal-vetted mechanisms
 
-> Last updated: 2026-07-27
-> Status: Phase 4 ready
+> Last updated: 2026-07-28
+> Status: Phase 4 of 9 in progress
 
 ## How This Works
 
@@ -33,10 +33,11 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 | 1 | Lifecycle detectors | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Live state and budgets | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Attention and consolidation | ✅ COMPLETE | 2026-07-27 | 2026-07-27 | handoffs/PHASE-3-HANDOFF.md |
-| 4 | Integrity and enforcement | ⬜ NOT STARTED | — | — | handoffs/PHASE-4-HANDOFF.md |
+| 4 | Integrity and enforcement | 🟡 IN PROGRESS | 2026-07-28 | — | handoffs/PHASE-4-HANDOFF.md |
 | 5 | Evidence matrix and graduation | ⬜ NOT STARTED | — | — | handoffs/PHASE-5-HANDOFF.md |
 | 6 | Close-out and ship 2.0.0a1 | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
 | 7 | Fleet pattern: glossary, skill, productization | ⬜ NOT STARTED | — | — | handoffs/PHASE-7-HANDOFF.md |
+| 8 | jcode-vetted attention mechanisms: gap detection, reinforce verb, negative-space, jcode host | ⬜ NOT STARTED | — | — | handoffs/PHASE-8-HANDOFF.md |
 
 **Status legend**: ⬜ NOT STARTED · 🟢 READY · 🟡 IN PROGRESS · ✅ COMPLETE · ⚠️ BLOCKED · 🔴 FAILED
 
@@ -76,3 +77,5 @@ _(none yet)_
 **1.** Vetted assessments scope MECHANISMS; the suite's own goldens find their BLAST RADIUS. Twice in consecutive phases (C-01, C-02) the vetted sketch's placement of a component violated suite-level principles (read-only fixtures, green-preflight-never-dirties) that no assessor had in frame — the correction came from the suite, not the review. When implementing an externally-vetted design, treat PLACEMENT as unvetted even where the mechanism is sound: run the affected suite's cross-cutting principle tests against the sketch before building on it. *(evidence: C-01 (phase 1), C-02 (phase 2); binding order proven by git: INVARIANT-10 at 6215726 precedes stamp code at cabbd3e)*
 
 **2.** Adversarial vetting binds tighter when refuters argue from RECORDED LAW rather than taste: baking the invariant register and key decisions into refuter prompts produced binding conditions citing L-68, D-066 and D-013 more precisely than the assessors' judgment did, and a dedicated external-reviews lens kept the source repo's unverifiable claimed outcomes out of the evidence base entirely. The binding conditions — not the adopt/reject verdicts — are the vetting pass's real deliverable. *(evidence: research-fractal-vetting.json (phase 0); D-070)*
+
+**3.** Three gate-design rules from the jcode extraction, each grounded in their measured practice: (1) prefer WORK-COUNTERS over wall-clock in quality gates — a tight timing gate is a flaky gate, a flaky gate gets muted, and a muted gate is no gate; their decisive perf gate asserts relayouts equal zero, a statement about work that generous slack cannot tune away. (2) The sabotage ritual is STANDING, not one-time: whenever a gate changes in a way that could weaken it, inject the violation, watch it go red, revert — L-68 step 4 made recurring. (3) Advisory TIMING is part of advisory design: defer repeatable advisories to one end-of-turn digest, collapse repeats, drop the ones the agent already resolved — nagging on every write punishes the common healthy case where understanding starts low and rises while working. *(evidence: research-jcode-vetting.json design notes; jcode profile.rs (relayouts==0 gate + gate-integrity meta-tests), FINDING_SLOWNESS.md sabotage procedure, todo.rs turn-end gate-digest rationale)*

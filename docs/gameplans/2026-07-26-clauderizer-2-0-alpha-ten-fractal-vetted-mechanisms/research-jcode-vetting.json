@@ -1,0 +1,100 @@
+{
+  "_provenance": {
+    "source": "https://github.com/1jehuang/jcode (shallow clone @ a92b270, 2026-07-28)",
+    "method": "three-reader extraction (self-run disciplines; ratchet/enforcement machinery; memory/selfdev/overnight/swarm crates at code level) + maintainer-doc read (README, MEMORY_ARCHITECTURE), vetted single-session against the invariant register per the phase-0 methodology (gameplan lesson #2: refuters argue from recorded law; external-reviews lens keeps claimed outcomes out of evidence)",
+    "external_reviews_lens": "MEMORY_ARCHITECTURE.md showed 14 doc-vs-code mismatches (petgraph/HDBSCAN/privacy-filter/persisted-gaps absent; live pipeline is BM25+dense+RRF + listwise LLM rerank, undocumented); benchmark data deliberately lives outside the repo (~/jcode-memory-bench), so recall/precision headline numbers are UNREPRODUCIBLE from artifacts and are stripped from every rationale below. jcode's own docs/plans/MEMORY_GRAPH_PLAN.md self-audits the gap honestly ('the graph is write-mostly').",
+    "meta_observation": "jcode's recurring meta-rule — 'a rule is only real if something fails when it is violated, and a claim is only real if a measurement backs it' — is independently convergent with L-50/L-68/D-069. Their enforcement stack (8 committed-baseline ratchets, remedy-in-failure-message, rebaseline as a named separate act) parallels ours; their AGENTS.md-as-binding with measured agent obedience (commit 8be8efa restructured 'rather than rebaselining') is live evidence FOR the enforcement ladder's instructions-floor tier."
+  },
+  "vetted": [
+    {
+      "name": "memory-gap-detection",
+      "survives": true,
+      "confidence": "high",
+      "already_exists": "NONE in Clauderizer: cz_analyze returns 0 hits silently; the handoff ranker always renders top-k; corpus_health's never_surfaced is the INVERSE signal (lesson unused, not context uncovered). Nothing records 'memory had nothing to say here'. jcode's own version is a log line + UI event only — the doc's persisted MemoryGap for later extraction was never built — so the deterministic Clauderizer version EXCEEDS the source's implementation.",
+      "conditions": [
+        "Advisory at the moment of the gap (L-68 clause 1): the cz_analyze result gains an explicit gap advisory when decisions+invariants are both empty for a decision-shaped probe — 'memory had nothing on this; if the area matters, record the decision/lesson now'. Tool results only, NEVER a digest line (INVARIANT-08 zero-bytes clause).",
+        "Persisted gap events carry NO raw probe text: telemetry line {kind: 'gap', surface, gameplan, phase, date, query_terms: count} only — the dream journal is the PII-linted channel for content; the gap event is a counter the dreamer/curator reads (D-069: journal consumed, not just written).",
+        "corpus_health gains a read-only gap_events count (zero renders nothing extra, the refusal_events precedent).",
+        "D-064 pre-named signal before any default claim: GAP CONVERSION — fraction of gap events followed within the same gameplan by a recorded decision/lesson whose text overlaps the gap's phase; plus gap-rate trend as the corpus matures. A discard is a successful outcome (L-50)."
+      ],
+      "reasons": "Kill case failed: (1) not already-exists (verified above); (2) deterministic and stdlib — no embedding needed, the trigger is the ranker's own empty result; (3) advisory-native, no flag, no block; (4) it closes a real observed loop — the dreamer currently learns what memory LACKED only when a human notices. Fractal-family precedent: D-069's 'every discipline gets a detector' applied to the corpus's own coverage.",
+      "effort": "S"
+    },
+    {
+      "name": "reinforce-instead-of-duplicate",
+      "survives": true,
+      "confidence": "high",
+      "already_exists": "PARTIAL: add_lesson's near-duplicate advisory (Jaccard >= _LESSON_DUP_JACCARD, INVARIANT-09) nudges consolidation, but the only verbs are consolidate-or-append — an agent that agrees 'this is the same lesson' has no blessed way to say 'strengthen the existing one'; the twin gets appended anyway and the curator proposes merging it later. jcode implements exactly this verb at storage level (cosine >= 0.85 -> reinforce, Vec<Reinforcement> breadcrumbs, strength count feeding retrieval score) — IMPLEMENTED there, load-bearing (memory.rs:394-467).",
+      "conditions": [
+        "Never auto (INVARIANT-05): the write-time advisory OFFERS reinforce as a third verb beside consolidate/append; the agent decides. The engine translation is deterministic Jaccard via the canonical tokenizer — no cosine, no embedding (INVARIANT-09; any threshold change goes through the pre-registered-fixture process).",
+        "The reinforcement record is a compact TRACKED trailer on the existing lesson line — '*(reinforced xN, last <date>)*' updated in place through the blessed write and the single _inline_trailer renderer (grammar-tested vs lesson_state._STATE_RE, H-18 family) — because re-derivation evidence is team memory (D-067 tracked side), not machine-local telemetry. A telemetry 'reinforced' event rides along for lesson_health.",
+        "Strength is EVIDENCE, not authority: lesson_health/curator surface it (keep/promotion signal; also the inverse read — a lesson repeatedly re-derived instead of applied may be worded so it does not land); nothing ranks or deletes on it automatically (D-013/D-063).",
+        "D-064 pre-named signals: corpus growth rate and near-duplicate re-derivation rate per lesson before/after the verb exists; the H-26 lesson applies — measure TOKEN weight, not entry count."
+      ],
+      "reasons": "Kill case failed: the defect is live in our corpus history (the P3-era curator found 6 obsoletion proposals re-deriving; H-26 measured consolidation-as-only-lever making handoffs HEAVIER). Reinforce is the missing cheaper verb: no new entry, no synthesis pass, evidence accrues on the survivor. jcode proves the verb carries its weight in production; our translation keeps judgment with the agent.",
+      "effort": "S-M"
+    },
+    {
+      "name": "negative-space-closeout (what_i_did_not_check)",
+      "survives": true,
+      "confidence": "medium",
+      "already_exists": "PARTIAL: deferred-status honesty (D-070), unchecked exit criteria surfaced at transition, open items — all name KNOWN residue. Nothing asks the closing agent to declare the UNKNOWN residue: what was never looked at. jcode makes an empty what_i_did_not_check a hard validation error on swarm artifacts and calls it 'the cheat code: forcing an agent to list what it did not explore surfaces unexplored crannies' (SWARM_TASK_GRAPH.md:266-269, enforced at dag/ops.rs:724-728).",
+      "conditions": [
+        "INVARIANT-05 translation: never a hard block. Three landing sites: (1) the clauderizer-fleet skill's worker-briefing contract REQUIRES completion reports to carry a 'What I did not check' section, with the HUB instructed to send back reports lacking it (coordinator judgment, not engine rejection) — lands with Phase 7's productization, both skill copies (L-55); (2) GAMEPLAN-PROCEDURE close-out and phase-summary guidance name the field; (3) the honest D-069 statement: the engine-side detector for it is DEFERRED and named as unenforced-on-discipline (L-68 clause 5) — a deterministic detector would need text classification the stdlib engine does not do.",
+        "Per D-064: adopt as discipline text now; whether it changes fleet outcome quality is a phase-5/phase-7 dogfood observation (worker reports with vs without the section), never asserted."
+      ],
+      "reasons": "Kill case ALMOST succeeded on enforceability (no deterministic detector -> D-069 says unenforced discipline rots), survived on the fleet path: the hub reading worker reports IS the enforcement point that needs no engine code, and the field's value is highest exactly there (the gate/gap-injection loop it powers in jcode is the fleet-coordinator loop here).",
+      "effort": "S (text + skill, riding Phase 7)"
+    },
+    {
+      "name": "jcode-host-verification",
+      "survives": true,
+      "confidence": "medium",
+      "already_exists": "LIKELY WIRED TODAY with zero emitter code — to be VERIFIED, not assumed (L-66): jcode reads repo-root .mcp.json (Claude Code compatibility, README '#### MCP config files'), reads AGENTS.md as its agent contract (its own repo uses one; skills loader also reads ./.claude/skills and .agents/skills for compatibility — skill.rs:136,173-176). Clauderizer emits all three surfaces already (portable .mcp.json, AGENTS.md floor stanza, installed skills).",
+      "conditions": [
+        "Verify by CAPABILITY, not presence (L-25/L-64): a live jcode session against a clauderized repo — MCP initialize handshake + cz_status reachable + AGENTS.md stanza demonstrably in context; until then the matrix row is 'unverified', never claimed wired (L-66: a host never behaves as assumed).",
+        "detect_session_agent gains a jcode arm ONLY from env markers captured from a REAL jcode session payload (L-66 corollary: capture one real payload before building on a field) — no guessed env names.",
+        "No native .jcode/mcp.json emitter unless the live probe shows the Claude-compat path insufficient (D-031/L-48 additive wiring; smallest change that verifies).",
+        "Joins the phase-5 matrix as a non-Claude-host leg candidate (O-02's availability check covers it; an unrunnable leg is a named gap)."
+      ],
+      "reasons": "The cheapest possible 'another project which works with this' concretization: if the compat surfaces hold, jcode is a working Clauderizer host for the price of a verification session. Their session-resume-across-harnesses + .claude compatibility posture makes them structurally friendly to exactly our substrate.",
+      "effort": "S (verification + docs; emitter only if evidence demands)"
+    }
+  ],
+  "rejected_or_deferred": [
+    {
+      "name": "embedding/ambient memory pipeline (hybrid BM25+dense+RRF, listwise LLM rerank, sideagent verification, confidence decay models)",
+      "verdict": "REJECT for core; EVIDENCE ROUTED to the semantic-recall gameplan (2026-06-17, phase 1/4)",
+      "why": "D-013/D-014/D-018 hard posture: core stays stdlib-deterministic; semantic recall is the optional extra. Decay/confidence FORMULAS conflict with D-070 epistemics (modeled numbers presented as measurements). The routed evidence is real and valuable: jcode measured a cross-encoder reranker HURTING recall and replaced it with listwise LLM rerank; hybrid BM25+RRF is the live pipeline; one-vector-space-per-model is enforced at scoring time; a dormancy gate stops memory work when no backend is reachable. All four should inform clauderizer[semantic]'s design and its D-014 eval harness."
+    },
+    {
+      "name": "selfdev install channels (launcher symlink -> current/stable/immutable versions; SourceState fingerprint verified post-build)",
+      "verdict": "REJECT here; EVIDENCE ROUTED to the workflow-critique gameplan's phase 0 (engine identity — doctor certifies what it launched)",
+      "why": "Direct prior art for H-27 (published engine serving while src is edited): channel vocabulary + launcher indirection + fingerprint-verified publish ('a mid-build edit cannot publish mislabeled binaries') is a complete reference design for the doctor-certifies story."
+    },
+    {
+      "name": "swarm DAG engine (typed artifacts, enumerated gate coverage, root gates, growth accounting)",
+      "verdict": "REJECT (harness scope), except the what_i_did_not_check field vetted above",
+      "why": "Orchestration belongs to the host harness; Clauderizer's fleet is memory-hub-and-spoke by design (D-071). The gate-coverage idea ('all good, no gaps' structurally rejected) is recorded here as design reference for fleet-coordinator briefings."
+    },
+    {
+      "name": "overnight/ambient autonomous modes",
+      "verdict": "REJECT (host scope)",
+      "why": "Maps to host-side loops (/loop, dream cron, standing-curator). Their task-card Before/After/Validation shape parallels our outputs registry; nothing structurally new for the engine."
+    },
+    {
+      "name": "multi-harness transcript mining adapters (codex/opencode/pi/cursor formats for cz_mine_failures)",
+      "verdict": "DEFER — not in the alpha; revisit with captured real fixtures",
+      "why": "jcode proves the formats are readable (session resume + session_search import them), but L-66 forbids building on uncaptured payloads and the alpha's miner just gained the refusal-journal source. Deferred until real non-Claude transcript fixtures exist (the phase-5 matrix's non-Claude legs will produce some)."
+    }
+  ],
+  "design_notes_recorded_as_gameplan_lesson": [
+    "Work-counters over wall-clock for perf/quality gates: 'a tight timing gate is a flaky gate, a flaky gate gets muted, which leaves no gate at all' — the decisive jcode gate asserts relayouts==0, a statement about WORK that generous slack cannot tune away.",
+    "The sabotage ritual as STANDING procedure: re-arm a gate (inject the violation, watch red, revert) whenever the gate changes in a way that could weaken it — L-68 step 4 made recurring, not one-time.",
+    "Advisory timing: defer repeatable advisories to a turn-end digest, collapse repeats, drop self-resolved ones — jcode measured the nag-on-every-write shape 'punishing the common healthy case'; mirrors why our advisories ride specific write results, and a design bound for any future recurring advisory."
+  ],
+  "direction_answer": {
+    "build_in_this_direction": "The vetted four land as a new phase in the 2.0 alpha (A-002); everything else is routed to the gameplan that owns it.",
+    "another_project_that_works_with_this": "Two concrete lanes. NOW: jcode as a verified Clauderizer host (zero-code wiring via the compat surfaces, pending live verification). NEXT (candidate follow-on gameplan, not started): a memory bridge — jcode's per-user ambient memory and Clauderizer's tracked team memory are complementary by construction; jcode's own MEMORY_ARCHITECTURE open question #2 asks 'should some memories be shareable across a team?' — which is precisely Clauderizer's lane. A bridge would route jcode's extraction sideagent output through cz_* blessed writes (review-gated, PII boundary preserved) and/or feed the Clauderizer digest into jcode's memory graph as high-trust entries. Recorded as direction in D-075; needs its own gameplan with jcode-side experiments."
+  }
+}
