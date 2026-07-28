@@ -34,6 +34,8 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 
 **O-03.** Short-lesson near-dup blindness (dream 09033b98b104): the promote trailer's ~7 ancestry/provenance tokens dilute the Jaccard union enough that a PERFECT-SUBSET probe against a ~5-token lesson scored 0.38 vs the 0.40 threshold — terse lessons are effectively immune to the near-dup/correction advisory while long ones are not. When this gameplan re-registers the threshold (its ranker length-bias phase), add a short-lesson fixture: ~5-token lesson + enriched trailer, asserting the advisory fires on a perfect subset (L-50 pre-registered fixture process; INVARIANT-09 single-sourcing)
 
+**O-04.** Procedure-spec repairs earned by the 2.0-alpha (dream fa43cde8354e + post-mortem): (1) the standing oracle "each new test is demonstrated RED on the pre-release tree" is satisfied VACUOUSLY by an ImportError whenever a phase adds a new module — proving absence, not behavior; four phases hand-rebuilt the same countermeasure (isolated old-commit clone + a probe script restricted to APIs present on both trees). Name that pattern in GAMEPLAN-PROCEDURE (source template + blessed render, version bump) so red means BEHAVIOR red. (2) Push-at-phase-close cadence: eight unpushed phases landed every platform-latent defect on ship day — add the procedure line (and consider an advisory origin-distance line in preflight/status) so CI contact is continuous, never a ship-day event
+
 ## Phase Breakdown
 
 ### Phase 0: Engine identity — doctor certifies what it launched
