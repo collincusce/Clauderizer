@@ -8,6 +8,7 @@ valid and numbering never collides. These back the ``cz_add_*`` / ``cz_upsert_*`
 
 from __future__ import annotations
 
+import contextvars
 import functools
 import re
 from datetime import date as _date
@@ -213,13 +214,48 @@ def _code_segments(text: str) -> list[tuple[bool, str]]:
     return out
 
 
+# H-29: the sanitizer used to strip silently — the writer discovered the
+# alteration only by rereading the stored entry. Ops arm this per-call
+# accumulator at the REGISTRY seam (ops._echoed) and drain it into a
+# `sanitizer_advisory` on the write result; direct library callers that want
+# the echo use begin/drain explicitly. Advisory only, never a block.
+_SANITIZER_REMOVALS: contextvars.ContextVar[list[str] | None] = \
+    contextvars.ContextVar("clauderizer_sanitizer_removals", default=None)
+_SANITIZER_ECHO_CAP = 8
+
+
+def begin_sanitizer_echo() -> None:
+    """Arm removal collection for the current op call (resets any leftovers)."""
+    _SANITIZER_REMOVALS.set([])
+
+
+def drain_sanitizer_echo() -> list[str]:
+    """Return fragments removed since begin_sanitizer_echo(), and disarm."""
+    removed = _SANITIZER_REMOVALS.get() or []
+    _SANITIZER_REMOVALS.set(None)
+    return removed
+
+
+def _note_removal(fragment: str) -> None:
+    buf = _SANITIZER_REMOVALS.get()
+    frag = fragment.strip()
+    if buf is None or not frag or frag in buf or len(buf) >= _SANITIZER_ECHO_CAP:
+        return
+    buf.append(frag)
+
+
 def _strip_toolcall_markup(text: str) -> str:
     """Remove leaked tool-call framing and unbalanced closing tags, outside code."""
     if "<" not in text:
         return text                      # the overwhelmingly common path
     segments = _code_segments(text)
+
+    def _drop_toolcall(m: re.Match) -> str:
+        _note_removal(m.group(0))
+        return ""
+
     # Pass 1: drop the tool-call vocabulary from every non-code segment.
-    segments = [(is_code, chunk if is_code else _TOOLCALL_TAG_RE.sub("", chunk))
+    segments = [(is_code, chunk if is_code else _TOOLCALL_TAG_RE.sub(_drop_toolcall, chunk))
                 for is_code, chunk in segments]
     # Pass 2: a closing tag is scaffolding only when nothing opened it. Balance
     # is judged over the whole visible value, never per segment — an opener and
@@ -228,7 +264,10 @@ def _strip_toolcall_markup(text: str) -> str:
     opened = {m.group(1).lower() for m in _OPEN_TAG_RE.finditer(visible)}
 
     def _drop_unbalanced(m: re.Match) -> str:
-        return "" if m.group(1).lower() not in opened else m.group(0)
+        if m.group(1).lower() not in opened:
+            _note_removal(m.group(0))
+            return ""
+        return m.group(0)
 
     return "".join(chunk if is_code else _CLOSE_TAG_RE.sub(_drop_unbalanced, chunk)
                    for is_code, chunk in segments)

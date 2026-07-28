@@ -1741,6 +1741,40 @@ REGISTRY: dict[str, Op] = {
 # op_schema and the MCP layer (both follow __wrapped__).
 
 
+def _echoed(fn: Callable[..., dict]) -> Callable[..., dict]:
+    """H-29: surface write-guard removals to the writer AT WRITE TIME.
+
+    The sanitizer (mutations._strip_toolcall_markup) drops leaked tool-call
+    framing and unbalanced closers before persist; silently, the alteration is
+    invisible at the one moment the writer could cheaply fix it by re-writing
+    with code spans. Innermost wrapper: arm the per-call accumulator, run the
+    op, and attach a `sanitizer_advisory` naming the stripped fragments when
+    anything was removed. Advisory only — the (sanitized) write already
+    succeeded and nothing here can fail it (INVARIANT-05); attachment is
+    best-effort in both directions like the cz_state stamp."""
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        from . import mutations as _m
+        _m.begin_sanitizer_echo()
+        try:
+            result = fn(*args, **kwargs)
+        finally:
+            removed = _m.drain_sanitizer_echo()
+        if (removed and isinstance(result, dict)
+                and "sanitizer_advisory" not in result):
+            try:
+                frags = ", ".join(f"`{f}`" for f in removed)
+                result["sanitizer_advisory"] = (
+                    f"the write-guard removed {len(removed)} un-backticked "
+                    f"markup fragment(s) from the stored text: {frags} — if "
+                    f"they were content, re-write with each literal wrapped "
+                    f"in a code span (code spans survive the guard); H-29")
+            except Exception:
+                pass
+        return result
+    return wrapper
+
+
 # Ops whose bundles are strict supersets of the stamp (D-027): attaching
 # cz_state to them would duplicate figures they already carry in full.
 _NO_STATE_STAMP = {"cz_status", "cz_next_phase_context"}
@@ -1854,7 +1888,7 @@ def _journaled(fn: Callable[..., dict], writes: bool) -> Callable[..., dict]:
     return wrapper
 
 
-REGISTRY = {name: Op(_journaled(_receipted(name, _stamped(name, spec.fn)), spec.writes),
+REGISTRY = {name: Op(_journaled(_receipted(name, _stamped(name, _echoed(spec.fn))), spec.writes),
                      spec.writes)
             for name, spec in REGISTRY.items()}
 

@@ -128,9 +128,25 @@ numbers from either project appear here or in any release material, by rule
   laundered complete — dashboards consuming outcome telemetry should read
   pass_rate as "phases that met their goal", with deferrals visible beside it.
 
+### Hardening shipped with the alpha
+
+- **Version stamps never ratchet backward** (H-30, observed live during the
+  alpha's own build): a serving engine older than the repo's procedure stamp
+  no longer restamps it downward — `clauderize upgrade` / `cz_modernize`
+  surface the skew as an advisory proposal instead, and the apply path refuses
+  the downward write outright. An unparseable stamp still reads as legacy and
+  stamps forward. The deeper half — op results certifying which engine build
+  served them — is routed to the engine-identity work, not silently dropped.
+- **Write-guard removals echo to the writer** (H-29): when the sanitizer
+  strips leaked tool-call framing or unbalanced closing tags from prose, the
+  write result now carries a `sanitizer_advisory` naming the removed fragments
+  with the code-span rewrite nudge — at the REGISTRY seam, so every transport
+  sees it at the moment a rewrite is cheap. Code-spanned literals still
+  survive untouched; the advisory never blocks the (sanitized) write.
+
 ### Verification
 
-- Suite grew **1330 → 1554 passing** (7 skips) across the alpha; every new
+- Suite grew **1330 → 1561 passing** (7 skips) across the alpha; every new
   guard was armed once (violation injected, red observed, reverted).
   Transport-parity, enforcement-ladder, dual-copy skill seam, procedure-version
   parity and README tool-list pins are all live.

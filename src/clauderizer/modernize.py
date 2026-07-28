@@ -38,6 +38,14 @@ def _ver_tuple(v: str) -> tuple[int, int, int]:
         return (0, 0, 0)
 
 
+def _stamp_would_regress(stamp: str) -> bool:
+    """H-30: True when the repo's stamp is NEWER than this engine's procedure —
+    stamping would ratchet the version backward (a stale serving engine on an
+    ahead-of-publish tree). An unparseable stamp reads as legacy (0,0,0),
+    never as newer, so junk still stamps forward."""
+    return _ver_tuple(stamp) > _ver_tuple(PROCEDURE_VERSION)
+
+
 def _procedure_doc_version(paths: RepoPaths) -> str | None:
     p = paths.procedure_file
     if not p.exists():
@@ -106,13 +114,28 @@ def report(paths: RepoPaths, config: Config, *, cheap: bool = False) -> dict:
     cost (the near-dup proposals are simply omitted from a cheap report)."""
     from . import proposals as _proposals
     mechanical: list[dict] = []
+    skew_proposal: dict | None = None
     stamp = config.procedure_version or ""
     if stamp != PROCEDURE_VERSION:
-        mechanical.append({
-            "action": "stamp_procedure_version",
-            "detail": f"procedure stamp {stamp or '(unstamped legacy corpus)'} "
-                      f"→ {PROCEDURE_VERSION} (the methodology version this "
-                      "engine carries — not the engine's package version)"})
+        if _stamp_would_regress(stamp):
+            # H-30: a stale serving engine never ratchets the stamp backward —
+            # observed live when the published-engine MCP restamped 1.11.0 down
+            # to 1.9.0. The skew surfaces for judgment instead (INVARIANT-05).
+            skew_proposal = {
+                "kind": "engine_older_than_stamp",
+                "id": _proposals.proposal_id("engine_older_than_stamp",
+                                             stamp, PROCEDURE_VERSION),
+                "detail": f"this engine's procedure ({PROCEDURE_VERSION}) is "
+                          f"older than the repo's stamp ({stamp}) — not "
+                          "regressing the stamp; run the repo's newer engine "
+                          "(e.g. its venv CLI) to modernize, or upgrade this "
+                          "install"}
+        else:
+            mechanical.append({
+                "action": "stamp_procedure_version",
+                "detail": f"procedure stamp {stamp or '(unstamped legacy corpus)'} "
+                          f"→ {PROCEDURE_VERSION} (the methodology version this "
+                          "engine carries — not the engine's package version)"})
     try:
         raw_cfg = paths.config_file.read_text(encoding="utf-8")
     except OSError:
@@ -153,6 +176,8 @@ def report(paths: RepoPaths, config: Config, *, cheap: bool = False) -> dict:
                       f"→ v{PROCEDURE_VERSION}"})
 
     proposals: list[dict] = []
+    if skew_proposal is not None:
+        proposals.append(skew_proposal)
     from .rituals import conditions as conditions_mod
     from .rituals import status_bundle
     from .rituals.preflight import _load_preflight_gates
@@ -319,7 +344,10 @@ def apply(paths: RepoPaths, config: Config) -> dict:
             paths.procedure_file.write_text(assets.procedure_text(), encoding="utf-8")
         applied.append(act)
     if rewrite_config:
-        config.procedure_version = PROCEDURE_VERSION
+        # Write-site defense for H-30: even a confused caller cannot move the
+        # stamp downward through this path.
+        if not _stamp_would_regress(config.procedure_version or ""):
+            config.procedure_version = PROCEDURE_VERSION
         writer.refuse_if_symlink(paths.config_file)
         paths.config_file.write_text(config.to_toml(), encoding="utf-8")
     return {
