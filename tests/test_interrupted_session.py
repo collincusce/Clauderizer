@@ -227,6 +227,7 @@ def _stamp(paths, **over):
         f.write(json.dumps(rec) + "\n")
 
 
+@pytest.mark.skipif(__import__("os").name != "posix", reason="the liveness gate quiets on a POSIX-gradeable probe; on win32 the probe is inconclusive by design and the detector legitimately fires")
 def test_quiet_when_the_claimant_is_provably_alive(interrupted_repo):
     """A live claimant means ordinary mid-phase work — an active session's own
     digest must stay byte-identical while it works (INVARIANT-08)."""
@@ -243,6 +244,7 @@ def test_quiet_for_the_viewing_session_itself(interrupted_repo):
     assert _detect(interrupted_repo) is None
 
 
+@pytest.mark.skipif(__import__("os").name != "posix", reason="the liveness gate quiets on a POSIX-gradeable probe; on win32 the probe is inconclusive by design and the detector legitimately fires")
 def test_dead_claimant_defers_to_stranded_one_voice(interrupted_repo):
     """A provably dead claimant is stranded.py's finding — exactly one of the
     two detectors speaks for any repo state."""

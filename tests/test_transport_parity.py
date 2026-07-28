@@ -107,9 +107,23 @@ def _twin(tmp_path: Path, name: str) -> Path:
 
 def _normalize(payload: dict, root: Path) -> dict:
     """The shared normalization: JSON round-trip (what both wires do) + root
-    anchoring + the allowlisted strips documented in the module docstring."""
+    anchoring + the allowlisted strips documented in the module docstring.
+
+    Root anchoring replaces the ESCAPED form of each root variant — as the
+    path actually appears inside the dumped JSON text. On Windows,
+    ``str(root)`` contains single backslashes while the JSON text carries
+    ``\\\\``-escaped ones, so a plain replace silently never matched and every
+    files_changed path kept its twin-specific root (caught by the first-ever
+    Windows CI run of this matrix). ``json.dumps(form)[1:-1]`` IS the escaped
+    spelling; on POSIX it degrades to the identical plain string."""
     raw = json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
-    raw = raw.replace(str(root), "<ROOT>")
+    forms = {str(root), root.as_posix()}
+    try:
+        forms |= {str(root.resolve()), root.resolve().as_posix()}
+    except OSError:
+        pass
+    for form in sorted(forms, key=len, reverse=True):
+        raw = raw.replace(json.dumps(form)[1:-1], "<ROOT>")
     out = json.loads(raw)
     out.pop("cz_state", None)                      # INVARIANT-10: unmeasurable per call
     out.pop("clauderizer_status", None)            # P7 bootstrap: asserted separately
@@ -144,9 +158,15 @@ def _run_matrix_row(tmp_path, monkeypatch, name, args, prelude):
 def test_cli_and_mcp_payloads_are_equal_after_normalization(
         tmp_path, monkeypatch, name, args, prelude):
     payloads = _run_matrix_row(tmp_path, monkeypatch, name, args, prelude)
+    diverging = sorted(
+        k for k in set(payloads["cli"]) | set(payloads["mcp"])
+        if payloads["cli"].get(k) != payloads["mcp"].get(k))
     assert payloads["cli"] == payloads["mcp"], (
         f"{name}: transports diverged beyond the pinned allowlist — "
-        f"an undocumented divergence is a contract break, document it or fix it")
+        f"an undocumented divergence is a contract break, document it or fix "
+        f"it. Diverging keys: {diverging}; "
+        + "; ".join(f"{k}: cli={payloads['cli'].get(k)!r} "
+                    f"mcp={payloads['mcp'].get(k)!r}" for k in diverging[:3]))
 
 
 def test_the_p7_bootstrap_divergence_is_required_not_merely_tolerated(

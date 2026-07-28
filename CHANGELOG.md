@@ -138,6 +138,23 @@ numbers from either project appear here or in any release material, by rule
   (found by smoke-testing a fresh init during this release's own gate; the
   L-65 dangling-claim class).
 
+### Upstream break contained: mcp 2.0
+
+- **`mcp` is now constrained `>=1.2,<2`.** mcp 2.0.0 (released 2026-07-28)
+  removes `mcp.server.fastmcp`, which broke every fresh
+  `clauderizer[mcp]` resolution on the planet the same day — caught by
+  doctor's capability-based MCP identity probe and by CI's job-granularity
+  gate on this release's own commits. Adapting to the mcp 2.x SDK is tracked
+  as follow-up work; the pin is the honest immediate contract.
+- First-ever full-matrix CI on the alpha's code also surfaced four
+  platform-latent test assumptions (real-pid liveness probes are POSIX
+  semantics; PID-reuse detection reads Linux `/proc`) — now capability-gated
+  skips with the win32/no-proc arms pinned by their existing monkeypatched
+  tests — and a Windows-blind spot in the transport-parity harness itself
+  (root anchoring never matched JSON-escaped backslash paths); the
+  normalizer now replaces escaped root forms and the assertion names
+  diverging keys.
+
 ### Hardening shipped with the alpha
 
 - **Version stamps never ratchet backward** (H-30, observed live during the

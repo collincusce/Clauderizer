@@ -91,6 +91,7 @@ def test_last_stamp_survives_corrupt_lines(temp_repo):
 
 # --- the probe: grading, POSIX gate, PID reuse --------------------------------
 
+@pytest.mark.skipif(os.name != "posix", reason="real-pid liveness grading needs POSIX kill(pid, 0); the win32 arm (probe can never signal) is pinned by its own monkeypatched test")
 def test_probe_grades_a_freed_pid_dead(temp_repo):
     paths, _ = _ctx(temp_repo)
     entry = {"transport": "mcp", "host": socket.gethostname(),
@@ -98,12 +99,14 @@ def test_probe_grades_a_freed_pid_dead(temp_repo):
     assert session_ledger.probe(entry) == "dead"
 
 
+@pytest.mark.skipif(os.name != "posix", reason="real-pid liveness grading needs POSIX kill(pid, 0); the win32 arm (probe can never signal) is pinned by its own monkeypatched test")
 def test_probe_grades_a_live_pid_alive():
     entry = {"transport": "mcp", "host": socket.gethostname(),
              "pid": os.getpid(), "start": session_ledger._proc_start_time(os.getpid())}
     assert session_ledger.probe(entry) == "alive"
 
 
+@pytest.mark.skipif(not Path("/proc/self/stat").exists(), reason="PID-reuse detection reads /proc starttime; on hosts without /proc the design reads unmeasurable-as-no-claim (alive), pinned by the unprovable-cases test")
 def test_probe_detects_pid_reuse_by_start_time_mismatch():
     entry = {"transport": "mcp", "host": socket.gethostname(),
              "pid": os.getpid(), "start": "1"}  # a boot-time-ago starttime
@@ -143,6 +146,7 @@ def test_probe_never_signals_on_non_posix(monkeypatch):
 
 # --- detect: heal on proof only ----------------------------------------------
 
+@pytest.mark.skipif(os.name != "posix", reason="real-pid liveness grading needs POSIX kill(pid, 0); the win32 arm (probe can never signal) is pinned by its own monkeypatched test")
 def test_detect_fires_on_a_provably_dead_claimant(temp_repo):
     paths, _ = _ctx(temp_repo)
     gid = _gameplan(paths)
