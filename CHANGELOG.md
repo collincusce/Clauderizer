@@ -2,8 +2,31 @@
 
 All notable changes to Clauderizer are documented here.
 
-## Unreleased (will ship as 2.0.0a2)
+## [2.0.0a2] — 2026-07-29
 
+**The field-report alpha**: everything here was earned by the first real
+2.0.0a1 deployments — the documented wiring caveat closed at init time, plus
+the two defects the first foreign-repo transition surfaced (O-05/O-06).
+Pre-release semantics unchanged: `pip`/`uvx` resolve only with `--pre`.
+
+- **Proposals explain themselves before offering "dismiss"** (O-05): every
+  generated modernize proposal now carries a `what` line saying what the
+  flagged thing IS (a QA gate, a deliverable, a standing condition, …), and
+  the modernize report and cz_dream's blocked-on-triage state carry the
+  triage semantics verbatim (dismiss = personal gitignored seen-it that
+  returns on material change; defer = snooze; nothing edits the repo or
+  disables a check). Born from a field session where the human rightly
+  refused to dismiss an unexplained gate proposal.
+- **A zero baseline is anomaly-shaped, not a fact** (O-06): when the measured
+  test count is 0, the digest's baseline line and preflight's tests gate
+  (now `warn`, never fail) say so with one voice — a runner that exits 0
+  while collecting nothing is usually a broken runner. Born from a field
+  session where "Baseline: 0 tests" had normalized a Node-24-broken suite
+  (CLI included) into invisibility for weeks.
+- **Init warns when the target is $HOME**: HOME/.claude/settings.json is the
+  per-user global settings file, so a hook wired there runs in every session
+  on the machine and every repo under HOME becomes a nested install. Warn
+  loudly, proceed anyway (a deliberate home-as-repo setup stays legal).
 - **Pre-release engines pin their portable wiring** (`portable_from_spec`):
   every portable/committable command (`.mcp.json`, host emitters, the Grok
   hook string, the kimi-desktop entry, the uvx fallback) now emits

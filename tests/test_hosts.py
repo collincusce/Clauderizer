@@ -286,11 +286,24 @@ def test_init_refuses_h04_miscomposition(empty_python_repo):
     assert not (empty_python_repo / "CLAUDE.md").exists()
 
 
+def _tolerate_unpublished_pin(warnings):
+    """Self-arming tolerance (L-66 pattern): on a pre-release tree whose
+    ==-pinned portable spec is not on the index YET (the bump-to-publish
+    window), the spawn probe's failure is the DESIGNED degrade — tolerate
+    exactly that warning shape. The moment the pin resolves (post-publish, or
+    on any stable tree), this returns [] and the strict assertion re-arms."""
+    import clauderizer
+    if not clauderizer.is_prerelease():
+        return warnings
+    pin = f"=={clauderizer.__version__}"
+    return [w for w in warnings if not ("portable MCP wiring" in w and pin in w)]
+
+
 def test_init_spawn_test_passes_on_real_console_scripts(empty_python_repo):
     # Default spawn_test=True, end to end: the installed console scripts answer
     # --version (added this phase), so a plain init probes for real and proceeds.
     report = init(empty_python_repo)
-    assert report.warnings == []
+    assert _tolerate_unpublished_pin(report.warnings) == []
     assert (empty_python_repo / ".mcp.json").exists()
 
 

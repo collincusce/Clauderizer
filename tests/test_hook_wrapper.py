@@ -310,7 +310,8 @@ def test_init_regenerates_wrapper_when_engine_moves(empty_python_repo):
 @posix_only
 def test_init_wrapper_spawn_tested_and_idempotent(empty_python_repo):
     report = init(empty_python_repo)  # real probes, incl. the registered wrapper
-    assert report.warnings == []
+    from tests.test_hosts import _tolerate_unpublished_pin
+    assert _tolerate_unpublished_pin(report.warnings) == []
     report2 = init(empty_python_repo)
     assert report2.changed == []
 

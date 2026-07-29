@@ -47,6 +47,17 @@ def engine_source_newer_than(started: float) -> bool:
 # constants remain the fallback when no config is in hand.
 ACTIVE_LESSONS_WARN = 12
 PROJECT_LESSONS_WARN = 20
+
+# O-06 (first 2.0.0a1 field report): "Baseline: 0 tests" rendered as a plain
+# fact NORMALIZED a really-broken runner into invisibility (Node 24 broke
+# --test dir expansion + a native module's ABI; the zero read as "no tests").
+# A recorded baseline of 0 almost always came from a runner that RAN and
+# collected nothing — unknowable-never-zero (D-070 P0), applied to the
+# baseline figure. One voice (L-55): preflight's tests gate reuses this text.
+ZERO_BASELINE_SUSPICION = (
+    "a measured 0 is anomaly-shaped: a runner that collects nothing is "
+    "usually a broken runner (argument expansion, native-module ABI), not an "
+    "empty suite — run the suite by hand once and believe that result")
 # H-26: the threshold that actually fires. The project-lesson block rides in
 # every handoff across every gameplan, so its TOKEN weight is the cost the nudge
 # names and therefore the cost it must measure. ~5000 tok is roughly where the
@@ -1011,7 +1022,10 @@ def render_digest(bundle: dict, tools: list[str] | None = None) -> str:
         lines.append(f"Portfolio ({len(open_cards)} open):")
         lines += _portfolio_lines(open_cards)
     if bundle.get("baseline_tests"):
-        lines.append(f"Baseline: {bundle['baseline_tests']} tests.")
+        base = f"Baseline: {bundle['baseline_tests']} tests."
+        if str(bundle["baseline_tests"]).strip() == "0":
+            base += " ⚠ " + ZERO_BASELINE_SUSPICION
+        lines.append(base)
     dl = bundle.get("deliverables")
     if dl and dl.get("total"):
         # One rollup line, focused gameplan only (D2); the full board lives in

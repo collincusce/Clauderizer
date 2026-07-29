@@ -470,7 +470,14 @@ def run(
                 old = _write_back_baseline(paths, config, count) if count else None
                 if old is not None:
                     detail += f"; baseline updated {old} -> {count}"
-                add("tests", "pass", detail)
+                if count is not None and count.strip() == "0":
+                    # O-06: exit 0 with zero collected is how a broken runner
+                    # reads as green (Node 24 field report). Warn, never fail
+                    # (INVARIANT-05 spirit); one voice with the digest (L-55).
+                    add("tests", "warn",
+                        detail + " — " + status_bundle.ZERO_BASELINE_SUSPICION)
+                else:
+                    add("tests", "pass", detail)
             else:
                 add("tests", "fail", f"`{cmd}` exit {code}\n{out.strip()[:400]}")
         elif name == "build":

@@ -290,8 +290,10 @@ def assemble(paths: RepoPaths, *, today: str | None = None) -> dict:
 
     pending = pending_proposals(paths, today)
     if pending:
+        from .proposals import TRIAGE_SEMANTICS
         ids = [str(p.get("id")) for p in pending]
         return {"ok": True, "state": "blocked_on_triage", "pending": ids,
+                "triage": TRIAGE_SEMANTICS,
                 "summary": (f"{len(ids)} dream proposal(s) await triage — "
                             f"handle/dismiss/defer them first (A-001); "
                             f"dreaming never piles onto unactioned output")}

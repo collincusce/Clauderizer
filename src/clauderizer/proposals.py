@@ -32,6 +32,50 @@ def ledger_path(paths: RepoPaths) -> Path:
     return paths.clauderizer_dir / LEDGER_NAME
 
 
+# O-05 (first 2.0.0a1 field report): a proposal must be safely triage-able
+# WITHOUT reverse-engineering the engine — the payload says what the flagged
+# thing IS, and the report says what dismiss/defer MEAN. The human who refused
+# to dismiss an unexplained gate proposal was right; this is the fix.
+TRIAGE_SEMANTICS = (
+    "dismiss = a personal, gitignored 'seen it' (the proposal returns only if "
+    "the flagged item materially changes); defer = the same ledger, snoozed "
+    "for N days; handle = do the work via the normal blessed writes, then "
+    "mark it. None of the three edits the repo or disables any check.")
+
+# One-line what-is-the-flagged-thing per generated proposal kind.
+WHAT = {
+    "unwired_gates": (
+        "A QA gate is a named preflight check wired to a real shell command "
+        "in .clauderizer/preflight.<kind>.toml; a declared-but-unwired gate "
+        "does not run — preflight warns 'declared but did not run' instead "
+        "of reading a false green."),
+    "no_deliverables": (
+        "A deliverable is a campaign's tracked execution unit (an entity of "
+        "type=deliverable moving through the kind's lifecycle); the campaign "
+        "board renders from these entities, so none recorded = no board."),
+    "no_standing_conditions": (
+        "Standing conditions are declared triggers in "
+        ".clauderizer/conditions.<gameplan>.toml; when one is met the digest "
+        "says 'iteration proposed' — a loop gameplan without them only "
+        "iterates when someone remembers to run it."),
+    "unseeded_docs": (
+        "These scaffold docs still carry their init template placeholders; "
+        "seeding them (cz_onboard, or a short pass) turns them into real "
+        "memory the ranker can surface."),
+    "stale_kind_overlay": (
+        "A kind overlay in .clauderizer/kinds/ customizes a gameplan kind; a "
+        "stale one lags the engine's shipped kind definition."),
+    "near_dup_invariants": (
+        "Two invariants whose text heavily overlaps usually encode one rule "
+        "twice; consolidating (or scope-tagging) keeps the register single-"
+        "voiced."),
+    "engine_older_than_stamp": (
+        "The repo's procedure stamp records which methodology version last "
+        "modernized it; this engine is older than that stamp, so stamping "
+        "would move the version backward (H-30)."),
+}
+
+
 def proposal_id(kind: str, *parts: object) -> str:
     """``<kind>:<12-hex>`` derived from ``kind`` + the identifying parts. The kind
     prefix keeps ids legible in the ledger; the hash makes a materially-changed

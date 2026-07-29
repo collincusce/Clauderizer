@@ -258,6 +258,10 @@ def report(paths: RepoPaths, config: Config, *, cheap: bool = False) -> dict:
                       "restates a single gameplan's rule, record future ones with "
                       "scope='gameplan:<id>' (D-043); append-only history stays"})
 
+    # O-05: every generated proposal is self-explanatory — the payload names
+    # what the flagged thing IS; the report names what dismiss/defer MEAN.
+    for p in proposals:
+        p.setdefault("what", _proposals.WHAT.get(p.get("kind", ""), ""))
     return {
         "ok": True,
         "engine_procedure": PROCEDURE_VERSION,
@@ -265,6 +269,7 @@ def report(paths: RepoPaths, config: Config, *, cheap: bool = False) -> dict:
         "stale": bool(mechanical),
         "mechanical": mechanical,
         "proposals": proposals,
+        "triage": _proposals.TRIAGE_SEMANTICS,
         "summary": (f"{len(mechanical)} mechanical update(s) available, "
                     f"{len(proposals)} advisory proposal(s)"),
     }

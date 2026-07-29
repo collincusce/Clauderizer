@@ -182,6 +182,22 @@ def init(
     paths = resolve(root)
     report = InitReport(repo=str(root))
 
+    # Clauderizing $HOME is categorically different from clauderizing a
+    # project (2.0.0a2, dream-sourced): HOME/.claude/settings.json IS the
+    # per-user Claude Code settings file, so a session-start hook wired there
+    # runs in EVERY session on this machine, and every repo under HOME becomes
+    # a nested install for INVARIANT-08 dedup. Warn loudly, still proceed —
+    # a deliberate home-as-repo setup stays legal.
+    try:
+        if root == Path.home().resolve():
+            print("  ! this is your HOME directory: .claude/settings.json here "
+                  "is the per-user global settings file — the session hook "
+                  "wired by this init will run in EVERY session on this "
+                  "machine, and every project under HOME becomes a nested "
+                  "install. If you meant a project, run init in that project.")
+    except RuntimeError:
+        pass
+
     # H-23: initializing under an existing clauderized repo makes a SECOND,
     # independent install whose corpus never merges with the outer one. Legal,
     # and sometimes exactly what you want — but never silent. A re-init of the
