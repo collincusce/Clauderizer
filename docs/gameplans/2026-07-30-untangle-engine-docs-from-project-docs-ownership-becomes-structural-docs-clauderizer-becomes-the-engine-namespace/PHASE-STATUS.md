@@ -12,8 +12,8 @@
 | 2 | Two glossaries, and the engine stops claiming names | ✅ COMPLETE | 2026-07-30 | 2026-07-30 | handoffs/PHASE-2-HANDOFF.md |
 | 3 | The untangle — classify, git mv, conserve every entry | ✅ COMPLETE | 2026-07-30 | 2026-07-30 | handoffs/PHASE-3-HANDOFF.md |
 | 4 | Wire it to upgrade, and make an old engine say "upgrade" instead of "empty" | ✅ COMPLETE | 2026-07-30 | 2026-07-30 | handoffs/PHASE-4-HANDOFF.md |
-| 5 | The 72 prose references — every surface that tells an agent where memory lives | 🟢 READY | — | — | handoffs/PHASE-5-HANDOFF.md |
-| 6 | Prove it on the real corpus, then ship | ⬜ NOT STARTED | — | — | handoffs/PHASE-6-HANDOFF.md |
+| 5 | The 72 prose references — every surface that tells an agent where memory lives | ✅ COMPLETE | 2026-07-30 | 2026-07-30 | handoffs/PHASE-5-HANDOFF.md |
+| 6 | Prove it on the real corpus, then ship | ✅ COMPLETE | 2026-07-30 | 2026-07-30 | handoffs/PHASE-6-HANDOFF.md |
 
 ## Outputs Registry
 
