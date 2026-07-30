@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pathlib
 import re
 import subprocess
 
@@ -244,3 +245,28 @@ def test_forked_stub_detection_is_silent_on_the_legacy_layout(tmp_path):
     """A repo that never migrated has no stubs and must never be reported."""
     p, cfg = _repo(tmp_path)
     assert untangle.forked_stubs(p) == []
+
+
+def test_report_paths_are_posix_on_every_platform():
+    """L-51: the `from`/`to` values are DISPLAY strings — they land in the stub a
+    human reads and in the upgrade report — so they must not carry a backslash
+    on Windows. Caught by a real red Windows cell, not by inspection."""
+    from clauderizer.config import Config as _C
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td) / "repo"
+        (root / "docs").mkdir(parents=True)
+        (root / ".clauderizer").mkdir()
+        p = _paths.resolve(root)
+        cfg = _C.for_size("standard")
+        p.config_file.write_text(cfg.to_toml(), encoding="utf-8")
+        (root / "docs" / "DECISIONS.md").write_text(
+            "# D\n\n### D-001 — x\n\nbody\n", encoding="utf-8")
+        for a in untangle.plan(p, cfg):
+            for key in ("from", "to"):
+                v = a.get(key)
+                if v:
+                    assert "\\" not in v, (
+                        f"{a['doc']}.{key} carries a backslash: {v}")
+                    assert pathlib.PurePosixPath(v).parts[0] == "docs", v

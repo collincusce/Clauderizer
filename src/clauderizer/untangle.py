@@ -166,23 +166,23 @@ def plan(paths: RepoPaths, config: Config) -> list[dict]:
         if not old.exists():
             if assets.doc_template(name) is not None:
                 actions.append({"doc": name, "verdict": CREATE, "from": None,
-                                "to": str(new.relative_to(paths.root)),
+                                "to": new.relative_to(paths.root).as_posix(),
                                 "why": "engine doc absent — scaffold it in the "
                                        "engine namespace"})
             continue
         if _is_engine_content(old, name):
             actions.append({
                 "doc": name, "verdict": MOVE,
-                "from": str(old.relative_to(paths.root)),
-                "to": str(new.relative_to(paths.root)),
+                "from": old.relative_to(paths.root).as_posix(),
+                "to": new.relative_to(paths.root).as_posix(),
                 "entries": entry_count(old),
                 "why": "engine-owned content (its own scaffold, or a register "
                        "holding engine-written entries)"})
         else:
             actions.append({
                 "doc": name, "verdict": LEAVE_AND_CREATE,
-                "from": str(old.relative_to(paths.root)),
-                "to": str(new.relative_to(paths.root)),
+                "from": old.relative_to(paths.root).as_posix(),
+                "to": new.relative_to(paths.root).as_posix(),
                 "why": "this file holds YOUR content at a name the engine also "
                        "uses — left byte-identical; a fresh engine copy is "
                        "written alongside"})
@@ -191,8 +191,8 @@ def plan(paths: RepoPaths, config: Config) -> list[dict]:
         if old_d.is_dir() and not (ns / d).exists():
             actions.append({
                 "doc": f"{d}/", "verdict": MOVE,
-                "from": str(old_d.relative_to(paths.root)),
-                "to": str((ns / d).relative_to(paths.root)),
+                "from": old_d.relative_to(paths.root).as_posix(),
+                "to": (ns / d).relative_to(paths.root).as_posix(),
                 "entries": sum(entry_count(p) for p in old_d.rglob("*.md")),
                 "why": "tracked entity docs travel with the engine corpus"})
     return actions
