@@ -33,6 +33,17 @@ def doc_template(name: str) -> str | None:
     return p.read_text(encoding="utf-8") if p.exists() else None
 
 
+def project_template(name: str) -> str | None:
+    """Template for a PROJECT-owned doc seed (D-080), or None.
+
+    Separate from :func:`doc_template` because a name can exist on both sides
+    with different text: the engine's GLOSSARY is Clauderizer vocabulary, the
+    project's is their domain. These are only ever written on explicit request.
+    """
+    p = TEMPLATES / "project" / f"{name}.md"
+    return p.read_text(encoding="utf-8") if p.exists() else None
+
+
 def procedure_text() -> str:
     return template_text("GAMEPLAN-PROCEDURE.md")
 

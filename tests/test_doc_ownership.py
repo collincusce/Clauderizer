@@ -124,14 +124,26 @@ def test_split_layout_round_trips_through_config(tmp_path):
 
 # --- the phase's real exit criterion --------------------------------------
 
-def test_no_size_manifest_gained_or_lost_a_module():
-    """P1 changes no repo's module set. The manifest split is P2's job; this
-    phase must be provably inert."""
-    assert SIZE_MANIFESTS["pet"]["modules"] == ["VISION", "GLOSSARY", "ENFORCEMENT"]
-    assert SIZE_MANIFESTS["standard"]["modules"] == [
-        "VISION", "ARCHITECTURE", "DECISIONS", "INVARIANTS", "TESTING",
-        "HARDENING", "GLOSSARY", "ENFORCEMENT"]
-    assert len(SIZE_MANIFESTS["saas"]["modules"]) == 15
+def test_no_manifest_claims_a_name_in_the_projects_namespace():
+    """P2: `modules` is what the engine scaffolds and manages, so every entry
+    must be engine-owned. A project-owned name in a manifest is the defect this
+    whole gameplan exists to remove."""
+    for size, m in SIZE_MANIFESTS.items():
+        claimed = [d for d in m["modules"] if not ownership.is_engine_owned(d)]
+        assert not claimed, (
+            f"size '{size}' manifest claims project-owned name(s) {claimed} in "
+            f"`modules` — they belong in `project_seeds` (D-080)")
+
+
+def test_project_seeds_are_offered_never_claimed():
+    """The generic names are still AVAILABLE, just not taken by default."""
+    for size, m in SIZE_MANIFESTS.items():
+        for d in m.get("project_seeds", ()):
+            assert ownership.owner_of(d) == ownership.PROJECT, (size, d)
+            assert d not in m["modules"], (size, d)
+    # the collision names specifically are seeds, not modules
+    assert "SECURITY" in SIZE_MANIFESTS["saas"]["project_seeds"]
+    assert "ARCHITECTURE" in SIZE_MANIFESTS["standard"]["project_seeds"]
 
 
 def test_this_repo_still_resolves_its_own_corpus(tmp_path):

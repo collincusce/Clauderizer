@@ -1,7 +1,9 @@
-# Glossary
+# Clauderizer Glossary
 
-> Canonical vocabulary for this project. Engine terms below are seeded by
-> `clauderize init`; add your domain's own terms under "Domain vocabulary".
+> **Clauderizer's own vocabulary** — engine-owned (D-080), shipped and
+> refreshed by the engine. This is not your project's glossary: your domain
+> terms belong in `docs/GLOSSARY.md`, which the engine never writes. Two
+> glossaries is the intended shape, and they are never merged.
 > Each entry points at the doc that owns the full story — prose here is
 > descriptive, never normative.
 
@@ -70,7 +72,3 @@
 - **Worker briefing** — the standard prompt block a fleet orchestrator hands
   each worker (assignment, hub coordinates, close-out contract); template
   lives in the `clauderizer-fleet` skill.
-
-## Domain vocabulary
-
-_(term — definition; each entry points at the doc that owns it)_

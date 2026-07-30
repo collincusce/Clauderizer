@@ -69,6 +69,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             host_target=args.host,
             spawn_test=not args.no_spawn_test,
             serve_wsl_here=getattr(args, "serve_wsl_here", False),
+            seed_project_docs=getattr(args, "seed_project_docs", False),
         )
     except (WiringRefused, hosts.SessionHostError, hosttargets.HostTargetError) as exc:
         print(f"✗ init refused: {exc}")
@@ -999,6 +1000,10 @@ def build_parser() -> argparse.ArgumentParser:
     pi.add_argument("--size", choices=["pet", "standard", "saas"], default="standard")
     pi.add_argument("--profile", default="auto", help="host language profile (default: auto-detect)")
     pi.add_argument("--gameplan", default=None, help="also create a first gameplan with this name")
+    pi.add_argument("--seed-project-docs", action="store_true",
+                    help="also scaffold this size's PROJECT-owned doc seeds "
+                         "(ARCHITECTURE, VISION, ...) into docs/ — never done "
+                         "by default, and an existing file is never touched")
     pi.add_argument("--run-cmd", default=None,
                     help="launcher PREFIX the wiring uses to invoke the engine's "
                          "commands — e.g. 'uvx --from clauderizer' or 'pipx run "

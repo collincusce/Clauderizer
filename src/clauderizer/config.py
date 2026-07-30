@@ -47,25 +47,22 @@ _KNOWN_SECTIONS = set(_MODELED_KEYS) | {"rituals"}
 # Default module/ritual manifests per size. Mirrors the procedure's sizing
 # matrix, but as a real dial instead of prose advice.
 SIZE_MANIFESTS: dict[str, dict[str, Any]] = {
+    # `modules` is now ENGINE-OWNED docs only (D-080). The engine scaffolds what
+    # it owns and stops claiming names in the project's namespace — every
+    # measured collision (SECURITY, ARCHITECTURE, SCHEMA, ...) lived in the old
+    # default set. `project_seeds` are OFFERED, never created automatically:
+    # `clauderize init --seed-project-docs` writes them, and a repo that already
+    # has its own ARCHITECTURE.md is never touched either way.
     "pet": {
-        # GLOSSARY + ENFORCEMENT ride every size: the shipped stanza and the
-        # clauderizer-fleet skill reference both by path, and a dangling
-        # pointer in a fresh repo is worse than two small docs (L-65).
-        "modules": ["VISION", "GLOSSARY", "ENFORCEMENT"],
+        "modules": ["GLOSSARY", "ENFORCEMENT"],
+        "project_seeds": ["VISION"],
         "rituals": {"preflight": True, "cascade": False, "amendments": False},
         "preflight_checks": ["clean_tree", "tests"],
     },
     "standard": {
-        "modules": [
-            "VISION",
-            "ARCHITECTURE",
-            "DECISIONS",
-            "INVARIANTS",
-            "TESTING",
-            "HARDENING",
-            "GLOSSARY",
-            "ENFORCEMENT",
-        ],
+        "modules": ["DECISIONS", "INVARIANTS", "HARDENING", "GLOSSARY",
+                    "ENFORCEMENT"],
+        "project_seeds": ["VISION", "ARCHITECTURE", "TESTING"],
         "rituals": {"preflight": True, "cascade": True, "amendments": False},
         "preflight_checks": [
             "branch_base",
@@ -79,7 +76,9 @@ SIZE_MANIFESTS: dict[str, dict[str, Any]] = {
         ],
     },
     "saas": {
-        "modules": [
+        "modules": ["DECISIONS", "INVARIANTS", "HARDENING", "GLOSSARY",
+                    "ENFORCEMENT"],
+        "project_seeds": [
             "VISION",
             "REQUIREMENTS",
             "ARCHITECTURE",
@@ -89,12 +88,7 @@ SIZE_MANIFESTS: dict[str, dict[str, Any]] = {
             "SCHEMA",
             "SECURITY",
             "TESTING",
-            "HARDENING",
             "INCIDENTS",
-            "DECISIONS",
-            "INVARIANTS",
-            "GLOSSARY",
-            "ENFORCEMENT",
         ],
         "rituals": {"preflight": True, "cascade": True, "amendments": True},
         "preflight_checks": [

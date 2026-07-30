@@ -159,18 +159,28 @@ def test_every_engine_referenced_doc_is_deliverable():
     ``ensure_modules_current``), or a declared on-demand doc. A reference to
     anything else is a pointer no repo will ever satisfy.
     """
+    from clauderizer import ownership
+
     manifest_union = set()
     for m in SIZE_MANIFESTS.values():
-        manifest_union |= set(m["modules"])
-    deliverable = manifest_union | modernize.ON_DEMAND_DOCS
+        manifest_union |= set(m["modules"]) | set(m.get("project_seeds", ()))
+    # A PROJECT-owned reference is legitimate even when the file is absent — the
+    # human owns it and may simply not have written it (the clauderizer-onboard
+    # skill talks about docs/VISION.md for exactly that reason). What must never
+    # happen is a reference to a name nobody has CLASSIFIED, which is how a
+    # pointer to a file no repo could ever obtain gets shipped.
+    known = (manifest_union | modernize.ON_DEMAND_DOCS
+             | ownership.ENGINE_DOCS | ownership.PROJECT_DOCS
+             | ownership.PRODUCT_DOCS)
     refs = modernize.engine_doc_references()
     undeliverable = {name: labels for name, labels in refs.items()
-                     if name not in deliverable}
+                     if name not in known}
     assert not undeliverable, (
         "engine wiring references doc(s) no repo can obtain: "
         + "; ".join(f"docs/{n}.md (from {', '.join(ls)})"
                     for n, ls in sorted(undeliverable.items()))
-        + " — add the module to SIZE_MANIFESTS or to ON_DEMAND_DOCS")
+        + " — classify it in ownership.py, or add it to SIZE_MANIFESTS / "
+          "ON_DEMAND_DOCS")
 
 
 def test_this_repos_own_wiring_has_no_dangling_pointers():

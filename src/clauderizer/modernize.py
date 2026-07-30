@@ -329,14 +329,23 @@ def _missing_manifest_modules(config: Config) -> list[str]:
     *deleted* from their list is re-added — as one visible, git-diffable line
     that ``upgrade --report`` shows before anything is written.
     """
-    from . import assets
+    from . import assets, ownership
     from .config import SIZE_MANIFESTS
 
     manifest = SIZE_MANIFESTS.get(config.size or "standard",
                                   SIZE_MANIFESTS["standard"])
     have = set(config.modules)
+    # D-080: ENGINE-owned only. 2.0.0 shipped this action over the whole
+    # manifest, which fixed a real bug (new modules reached only fresh inits)
+    # but made the engine reach into the PROJECT's namespace on every upgrade —
+    # completing a manifest meant claiming every name in it, including generic
+    # ones a project already owns. The manifest is engine-only now, and this
+    # second filter is the belt-and-braces: a project-owned name can never be
+    # delivered by an upgrade, whatever a manifest says.
     return [m for m in manifest["modules"]
-            if m not in have and assets.doc_template(m) is not None]
+            if m not in have
+            and ownership.is_engine_owned(m)
+            and assets.doc_template(m) is not None]
 
 
 _DOC_REF_RE = re.compile(r"docs/([A-Z][A-Z0-9_-]*)\.md")

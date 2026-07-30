@@ -22,7 +22,10 @@ def test_init_creates_expected_layout(empty_python_repo):
     assert (r / ".clauderizer" / "config.toml").exists()
     assert (r / ".clauderizer" / "profile.lock.toml").exists()
     assert (r / "docs" / "gameplans" / "GAMEPLAN-PROCEDURE.md").exists()
-    for doc in ("VISION", "ARCHITECTURE", "DECISIONS", "INVARIANTS", "TESTING",
+    # D-080: init scaffolds only what the ENGINE owns. The project's own
+    # ARCHITECTURE/VISION/TESTING are no longer claimed by default — they are
+    # offered as project_seeds and written only on request.
+    for doc in ("DECISIONS", "INVARIANTS",
                 "HARDENING", "GLOSSARY", "ENFORCEMENT"):
         assert (r / "docs" / f"{doc}.md").exists(), doc
     assert (r / "CLAUDE.md").exists()
@@ -78,8 +81,9 @@ def test_init_pet_size_is_minimal(empty_python_repo):
     r = empty_python_repo
     cfg = Config.load(r / ".clauderizer" / "config.toml")
     assert cfg.ritual_enabled("cascade") is False
-    # pet ships VISION but not HARDENING/INVARIANTS
-    assert (r / "docs" / "VISION.md").exists()
+    # pet ships the engine minimum; VISION is a project seed, not claimed
+    assert not (r / "docs" / "VISION.md").exists()
+    assert (r / "docs" / "GLOSSARY.md").exists()
     assert not (r / "docs" / "HARDENING.md").exists()
 
 

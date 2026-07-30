@@ -177,6 +177,7 @@ def init(
     host_target: str | None = None,
     spawn_test: bool = True,
     serve_wsl_here: bool = False,
+    seed_project_docs: bool = False,
 ) -> InitReport:
     root = root.resolve()
     paths = resolve(root)
@@ -329,6 +330,23 @@ def init(
         path = paths.doc(module)
         changed = writer.create_if_absent(path, tmpl)
         report.note(f"doc:{module}", path, changed)
+
+    # 6a. project seeds (D-080) — OFFERED, never claimed. The engine no longer
+    # scaffolds generic names (ARCHITECTURE, SECURITY, VISION, ...) into the
+    # project's namespace by default, because those are the human's docs and
+    # every measured collision lived there. `--seed-project-docs` writes them on
+    # request, and create_if_absent means an existing file is never touched.
+    if seed_project_docs:
+        from ..config import SIZE_MANIFESTS as _SM
+        seeds = _SM.get(config.size or "standard", _SM["standard"]).get(
+            "project_seeds", ())
+        for name in seeds:
+            tmpl = assets.project_template(name) or assets.doc_template(name)
+            if tmpl is None:
+                continue
+            path = paths.doc(name)
+            changed = writer.create_if_absent(path, tmpl)
+            report.note(f"seed:{name}", path, changed)
 
     # 6b. onboarding advisory (D-044): this repo already has documentation and
     # the Clauderizer docs are still scaffold placeholders — say so once, with
