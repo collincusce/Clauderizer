@@ -980,7 +980,12 @@ def _procedure_drift(procedure_file: Path) -> str | None:
     host_major = int(m.group(1))
     engine_major = int(PROCEDURE_VERSION.split(".")[0])
     if host_major != engine_major:
-        return f"host procedure v{m.group(0)} vs engine v{PROCEDURE_VERSION} (MAJOR mismatch)"
+        # group(0) is the whole match ("Procedure version**: 2.0.0"), which
+        # rendered the loudest message this tool has as garbled prose. The
+        # version is groups 1-3.
+        host_v = ".".join(m.group(1, 2, 3))
+        return (f"host procedure v{host_v} vs engine v{PROCEDURE_VERSION} "
+                f"(MAJOR mismatch)")
     return None
 
 
