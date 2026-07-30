@@ -2,6 +2,116 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [3.0.0] — 2026-07-30
+
+**Clauderizer's docs stop living in yours.** Engine memory moves to
+`docs/clauderizer/`, and the engine stops scaffolding generic names into your
+namespace entirely. This is a **breaking layout change with an automatic
+migration** — read the upgrade note below before running it.
+
+This realizes **D-039**, recorded 2026-06-23: *"two documentation layers — agent
+working-memory vs human product docs; never conflate them."* That decision's own
+Consequences predicted *"a future initiative will audit where the two were
+conflated and rectify."* The code never did it, so the engine kept scaffolding
+`ARCHITECTURE.md`, `SECURITY.md` and `GLOSSARY.md` straight into the project's
+`docs/`, with nothing marking which files were whose. Measured across five real
+repos: a film-production project had `FILM-PROCEDURE.md` and
+`VOICE-CASTING-PROCEDURE.md` sitting beside engine `DECISIONS`/`INVARIANTS`/
+`LESSONS`; another owned its own `SECURITY.md` while the `saas` manifest claimed
+that exact name.
+
+### Ownership is structural now (D-080)
+
+- Every doc has an **owner** the engine reasons about — engine, project, or
+  product — and ownership determines location. `docs/clauderizer/` holds the
+  working-memory corpus (`DECISIONS`, `INVARIANTS`, `LESSONS`, `HARDENING`,
+  `SKILLS`, `ENFORCEMENT`, the Clauderizer glossary) plus the tracked entity
+  directories. **An unrecognized name is project-owned**, and that default is the
+  point: a doc the engine has never heard of is yours.
+- **The engine stops claiming generic names.** `ARCHITECTURE`, `VISION`,
+  `TESTING`, `SECURITY`, `DEPLOYMENT`, `SCHEMA`, `REQUIREMENTS`, `INCIDENTS`,
+  `DATASOURCES`, `ENGINEERING-PRINCIPLES` are yours — still offered via
+  `clauderize init --seed-project-docs`, never taken by default. A fresh
+  `standard` init went from 8 docs (3 of them yours) to 5, touching nothing in
+  your namespace.
+- **Two glossaries** is the intended shape, not a workaround: Clauderizer's
+  vocabulary in `docs/clauderizer/GLOSSARY.md`, your domain's in
+  `docs/GLOSSARY.md`. They are never merged.
+- `docs/gameplans/` **stays put** — on a measured reason, not taste. It holds
+  `GAMEPLAN-PROCEDURE.md`, the file `_procedure_drift` reads; relocating it
+  would destroy the one loud signal an older engine trips on a migrated repo.
+- Ownership landed via an **identity default** (L-41): `engine_docs_root`
+  defaulted to the project docs directory, so the whole generalization shipped
+  with a byte-identical digest and zero files moved before the migration
+  deliberately flipped it.
+
+### The untangle
+
+`clauderize upgrade` performs the migration. **No file is ever split, merged, or
+rewritten** — only moved or created. A doc holding *your* content at a name the
+engine also uses is left **byte-identical** where it is and a fresh engine copy
+is written alongside. `git mv` stages renames so history survives. Entry counts
+are conserved tree-wide (INVARIANT-03). Idempotent; `upgrade --report` lists
+every verdict first.
+
+### Upgrading from 2.x — the one rule that matters
+
+> **Upgrade every install that WRITES to a repo before you migrate it** —
+> teammates, CI, and any agent session or MCP server started earlier. Restart
+> them.
+
+An install older than 3.0 still resolves the pre-migration paths, so a tracked
+write from it lands in the stub and the corpus forks. **This was measured, not
+theorized** (H-33): during this release's own development, a `cz_add_decision`
+through a still-running 2.0.0 MCP server appended `D-001` to a stub while the
+real register ended at `D-081` — a duplicate id in an append-only corpus, with
+nothing raised.
+
+3.0.0 **contains** that rather than preventing it, because nothing shipped here
+can change an already-published engine's behaviour:
+
+- Each stub carries a **high-water sentinel** id, so an old engine allocating
+  from it gets `D-900001` — an id that cannot collide with a real one and is
+  obvious on sight.
+- `clauderize doctor` reports a forked stub as **drift** (exit 2), naming the
+  orphan ids and the register they belong in. The merge is left to judgment,
+  never automated (INVARIANT-05).
+- `PROCEDURE_VERSION` bumps to **2.0.0**, so an older engine's MAJOR-mismatch
+  check fires loudly instead of silently reporting an empty corpus — the
+  failure mode measured in this release's own P0 probe, where a migrated repo
+  showed `status` silent, both doctor checks **green**, and **0 decisions
+  visible**.
+
+### Also
+
+- `docs/UPGRADING.md` gains a 2.x → 3.0 section leading with the ordering rule.
+- Fixed: `_procedure_drift` rendered `m.group(0)` — the whole regex match — so a
+  MAJOR mismatch printed `host procedure vProcedure version**: 2.0.0`. The
+  loudest signal the tool has, garbled, in shipped 2.0.0.
+- Fixed: a local `from . import assets` inside one `modernize.apply()` branch
+  made the name function-local for the entire function, breaking the
+  procedure-doc refresh with an `UnboundLocalError`.
+
+### Verification
+
+Suite **1599 → 1617** (7 skips). Dogfooded on this repo and **five real
+consumer projects** (viderizer, phasekeep, clauderizer-site, marketing-studio,
+arena-security-audit): every digest still renders with real gameplan state,
+zero drift, entries conserved in all six, git recorded renames, and every
+project's own docs left untouched — viderizer ends with a film glossary *and* a
+Clauderizer glossary, which is the whole point.
+
+The prose seam is pinned by a ratchet rather than sweep discipline (L-65): a
+test fails if shipped prose points an engine-owned doc at the project's
+namespace, and a companion test fails if the sweep over-reached the other way.
+Two exclusions are deliberate — `GLOSSARY` exists in both namespaces by design,
+and the procedure's changelog narrates past states where history records the
+paths of its own time.
+
+**Known and deliberate:** H-31 (mcp pinned `<2`; adapting to the 2.x SDK is
+unowned follow-up) and H-32 (a dead absolute hook path reports advisory rather
+than drift) remain open.
+
 ## [2.0.0] — 2026-07-30
 
 **2.0 finals, and the last thing it shipped was the upgrade path itself.** The
