@@ -7,7 +7,7 @@ Project DAG; this doc is the prose overview.
 ## Subsystems
 
 **Every** top-level module under `src/clauderizer/` is a tracked subsystem with a
-full entity doc in `docs/subsystems/` — 44 of them, and the exemption list is
+full entity doc in `docs/subsystems/` — 45 of them, and the exemption list is
 empty (1.14.3). That is enforced, not asserted: `tests/test_subsystem_doc_seam.py`
 fails if a new module lands without a doc, and the count below is pinned against
 the directory by `tests/test_architecture_pins.py`.
@@ -32,7 +32,7 @@ the directory by `tests/test_architecture_pins.py`.
 - **[rituals](subsystems/rituals.md)** — pre-flight, cascade, handoff assembly, the status digest, critique/audit: real engine functions that run and report, not conventions the agent is trusted to honor.
 - **[scaffold](subsystems/scaffold.md)** — `init` / `doctor` / `uninstall` / `upgrade` and the self-healing host wiring.
 - **[release-check](subsystems/release-check.md)** — the four version registries, push ordering, and CI green at job granularity (H-28).
-- **[modernize](subsystems/modernize.md)** · **[proposals](subsystems/proposals.md)** · **[onboard](subsystems/onboard.md)** — the two-tier upgrade pass, its triage ledger, and detect-then-prompt onboarding.
+- **[modernize](subsystems/modernize.md) · [untangle](subsystems/untangle.md)** · **[proposals](subsystems/proposals.md)** · **[onboard](subsystems/onboard.md)** — the two-tier upgrade pass, its triage ledger, and detect-then-prompt onboarding.
 
 **The two composable axes:**
 

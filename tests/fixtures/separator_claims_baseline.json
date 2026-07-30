@@ -200,8 +200,18 @@
       "class": "message",
       "count": 1,
       "why": "a doctor/report DISPLAY label, not a filesystem path: modernize.dangling_doc_pointers composes it as f\"{paths.docs.name}/{name}.md\" — paths.docs.name is a bare directory NAME (a str, no separators) and the '/' is a literal in the engine's own f-string, so the rendered label is byte-identical on Windows. No pathlib rendering and no os.sep is involved on either side of the assert."
+    },
+    "tests/test_untangle.py::docs/DECISIONS.md": {
+      "class": "message",
+      "count": 1,
+      "why": "a report/label string the engine composes with a literal '/', not a filesystem path: untangle records paths as `str(p.relative_to(root))` compared against modernize.dangling_doc_pointers' f\"{paths.docs.name}/{name}.md\" label — both sides are engine-authored posix-style strings, byte-identical on Windows, with no os.sep or pathlib rendering involved."
+    },
+    "tests/test_untangle.py::docs/ENFORCEMENT.md": {
+      "class": "message",
+      "count": 1,
+      "why": "a report/label string the engine composes with a literal '/', not a filesystem path: untangle records paths as `str(p.relative_to(root))` compared against modernize.dangling_doc_pointers' f\"{paths.docs.name}/{name}.md\" label — both sides are engine-authored posix-style strings, byte-identical on Windows, with no os.sep or pathlib rendering involved."
     }
   },
   "platform_claims": 0,
-  "total": 48
+  "total": 50
 }

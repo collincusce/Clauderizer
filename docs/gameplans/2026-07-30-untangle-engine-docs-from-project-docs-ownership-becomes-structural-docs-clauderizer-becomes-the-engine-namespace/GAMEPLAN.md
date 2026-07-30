@@ -90,13 +90,13 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 3.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Classifier proven both ways on real files: an untouched template is moved, a user-seeded doc with the same name is left byte-identical in place
-- [ ] Entry-count conservation asserted across every migration (decisions, invariants, lessons, findings counted before and after — INVARIANT-03)
-- [ ] History survives: git log --follow on a moved doc reaches its pre-migration commits
-- [ ] No file is ever split, merged, or rewritten by the migration — only moved or newly created
-- [ ] Idempotent: a second run reports 0 actions; resumable: an interrupted run leaves a state the next run completes rather than corrupts
-- [ ] --dry-run names every file and its verdict before anything is written, and its plan matches what a real run then does
-- [ ] Armed red first against a fixture repo built from a real pre-migration corpus
+- [x] Classifier proven both ways on real files: an untouched template is moved, a user-seeded doc with the same name is left byte-identical in place
+- [x] Entry-count conservation asserted across every migration (decisions, invariants, lessons, findings counted before and after — INVARIANT-03)
+- [x] History survives: git log --follow on a moved doc reaches its pre-migration commits
+- [x] No file is ever split, merged, or rewritten by the migration — only moved or newly created
+- [x] Idempotent: a second run reports 0 actions; resumable: an interrupted run leaves a state the next run completes rather than corrupts
+- [x] --dry-run names every file and its verdict before anything is written, and its plan matches what a real run then does
+- [x] Armed red first against a fixture repo built from a real pre-migration corpus
 
 ### Phase 4: Wire it to upgrade, and make an old engine say "upgrade" instead of "empty"
 
