@@ -18,7 +18,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..config import Config
-from ..paths import find_repo_root, resolve
+from ..paths import find_repo_root, resolve, resolve_for_repo
 from ..rituals import status_bundle
 from ..tools_list import TOOL_NAMES
 
@@ -40,7 +40,7 @@ def repo_paths_config(payload: dict | None = None):
     cross-process flag (INVARIANT-05/08). Without a payload cwd there is no
     ownership claim and behavior is exactly as before (INVARIANT-07)."""
     root = find_repo_root(Path.cwd())
-    paths = resolve(root)
+    paths = resolve_for_repo(root)
     if not paths.config_file.exists():
         return None
     try:

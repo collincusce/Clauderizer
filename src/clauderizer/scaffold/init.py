@@ -18,7 +18,7 @@ from .. import assets, hosts, hosttargets
 from ..config import Config, merge_missing
 from ..graph import abstract_index, index
 from ..markdown import sections, writer
-from ..paths import RepoPaths, resolve
+from ..paths import resolve_for_repo, RepoPaths, resolve
 from ..profiles import detect
 
 # Zero-install fallback when nothing is on PATH. uvx resolves the package on
@@ -180,7 +180,7 @@ def init(
     seed_project_docs: bool = False,
 ) -> InitReport:
     root = root.resolve()
-    paths = resolve(root)
+    paths = resolve_for_repo(root)
     report = InitReport(repo=str(root))
 
     # Clauderizing $HOME is categorically different from clauderizing a

@@ -24,6 +24,12 @@ from clauderizer import paths as P
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
+
+def _engine_docs():
+    """Engine-owned docs root for this repo, layout-aware (D-080)."""
+    from clauderizer.paths import resolve_for_repo
+    return resolve_for_repo(REPO_ROOT).engine_docs_root
+
 #: The exact shapes that landed live, per the gameplan's Phase 2 criteria.
 LANDED_SHAPES = ["</consequences>", "</context>", "</root_cause>", "</impact>"]
 
@@ -77,7 +83,7 @@ def test_guard_would_have_caught_each_live_corrupted_entry(register, entry_id, t
     This is the honest test: not a synthetic string, but the bytes that actually
     landed in append-only memory because no guard existed.
     """
-    doc = (REPO_ROOT / "docs" / register).read_text(encoding="utf-8")
+    doc = (_engine_docs() / register).read_text(encoding="utf-8")
     block = _entry_block(doc, entry_id)
     assert tag in block, (
         f"source-of-truth guard: {entry_id} in {register} must still carry {tag} "
@@ -96,7 +102,7 @@ def test_the_live_entries_are_not_retro_edited():
     """The corpus is append-only. If a later phase 'cleans' these, this fails —
     which is the point: repair belongs to the amendment op, still deferred."""
     for register, entry_id, tag in CORRUPTED_ENTRIES:
-        doc = (REPO_ROOT / "docs" / register).read_text(encoding="utf-8")
+        doc = (_engine_docs() / register).read_text(encoding="utf-8")
         assert tag in _entry_block(doc, entry_id)
 
 

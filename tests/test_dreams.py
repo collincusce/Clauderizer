@@ -535,7 +535,9 @@ def test_dream_skill_ships_and_is_registered():
     for needle in ("cz_dream_propose", "reviewed_note_ids", "clauderize ops",
                    "cz_handle_dream_proposal"):
         assert needle in body, needle
-    assert "clauderizer-dream" in (root / "docs" / "SKILLS.md").read_text(encoding="utf-8")
+    from clauderizer.paths import resolve_for_repo
+    assert "clauderizer-dream" in resolve_for_repo(root).doc(
+        "SKILLS").read_text(encoding="utf-8")
 
 
 def test_readme_mcp_surface_pins_the_full_tool_list():

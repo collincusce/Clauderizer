@@ -10,7 +10,7 @@ __version__ = "2.0.0"
 # engine ships GAMEPLAN-PROCEDURE.md verbatim; `clauderize doctor` warns if a
 # host repo's procedure has drifted to a different MAJOR version, and
 # `clauderize upgrade` modernizes a corpus stamped with an older version.
-PROCEDURE_VERSION = "1.13.0"
+PROCEDURE_VERSION = "2.0.0"
 
 
 def is_prerelease(version: str | None = None) -> bool:

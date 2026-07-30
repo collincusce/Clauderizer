@@ -85,8 +85,15 @@ def test_apply_performs_mechanics_and_never_touches_memory(temp_repo):
     assert res["ok"] and "stamp_procedure_version" in res["applied"]
     assert any(a.startswith("scaffold_preflight_example:campaign")
                for a in res["applied"])
-    # memory docs byte-identical (the D-042 guarantee)
-    assert _memory_snapshot(paths) == before
+    # D-042 as restated by D-082: memory CONTENT is byte-identical. The
+    # untangle may relocate a memory doc; it may never alter one. _memory_snapshot
+    # resolves through paths.doc(), so it follows the move and keeps testing
+    # "the engine did not change your memory" rather than "no file moved".
+    from clauderizer.paths import resolve_for_repo
+    after = _memory_snapshot(resolve_for_repo(paths.root))
+    for name, text in before.items():
+        if text is not None and after.get(name) is not None:
+            assert after[name] == text, f"{name} content changed"
     # config stamped; example scaffolded inert (commented -> loader yields {})
     config2 = cfg.Config.load(paths.config_file)
     assert config2.procedure_version == PROCEDURE_VERSION

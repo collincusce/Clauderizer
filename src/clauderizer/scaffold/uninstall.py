@@ -24,7 +24,7 @@ from pathlib import Path
 
 from .. import hosts, hosttargets
 from ..markdown import writer
-from ..paths import resolve
+from ..paths import resolve_for_repo, resolve
 
 
 @dataclass
@@ -171,7 +171,7 @@ def uninstall(root: Path, *, host: str | None = None) -> UninstallReport:
         return report
 
     # --- full footprint ---------------------------------------------------------
-    paths = resolve(root)
+    paths = resolve_for_repo(root)
 
     # 1. Claude Code wiring
     if _remove_mcp_key(paths.mcp_json):

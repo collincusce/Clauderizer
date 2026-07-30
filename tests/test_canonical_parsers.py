@@ -82,7 +82,9 @@ def test_absent_status_is_defaulted_not_parsed():
 def test_the_hardening_register_of_this_repo_parses_completely():
     """Regression oracle for the live defect: run the real reader over the real
     file. Pre-fix this returned 20/20 'active' with every date null."""
-    hardening = Path(__file__).resolve().parents[1] / "docs" / "HARDENING.md"
+    from clauderizer.paths import resolve_for_repo
+    hardening = resolve_for_repo(
+        Path(__file__).resolve().parents[1]).doc("HARDENING")
     from clauderizer.markdown import frontmatter
     _fm, body = frontmatter.split(hardening.read_text(encoding="utf-8"))
     # listing.findings reads HARDENING under the "Risks" heading.

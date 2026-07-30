@@ -1,11 +1,27 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.13.0
+**Procedure version**: 2.0.0
 **Last updated**: 2026-07-30
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v2.0.0** (2026-07-30): **Engine memory and your docs are separate things.**
+  Clauderizer's own docs are closer to config than to prose — engine state that
+  happens to be markdown — and they now live in their own namespace,
+  `docs/clauderizer/`, instead of interleaved with the project's writing in
+  `docs/`. The engine no longer scaffolds generic names (ARCHITECTURE, SECURITY,
+  VISION, TESTING, SCHEMA, DEPLOYMENT, REQUIREMENTS, INCIDENTS...) into your
+  namespace at all: those are yours, offered as seeds via
+  `init --seed-project-docs` and never taken by default. Two glossaries is the
+  intended shape — Clauderizer's vocabulary in `docs/clauderizer/GLOSSARY.md`,
+  your domain's in `docs/GLOSSARY.md` — and they are never merged. Existing
+  repos are migrated by `clauderize upgrade`, which moves only what the engine
+  owns, leaves any file YOU seeded byte-identical where it is, splits or merges
+  nothing, conserves every entry, and leaves a stub at each vacated path. This
+  is a MAJOR procedure bump on purpose: an older engine reading a migrated repo
+  would otherwise report an empty corpus in silence, and the major is what makes
+  its `doctor` say so loudly instead. Realizes D-039, recorded 2026-06-23.
 - **v1.13.0** (2026-07-30): **An upgrade delivers new doc modules, not just new
   stamps.** A release that adds a doc module to a size manifest used to reach
   only FRESH inits: an existing repo's config keeps the module list it was

@@ -28,7 +28,7 @@ from .config import Config
 from .graph import cascade as cascade_mod
 from .graph import index, query
 from .locking import write_lock
-from .paths import RepoPaths, find_repo_root, resolve
+from .paths import resolve_for_repo, RepoPaths, find_repo_root, resolve
 from .profiles import detect
 from .rituals import handoff, preflight, status_bundle
 
@@ -46,7 +46,7 @@ def repo_ctx() -> tuple[RepoPaths, Config]:
     override = os.environ.get("CLAUDERIZER_REPO")
     start = Path(override) if override else Path.cwd()
     root = find_repo_root(start)
-    paths = resolve(root)
+    paths = resolve_for_repo(root)
     if not paths.config_file.exists():
         src = f"$CLAUDERIZER_REPO ({override})" if override else f"cwd ({start})"
         raise RuntimeError(

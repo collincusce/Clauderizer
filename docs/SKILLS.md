@@ -1,33 +1,16 @@
-# Project Skills
+# SKILLS — moved
 
-> Agent Skills available to this project, registered with `cz_register_skill`
-> (discover candidates with `cz_discover_skills`). Every future handoff surfaces
-> the relevant ones, so this list stays compact: mark entries that stop earning
-> their place obsolete (`cz_obsolete_skill` with the `S-NN` id). Entries are
-> never deleted, only marked.
-
-## Skills
-
-### Category: Clauderizer workflow
-
-**S-01.** clauderizer-amend — Change a gameplan after it has started executing. Use when scope shifts mid-flight — a phase needs a task it's missing, a dependency changed, or work must be added/removed. *(source: .claude/skills/clauderizer-amend)*
-
-**S-02.** clauderizer-cascade — After changing a tracked entity (subsystem, feature, decision, invariant, or a status/version), walk its dependents and reconcile them. Use whenever you finish an edit that something else might depend on. *(source: .claude/skills/clauderizer-cascade)*
-
-**S-03.** clauderizer-close-gameplan — Close out a completed (or explicitly deferred) gameplan. Use when all phases are done and the user wants to wrap up and capture what was learned. *(source: .claude/skills/clauderizer-close-gameplan)*
-
-**S-04.** clauderizer-do-phase — Execute or continue the current gameplan phase end-to-end — pre-flight, do the work, then close out (handoff + status transitions + cascade). Use when the user says "do the next phase", "continue the gameplan", or "work on phase N". *(source: .claude/skills/clauderizer-do-phase)*
-
-**S-05.** clauderizer-new-gameplan — Plan a new multi-phase gameplan from a goal. Use when the user wants to start a new initiative, project, or large feature and needs it broken into phases with decisions and exit criteria. *(source: .claude/skills/clauderizer-new-gameplan)*
-
-**S-06.** clauderizer-record — Quickly capture a decision, invariant, lesson, correction, or risk into the right place. Use when the user says "remember that…", "we decided…", "note that…", or "that was a mistake, the right way is…". *(source: .claude/skills/clauderizer-record)*
-
-**S-07.** clauderizer-onboard — Seed a freshly clauderized project's memory from its existing documentation. Use right after `clauderize init` on a repo that already has a README or design docs, when init or `clauderize upgrade` suggests onboarding, or when VISION/ARCHITECTURE are still scaffold placeholders. *(source: .claude/skills/clauderizer-onboard)*
-
-**S-08.** clauderizer-modernize — Triage the advisory upgrade proposals cz_modernize surfaces — walk each one with the user to handle, dismiss, or defer. Use when the session digest says "N upgrade proposals awaiting triage", after `clauderize upgrade`, or when the user asks to finish/action a modernization. *(source: .claude/skills/clauderizer-modernize)*
-
-**S-10.** clauderizer-fleet — Fan out multiple host-spawned agents over one gameplan with Clauderizer as the shared memory hub. Use when the user says "fan out", "fleet", "parallelize this gameplan", or "put more agents on it". Orchestrates partitioning (cz_assign), worker briefings, hub-and-spoke memory writes, honest close-out, and dead-worker cleanup. Repo-local until 2.0-alpha Phase 7 productizes it into the shipped asset set (D-071, A-001). *(source: .claude/skills/clauderizer-fleet)*
-
-### Category: Memory maintenance
-
-**S-09.** clauderizer-dream — Run the dreaming ritual: triage staged dream proposals (handle/dismiss/defer), then if the journal is ripe run cz_dream, judge the clusters, and stage new proposals via cz_dream_propose with reviewed_note_ids. Use when the digest shows "Dreams: N note(s) awaiting the dreamer" or "(N dream)" proposals awaiting triage, or on "dream" / "run the dreamer". *(source: src/clauderizer/skills/clauderizer-dream/SKILL.md)*
+> **This file has moved to `docs/clauderizer/SKILLS.md`.**
+>
+> Clauderizer now keeps its own memory in `docs/clauderizer/` and leaves
+> `docs/` to you (D-080). Nothing was lost — the content is at the path above.
+>
+> If your tooling brought you here expecting content, the install reading this
+> repo is older than the layout. Upgrade it:
+>
+> ```
+> uv tool install "clauderizer[mcp]" --force
+> ```
+>
+> This placeholder is inert and can be deleted once every install that touches
+> this repo is on 3.0.0 or newer.

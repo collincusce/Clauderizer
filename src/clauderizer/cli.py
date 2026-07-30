@@ -22,14 +22,14 @@ from pathlib import Path
 from . import PROCEDURE_VERSION, __version__, hosts, hosttargets
 from .config import Config, ConfigError
 from .graph import abstract_index, index
-from .paths import find_repo_root, resolve
+from .paths import find_repo_root, resolve, resolve_for_repo
 from .rituals import status_bundle
 from .scaffold.init import WiringRefused, _resolve_invocation, init as run_init
 from .tools_list import TOOL_NAMES
 
 
 def _load(root: Path | None = None):
-    paths = resolve(find_repo_root(root or Path.cwd()))
+    paths = resolve_for_repo(find_repo_root(root or Path.cwd()))
     if not paths.config_file.exists():
         return paths, None
     return paths, Config.load(paths.config_file)
@@ -695,6 +695,22 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     # command, and the pointer still reads as prose until it is run.
     from . import modernize as _modernize
 
+    # Docs layout (D-080): say which namespace this repo's engine memory lives
+    # in, and offer the untangle when it is still interleaved with the project's.
+    from . import ownership as _own, untangle as _unt
+
+    if (config.docs_layout or _own.LAYOUT_LEGACY) == _own.LAYOUT_SPLIT:
+        print(f"✓ docs layout — engine memory separated into "
+              f"{paths.docs.name}/{_own.ENGINE_NAMESPACE}/")
+    elif _unt.plan(paths, config):
+        # Informational, NOT a warn: the untangle applies automatically on the
+        # next `clauderize upgrade`, so a repo that has simply not upgraded yet
+        # is healthy, not amber. Turning every un-migrated install exit-3 would
+        # spend the unverifiable state on a pending routine action.
+        print(f"· docs layout — engine memory is still interleaved with your "
+              f"own docs in {paths.docs.name}/; `clauderize upgrade` separates "
+              f"them into {_own.ENGINE_NAMESPACE}/ (moves only what the engine "
+              f"owns; `--report` lists every verdict first)")
     _dangling = _modernize.dangling_doc_pointers(paths, config)
     if _dangling:
         warn("engine-referenced docs missing",

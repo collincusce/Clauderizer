@@ -149,7 +149,7 @@ def test_project_seeds_are_offered_never_claimed():
 def test_this_repo_still_resolves_its_own_corpus(tmp_path):
     """The engine's own repo is on the legacy layout and must keep resolving."""
     root = Path(__file__).resolve().parent.parent
-    p = _paths.resolve(root)
+    p = _paths.resolve_for_repo(root)   # honours whatever layout this repo is on
     assert p.doc("DECISIONS").exists()
     assert p.doc("INVARIANTS").exists()
     assert p.subsystems_dir.is_dir()

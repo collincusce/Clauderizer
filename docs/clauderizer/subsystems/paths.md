@@ -23,12 +23,16 @@ Every entry point resolves the root from the working directory on **every call**
 
 A frozen dataclass carrying `root`, `docs` and `gameplans`, with every other well-known location derived as a property. Freezing it is deliberate: a path bundle that callers can mutate is a path bundle that drifts.
 
-**`resolve(root, docs_rel="docs", gameplans_rel="docs/gameplans")`** is the constructor. The two relative arguments are the only knobs; everything else is fixed.
+**`resolve(root, docs_rel="docs", gameplans_rel="docs/gameplans", layout="legacy")`** is the constructor. `layout` selects the docs layout (D-080): `legacy` leaves `engine_docs` unset so every doc resolves where it always did, `split` puts engine-owned docs under `docs/clauderizer/`.
+
+**`resolve_for_repo(root)`** is what every entry point actually calls — it reads the repo's own recorded paths and `docs_layout` from `.clauderizer/config.toml` (which sits outside the docs tree, so it is readable before the layout is known) and resolves accordingly. An absent or unreadable config falls back to the legacy identity, which is exactly the pre-D-080 behaviour.
+
+**`engine_docs_root`** resolves ENGINE-owned docs; its identity default is the project docs directory, which is what let ownership land with zero files moved (L-41).
 
 The properties fall into four groups:
 
 - **Engine state** under `.clauderizer/` — `clauderizer_dir`, `config_file`, `index_file`, `abstract_index_file`, `profile_lock`, `kinds_dir`, `write_lock_file`, `telemetry_file`, `dreams_file`. The last three are per-machine and gitignored; `index_file` and `abstract_index_file` are disposable caches rebuilt from markdown on demand (INVARIANT-01).
-- **Memory** under `docs/` — `doc(name)` for the named living docs (`doc("DECISIONS")` → `docs/DECISIONS.md`, appending `.md` when absent), plus `features_dir`, `subsystems_dir`, `procedure_file`, and `gameplan_dir(gameplan_id)`.
+- **Memory** under `docs/` — `doc(name)` for the named living docs (`doc("DECISIONS")` → `docs/DECISIONS.md` on the legacy layout, `docs/clauderizer/DECISIONS.md` once split; routed by `subsys.ownership`, appending `.md` when absent), plus `features_dir`, `subsystems_dir`, `procedure_file`, and `gameplan_dir(gameplan_id)`.
 - **Host wiring** at the repo root — `claude_md`, `agents_md` (the cross-harness instructions file that Codex, kimi and others honor, carrying the same marker-block stanza), `mcp_json`.
 - **Generated guides** — `kimi_setup`, the Kimi Code CLI setup guide whose guide-only pieces `init` writes rather than editing the user's global config.
 

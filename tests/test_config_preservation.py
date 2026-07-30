@@ -64,16 +64,24 @@ def test_upgrade_converges_a_pre_1_14_install(empty_python_repo):
 
 
 def test_upgrade_never_touches_docs(empty_python_repo):
-    """D-042: no markdown memory file is ever auto-mutated."""
+    """D-042 as restated by D-082: no markdown memory file is ever auto-MUTATED.
+
+    The untangle may RELOCATE an engine-owned doc, so identity is keyed on
+    content, not on path — every hash present before must still exist after.
+    Anything else would be an alteration, which the tier still forbids.
+    """
     import hashlib
     init(empty_python_repo, spawn_test=False)
     paths = P.resolve(empty_python_repo)
-    before = {p: hashlib.sha256(p.read_bytes()).hexdigest()
+    before = {hashlib.sha256(p.read_bytes()).hexdigest()
               for p in paths.docs.rglob("*.md")}
     modernize.apply(paths, cfg.Config.load(paths.config_file))
-    after = {p: hashlib.sha256(p.read_bytes()).hexdigest()
-             for p in paths.docs.rglob("*.md")}
-    assert before == after
+    after_paths = P.resolve_for_repo(empty_python_repo)
+    after = {hashlib.sha256(p.read_bytes()).hexdigest()
+             for p in after_paths.docs.rglob("*.md")}
+    assert before <= after, (
+        "an upgrade altered a memory doc's CONTENT — relocation is permitted "
+        "(D-082), alteration is not")
 
 
 def test_the_ignore_set_is_single_sourced():

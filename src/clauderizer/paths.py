@@ -177,3 +177,25 @@ def resolve(root: Path, docs_rel: str = "docs", gameplans_rel: str = "docs/gamep
         engine_docs=(docs / ownership.ENGINE_NAMESPACE
                      if layout == ownership.LAYOUT_SPLIT else None),
     )
+
+
+def resolve_for_repo(root: Path) -> RepoPaths:
+    """``resolve`` honouring the repo's own recorded paths and docs layout.
+
+    The single seam every entry point uses, so a migrated repo resolves its
+    engine memory in one place instead of five. ``.clauderizer/config.toml`` sits
+    outside the docs tree, so it is readable before the layout is known; an
+    unreadable or absent config falls back to the legacy identity, which is
+    exactly the pre-D-080 behaviour.
+    """
+    from .config import Config
+
+    base = resolve(root)
+    if not base.config_file.exists():
+        return base
+    try:
+        cfg = Config.load(base.config_file)
+    except Exception:
+        return base
+    return resolve(root, cfg.docs, cfg.gameplans,
+                   layout=cfg.docs_layout or ownership.LAYOUT_LEGACY)

@@ -25,7 +25,16 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-SUBSYS_DOCS = ROOT / "docs" / "subsystems"
+def _repo_engine_docs():
+    """This repo's ENGINE-owned docs root, honouring its docs layout (D-080).
+
+    Hardcoding `ROOT / "docs"` broke the moment the engine's own repo migrated —
+    which is exactly the drift these seam tests exist to catch, so they resolve
+    it the way the engine does rather than assuming a layout.
+    """
+    from clauderizer.paths import resolve_for_repo
+    return resolve_for_repo(ROOT).engine_docs_root
+SUBSYS_DOCS = _repo_engine_docs() / "subsystems"
 SRC = ROOT / "src" / "clauderizer"
 
 #: Doc stem -> module/package under src/. Only for the few where the doc name is
