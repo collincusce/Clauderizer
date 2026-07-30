@@ -1,13 +1,13 @@
 # workflow critique repairs — engine identity, ranker length bias, cascade yield, saturated telemetry — Phase Status Tracker
 
 > Living document. Updated after each phase completes.
-> Last updated: 2026-07-24
+> Last updated: 2026-07-30
 
 ## Phase Status
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Engine identity — doctor certifies what it launched | ⬜ READY | — | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Engine identity — doctor certifies what it launched | 🟡 IN PROGRESS | 2026-07-30 | — | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Pre-flight stops arming its own failure; the baseline stops lying | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Adversarial ranking fixture — build the measuring stick before the fix | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Length-normalize the ranker and break the corpus ratchet | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |

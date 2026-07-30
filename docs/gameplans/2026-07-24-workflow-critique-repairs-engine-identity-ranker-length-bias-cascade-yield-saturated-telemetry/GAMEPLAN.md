@@ -1,7 +1,7 @@
 # workflow critique repairs — engine identity, ranker length bias, cascade yield, saturated telemetry Gameplan
 
 > Created: 2026-07-24
-> Status: Planning
+> Status: Executing
 > Kind: driven
 > Procedure: docs/gameplans/GAMEPLAN-PROCEDURE.md
 
@@ -52,13 +52,13 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 0.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] `clauderize doctor` completes an initialize handshake against the Claude Code MCP registration and prints the served serverInfo name AND version, not just "launchable"
-- [ ] A synthetic version skew (engine != served) produces a warning line naming the remediation command; a matched pair stays silent
-- [ ] The handshake probe is the SAME implementation the kimi-desktop path uses — `grep -c 'def .*handshake\|serverInfo' src/` shows no second probe fork
+- [x] `clauderize doctor` completes an initialize handshake against the Claude Code MCP registration and prints the served serverInfo name AND version, not just "launchable"
+- [x] A synthetic version skew (engine != served) produces a warning line naming the remediation command; a matched pair stays silent
+- [x] The handshake probe is the SAME implementation the kimi-desktop path uses — `grep -c 'def .*handshake\|serverInfo' src/` shows no second probe fork
 - [ ] A fresh-process test (subprocess running the real CLI, per L-60) asserts the identity check executes on the CLI leg, not only in-process
-- [ ] Running against this repo TODAY, doctor reports the real 1.13.0-vs-served skew instead of green
+- [x] Running against this repo TODAY, doctor reports the real 1.13.0-vs-served skew instead of green
 - [ ] O-02 resolved: a decision recorded on whether init stamps a version floor into the emitted .mcp.json, with the portability constraint (D-031/L-48) addressed either way
-- [ ] Full suite green: 1007+ tests
+- [x] Full suite green: 1007+ tests
 
 ### Phase 1: Pre-flight stops arming its own failure; the baseline stops lying
 

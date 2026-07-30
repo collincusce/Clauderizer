@@ -1,7 +1,7 @@
 # Chat Handoff Index — workflow critique repairs — engine identity, ranker length bias, cascade yield, saturated telemetry
 
-> Last updated: 2026-07-24
-> Status: Phase 0 ready
+> Last updated: 2026-07-30
+> Status: Phase 0 of 6 in progress
 
 ## How This Works
 
@@ -29,7 +29,7 @@ Run `cz_preflight` before any code. If any enabled check fails: STOP, report.
 
 | Phase | Name | Status | Started | Completed | Handoff |
 |-------|------|--------|---------|-----------|---------|
-| 0 | Engine identity — doctor certifies what it launched | ⬜ READY | — | — | handoffs/PHASE-0-HANDOFF.md |
+| 0 | Engine identity — doctor certifies what it launched | 🟡 IN PROGRESS | 2026-07-30 | — | handoffs/PHASE-0-HANDOFF.md |
 | 1 | Pre-flight stops arming its own failure; the baseline stops lying | ⬜ NOT STARTED | — | — | handoffs/PHASE-1-HANDOFF.md |
 | 2 | Adversarial ranking fixture — build the measuring stick before the fix | ⬜ NOT STARTED | — | — | handoffs/PHASE-2-HANDOFF.md |
 | 3 | Length-normalize the ranker and break the corpus ratchet | ⬜ NOT STARTED | — | — | handoffs/PHASE-3-HANDOFF.md |
