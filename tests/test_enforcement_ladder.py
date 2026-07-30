@@ -14,7 +14,11 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-DOC = Path(__file__).parent.parent / "docs" / "ENFORCEMENT.md"
+from clauderizer.paths import resolve_for_repo
+
+# Layout-aware (D-080): ENFORCEMENT is engine-owned, so it follows the repo's
+# docs layout. Hardcoding docs/ here would assert a LAYOUT, not the ladder.
+DOC = resolve_for_repo(Path(__file__).parent.parent).doc("ENFORCEMENT")
 
 TIERS = {"hard-NORMALIZE", "preflight-blocking", "advisory", "instructions-floor"}
 

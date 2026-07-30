@@ -700,8 +700,21 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     from . import ownership as _own, untangle as _unt
 
     if (config.docs_layout or _own.LAYOUT_LEGACY) == _own.LAYOUT_SPLIT:
-        print(f"✓ docs layout — engine memory separated into "
-              f"{paths.docs.name}/{_own.ENGINE_NAMESPACE}/")
+        _forked = _unt.forked_stubs(paths)
+        if _forked:
+            # H-33: some install too old for the split layout wrote into a
+            # legacy stub. Content is intact and ids are recoverable, so this
+            # is drift to be merged by hand, never repaired automatically.
+            ok = False
+            for f in _forked:
+                print(f"✗ forked corpus — {f['stub']} was written to by an "
+                      f"install too old for this layout: {', '.join(f['orphan_ids'])} "
+                      f"belong in {f['real']}. Move them, then delete the stub. "
+                      f"Upgrade that install (`uv tool install \"clauderizer[mcp]\" "
+                      f"--force`) before it writes again.")
+        else:
+            print(f"✓ docs layout — engine memory separated into "
+                  f"{paths.docs.name}/{_own.ENGINE_NAMESPACE}/")
     elif _unt.plan(paths, config):
         # Informational, NOT a warn: the untangle applies automatically on the
         # next `clauderize upgrade`, so a repo that has simply not upgraded yet

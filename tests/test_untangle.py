@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 
 from clauderizer import assets, ownership, paths as _paths, untangle
@@ -130,8 +131,9 @@ def test_a_legacy_stub_is_left_at_every_vacated_path(tmp_path):
     assert "moved" in stub.lower()
     assert f"docs/{ownership.ENGINE_NAMESPACE}/DECISIONS.md" in stub
     assert "uv tool install" in stub
-    # inert: contributes no entries
-    assert untangle.entry_count(p.docs / "DECISIONS.md") == 0
+    # carries only its high-water sentinel — no real entry
+    assert untangle.entry_count(p.docs / "DECISIONS.md") == 1
+    assert "D-900000" in stub and "SENTINEL" in stub
 
 
 def test_the_stub_stops_the_old_engines_harmful_advice(tmp_path):
@@ -184,3 +186,61 @@ def test_works_without_git(tmp_path):
     res = untangle.apply(p, cfg)
     assert res["ok"]
     assert (p.docs / ownership.ENGINE_NAMESPACE / "DECISIONS.md").exists()
+
+
+# --- H-33: an OLD engine writing into a stub ------------------------------
+
+def _old_engine_write(p, name, entry_id_prefix):
+    """Simulate an engine too old for the split layout: it resolves the LEGACY
+    path and appends there, allocating from whatever ids it finds."""
+    from clauderizer.model import next_numbered_id
+
+    legacy = _paths.resolve(p.root)          # how a pre-3.0 engine resolves
+    target = legacy.doc(name)
+    text = target.read_text(encoding="utf-8")
+    new_id = next_numbered_id(text, entry_id_prefix, sep="-", width=3)
+    target.write_text(text + f"\n### {new_id} — written by an old engine\n\nbody\n",
+                      encoding="utf-8")
+    return new_id
+
+
+def test_the_sentinel_stops_an_old_engines_write_from_COLLIDING(tmp_path):
+    """H-33, the live failure: a cz_add_decision through a stale engine landed
+    in the stub and numbered itself D-001 while the real register ended at
+    D-081 — a duplicate id in an append-only corpus. The sentinel cannot stop
+    the write, but it must stop the collision."""
+    p, cfg = _repo(tmp_path)
+    untangle.apply(p, cfg)
+    live = _paths.resolve(p.root, layout=ownership.LAYOUT_SPLIT)
+    real_ids = set(re.findall(r"^### (D-\d+)",
+                              live.doc("DECISIONS").read_text(encoding="utf-8"),
+                              re.M))
+    assert real_ids, "fixture must have real decisions"
+
+    orphan = _old_engine_write(p, "DECISIONS", "D")
+
+    assert orphan not in real_ids, (
+        f"an old engine allocated {orphan}, colliding with the real corpus — "
+        "the sentinel failed")
+    assert int(orphan.split("-")[1]) > untangle._SENTINEL_N
+
+
+def test_a_forked_stub_is_reported_not_silently_tolerated(tmp_path):
+    p, cfg = _repo(tmp_path)
+    untangle.apply(p, cfg)
+    live = _paths.resolve(p.root, layout=ownership.LAYOUT_SPLIT)
+    assert untangle.forked_stubs(live) == [], "clean stub must be quiet"
+
+    orphan = _old_engine_write(p, "DECISIONS", "D")
+
+    forked = untangle.forked_stubs(live)
+    assert len(forked) == 1
+    assert forked[0]["doc"] == "DECISIONS"
+    assert orphan in forked[0]["orphan_ids"]
+    assert forked[0]["real"].endswith("clauderizer/DECISIONS.md")
+
+
+def test_forked_stub_detection_is_silent_on_the_legacy_layout(tmp_path):
+    """A repo that never migrated has no stubs and must never be reported."""
+    p, cfg = _repo(tmp_path)
+    assert untangle.forked_stubs(p) == []

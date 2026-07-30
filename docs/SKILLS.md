@@ -14,3 +14,11 @@
 >
 > This placeholder is inert and can be deleted once every install that touches
 > this repo is on 3.0.0 or newer.
+
+### S-900000 — SENTINEL: do not write below this line
+
+An install too old to know about `docs/clauderizer/` will resolve *this* file
+when it records a SKILLS entry, and append here. This deliberately-high id
+exists so such a write cannot collide with a real one — anything numbered above
+`S-900000` in this file is an orphan that belongs in the real register.
+`clauderize doctor` reports them; move them and delete this file.

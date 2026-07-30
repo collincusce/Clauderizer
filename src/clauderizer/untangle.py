@@ -43,6 +43,23 @@ MOVE = "move"
 LEAVE_AND_CREATE = "leave_and_create"
 CREATE = "create"
 
+#: Id prefix each numbered register allocates from, mirroring ``mutations``.
+#: The stub carries a HIGH-WATER sentinel entry in this prefix so that an engine
+#: too old to know about the split layout — which resolves the legacy path,
+#: finds the stub, and appends — cannot allocate an id that COLLIDES with the
+#: real corpus (H-33, observed live: a write landed as D-001 while the real
+#: register ended at D-081). It cannot stop that engine writing; it can stop the
+#: write from silently corrupting an append-only id sequence, and turn it into
+#: an orphan that is obvious on sight and detectable by ``forked_stubs``.
+STUB_PREFIXES = {
+    "DECISIONS": ("D", 3),
+    "INVARIANTS": ("INVARIANT", 2),
+    "HARDENING": ("H", 2),
+    "LESSONS": ("L", 2),
+    "SKILLS": ("S", 2),
+}
+_SENTINEL_N = 900000
+
 _STUB = """# {name} — moved
 
 > **This file has moved to `{new}`.**
@@ -59,7 +76,59 @@ _STUB = """# {name} — moved
 >
 > This placeholder is inert and can be deleted once every install that touches
 > this repo is on 3.0.0 or newer.
+{sentinel}"""
+
+_SENTINEL_BLOCK = """
+### {prefix}{sep}{n} — SENTINEL: do not write below this line
+
+An install too old to know about `docs/clauderizer/` will resolve *this* file
+when it records a {name} entry, and append here. This deliberately-high id
+exists so such a write cannot collide with a real one — anything numbered above
+`{prefix}{sep}{n}` in this file is an orphan that belongs in the real register.
+`clauderize doctor` reports them; move them and delete this file.
 """
+
+
+def _sentinel_for(name: str) -> str:
+    spec = STUB_PREFIXES.get(name)
+    if spec is None:
+        return ""
+    prefix, width = spec
+    return _SENTINEL_BLOCK.format(prefix=prefix, sep="-", name=name,
+                                  n=f"{_SENTINEL_N:0{width}d}")
+
+
+def forked_stubs(paths: RepoPaths) -> list[dict]:
+    """Legacy stubs that an old engine has WRITTEN into (H-33).
+
+    A stub carrying entries above its sentinel means some install resolved the
+    pre-migration path and recorded there — the corpus has forked. Content is
+    intact and the ids are recoverable, so this is reported for a merge rather
+    than repaired automatically: deciding where someone else's entry belongs is
+    judgment, not mechanics (INVARIANT-05).
+    """
+    out: list[dict] = []
+    if paths.engine_docs is None:
+        return out                      # legacy layout: no stubs exist
+    for name, (prefix, width) in STUB_PREFIXES.items():
+        stub = paths.docs / f"{name}.md"
+        if not stub.exists() or stub == paths.doc(name):
+            continue
+        try:
+            text = stub.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        orphans = [m.group(1) for m in
+                   re.finditer(rf"^#{{1,6}}\s+({re.escape(prefix)}-\d+)\b", text,
+                               re.M)
+                   if int(m.group(1).rsplit("-", 1)[1]) > _SENTINEL_N]
+        if orphans:
+            out.append({"doc": name,
+                        "stub": f"{paths.docs.name}/{name}.md",
+                        "real": f"{paths.docs.name}/"
+                                f"{ownership.ENGINE_NAMESPACE}/{name}.md",
+                        "orphan_ids": orphans})
+    return out
 
 
 def entry_count(path: Path) -> int:
@@ -162,8 +231,10 @@ def apply(paths: RepoPaths, config: Config, *, stubs: bool = True) -> dict:
                 src.replace(dst)
             a["history_preserved"] = by_git
             if stubs and not name.endswith("/"):
-                src.write_text(_STUB.format(name=name.rstrip("/"),
-                                            new=a["to"]), encoding="utf-8")
+                src.write_text(
+                    _STUB.format(name=name.rstrip("/"), new=a["to"],
+                                 sentinel=_sentinel_for(name.rstrip("/"))),
+                    encoding="utf-8")
         elif a["verdict"] == LEAVE_AND_CREATE:
             tmpl = assets.doc_template(name)
             if tmpl is not None:

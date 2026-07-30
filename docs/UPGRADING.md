@@ -69,6 +69,35 @@ a newer engine on an older repo shows one status line until you run
 - any `✗` (exit 2): drift — wiring points at something that no longer
   launches; doctor's message names the broken leg. Re-run `clauderize init`.
 
+### Upgrading from 2.x to 3.0 — read this before you migrate
+
+3.0 separates Clauderizer's own memory from your project's docs: engine-owned
+files move to `docs/clauderizer/`, and the engine stops scaffolding generic
+names (`ARCHITECTURE.md`, `SECURITY.md`, `VISION.md`, …) into `docs/` at all —
+those are yours. `clauderize upgrade` performs the move: it relocates only what
+the engine owns, leaves any file **you** seeded byte-identical where it is,
+splits or merges nothing, and leaves a stub at each vacated path.
+
+> **Upgrade every install that WRITES to the repo before you migrate it.**
+> This is the one ordering rule that matters. An install older than 3.0 still
+> resolves the pre-migration paths, so a tracked write from it lands in the
+> stub instead of the real register — the corpus forks. 3.0 contains the damage
+> (the stub carries a high-water sentinel id, so an old engine's write can never
+> collide with a real one, and `clauderize doctor` reports the orphans by id so
+> you can move them) — but containing it is not the same as avoiding it. That
+> means teammates, CI, and any long-running agent session or MCP server that
+> was started before the upgrade: restart them.
+
+```bash
+uv tool install "clauderizer[mcp]" --force   # every writing install, first
+uvx --from clauderizer clauderize upgrade    # then migrate the repo
+uvx --from clauderizer clauderize doctor     # confirms the layout + no fork
+```
+
+`clauderize upgrade --report` prints every file and its verdict before anything
+is written. Your two glossaries end up separate and both intact: Clauderizer's
+vocabulary in `docs/clauderizer/GLOSSARY.md`, your domain's in `docs/GLOSSARY.md`.
+
 ### Upgrading from 1.x to 2.0
 
 The three moves above are the whole upgrade — 2.0 is **additive**: no `cz_*`
