@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from . import ownership
+
 CONFIG_VERSION = "1"
 
 
@@ -31,7 +33,7 @@ class ConfigError(ValueError):
 # is modeled by the dynamic ``rituals`` dict.
 _MODELED_KEYS: dict[str, set[str]] = {
     "clauderizer": {"version", "size", "preflight_checks", "preflight_advisory",
-                    "procedure_version"},
+                    "procedure_version", "docs_layout"},
     "host": {"profile", "session_host", "target", "enabled"},
     "paths": {"docs", "gameplans"},
     "memory": {"active_lessons_warn", "project_lessons_warn"},
@@ -137,6 +139,12 @@ class Config:
     # that predates stamping — the status digest then surfaces one modernization
     # line until the corpus is brought current. Never gates anything.
     procedure_version: str = ""
+    # Which docs layout this repo is on (D-080). "legacy" = engine memory sits
+    # in the project's docs/ alongside their prose, the pre-3.0 shape and the
+    # identity default (L-41): unset behaves exactly as before ownership
+    # existed. "split" = engine-owned docs live under docs/clauderizer/. Set by
+    # the untangle migration, never hand-edited.
+    docs_layout: str = ownership.LAYOUT_LEGACY
     # The default-target gameplan for status / do-phase / handoff — the "focus"
     # (D2 of concurrent-multi-axis-gameplans). Stored canonically as ``focus``;
     # ``active_gameplan`` remains a property alias (below) so the ~40 existing call
@@ -240,6 +248,7 @@ class Config:
                 preflight_checks=list(cz.get("preflight_checks", [])),
                 preflight_advisory=list(cz.get("preflight_advisory", [])),
                 procedure_version=str(cz.get("procedure_version", "")),
+                docs_layout=str(cz.get("docs_layout", ownership.LAYOUT_LEGACY)),
                 focus=(active.get("id") or None),
                 # int() raises on garbage — a malformed threshold must be visible,
                 # never silently replaced by a default (L-04).
@@ -271,6 +280,11 @@ class Config:
             # byte-identical until init/upgrade deliberately stamps it.
             *([f'procedure_version = "{self.procedure_version}"']
               if self.procedure_version else []),
+            # Only written once a repo has left the legacy layout, so an
+            # untouched repo's config stays byte-identical (INVARIANT-08).
+            *([f'docs_layout = "{self.docs_layout}"']
+              if self.docs_layout and self.docs_layout != ownership.LAYOUT_LEGACY
+              else []),
             *ex("clauderizer"),
             "",
             "[host]",
@@ -355,6 +369,7 @@ def merge_missing(existing: Config, defaults: Config) -> Config:
         preflight_checks=existing.preflight_checks or defaults.preflight_checks,
         preflight_advisory=existing.preflight_advisory or defaults.preflight_advisory,
         procedure_version=existing.procedure_version or defaults.procedure_version,
+        docs_layout=existing.docs_layout or defaults.docs_layout,
         focus=existing.focus or defaults.focus,
         # ints always carry a value after load (defaults applied there); `or`
         # would clobber a deliberate 0 ("warn always"), so pass through as-is.

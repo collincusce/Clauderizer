@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import ownership
+
 
 def find_repo_root(start: Path | None = None) -> Path:
     start = (start or Path.cwd()).resolve()
@@ -26,6 +28,10 @@ class RepoPaths:
     root: Path
     docs: Path
     gameplans: Path
+    #: Root for ENGINE-owned docs (D-080). ``None`` is the identity default —
+    #: engine docs resolve alongside project docs, exactly as before ownership
+    #: existed. Set to ``docs/clauderizer`` once a repo is on the split layout.
+    engine_docs: Path | None = None
 
     @property
     def clauderizer_dir(self) -> Path:
@@ -94,11 +100,13 @@ class RepoPaths:
 
     @property
     def features_dir(self) -> Path:
-        return self.docs / "features"
+        # Tracked entity docs with frontmatter — engine corpus, so they travel
+        # with it. Identity default keeps them under docs/ on the legacy layout.
+        return self.engine_docs_root / "features"
 
     @property
     def subsystems_dir(self) -> Path:
-        return self.docs / "subsystems"
+        return self.engine_docs_root / "subsystems"
 
     @property
     def claude_md(self) -> Path:
@@ -127,17 +135,45 @@ class RepoPaths:
     def gameplan_dir(self, gameplan_id: str) -> Path:
         return self.gameplans / gameplan_id
 
+    @property
+    def engine_docs_root(self) -> Path:
+        """Where ENGINE-owned docs live (D-080).
+
+        **The identity default is the project docs directory** — with
+        ``engine_docs`` unset every path resolves exactly where it resolved
+        before ownership existed, so introducing the concept moves nothing and
+        changes nothing until a repo opts into the split layout (L-41).
+        """
+        return self.engine_docs if self.engine_docs is not None else self.docs
+
     def doc(self, name: str) -> Path:
-        """A named living doc, e.g. ``doc('DECISIONS')`` -> docs/DECISIONS.md."""
+        """A named living doc, e.g. ``doc('DECISIONS')`` -> docs/DECISIONS.md.
+
+        Routed by OWNER: engine-owned docs resolve under ``engine_docs_root``,
+        everything else under the project's ``docs``. On the legacy layout the
+        two roots are the same directory, so this is a no-op.
+        """
         if not name.endswith(".md"):
             name += ".md"
-        return self.docs / name
+        root = (self.engine_docs_root
+                if ownership.is_engine_owned(name) else self.docs)
+        return root / name
 
 
-def resolve(root: Path, docs_rel: str = "docs", gameplans_rel: str = "docs/gameplans") -> RepoPaths:
+def resolve(root: Path, docs_rel: str = "docs", gameplans_rel: str = "docs/gameplans",
+            layout: str = ownership.LAYOUT_LEGACY) -> RepoPaths:
+    """Resolve a repo's paths.
+
+    ``layout`` defaults to ``legacy``, which leaves ``engine_docs`` unset and so
+    resolves every doc exactly where it resolved before D-080 (L-41's identity
+    default). ``split`` puts engine-owned docs under ``docs/clauderizer/``.
+    """
     root = root.resolve()
+    docs = root / docs_rel
     return RepoPaths(
         root=root,
-        docs=root / docs_rel,
+        docs=docs,
         gameplans=root / gameplans_rel,
+        engine_docs=(docs / ownership.ENGINE_NAMESPACE
+                     if layout == ownership.LAYOUT_SPLIT else None),
     )

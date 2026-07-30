@@ -61,12 +61,12 @@ _(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECIS
 | 1.1 | _(describe)_ | _(est)_ |
 
 **Exit criteria**:
-- [ ] Every doc has a structural owner the engine can query; no caller infers ownership from a filename
-- [ ] paths.doc() routes through the owner lookup, and the identity default resolves to the LEGACY location
-- [ ] A byte-identical golden of the status digest, a written handoff, and cz_status stays green across the whole phase — the L-41 proof that the generalization changed nothing yet
-- [ ] Zero files moved in this phase, asserted by a test
-- [ ] SIZE_MANIFESTS split into engine docs vs opt-in project seeds, with every existing repo still resolving exactly the set it resolves today
-- [ ] Suite green with the new ownership tests armed red first
+- [x] Every doc has a structural owner the engine can query; no caller infers ownership from a filename
+- [x] paths.doc() routes through the owner lookup, and the identity default resolves to the LEGACY location
+- [x] A byte-identical golden of the status digest, a written handoff, and cz_status stays green across the whole phase — the L-41 proof that the generalization changed nothing yet
+- [x] Zero files moved in this phase, asserted by a test
+- [x] SIZE_MANIFESTS split into engine docs vs opt-in project seeds, with every existing repo still resolving exactly the set it resolves today
+- [x] Suite green with the new ownership tests armed red first
 
 ### Phase 2: Two glossaries, and the engine stops claiming names
 
