@@ -2,6 +2,20 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [2.0.0b1] — 2026-07-30
+
+**The promotion IS the release: zero code changes over 2.0.0a2.** Two alphas
+survived first-party dogfood and a real foreign-repo deployment inside 48
+hours — fourteen mechanisms graduated-or-dormant by measured verdicts
+(D-077/D-078/D-079), both field-reported defects fixed and republished within
+a day (O-05/O-06), the a1 wiring caveat closed, and the worldwide mcp-2.0
+break hotfixed on the stable line along the way. Beta means: **the 2.0
+mechanism set and its defaults are frozen for the 2.0.0 line** — what remains
+before final is telemetry accrual on the armed signals (gap-conversion,
+reinforce re-derivation, recording coverage → the budgets re-vote) and bug
+fixes only. Still a PEP 440 pre-release: `pip`/`uvx` resolve it only with
+`--pre` (or `==2.0.0b1`); stable installs keep getting 1.14.5.
+
 ## [2.0.0a2] — 2026-07-29
 
 **The field-report alpha**: everything here was earned by the first real
