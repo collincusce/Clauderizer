@@ -414,8 +414,24 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                     verdict("MCP server launchable for session host",
                             hosts.verify_wiring(wiring, mcp_probe_host))
             else:
-                verdict("MCP server launchable for session host",
-                        hosts.verify_wiring(wiring, mcp_probe_host))
+                # Machine-local absolute wiring (a venv/pipx/uv-tool install —
+                # the common case once a standalone exists on the box). H-20's
+                # fix reached only the PORTABLE branch, so this leg still
+                # certified "launchable" from `shutil.which` — presence, the
+                # exact false green 1.14.0 retired. If we can spawn it from
+                # here (native host of record), ask who answers; fall back to
+                # the launchability probe only when identity is unmeasurable,
+                # which is the honest answer for a cross-host target we cannot
+                # execute (D-010/L-59).
+                _local = None
+                if not mcp_probe_host or str(mcp_probe_host) == hosts.NATIVE:
+                    _local = _identity_verdict(
+                        "MCP server identity (local wiring)",
+                        _mcp_entry_from_wiring(list(wiring)),
+                        verdict=verdict, warn=warn)
+                if _local is None or _local["status"] == "skipped":
+                    verdict("MCP server launchable for session host",
+                            hosts.verify_wiring(wiring, mcp_probe_host))
             if _mcp_wiring_missing_extra(wiring):
                 check("MCP server wiring includes the [mcp] extra", False,
                       "wired via `--from clauderizer` WITHOUT the [mcp] extra; re-run "

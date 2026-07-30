@@ -2,6 +2,40 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [3.1.0] — 2026-07-30
+
+**`doctor` certifies what it launched on the LOCAL leg too.** 1.14.0 retired
+"MCP server launchable" — a `shutil.which` presence check standing in for
+identity — but the replacement handshake only ever ran for **portable** wiring.
+A repo wired to a machine-local absolute path (any venv, pipx or `uv tool`
+install, which is the common case the moment a standalone exists on the box)
+still certified presence and called it green. That is H-20's false green,
+surviving in the branch nobody looked at.
+
+- **Identity now runs on local wiring** whenever the host of record is native
+  and the server can therefore be spawned, falling back to the launchability
+  probe only when identity is genuinely unmeasurable — a cross-host target we
+  cannot execute (D-010/L-59). A skewed local install now warns by name instead
+  of passing.
+- **Found by a fresh-process test, not by reading.** `clauderize doctor` is now
+  driven through a real subprocess (L-60: *the test process' import graph is not
+  the CLI's execution leg*). That test also exposed why this went unnoticed for
+  three releases: `conftest` sets `CLAUDERIZER_NO_SPAWN_PROBE` suite-wide, so no
+  in-process test could ever have exercised the probe end-to-end. The new tests
+  lift only that guard, and were armed red against the pre-fix branch.
+- **D-083 — no version floor in the emitted `.mcp.json`** (resolves the
+  workflow-critique O-02 that had been open since 2026-07-24). A floor couples a
+  committed, twelve-host config to release cadence, so a teammate whose index
+  cannot satisfy it gets a resolution *failure* where they had a warning — the
+  wrong direction. It also bounds only downward, so the real 3.0.0 hazard, an
+  older repo meeting a *newer* engine, sails straight through it. The handshake
+  catches skew in both directions, which is why D-060's warning stays the
+  mechanism. (The shipped pre-release `==`-pin is not a floor: it exists because
+  an unpinned resolve only ever sees stable and would hand the repo to a
+  different engine entirely.)
+
+Suite **1618 → 1622**. No procedure change; `PROCEDURE_VERSION` stays 2.0.0.
+
 ## [3.0.0] — 2026-07-30
 
 **Clauderizer's docs stop living in yours.** Engine memory moves to
