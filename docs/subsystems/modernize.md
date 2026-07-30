@@ -31,6 +31,12 @@ The line is ownership, not risk. A file the engine wrote, the engine may rewrite
 
 - **`report(paths, config)`** — the read-only report: what `apply` *would* do in the mechanical tier, plus the memory-tier proposals. Cheap and side-effect-free, so the digest can call it.
 - **`apply(paths, config)`** — apply the mechanical tier only. Proposals remain proposals.
+- **`engine_doc_references()`** — `{DOC_NAME: [referencing engine artifact, ...]}` for every `docs/<NAME>.md` the engine's **own** wiring names: the shipped stanza template and the shipped skills. Deliberately excludes the user's prose, so a reference *they* wrote is never second-guessed. Also the input to the CI-time ratchet asserting the engine only ever points at docs some size manifest scaffolds or that are declared `ON_DEMAND_DOCS`.
+- **`dangling_doc_pointers(paths, config)`** — `(referencing artifact, missing doc)` for each of those references that this repo's manifest promises to scaffold and that is nonetheless **absent**. `doctor`'s `engine-referenced docs present` check; advisory, never drift. Scoped to the manifest so `ON_DEMAND_DOCS` (`LESSONS`, `SKILLS` — created by a blessed write, not scaffolded) are never flagged: a repo with no lessons yet is correct, not broken.
+
+### Why the pointer class needs both
+
+The mechanical tier's `ensure_modules_current` action exists because a release that adds a doc module to `SIZE_MANIFESTS` otherwise reaches **only fresh inits** — `config.merge_missing` keeps an existing repo's non-empty `modules` list and `subsys.scaffold` scaffolds from that list alone, so the doc never arrives while the refreshed stanza and skills reference it by path. That is the same D-042 tier-1 reasoning as `ensure_gitignore_current`: without it the fix reaches zero existing installs, and every install already ran `init`. `dangling_doc_pointers` is the D-069 half — the machine-checked signal that notices when the delivery has **not** happened, because the 2.0 occurrence of this class shipped with `doctor` printing a green "corpus modernized" line over a repo whose stanza pointed at two missing files.
 
 ## Stateless by design, with state added elsewhere
 

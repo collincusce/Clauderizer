@@ -689,6 +689,18 @@ def cmd_doctor(args: argparse.Namespace) -> int:
              f"document's version line — separate from the engine's own "
              f"v{__version__}) — run `clauderize upgrade` to apply mechanical "
              "updates and review the advisory proposals")
+    # L-65's detector (D-069): the engine's own wiring must not point at a doc
+    # this repo does not have. Advisory, not drift — the cure is a documented
+    # command, and the pointer still reads as prose until it is run.
+    from . import modernize as _modernize
+
+    _dangling = _modernize.dangling_doc_pointers(paths, config)
+    if _dangling:
+        warn("engine-referenced docs missing",
+             "; ".join(f"{ref} → {doc}" for ref, doc in _dangling)
+             + " — run `clauderize upgrade` to scaffold them")
+    else:
+        print("✓ engine-referenced docs present")
     if config.active_gameplan:
         gp = paths.gameplan_dir(config.active_gameplan) / "GAMEPLAN.md"
         check(f"active gameplan {config.active_gameplan} on disk", gp.exists())

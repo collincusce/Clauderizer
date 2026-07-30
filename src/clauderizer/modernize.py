@@ -161,6 +161,15 @@ def report(paths: RepoPaths, config: Config, *, cheap: bool = False) -> dict:
                 "action": f"scaffold_preflight_example:{kind_name}",
                 "detail": f".clauderizer/preflight.{kind_name}.toml.example "
                           f"(gates: {', '.join(gates)})"})
+    missing_modules = _missing_manifest_modules(config)
+    if missing_modules:
+        mechanical.append({
+            "action": "ensure_modules_current",
+            "detail": f"{len(missing_modules)} doc module(s) this engine's "
+                      f"'{config.size or 'standard'}' manifest carries that this "
+                      f"corpus does not ({', '.join(missing_modules)}) — the "
+                      "shipped stanza and skills reference them by path; "
+                      "scaffolded only if absent, never clobbered"})
     missing_ignores = _missing_local_state_ignores(paths)
     if missing_ignores:
         mechanical.append({
@@ -301,6 +310,99 @@ LOCAL_STATE_IGNORES = (
 )
 
 
+def _missing_manifest_modules(config: Config) -> list[str]:
+    """Manifest doc modules for this repo's size that its config does not carry.
+
+    The same D-042 TIER-1 reasoning as ``ensure_gitignore_current``, one level
+    up: a release that adds a doc module to ``SIZE_MANIFESTS`` reaches only
+    FRESH inits. ``config.merge_missing`` keeps the repo's existing non-empty
+    ``modules`` list and ``init`` scaffolds from ``config.modules`` alone, so an
+    already-inited repo keeps the old set forever while the refreshed stanza and
+    shipped skills reference the new docs by path — the L-65 dangling-claim
+    class, delivered to every install in the world that already ran ``init``
+    (measured live on a 1.13.0 → 2.0.0 walk: GLOSSARY + ENFORCEMENT referenced
+    by CLAUDE.md/AGENTS.md and the fleet skill, present in neither).
+
+    Purely additive: modules are appended, never removed, and the doc itself is
+    only written when absent (no content is ever clobbered). Stated trade-off:
+    the manifest is the size's contract, so a module a user deliberately
+    *deleted* from their list is re-added — as one visible, git-diffable line
+    that ``upgrade --report`` shows before anything is written.
+    """
+    from . import assets
+    from .config import SIZE_MANIFESTS
+
+    manifest = SIZE_MANIFESTS.get(config.size or "standard",
+                                  SIZE_MANIFESTS["standard"])
+    have = set(config.modules)
+    return [m for m in manifest["modules"]
+            if m not in have and assets.doc_template(m) is not None]
+
+
+_DOC_REF_RE = re.compile(r"docs/([A-Z][A-Z0-9_-]*)\.md")
+
+# Docs the engine ships a template for but deliberately does NOT scaffold: they
+# are created on demand by a blessed write (cz_add_lesson, cz_register_skill),
+# so their absence in a repo is correct, not a dangling pointer.
+ON_DEMAND_DOCS = frozenset({"LESSONS", "SKILLS"})
+
+
+def engine_doc_references() -> dict[str, list[str]]:
+    """``{DOC_NAME: [referencing engine artifact, ...]}`` for every
+    ``docs/<NAME>.md`` the engine's OWN wiring names.
+
+    Sources are engine-owned only — the shipped stanza template and the shipped
+    skills — so a reference in the user's own prose is never second-guessed.
+    """
+    from . import assets
+
+    sources: list[tuple[str, str]] = []
+    try:
+        sources.append(("the shipped stanza",
+                        assets.template_text("claude_stanza.md")))
+    except OSError:  # pragma: no cover - template ships in the wheel
+        pass
+    for d in assets.skill_dirs():
+        try:
+            sources.append((f"skill {d.name}",
+                            (d / "SKILL.md").read_text(encoding="utf-8")))
+        except OSError:  # pragma: no cover
+            continue
+    refs: dict[str, list[str]] = {}
+    for label, text in sources:
+        for name in sorted(set(_DOC_REF_RE.findall(text))):
+            refs.setdefault(name, []).append(label)
+    return refs
+
+
+def dangling_doc_pointers(paths: RepoPaths,
+                          config: Config) -> list[tuple[str, str]]:
+    """``(referencing artifact, missing doc)`` for every doc the engine's own
+    wiring names, that this repo's size manifest promises to scaffold, and that
+    is nonetheless absent (L-65's detector).
+
+    D-069: a discipline the engine asks for needs a machine-checked signal that
+    notices when it has not been performed. "Never ship a pointer to a file that
+    is not there" was recorded as a lesson, fixed for fresh init, and stayed
+    broken on the upgrade path — with ``doctor`` printing a green
+    "corpus modernized" line over it on a repo whose stanza pointed at two
+    missing files. Scoped to the manifest so an ON_DEMAND_DOCS reference (a
+    repo that simply has no lessons yet) is never flagged. Read-only.
+    """
+    from .config import SIZE_MANIFESTS
+
+    manifest = set(SIZE_MANIFESTS.get(config.size or "standard",
+                                      SIZE_MANIFESTS["standard"])["modules"])
+    promised = manifest | set(config.modules)
+    out: list[tuple[str, str]] = []
+    for name, labels in engine_doc_references().items():
+        if name in ON_DEMAND_DOCS or name not in promised:
+            continue
+        if not paths.doc(name).exists():
+            out += [(label, f"{paths.docs.name}/{name}.md") for label in labels]
+    return sorted(set(out))
+
+
 def _missing_local_state_ignores(paths: RepoPaths) -> list[str]:
     """Which per-machine paths a repo's .gitignore does not yet carry."""
     gi = paths.root / ".gitignore"
@@ -335,6 +437,22 @@ def apply(paths: RepoPaths, config: Config) -> dict:
             example.parent.mkdir(parents=True, exist_ok=True)
             example.write_text(_example_body(kind_name, _wireable_gates(kind)),
                                encoding="utf-8")
+        elif act == "ensure_modules_current":
+            # Same D-042 TIER-1 rationale as the gitignore action below: without
+            # this, a newly-added doc module reaches zero existing installs and
+            # the shipped stanza/skills dangle. Additive only — create_if_absent
+            # never touches an existing doc's bytes (INVARIANT-03).
+            from . import assets
+            for name in _missing_manifest_modules(config):
+                tmpl = assets.doc_template(name)
+                if tmpl is None:  # pragma: no cover - filtered upstream
+                    continue
+                target = paths.doc(name)
+                writer.refuse_if_symlink(target)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                writer.create_if_absent(target, tmpl)
+                config.modules.append(name)
+            rewrite_config = True
         elif act == "ensure_gitignore_current":
             # D-067 as a D-042 TIER-1 action. Without this the whole policy fix
             # reaches zero existing installs — and every install in the world

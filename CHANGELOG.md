@@ -2,6 +2,94 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [2.0.0] — 2026-07-30
+
+**2.0 finals, and the last thing it shipped was the upgrade path itself.** The
+mechanism set is exactly what 2.0.0b1 froze — the two alphas and the beta are
+the evidence, and nothing in that set changed here. What changed is the thing
+none of them had been tested on: a **real 1.13.0 → 2.0 upgrade**, walked with
+the actual published 1.13.0 wheel instead of a fresh init.
+
+- **An upgrade delivers new doc modules, not just new stamps.** 2.0 added
+  `docs/GLOSSARY.md` and `docs/ENFORCEMENT.md` to every size manifest, and
+  `77b5135` fixed the dangling-pointer class **for fresh inits only**. On an
+  existing repo the two docs never arrived: `config.merge_missing` keeps the
+  repo's non-empty `modules` list, `init` scaffolds from `config.modules`
+  alone, and the mechanical tier had no add-a-module action — so the refreshed
+  stanza (CLAUDE.md/AGENTS.md) pointed at `docs/ENFORCEMENT.md` and the new
+  `clauderizer-fleet` skill pointed at `docs/GLOSSARY.md` with **neither file on
+  disk**, while `doctor` printed `✓ corpus modernized to procedure v1.12.0`
+  over it. Measured, not theorized: the live walk is what found it. The
+  mechanical tier now carries **`ensure_modules_current`** — additive, writing
+  each doc only when absent (INVARIANT-03), idempotent (a second pass reports
+  0 mechanical), and recorded in the config so the delivery happens once. The
+  stated trade-off: the manifest is the size's contract, so a module a user
+  deliberately deleted comes back — as one visible line that
+  `upgrade --report` shows before anything is written. This is
+  `ensure_gitignore_current`'s own D-042 tier-1 reasoning, one level up —
+  *"without this the whole policy fix reaches zero existing installs, and every
+  install in the world already ran `init`"* — applied to the case that comment
+  did not cover.
+- **The class got the detector it never had** (D-069). `doctor` gained
+  **`engine-referenced docs present`**: every `docs/<NAME>.md` the *engine's own*
+  wiring names (the shipped stanza, the shipped skills — never the user's prose)
+  is checked against what the repo's manifest promises to scaffold. Docs created
+  on demand by a blessed write (`docs/LESSONS.md`, `docs/SKILLS.md`) are
+  declared `ON_DEMAND_DOCS` and never flagged, so a repo with no lessons yet is
+  correct rather than broken.
+- **Plus the CI-time ratchet that would have caught 2.0's own defect before
+  release**: engine wiring may only reference a doc some size manifest
+  scaffolds or that is declared on-demand. **Armed against the real historical
+  tree** — grafted onto `77b5135^` it fails naming
+  `docs/ENFORCEMENT.md (from the shipped stanza)`, the exact pre-fix state.
+- **`docs/UPGRADING.md` gets a 1.x → 2.0 section**, and its mechanical-tier list
+  is now complete (it had been silently missing the gitignore and kinds-overlay
+  actions too). Procedure **1.13.0**.
+- **The 1.14.5 CHANGELOG entry is restored to `main`.** 1.14.5 was cut from a
+  hotfix branch that was never merged back, so this file jumped 1.14.4 →
+  2.0.0a1 while 1.14.5 was what `pip install clauderizer` actually resolved.
+  The version-single-sourcing audit could not see it: that check compares the
+  *top* entry against `__version__`, and a hole further down is invisible to it.
+
+### Upgrading from 1.x
+
+`init` + **`upgrade`** + `doctor` — and do not skip `upgrade`, which is what
+delivers the two new docs. Otherwise 2.0 is **additive**: no `cz_*` tool was
+removed or renamed (67 → 68), no config key changed, `requires-python` stays
+`>=3.11`, the core engine keeps zero runtime dependencies, and the mechanisms
+priced too expensive to default on (per-call `cz_state` stamps, wind-down
+budgets) stay dormant by measured verdict. The one semantic break for
+downstream consumers is unchanged from 2.0.0a1: **`pass_rate` reads as goal-met
+rate**, with deferrals visible beside it rather than laundered into it.
+
+### Verification
+
+- Suite **1571 → 1582 passing** (7 skips). The delivery tests were armed
+  **behaviorally red** on the pre-fix tree — 3 red via `modernize.report`/`apply`
+  alone, APIs present on both trees (pinning the import path, since an editable
+  install otherwise serves the *fixed* source into a pre-fix worktree: H-27's
+  own class, met while arming a guard against it). The CI ratchet was armed
+  against the real historical tree at `77b5135^`. Two guards are green on both
+  trees by design: manifest/template consistency, and silence on a
+  already-current corpus (INVARIANT-08 drop-nothing).
+- Dogfooded on this repo, whose own config was missing both modules while the
+  docs existed: `upgrade` added the modules and left `docs/GLOSSARY.md` and
+  `docs/ENFORCEMENT.md` **byte-unmodified** — the never-clobber property shown
+  rather than asserted.
+- Three of this repo's own ratchets fired on this change and were paid, not
+  widened: the subsystem-doc seam (both new public callables documented), the
+  separator class (both literals triaged `message` with the reason), and the
+  procedure-changelog pin — which turned out to freeze `PROCEDURE_VERSION` at
+  exactly `1.12.0`, failing any later procedure bump for a mechanism it does not
+  touch; it now asserts `>= 1.12`.
+
+### Shipped with a named gap
+
+- **H-31 remains open, deliberately.** `mcp` stays constrained `>=1.2,<2`; the
+  hotfix half shipped as 1.14.5, but adapting to the mcp 2.x SDK — then lifting
+  the pin with tests against both majors — is unowned follow-up work. 2.0.0
+  ships the pin as the honest contract, not the adaptation.
+
 ## [2.0.0b1] — 2026-07-30
 
 **The promotion IS the release: zero code changes over 2.0.0a2.** Two alphas
@@ -232,6 +320,23 @@ numbers from either project appear here or in any release material, by rule
   guard was armed once (violation injected, red observed, reverted).
   Transport-parity, enforcement-ladder, dual-copy skill seam, procedure-version
   parity and README tool-list pins are all live.
+
+## [1.14.5] — 2026-07-28
+
+> Restored to this file 2026-07-30: 1.14.5 was cut from a hotfix branch that was
+> never merged back to `main`, so the entry existed only on the `v1.14.5` tag
+> while `main`'s CHANGELOG jumped 1.14.4 → 2.0.0a1 — with 1.14.5 being what
+> `pip install clauderizer` actually resolved. The code fix (the `mcp<2`
+> constraint) reached `main` independently in `8fc9c22`.
+
+**Hotfix: the `mcp` dependency is now constrained `>=1.2,<2`.** mcp 2.0.0
+(released 2026-07-28) removes `mcp.server.fastmcp`, which broke every fresh
+`clauderizer[mcp]` install the same day — the MCP server died at import and
+doctor's identity handshake reported no serverInfo (H-31). This release also
+ships the 1.14.4 feature set below: 1.14.4 was staged in-tree but never
+tagged or published, so its first appearance on any registry is inside this
+version. Adapting to the mcp 2.x SDK is deliberate follow-up work; the pin
+is the honest immediate contract.
 
 ## [1.14.4] — 2026-07-26
 

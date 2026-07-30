@@ -1,11 +1,25 @@
 # Gameplan Procedure
 
-**Procedure version**: 1.12.0
-**Last updated**: 2026-07-28
+**Procedure version**: 1.13.0
+**Last updated**: 2026-07-30
 **Origin**: Synthesis of `attago/docs/gameplans/GAMEPLAN-PROCEDURE.md` + `lsatprep` patterns + lessons from poe2.design design session
 **Purpose**: A canonical procedure for planning and executing multi-phase projects with AI agents across many sessions, designed primarily as **AI working memory** that survives context window limits.
 
 **Changelog**:
+- **v1.13.0** (2026-07-30): **An upgrade delivers new doc modules, not just new
+  stamps.** A release that adds a doc module to a size manifest used to reach
+  only FRESH inits: an existing repo's config keeps the module list it was
+  created with, and `init` scaffolds from that list, so the module never
+  arrived — while the refreshed stanza and shipped skills referenced the new
+  doc by path. Measured on a live 1.13.0 → 2.0.0 walk: `docs/GLOSSARY.md` and
+  `docs/ENFORCEMENT.md` were named by CLAUDE.md/AGENTS.md and the fleet skill
+  and present in neither, with `doctor` printing a green "corpus modernized"
+  line over it. `clauderize upgrade`'s mechanical tier now completes the
+  manifest (writing each doc only when absent, so nothing is clobbered), and
+  `doctor` gained the detector this class never had — plus a CI-time ratchet
+  that fails when engine wiring references a doc no repo could ever obtain.
+  Stated trade-off: the manifest is the size's contract, so a module
+  deliberately deleted from a config comes back as one visible diff line.
 - **v1.12.0** (2026-07-28): **Negative-space close-outs: declare what you did
   NOT check.** Every close-out surface — the Ending Protocol, per-phase
   completion summaries (`cz_add_phase_summary`), and fleet worker completion
@@ -192,7 +206,7 @@ already-initialized repos are pointed at it by `clauderize upgrade`.
 
 The engine stamps each repo's config with the procedure version it was last brought up to. When a newer engine meets an older corpus, the status digest and `clauderize doctor` say so in one line, and **`clauderize upgrade`** closes the gap in two tiers:
 
-- **Mechanical — applied for you**: the config stamp and config migrations, missing per-kind gate example files, the refresh of this document. All engine-owned, all visible in `git diff`.
+- **Mechanical — applied for you**: the config stamp and config migrations, missing per-kind gate example files, the `.clauderizer/kinds/` overlay directory, per-machine paths absent from `.gitignore`, **doc modules your size's manifest gained since this repo was inited** (written only when absent — your content is never clobbered), and the refresh of this document. All engine-owned, all visible in `git diff`.
 - **Memory — proposed, never applied**: declared QA gates with no wired command, near-duplicate invariants that look like scope-tag candidates, campaigns without deliverable entities, loops without standing conditions. Each proposal names the ordinary recording tool that would act on it; decisions, invariants, lessons, and findings are never edited by the engine.
 
 ---

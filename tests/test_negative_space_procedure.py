@@ -48,7 +48,12 @@ def test_the_unenforced_residue_is_stated_not_hidden():
 def test_changelog_lands_the_mechanism_at_v1_12_0():
     from clauderizer import PROCEDURE_VERSION
 
-    assert PROCEDURE_VERSION == "1.12.0"
+    # AT LEAST 1.12.0, not exactly: this test pins where the negative-space
+    # mechanism LANDED (the v1.12.0 changelog entry below), and an equality
+    # assert here froze the procedure version itself — every later procedure
+    # bump would fail a test about a mechanism it did not touch.
+    major, minor, _patch = (int(x) for x in PROCEDURE_VERSION.split("."))
+    assert (major, minor) >= (1, 12), PROCEDURE_VERSION
     for p in COPIES:
         text = _flat(p)
         assert "**v1.12.0**" in text, p

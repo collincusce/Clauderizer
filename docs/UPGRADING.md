@@ -39,8 +39,15 @@ a newer engine on an older repo shows one status line until you run
 - **Applied for you (mechanical, git-diffable):** the config version stamp
   and any config migrations, missing per-kind preflight example files
   (`.clauderizer/preflight.<kind>.toml.example`), a fresh copy of the
-  engine-owned `docs/gameplans/GAMEPLAN-PROCEDURE.md`, and the
-  `.clauderizer/kinds/` overlay directory.
+  engine-owned `docs/gameplans/GAMEPLAN-PROCEDURE.md`, the
+  `.clauderizer/kinds/` overlay directory, any per-machine paths your
+  `.gitignore` is missing, and **doc modules your size's manifest gained since
+  you inited** — the file is written only if absent, so your own content is
+  never touched. (That last one is why a re-`init` alone is not enough: `init`
+  scaffolds from the module list already in your config, and your config keeps
+  the list it was created with. Trade-off worth knowing: the manifest is the
+  size's contract, so a module you *deliberately deleted* from the list comes
+  back — as one line in the diff that `--report` shows you first.)
 - **Proposed, never applied (your memory):** declared QA gates with no wired
   command, invariants that look like duplicates and could be scoped to one
   gameplan, campaign gameplans with no tracked deliverables, loop gameplans
@@ -61,6 +68,28 @@ a newer engine on an older repo shows one status line until you run
   mode). Re-run `clauderize init`.
 - any `✗` (exit 2): drift — wiring points at something that no longer
   launches; doctor's message names the broken leg. Re-run `clauderize init`.
+
+### Upgrading from 1.x to 2.0
+
+The three moves above are the whole upgrade — 2.0 is **additive**: no `cz_*`
+tool was removed or renamed (67 → 68, `cz_reinforce_lesson` is the new one), no
+config key changed, `requires-python` is still `>=3.11`, the core engine still
+has zero runtime dependencies, and the new expensive mechanisms
+(per-call `cz_state` stamps, wind-down budgets) ship **dormant** by measured
+decision rather than on-by-default. Two notes:
+
+- **Do not skip step 3.** 2.0 adds two doc modules — `docs/GLOSSARY.md` and
+  `docs/ENFORCEMENT.md` — which the shipped stanza and the `clauderizer-fleet`
+  skill reference by path. `clauderize upgrade` delivers them to an existing
+  repo; `init` on its own will not (see the tier-1 list above). `clauderize
+  doctor` now names the gap directly: *"engine-referenced docs missing"*.
+- **If you consume outcome telemetry**, `pass_rate` now reads as *goal-met
+  rate*: `deferred` is a first-class honest ending, so a deferred phase is a
+  non-goal-met outcome rather than a laundered `complete`. Read deferrals
+  beside the rate, not inside it.
+
+`mcp` is now constrained `>=1.2,<2` (mcp 2.0 removed `mcp.server.fastmcp`); if
+you pinned the extra yourself, drop the pin and let this constraint apply.
 
 ### Upgrading from 0.9.0 or earlier (zero-install users)
 
