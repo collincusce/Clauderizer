@@ -288,6 +288,16 @@ def init(
     # 4. config.toml (merge missing on re-run); record the session host of
     # record so every later init/doctor composes and verifies for it.
     config = merge_missing(existing_config, defaults) if existing_config else defaults
+    if existing_config is None:
+        # A repo born on 3.0 starts SPLIT (D-080): there is no legacy corpus to
+        # migrate, so the engine namespace is simply where its memory lives from
+        # the first write. Only pre-existing repos take the legacy->split
+        # transition, and only through the untangle on `upgrade`.
+        from .. import ownership as _ownership
+
+        config.docs_layout = _ownership.LAYOUT_SPLIT
+        paths = resolve(root, config.docs, config.gameplans,
+                               layout=_ownership.LAYOUT_SPLIT)
     config.session_host = resolved_host
     config.host_target = resolved_target
     # Persist multi default unless this run was a scoped --host install.

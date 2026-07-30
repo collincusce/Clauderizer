@@ -568,7 +568,7 @@ The fixed master plan. Created by the planning session, referenced by every phas
 ### D2: ...
 
 (D-numbers within a gameplan are independent of project-wide D-NNN ADRs.
-Project-wide decisions go in docs/DECISIONS.md.)
+Project-wide decisions go in docs/clauderizer/DECISIONS.md.)
 
 ## Open Items
 
@@ -1374,9 +1374,9 @@ When something changes (status, version, decision), do this:
 
 ### Numbering Conventions
 
-- Project-wide decisions: `D-001`, `D-002`, `D-003`, ... (in `docs/DECISIONS.md`)
+- Project-wide decisions: `D-001`, `D-002`, `D-003`, ... (in `docs/clauderizer/DECISIONS.md`)
 - Gameplan-internal decisions: `D1`, `D2`, `D3`, ... (in that gameplan's `GAMEPLAN.md`)
-- Project-wide invariants: `INVARIANT-01`, `INVARIANT-02`, ... (in `docs/INVARIANTS.md`)
+- Project-wide invariants: `INVARIANT-01`, `INVARIANT-02`, ... (in `docs/clauderizer/INVARIANTS.md`)
 - Open items: `O1`, `O2`, `O3`, ... (in gameplan)
 - Phases: `0`, `1`, `2`, `3`, ... (or `0A`, `0B`, `0C` for sub-phases)
 - Tasks: `0.1`, `0.2`, `1.1`, `1.2`, ...

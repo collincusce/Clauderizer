@@ -120,7 +120,7 @@ are the `cz_*` read/write surface — reads are side-effect-free by contract
 lock file (`.clauderizer/write.lock`). The skill tools keep that contract:
 `cz_discover_skills` only **reads** `SKILL.md` frontmatter (name + description)
 from your local skill directories and proposes — it never executes a skill or
-writes; `cz_register_skill` / `cz_obsolete_skill` write only to `docs/SKILLS.md`.
+writes; `cz_register_skill` / `cz_obsolete_skill` write only to `docs/clauderizer/SKILLS.md`.
 
 **Two tools read files outside your repo.** Both are read-only, and both run
 only when an agent explicitly calls them — never from a hook, never at session

@@ -361,7 +361,11 @@ def _missing_manifest_modules(config: Config) -> list[str]:
             and assets.doc_template(m) is not None]
 
 
-_DOC_REF_RE = re.compile(r"docs/([A-Z][A-Z0-9_-]*)\.md")
+# Matches both the project namespace (docs/NAME.md) and the engine namespace
+# (docs/clauderizer/NAME.md) — after D-080 the shipped prose names the latter
+# for engine-owned docs, and a reference-scanner blind to it would report every
+# engine doc as unreferenced.
+_DOC_REF_RE = re.compile(r"docs/(?:[a-z0-9_-]+/)?([A-Z][A-Z0-9_-]*)\.md")
 
 # Docs the engine ships a template for but deliberately does NOT scaffold: they
 # are created on demand by a blessed write (cz_add_lesson, cz_register_skill),

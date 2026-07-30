@@ -327,7 +327,7 @@ def test_remove_marker_block_deletes_block_only_file(tmp_path):
 def test_uninstall_full_removes_footprint_preserves_docs(empty_python_repo):
     init(empty_python_repo, spawn_test=False)
     r = empty_python_repo
-    assert (r / "docs" / "DECISIONS.md").exists()             # memory present
+    assert (r / "docs" / "clauderizer" / "DECISIONS.md").exists()   # memory present
     report = uninstall(r)
 
     # wiring gone
@@ -342,7 +342,7 @@ def test_uninstall_full_removes_footprint_preserves_docs(empty_python_repo):
         assert "clauderizer" not in json.dumps(_read(settings))
 
     # memory preserved
-    assert (r / "docs" / "DECISIONS.md").exists()
+    assert (r / "docs" / "clauderizer" / "DECISIONS.md").exists()
     assert report.removed                                      # it reported what it did
 
 

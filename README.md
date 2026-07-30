@@ -364,7 +364,7 @@ cold start is proven in a real fresh session (the SessionStart hook **and** the 
 firing cold, the live digest matching the tools); and the full loop is proven on a non-python
 repo. The quickstart below runs against the **published package on a clean CI machine on every
 push** — and the findings tracker
-([HARDENING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/HARDENING.md))
+([HARDENING.md](https://github.com/collincusce/Clauderizer/blob/main/docs/clauderizer/HARDENING.md))
 is append-only and all-resolved, each finding with dated evidence.
 
 ## Docs
@@ -534,7 +534,7 @@ for the full per-host capability matrix. `clauderize uninstall` reverses the wir
   and lessons are never deleted, only superseded. A permanent audit trail.
 - **Consolidation pressure, not caps** — cumulative memory could otherwise crowd out the
   context window it serves. Overlapping lessons get synthesized (`cz_consolidate_lessons`),
-  enduring ones promoted to a compact `docs/LESSONS.md` that rides in every future handoff
+  enduring ones promoted to a compact `docs/clauderizer/LESSONS.md` that rides in every future handoff
   across gameplans (`cz_promote_lesson`), and the status digest carries a memory gauge that
   warns when the active-lesson count crosses the line. Nothing is ever auto-deleted.
 

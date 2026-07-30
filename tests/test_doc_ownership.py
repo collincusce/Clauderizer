@@ -153,3 +153,54 @@ def test_this_repo_still_resolves_its_own_corpus(tmp_path):
     assert p.doc("DECISIONS").exists()
     assert p.doc("INVARIANTS").exists()
     assert p.subsystems_dir.is_dir()
+
+
+# --- P5: the prose seam, pinned executably (L-65) --------------------------
+
+def test_shipped_prose_never_points_engine_docs_at_the_projects_namespace():
+    """The 72-reference sweep, as a ratchet instead of discipline.
+
+    Every `docs/<NAME>.md` the engine SHIPS — stanza, skills, templates — must
+    name the engine namespace for an engine-owned doc. A bare `docs/DECISIONS.md`
+    in shipped prose tells an agent to look where the memory no longer is.
+    """
+    import re
+
+    from clauderizer import assets
+
+    offenders: list[str] = []
+    roots = [assets.TEMPLATES, assets.SKILLS]
+    for root in roots:
+        for f in root.rglob("*.md"):
+            # the PROJECT glossary template legitimately names docs/GLOSSARY.md
+            if f.name == "GLOSSARY.md" and "project" in f.parts:
+                continue
+            text = f.read_text(encoding="utf-8")
+            # A doc in SPLIT_NAMES exists in BOTH namespaces by design, so a bare
+            # reference is legitimately ambiguous — GLOSSARY is the case the
+            # two-glossary rule exists for.
+            # The procedure's changelog NARRATES past states; history records the
+            # paths of its own time on purpose (L-65), so it is not swept.
+            body = text.split("**Changelog**:")[0] if "**Changelog**:" in text else text
+            for name in ownership.ENGINE_DOCS - ownership.SPLIT_NAMES:
+                for m in re.finditer(rf"(?<!clauderizer/)docs/{name}\.md", body):
+                    offenders.append(f"{f.name}: {m.group(0)}")
+    assert not offenders, (
+        "shipped prose points an engine-owned doc at the project's namespace: "
+        + "; ".join(sorted(set(offenders)))
+        + f" — engine memory lives in docs/{ownership.ENGINE_NAMESPACE}/")
+
+
+def test_shipped_prose_leaves_project_doc_references_alone():
+    """The sweep must not have over-reached: a reference to the human's own
+    doc is correct as `docs/<NAME>.md` and must stay that way."""
+    import re
+
+    from clauderizer import assets
+
+    for f in list(assets.TEMPLATES.rglob("*.md")) + list(assets.SKILLS.rglob("*.md")):
+        text = f.read_text(encoding="utf-8")
+        for name in ownership.PROJECT_DOCS:
+            assert not re.search(rf"docs/{ownership.ENGINE_NAMESPACE}/{name}\.md", text), (
+                f"{f.name} moved a PROJECT-owned doc into the engine namespace: "
+                f"docs/{ownership.ENGINE_NAMESPACE}/{name}.md")

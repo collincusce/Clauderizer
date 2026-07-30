@@ -9,7 +9,7 @@ description: Close out a completed (or explicitly deferred) gameplan. Use when a
 2. Run a full cascade pass; resolve any pending reports with `cz_resolve_cascade`.
 3. **Curate the lessons** — this is where memory earns its keep:
    - `cz_promote_lesson` the few that should outlive this gameplan (they land in
-     `docs/LESSONS.md` and ride in every future handoff, across gameplans).
+     `docs/clauderizer/LESSONS.md` and ride in every future handoff, across gameplans).
      Promotion is a chance to distill: pass `text` to tighten the wording.
    - `cz_consolidate_lessons` overlapping ones first, then promote the synthesis.
    - The survivor records what it absorbed (D-074): the engine writes the

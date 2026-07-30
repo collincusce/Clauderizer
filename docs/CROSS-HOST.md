@@ -3,7 +3,7 @@
 > Phase 0 deliverable of gameplan `2026-06-21-cross-host-cross-model-clauderizer-universal-agents-md-mcp-substrate`.
 > Capability data verified 2026-06-21 against primary sources (each host's own docs +
 > the MCP `clients.mdx`). Cells marked *(unverified)* need emitter-time confirmation.
-> This doc is the enduring reference; the decisions it records live in `docs/DECISIONS.md`.
+> This doc is the enduring reference; the decisions it records live in `docs/clauderizer/DECISIONS.md`.
 
 ## 1. Three orthogonal host axes (D-028)
 

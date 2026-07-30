@@ -11,7 +11,7 @@ else** — many hosts have no session hook, and `cz_status` is your durable proj
 memory (where the gameplan stands, the baseline, open items). Either way, to
 begin or continue a phase, call `cz_next_phase_context` then `cz_preflight`.
 On a host with no session hook NOTHING is injected automatically: the
-disciplines marked instructions-floor in `docs/ENFORCEMENT.md` are carried by
+disciplines marked instructions-floor in `docs/clauderizer/ENFORCEMENT.md` are carried by
 this very text plus a one-time status note on your first tool result — keep
 this block in your agent-instructions file.
 
@@ -35,7 +35,7 @@ against the exact tool names and schemas — until the wiring is repaired. Every
 - `cz_add_output` / `cz_add_phase_summary` — the Ending Protocol writes: record
   a phase's concrete produced values and its completion summary.
 - `cz_consolidate_lessons` / `cz_promote_lesson` / `cz_obsolete_lesson` — keep
-  memory compact: synthesize overlap, promote the enduring to `docs/LESSONS.md`,
+  memory compact: synthesize overlap, promote the enduring to `docs/clauderizer/LESSONS.md`,
   mark the stale.
 - `cz_add_dream` — after each substantive exchange, leave a 2–4 sentence dream
   note (kind: friction | gap | surprise | correction | drift | win; no PII, use
