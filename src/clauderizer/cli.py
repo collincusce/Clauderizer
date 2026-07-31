@@ -660,6 +660,21 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 warn("hook wrapper freshness",
                      "wrapper template predates this engine (missing the repo "
                      "anchor or later template fixes) — re-run `clauderize init`")
+            elif _wrapper_target_missing(baked):
+                # H-32: whether an ABSOLUTE path exists on this filesystem is a
+                # definite, cheap fact — not something "unverifiable from this
+                # host". Reporting it as an advisory spent the exit-3 state on a
+                # known-bad wiring: observed live in a repo whose wrapper pointed
+                # at another machine's home, where every session got
+                # "repo unreachable" instead of a digest and two open gameplans
+                # were invisible, while doctor stayed exit 3 with no ✗.
+                check("hook wrapper freshness", False,
+                      f"wrapper invokes `{' '.join(baked)}`, but "
+                      f"`{baked[0]}` does not exist on this machine — every "
+                      f"session in this repo gets an engine-unreachable "
+                      f"breadcrumb instead of the digest. Re-run "
+                      f"`clauderize init` (add `--run-cmd \"uvx --from "
+                      f"clauderizer\"` to keep the wiring portable)")
             else:
                 warn("hook wrapper freshness",
                      f"wrapper invokes `{' '.join(baked)}` but a fresh init would "
@@ -1005,6 +1020,22 @@ def _lock_parse_error(lock_path: Path) -> str | None:
     except OSError as e:
         return str(e)
     return None
+
+
+def _wrapper_target_missing(baked: list[str] | None) -> bool:
+    """True when a hook wrapper invokes an ABSOLUTE path that is not there (H-32).
+
+    Deliberately narrow. A bare command name is resolved from PATH at run time and
+    is not ours to judge here; a RELATIVE path depends on the executor's cwd. Only
+    an absolute path makes a checkable claim about this filesystem — and its
+    absence is a definite fact, so it is drift rather than "unverifiable".
+    """
+    if not baked or not baked[0]:
+        return False
+    exe = Path(baked[0])
+    if not exe.is_absolute():
+        return False
+    return not exe.exists()
 
 
 def _procedure_drift(procedure_file: Path) -> str | None:

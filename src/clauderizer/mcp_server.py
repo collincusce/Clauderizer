@@ -102,19 +102,37 @@ def _prompt_cz_next_phase() -> str:
     return str(REGISTRY["cz_next_phase_context"].fn().get("handoff_md", ""))
 
 
-def build_server():
-    """Construct the FastMCP app. Imports the SDK lazily."""
-    from mcp.server.fastmcp import FastMCP
+def _server_class():
+    """The SDK's app class, across both mcp majors (H-31).
 
-    mcp = FastMCP("clauderizer")
-    # Report clauderizer's own version in the MCP serverInfo. FastMCP exposes no
-    # public version parameter, so set it on the lowlevel server it wraps; guarded
-    # so a future SDK change can never break startup (worst case it reports the
-    # SDK's own version, as it did before — F7).
+    mcp 2.0 removed ``mcp.server.fastmcp`` and renamed the app to
+    ``mcp.server.mcpserver.MCPServer``. The decorator surface this module uses —
+    ``.tool``, ``.resource``, ``.prompt``, ``run_stdio_async`` — is identical, so
+    supporting both is a lookup rather than a port. Tried newest-first so a fresh
+    install gets the maintained SDK, with 1.x as the fallback for the pinned
+    installs already in the wild.
+    """
     try:
-        mcp._mcp_server.version = __version__
-    except Exception:
-        pass
+        from mcp.server.mcpserver import MCPServer  # mcp >= 2
+        return MCPServer
+    except ImportError:
+        from mcp.server.fastmcp import FastMCP      # mcp 1.x
+        return FastMCP
+
+
+def build_server():
+    """Construct the MCP app. Imports the SDK lazily, on either major."""
+    mcp = _server_class()("clauderizer")
+    # Report clauderizer's own version in the MCP serverInfo. Neither SDK exposes
+    # a public version parameter, so set it on the lowlevel server it wraps —
+    # attribute-named differently across majors. Guarded so an SDK change can
+    # never break startup (worst case it reports the SDK's own version — F7).
+    for attr in ("_mcp_server", "_lowlevel_server"):
+        try:
+            setattr(getattr(mcp, attr), "version", __version__)
+            break
+        except Exception:
+            continue
 
     # --- resources (read-only) ------------------------------------------------
 

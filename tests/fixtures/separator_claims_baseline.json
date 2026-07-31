@@ -158,13 +158,8 @@
     },
     "tests/test_onboard.py::docs/VISION.md": {
       "class": "message",
-      "count": 5,
+      "count": 4,
       "why": "onboard.unseeded_docs builds f'{paths.docs.name}/{name}.md' — the slash is a literal in the f-string, not a separator from the filesystem"
-    },
-    "tests/test_onboard.py::docs/studio.md": {
-      "class": "message",
-      "count": 1,
-      "why": "onboard.spec_candidates emits p.relative_to(root).as_posix() — the producer normalizes, so the forward slash is a contract not an accident"
     },
     "tests/test_proposals.py::.clauderizer/proposals.local.toml": {
       "class": "message",
@@ -210,8 +205,33 @@
       "class": "message",
       "count": 1,
       "why": "a report/label string the engine composes with a literal '/', not a filesystem path: untangle records paths as `str(p.relative_to(root))` compared against modernize.dangling_doc_pointers' f\"{paths.docs.name}/{name}.md\" label — both sides are engine-authored posix-style strings, byte-identical on Windows, with no os.sep or pathlib rendering involved."
+    },
+    "tests/test_onboard_candidates.py::docs/ARCHITECTURE.md": {
+      "class": "message",
+      "count": 2,
+      "why": "spec_candidates returns paths as p.relative_to(root).as_posix() — an engine-composed POSIX string, not an OS-rendered path — so these compare an as_posix() value against a posix literal and are byte-identical on Windows. The /gameplans/, /features/ and /subsystems/ fragments are substring checks against those same as_posix() values."
+    },
+    "tests/test_onboard_candidates.py::docs/REQUIREMENTS.md": {
+      "class": "message",
+      "count": 1,
+      "why": "spec_candidates returns paths as p.relative_to(root).as_posix() — an engine-composed POSIX string, not an OS-rendered path — so these compare an as_posix() value against a posix literal and are byte-identical on Windows. The /gameplans/, /features/ and /subsystems/ fragments are substring checks against those same as_posix() values."
+    },
+    "tests/test_onboard_candidates.py::/gameplans/": {
+      "class": "message",
+      "count": 1,
+      "why": "spec_candidates returns paths as p.relative_to(root).as_posix() — an engine-composed POSIX string, not an OS-rendered path — so these compare an as_posix() value against a posix literal and are byte-identical on Windows. The /gameplans/, /features/ and /subsystems/ fragments are substring checks against those same as_posix() values."
+    },
+    "tests/test_onboard_candidates.py::/features/": {
+      "class": "message",
+      "count": 1,
+      "why": "spec_candidates returns paths as p.relative_to(root).as_posix() — an engine-composed POSIX string, not an OS-rendered path — so these compare an as_posix() value against a posix literal and are byte-identical on Windows. The /gameplans/, /features/ and /subsystems/ fragments are substring checks against those same as_posix() values."
+    },
+    "tests/test_onboard_candidates.py::/subsystems/": {
+      "class": "message",
+      "count": 1,
+      "why": "spec_candidates returns paths as p.relative_to(root).as_posix() — an engine-composed POSIX string, not an OS-rendered path — so these compare an as_posix() value against a posix literal and are byte-identical on Windows. The /gameplans/, /features/ and /subsystems/ fragments are substring checks against those same as_posix() values."
     }
   },
   "platform_claims": 0,
-  "total": 50
+  "total": 54
 }

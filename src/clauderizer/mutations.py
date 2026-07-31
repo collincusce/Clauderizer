@@ -597,12 +597,51 @@ def _inline_trailer(text: str) -> str:
     return f" *({text})*"
 
 
+def _add_project_lesson(
+    paths: RepoPaths, *, text: str, category: str = "Process",
+    evidence: str | None = None, audience: str | None = None,
+    today: str | None = None,
+) -> dict:
+    """Write an L-NN entry straight into the project register (H-35).
+
+    The same append the promotion path performs, without requiring a gameplan to
+    launder it through first. Provenance says the lesson was recorded directly,
+    so a reader can tell it did not arrive by promotion.
+    """
+    ldoc = paths.doc("LESSONS")
+    _ensure_doc(ldoc, "LESSONS")
+    new_id = next_numbered_id(writer.full_text(ldoc), "L", sep="-", width=2)
+    entry = f"**{new_id}.** {_one_line(text)}"
+    if evidence and evidence.strip():
+        entry += _inline_trailer(f"evidence: {evidence.strip()}")
+    if audience and audience.strip():
+        entry += _inline_trailer(f"audience: {audience.strip()}")
+    entry += _inline_trailer(f"recorded directly, {_today(today)}")
+    body = sections.get_section(writer.full_text(ldoc), "Lessons") or ""
+    writer.upsert_section(ldoc, "Lessons",
+                          _insert_under_category(body, category, entry))
+    return {"ok": True, "id": new_id, "scope": "project", "category": category,
+            "files_changed": [str(ldoc)],
+            "summary": f"recorded project lesson {new_id} ({category})"}
+
+
 @_locked
 def add_lesson(
     paths: RepoPaths, *, gameplan_id: str, text: str, category: str = "Process",
     evidence: str | None = None, audience: str | None = None,
-    provenance: str | None = None,
+    provenance: str | None = None, scope: str = "", today: str | None = None,
 ) -> dict:
+    # H-35: a repo with no gameplan could not record a lesson AT ALL, which made
+    # the category unreachable during onboarding — the one moment a project has
+    # the most earned experience and the least in-flight work. cz_add_decision
+    # already accepts scope="project" and writes straight to the project
+    # register without a gameplan; this closes the asymmetry. Default behaviour
+    # is unchanged: with a gameplan in play the lesson is gameplan-scoped and
+    # promotion still governs what reaches the project register.
+    if scope == "project" or not (gameplan_id or "").strip():
+        return _add_project_lesson(paths, text=text, category=category,
+                                   evidence=evidence, audience=audience,
+                                   today=today)
     err = _require_gameplan(paths, gameplan_id)
     if err:
         return err

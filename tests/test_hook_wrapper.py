@@ -341,15 +341,21 @@ def test_doctor_missing_wrapper_is_drift(empty_python_repo, monkeypatch, capsys)
     assert rc == 2
 
 
-def test_doctor_stale_wrapper_warns(empty_python_repo, monkeypatch, capsys):
+def test_doctor_dead_wrapper_target_is_drift(empty_python_repo, monkeypatch, capsys):
+    """H-32 corrected this contract, and the old version of this test ENCODED
+    the bug: it asserted that a wrapper pointing at a path which does not exist
+    is merely a nudge (exit 3). It is not — every session in such a repo gets an
+    engine-unreachable breadcrumb instead of a digest. Whether an absolute path
+    exists is a definite fact about this machine, so it is drift."""
     init(empty_python_repo, spawn_test=False)
     wrapper = _native_wrapper(empty_python_repo)
     wrapper.write_bytes(
         hosts.render_hook_wrapper(["/moved/clauderizer-hook"],
                                   windows=wrapper.name.endswith(".cmd")).encode("utf-8"))
     rc, out = _doctor(empty_python_repo, monkeypatch, capsys)
-    assert "? hook wrapper freshness" in out
-    assert rc == 3
+    assert "hook wrapper freshness" in out
+    assert "does not exist on this machine" in out
+    assert rc == 2
 
 
 def test_doctor_old_template_same_engine_warns(empty_python_repo, monkeypatch, capsys):

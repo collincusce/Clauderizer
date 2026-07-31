@@ -90,3 +90,44 @@ def test_doctor_exits_with_a_defined_code_on_the_cli_leg(wired_repo):
         f"doctor returned {r.returncode} from the real CLI leg\n"
         f"stdout:\n{r.stdout}\nstderr:\n{r.stderr}")
     assert "Traceback" not in (r.stdout + r.stderr)
+
+
+# --- H-32: a dead absolute hook path is DRIFT, not an advisory -------------
+
+def test_a_wrapper_pointing_at_a_missing_absolute_path_is_drift(wired_repo):
+    """Observed live: a wrapper carried another machine's home path, so every
+    session got an engine-unreachable breadcrumb instead of a digest and two
+    open gameplans were invisible — while doctor sat at exit 3 with no ✗.
+    Whether an absolute path exists is a definite fact, so it must be drift."""
+    wrapper = wired_repo / ".clauderizer" / "hook.sh"
+    text = wrapper.read_text(encoding="utf-8")
+    dead = "/home/definitely-not-a-real-user/.local/bin/clauderizer-hook"
+    import re
+    text = re.sub(r"(?m)^# engine-hook: .*$", f"# engine-hook: {dead}", text)
+    text = re.sub(r"out=\$\(.*clauderizer-hook", f'out=$({dead}', text)
+    wrapper.write_text(text, encoding="utf-8")
+
+    r = _doctor(wired_repo)
+    out = r.stdout + r.stderr
+    assert r.returncode == 2, (
+        f"a dead absolute wrapper target must be drift (exit 2), got "
+        f"{r.returncode}\n{out}")
+    assert "does not exist on this machine" in out, out
+
+
+def test_a_custom_run_cmd_whose_target_EXISTS_stays_advisory(wired_repo):
+    """The false-positive floor: a deliberate --run-cmd divergence is a nudge,
+    not drift, as long as the thing it invokes is actually there."""
+    import re
+    import sys as _sys
+
+    wrapper = wired_repo / ".clauderizer" / "hook.sh"
+    text = wrapper.read_text(encoding="utf-8")
+    live = _sys.executable          # absolute, and definitely exists
+    text = re.sub(r"(?m)^# engine-hook: .*$", f"# engine-hook: {live} -c pass", text)
+    wrapper.write_text(text, encoding="utf-8")
+
+    r = _doctor(wired_repo)
+    out = r.stdout + r.stderr
+    assert "does not exist on this machine" not in out, out
+    assert r.returncode != 2 or "hook wrapper freshness" not in out.split("✗")[-1][:80], out

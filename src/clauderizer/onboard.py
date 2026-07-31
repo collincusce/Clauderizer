@@ -54,16 +54,27 @@ def _owned_doc_names() -> set[str]:
 
 
 def spec_candidates(paths: RepoPaths) -> list[dict]:
-    """Existing docs that likely hold project knowledge: well-known root files
-    plus ``docs/**/*.md`` outside the Clauderizer-owned set. Paths and sizes
-    only (the agent reads contents itself); empty and oversized files skipped;
-    capped at :data:`CANDIDATE_CAP`."""
+    """Existing docs that likely hold project knowledge.
+
+    Well-known root files, plus every ``*.md`` under the project's docs tree that
+    is not an untouched Clauderizer scaffold. Paths and sizes only (the agent
+    reads contents itself); empty and oversized files skipped; capped at
+    :data:`CANDIDATE_CAP`.
+
+    H-34: this used to exclude any file whose NAME matched a shipped template,
+    which silently hid the ten most valuable documents in a mature repo —
+    ARCHITECTURE, VISION, REQUIREMENTS, SECURITY and their siblings are declared
+    PROJECT-owned (``ownership.PROJECT_DOCS``) and are exactly what onboarding
+    exists to surface. A name cannot distinguish an untouched scaffold from 800
+    lines the project wrote; ``_is_unseeded`` can, and already did for
+    ``unseeded_docs``. Ownership is now judged from the CONTENT.
+    """
     root = paths.root
-    owned = _owned_doc_names()
     out: list[dict] = []
+    seen: set[Path] = set()
 
     def add(p: Path) -> None:
-        if len(out) >= CANDIDATE_CAP:
+        if len(out) >= CANDIDATE_CAP or p in seen:
             return
         try:
             size = p.stat().st_size
@@ -71,22 +82,54 @@ def spec_candidates(paths: RepoPaths) -> list[dict]:
             return
         if size == 0 or size > MAX_CANDIDATE_BYTES:
             return
+        seen.add(p)
         out.append({"path": p.relative_to(root).as_posix(), "bytes": size})
 
     for name in _ROOT_CANDIDATES:
         p = root / name
         if p.is_file():
             add(p)
-    docs = paths.docs
-    if docs.exists():
+
+    # Scan the engine's docs root AND the conventional docs/ directory. When
+    # [paths] docs is pointed elsewhere so the engine's corpus cannot collide
+    # with the project's (the attago case), the project's own documentation
+    # lives outside the engine root and would otherwise be invisible.
+    roots = [paths.docs]
+    conventional = root / "docs"
+    if conventional.is_dir() and conventional != paths.docs:
+        roots.append(conventional)
+
+    for docs in roots:
+        if not docs.exists():
+            continue
         for p in sorted(docs.rglob("*.md")):
-            rel = p.relative_to(docs)
+            try:
+                rel = p.relative_to(docs)
+            except ValueError:  # pragma: no cover - defensive
+                continue
             if rel.parts and rel.parts[0] in _OWNED_DIRS:
                 continue
-            if p.name in owned:
+            if _is_engine_scaffold(p):
                 continue
             add(p)
     return out
+
+
+def _is_engine_scaffold(p: Path) -> bool:
+    """True only for a file that IS the engine's untouched scaffold.
+
+    A name match alone is not enough (H-34): the project may own a document at
+    that name and fill it with real content. Compared against the shipped
+    template by the same structural test ``unseeded_docs`` uses, so a seeded doc
+    reads as the project's however much the template's wording later evolves.
+    """
+    template = assets.doc_template(p.stem)
+    if template is None:
+        return False
+    try:
+        return _is_unseeded(p.read_text(encoding="utf-8"), template)
+    except OSError:
+        return False
 
 
 def _meaningful_lines(text: str) -> set[str]:

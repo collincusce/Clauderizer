@@ -28,7 +28,11 @@ dependencies = []
 [project.optional-dependencies]
 # The MCP server is the only thing that needs the official SDK. Install with
 # `pipx install "clauderizer[mcp]"` to expose the agentic tool surface.
-mcp = ["mcp>=1.2,<2"]
+# Both SDK majors are supported (H-31): mcp 2.0 removed mcp.server.fastmcp and
+# renamed the app to mcp.server.mcpserver.MCPServer; mcp_server._server_class()
+# resolves whichever is present, newest-first. Verified by a real initialize
+# handshake on both, and CI runs the suite against each.
+mcp = ["mcp>=1.2"]
 dev = ["pytest>=7"]
 
 [project.scripts]
@@ -54,3 +58,6 @@ packages = ["src/clauderizer"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+# Lets test modules import shared test-only helpers by name (tests/_mcp_compat.py
+# normalizes the mcp SDK's shape across both supported majors — H-31).
+pythonpath = ["tests"]

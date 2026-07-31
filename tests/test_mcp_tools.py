@@ -5,6 +5,8 @@ fixture repo. The engine resolves the repo from cwd, so we chdir into the copy.
 """
 
 import asyncio
+
+from _mcp_compat import mcp_call_content, mcp_lowlevel
 import json
 import os
 from contextlib import contextmanager
@@ -29,7 +31,7 @@ def _chdir(path):
 def _call(server, name, args=None):
     # FastMCP versions differ: success may return (content, structured) OR just a
     # list of content blocks. Be tolerant and always hand back the parsed dict.
-    res = asyncio.run(server.call_tool(name, args or {}))
+    res = mcp_call_content(asyncio.run(server.call_tool(name, args or {})))
     if isinstance(res, tuple):
         return res[1]
     return json.loads(res[0].text)

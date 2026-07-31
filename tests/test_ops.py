@@ -23,6 +23,13 @@ import pytest
 from clauderizer import cli, locking, ops
 from clauderizer import paths as P
 from clauderizer.tools_list import TOOL_NAMES
+from _mcp_compat import mcp_call_content, mcp_lowlevel
+
+
+def _tool_schema(tool):
+    """Tool input schema across both mcp majors (H-31): 1.x exposes
+    ``inputSchema``, 2.x renamed it to ``input_schema``."""
+    return getattr(tool, "inputSchema", None) or getattr(tool, "input_schema")
 
 GID = "2026-05-01-bootstrap"
 
@@ -109,6 +116,7 @@ def test_mcp_registers_the_registry_functions(temp_repo):
     pytest.importorskip("mcp")
     import asyncio
 
+
     from clauderizer.mcp_server import build_server
 
     with _chdir(temp_repo):
@@ -117,9 +125,10 @@ def test_mcp_registers_the_registry_functions(temp_repo):
     assert {t.name for t in tools} == set(TOOL_NAMES)
     # Schema spot-check: derived from the same function object the CLI executes.
     add_lesson = next(t for t in tools if t.name == "cz_add_lesson")
-    props = add_lesson.inputSchema["properties"]
-    assert set(props) == {"text", "category", "gameplan_id", "evidence", "audience"}
-    assert add_lesson.inputSchema.get("required") == ["text"]  # evidence/audience optional (D-017/D-043)
+    props = _tool_schema(add_lesson)["properties"]
+    assert set(props) == {"text", "category", "gameplan_id", "evidence",
+                          "audience", "scope"}
+    assert _tool_schema(add_lesson).get("required") == ["text"]  # evidence/audience optional (D-017/D-043)
 
 
 def test_ops_write_matches_mcp_write(temp_repo, tmp_path):
@@ -137,8 +146,8 @@ def test_ops_write_matches_mcp_write(temp_repo, tmp_path):
         )
     with _chdir(twin):
         server = build_server()
-        res = asyncio.run(server.call_tool(
-            "cz_add_lesson", {"text": "parity lesson", "gameplan_id": GID}))
+        res = mcp_call_content(asyncio.run(server.call_tool(
+            "cz_add_lesson", {"text": "parity lesson", "gameplan_id": GID})))
         mcp_result = res[1] if isinstance(res, tuple) else json.loads(res[0].text)
     assert all_ok and results[0]["ok"]
     ops_result = results[0]["result"]
@@ -155,7 +164,7 @@ def test_ops_read_matches_mcp_read(temp_repo):
     with _chdir(temp_repo):
         results, _ = ops.run_batch([{"op": "cz_status", "args": {}}])
         server = build_server()
-        res = asyncio.run(server.call_tool("cz_status", {}))
+        res = mcp_call_content(asyncio.run(server.call_tool("cz_status", {})))
         mcp_result = res[1] if isinstance(res, tuple) else json.loads(res[0].text)
     ops_result = results[0]["result"]
     assert ops_result["active_gameplan"] == mcp_result["active_gameplan"] == GID

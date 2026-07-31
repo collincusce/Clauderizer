@@ -18,18 +18,37 @@ def _paths(repo):
 
 
 def test_candidates_include_root_and_docs_but_never_owned(temp_repo):
-    paths = _paths(temp_repo)
-    (temp_repo / "README.md").write_text("# Proj\n\nA real readme.\n", encoding="utf-8")
-    (temp_repo / "DESIGN.md").write_text("design notes\n", encoding="utf-8")
-    (paths.docs / "studio.md").write_text("how the studio works\n", encoding="utf-8")
-    (paths.docs / "VISION.md").write_text("# Vision\n\nreal vision\n", encoding="utf-8")
+    """H-34 changed this contract: ownership is judged from CONTENT, not name.
+
+    An UNTOUCHED scaffold is still excluded — that part never changed. But a doc
+    the project AUTHORED at an engine name (VISION.md with real prose) is now
+    offered, because it is exactly what onboarding exists to surface. The old
+    name-based rule hid the ten most valuable documents in a mature repo.
+    """
+    from clauderizer import assets, onboard
+
+    from clauderizer import paths as _P
+    paths = _P.resolve(temp_repo)
+    root = paths.root
+    (root / "README.md").write_text("# readme\n\nreal content here\n", encoding="utf-8")
+    (root / "DESIGN.md").write_text("# design\n\nreal content here\n", encoding="utf-8")
+    paths.docs.mkdir(parents=True, exist_ok=True)
+    (paths.docs / "studio.md").write_text("# studio\n\nproject prose\n", encoding="utf-8")
+    # authored at an engine name -> OFFERED
+    (paths.docs / "VISION.md").write_text(
+        "# Vision\n\n" + "\n".join(f"Authored line {i}." for i in range(30)),
+        encoding="utf-8")
+    # untouched scaffold at an engine name -> EXCLUDED
+    (paths.docs / "DECISIONS.md").write_text(
+        assets.doc_template("DECISIONS") or "# Decisions\n", encoding="utf-8")
+
     got = {c["path"] for c in onboard.spec_candidates(paths)}
     assert "README.md" in got and "DESIGN.md" in got
-    assert "docs/studio.md" in got
-    assert "docs/VISION.md" not in got  # engine-owned name
-    assert not any(p.startswith("docs/gameplans/") for p in got)  # owned dir
-    assert all(set(c) == {"path", "bytes"} for c in onboard.spec_candidates(paths))
-
+    assert f"{paths.docs.name}/studio.md" in got
+    assert f"{paths.docs.name}/VISION.md" in got, (
+        "an authored doc at an engine name must be offered (H-34)")
+    assert f"{paths.docs.name}/DECISIONS.md" not in got, (
+        "an untouched scaffold must still be excluded")
 
 def test_candidates_skip_empty_and_oversized_and_cap(temp_repo):
     paths = _paths(temp_repo)

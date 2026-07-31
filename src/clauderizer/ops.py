@@ -732,7 +732,7 @@ def cz_resolve_finding(finding_id: str, status: str = "resolved", note: str = ""
 
 
 def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "",
-                  evidence: str = "", audience: str = "") -> dict:
+                  evidence: str = "", audience: str = "", scope: str = "") -> dict:
     """Add an accumulated lesson (rolls into every future handoff).
 
     `evidence` optionally cites the concrete provenance that produced the lesson
@@ -741,6 +741,13 @@ def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "",
     role (e.g. "copywriter", "art-director", "coder") so audience-filtered
     handoffs carry only what that role needs; untagged lessons reach everyone.
 
+    `scope`: pass "project" to record an enduring lesson straight into
+    docs/LESSONS.md without a gameplan — mirroring cz_add_decision. This is also
+    the automatic behaviour when no gameplan exists or is in focus, so a repo
+    being onboarded from existing documentation can record what it has learned
+    (H-35). With a gameplan in play the default stays gameplan-scoped, and
+    cz_promote_lesson still governs what graduates to the project register.
+
     If the new lesson strongly overlaps an existing PROJECT lesson, the result carries
     a `related_lessons` list + an `advisory` nudging consolidation
     (cz_consolidate_lessons) instead of appending — advisory only, never blocks.
@@ -748,7 +755,8 @@ def cz_add_lesson(text: str, category: str = "Process", gameplan_id: str = "",
     paths, config = repo_ctx()
     gid = gameplan_id or config.active_gameplan
     return mutations.add_lesson(paths, gameplan_id=gid, text=text, category=category,
-                                evidence=evidence or None, audience=audience or None)
+                                evidence=evidence or None, audience=audience or None,
+                                scope=scope)
 
 
 def cz_consolidate_lessons(numbers: list[int], text: str, category: str = "Process",
