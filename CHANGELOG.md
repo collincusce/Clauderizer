@@ -2,6 +2,30 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [2.0.3] — 2026-07-31
+
+**The findings register driven to zero — four fixes, one pin lifted.**
+
+- **`cz_onboard` no longer hides the project's real docs (H-34, high).**
+  `spec_candidates` filtered by *filename* against the template set, so a
+  mature repo's own `ARCHITECTURE.md`, `REQUIREMENTS.md`, `VISION.md` — the
+  exact documents onboarding exists to surface — were silently dropped, and
+  the failure read as "nothing to onboard from". Ownership is now judged from
+  *content* (an untouched engine scaffold is excluded; authored prose is
+  offered), and the conventional `docs/` directory is scanned even when
+  `[paths] docs` is customised. On the repo that exposed it: 1 candidate → 25.
+- **mcp pin lifted to `mcp>=1.2` (H-31, high).** mcp 2.0 *renamed* FastMCP
+  rather than removing it; `_server_class()` now resolves either SDK
+  newest-first. The full suite passes on **both majors** — 1635 under
+  mcp 1.27.2 and under mcp 2.0.0.
+- **A wrapper invoking a nonexistent absolute path is drift (H-32, medium).**
+  `doctor` now exits 2 instead of nudging. Narrow by design: only an absolute
+  path makes a checkable claim.
+- **`cz_add_lesson` accepts `scope="project"` (H-35, medium)** and defaults to
+  it when no gameplan is active, closing the asymmetry with `cz_add_decision`.
+
+Suite **1623 → 1635**, green on both mcp majors.
+
 ## [2.0.2] — 2026-07-31
 
 **Two defects found by upgrading a real repo on published 2.0.1** — the kind
