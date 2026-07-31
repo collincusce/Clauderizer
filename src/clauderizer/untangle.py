@@ -281,3 +281,55 @@ def _corpus_entries(docs_dir: Path) -> int:
         return 0
     return sum(entry_count(p) for p in docs_dir.rglob("*.md")
                if "gameplans" not in p.parts)
+
+
+def revert(paths: RepoPaths, config: Config) -> dict:
+    """Move engine docs back to the legacy layout — the untangle, undone.
+
+    The split layout is only readable by an engine that knows about it, so a repo
+    that has migrated is stranded the moment the published engine is older. That
+    is not hypothetical: 3.0.0/3.1.0 were yanked hours after release and six live
+    repos were left with memory their own installs could not see.
+
+    Symmetry with ``apply`` is the safety property: this moves files back and
+    deletes nothing but the stubs it wrote. A doc the migration LEFT in place
+    (the project's own) is never touched here either, and where a stub and a real
+    doc would collide the real one wins.
+    """
+    ns = paths.docs / ownership.ENGINE_NAMESPACE
+    if not ns.exists():
+        return {"ok": True, "moved": [], "summary": "already on the legacy layout"}
+    before = _corpus_entries(paths.docs)
+    moved: list[str] = []
+    for src in sorted(ns.glob("*.md")):
+        dst = paths.docs / src.name
+        # the stub we wrote is disposable; anything else at the target is the
+        # project's and must not be overwritten
+        if dst.exists() and entry_count(dst) <= 1 and "— moved" in dst.read_text(
+                encoding="utf-8", errors="replace")[:80]:
+            dst.unlink()
+        elif dst.exists():
+            continue                     # a real project doc lives here — leave both
+        writer.refuse_if_symlink(dst)
+        if not _git_mv(paths.root, src, dst):
+            src.replace(dst)
+        moved.append(dst.name)
+    for d in ownership.ENGINE_DIRS:
+        src_d = ns / d
+        if src_d.is_dir() and not (paths.docs / d).exists():
+            if not _git_mv(paths.root, src_d, paths.docs / d):
+                src_d.replace(paths.docs / d)
+            moved.append(f"{d}/")
+    try:
+        ns.rmdir()
+    except OSError:
+        pass                             # non-empty: leave it, say so in the report
+    config.docs_layout = ownership.LAYOUT_LEGACY
+    writer.refuse_if_symlink(paths.config_file)
+    paths.config_file.write_text(config.to_toml(), encoding="utf-8")
+    after = _corpus_entries(paths.docs)
+    return {"ok": True, "moved": moved,
+            "entries_before": before, "entries_after": after,
+            "entries_conserved": after >= before - len(moved),
+            "namespace_remaining": ns.exists(),
+            "summary": f"reverted {len(moved)} item(s) to the legacy layout"}

@@ -157,38 +157,29 @@ def test_this_repo_still_resolves_its_own_corpus(tmp_path):
 
 # --- P5: the prose seam, pinned executably (L-65) --------------------------
 
-def test_shipped_prose_never_points_engine_docs_at_the_projects_namespace():
-    """The 72-reference sweep, as a ratchet instead of discipline.
-
-    Every `docs/<NAME>.md` the engine SHIPS — stanza, skills, templates — must
-    name the engine namespace for an engine-owned doc. A bare `docs/DECISIONS.md`
-    in shipped prose tells an agent to look where the memory no longer is.
+def test_shipped_prose_matches_the_layout_the_engine_actually_ships():
+    """The shipped default is the LEGACY layout, so engine-owned docs live in
+    `docs/`. Prose naming `docs/clauderizer/...` would be a dangling pointer in
+    every repo — the exact class this ratchet exists to prevent, just pointing
+    the other way. Flip this assertion when the split layout becomes default.
     """
     import re
 
-    from clauderizer import assets
+    from clauderizer import assets, ownership as _own
 
+    assert _own.LAYOUT_LEGACY == "legacy"
     offenders: list[str] = []
-    roots = [assets.TEMPLATES, assets.SKILLS]
-    for root in roots:
+    for root in (assets.TEMPLATES, assets.SKILLS):
         for f in root.rglob("*.md"):
-            # the PROJECT glossary template legitimately names docs/GLOSSARY.md
-            if f.name == "GLOSSARY.md" and "project" in f.parts:
-                continue
             text = f.read_text(encoding="utf-8")
-            # A doc in SPLIT_NAMES exists in BOTH namespaces by design, so a bare
-            # reference is legitimately ambiguous — GLOSSARY is the case the
-            # two-glossary rule exists for.
-            # The procedure's changelog NARRATES past states; history records the
-            # paths of its own time on purpose (L-65), so it is not swept.
             body = text.split("**Changelog**:")[0] if "**Changelog**:" in text else text
-            for name in ownership.ENGINE_DOCS - ownership.SPLIT_NAMES:
-                for m in re.finditer(rf"(?<!clauderizer/)docs/{name}\.md", body):
+            for name in _own.ENGINE_DOCS:
+                for m in re.finditer(
+                        rf"docs/{_own.ENGINE_NAMESPACE}/{name}\.md", body):
                     offenders.append(f"{f.name}: {m.group(0)}")
     assert not offenders, (
-        "shipped prose points an engine-owned doc at the project's namespace: "
-        + "; ".join(sorted(set(offenders)))
-        + f" — engine memory lives in docs/{ownership.ENGINE_NAMESPACE}/")
+        "shipped prose points at the engine namespace while the shipped default "
+        "is the legacy layout: " + "; ".join(sorted(set(offenders))))
 
 
 def test_shipped_prose_leaves_project_doc_references_alone():

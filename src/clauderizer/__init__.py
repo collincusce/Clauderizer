@@ -4,13 +4,13 @@ Markdown is the source of truth. Everything else (the graph index, the MCP
 server, the rituals) is derived from it and can be rebuilt at any time.
 """
 
-__version__ = "3.1.0"
+__version__ = "2.0.1"
 
 # The version of the gameplan procedure this engine was built against. The
 # engine ships GAMEPLAN-PROCEDURE.md verbatim; `clauderize doctor` warns if a
 # host repo's procedure has drifted to a different MAJOR version, and
 # `clauderize upgrade` modernizes a corpus stamped with an older version.
-PROCEDURE_VERSION = "2.0.0"
+PROCEDURE_VERSION = "1.13.0"
 
 
 def is_prerelease(version: str | None = None) -> bool:

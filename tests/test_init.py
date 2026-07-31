@@ -25,12 +25,13 @@ def test_init_creates_expected_layout(empty_python_repo):
     # D-080: init scaffolds only what the ENGINE owns. The project's own
     # ARCHITECTURE/VISION/TESTING are no longer claimed by default — they are
     # offered as project_seeds and written only on request.
-    # D-080: a repo born on 3.0 starts SPLIT — engine memory in its own
-    # namespace from the first write, no legacy transition to make.
+    # The shipped default is the legacy layout: engine docs sit in docs/.
+    # (subsys.ownership exists and the split is implemented, but dormant.)
     for doc in ("DECISIONS", "INVARIANTS",
                 "HARDENING", "GLOSSARY", "ENFORCEMENT"):
-        assert (r / "docs" / "clauderizer" / f"{doc}.md").exists(), doc
-        assert not (r / "docs" / f"{doc}.md").exists(), f"{doc} must not be in docs/"
+        assert (r / "docs" / f"{doc}.md").exists(), doc
+    assert not (r / "docs" / "clauderizer").exists(), (
+        "init must not create the engine namespace while the split is dormant")
     assert (r / "CLAUDE.md").exists()
     assert "<!-- clauderizer:start -->" in (r / "CLAUDE.md").read_text(encoding="utf-8")
     assert (r / ".mcp.json").exists()
@@ -86,7 +87,7 @@ def test_init_pet_size_is_minimal(empty_python_repo):
     assert cfg.ritual_enabled("cascade") is False
     # pet ships the engine minimum; VISION is a project seed, not claimed
     assert not (r / "docs" / "VISION.md").exists()
-    assert (r / "docs" / "clauderizer" / "GLOSSARY.md").exists()
+    assert (r / "docs" / "GLOSSARY.md").exists()
     assert not (r / "docs" / "HARDENING.md").exists()
 
 

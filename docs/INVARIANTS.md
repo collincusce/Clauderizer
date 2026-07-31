@@ -1,24 +1,51 @@
-# INVARIANTS — moved
+# Invariants
 
-> **This file has moved to `docs/clauderizer/INVARIANTS.md`.**
->
-> Clauderizer now keeps its own memory in `docs/clauderizer/` and leaves
-> `docs/` to you (D-080). Nothing was lost — the content is at the path above.
->
-> If your tooling brought you here expecting content, the install reading this
-> repo is older than the layout. Upgrade it:
->
-> ```
-> uv tool install "clauderizer[mcp]" --force
-> ```
->
-> This placeholder is inert and can be deleted once every install that touches
-> this repo is on 3.0.0 or newer.
+Rules that hold across all work. Append-only. Numbered `INVARIANT-NN`.
 
-### INVARIANT-900000 — SENTINEL: do not write below this line
+## Invariants
 
-An install too old to know about `docs/clauderizer/` will resolve *this* file
-when it records a INVARIANTS entry, and append here. This deliberately-high id
-exists so such a write cannot collide with a real one — anything numbered above
-`INVARIANT-900000` in this file is an orphan that belongs in the real register.
-`clauderize doctor` reports them; move them and delete this file.
+_(Add entries with `cz_add_invariant`.)_
+
+### INVARIANT-01 — Markdown is canonical — the index is rebuilt from it on disagreement.
+
+Markdown is canonical — the index is rebuilt from it on disagreement.
+
+### INVARIANT-02 — Every structured edit goes through markdown/writer.py.
+
+Every structured edit goes through markdown/writer.py.
+
+### INVARIANT-03 — Append-only memory (decisions, invariants, hardening, lessons) is never deleted.
+
+Append-only memory (decisions, invariants, hardening, lessons) is never deleted.
+
+### INVARIANT-04 — The SessionStart hook never blocks a session — it always exits 0.
+
+The SessionStart hook never blocks a session — it always exits 0.
+
+### INVARIANT-05 — Discipline gates (clarify/open-items, exit-criteria, analyze-against-invariants) are advisory and judgment-based: they surface findings in tool results for the agent to act on, and MUST NOT hard-block a mutation or phase transition, nor introduce an enable/disable config flag. The engine surfaces candidates; the agent decides.
+**Introduced by**: D-015
+
+Discipline gates (clarify/open-items, exit-criteria, analyze-against-invariants) are advisory and judgment-based: they surface findings in tool results for the agent to act on, and MUST NOT hard-block a mutation or phase transition, nor introduce an enable/disable config flag. The engine surfaces candidates; the agent decides.
+
+### INVARIANT-06 — Every hook event handler is read-only and always exits 0 — a memory tool never mutates docs or blocks a session from inside a hook. Generalizes INVARIANT-04 from SessionStart to all dispatched events (SessionStart, UserPromptSubmit, PreCompact, PostCompact, ...).
+**Introduced by**: D-025
+
+Every hook event handler is read-only and always exits 0 — a memory tool never mutates docs or blocks a session from inside a hook. Generalizes INVARIANT-04 from SessionStart to all dispatched events (SessionStart, UserPromptSubmit, PreCompact, PostCompact, ...).
+
+### INVARIANT-07 — Claude Code parity never regresses: any change that degrades the current Claude Code experience (hook-driven SessionStart/UserPromptSubmit auto-injection, the cz_* tool surface, skills, or the status digest) is a release blocker. Cross-host generalization is strictly additive.
+
+Claude Code parity never regresses: any change that degrades the current Claude Code experience (hook-driven SessionStart/UserPromptSubmit auto-injection, the cz_* tool surface, skills, or the status digest) is a release blocker. Cross-host generalization is strictly additive.
+
+### INVARIANT-08 — Cross-host status injection reaches the model at most once per session, across all active tiers (hook, auto-resource, prompt, AGENTS.md floor, and the server-side bootstrap), deduplicated via an in-memory, read-only, session-scoped signal — never a persisted/config flag (per INVARIANT-05) and never from a path that mutates docs or blocks the session (per INVARIANT-06). Injected status stays focused and minimal (per D-027).
+
+Cross-host status injection reaches the model at most once per session, across all active tiers (hook, auto-resource, prompt, AGENTS.md floor, and the server-side bootstrap), deduplicated via an in-memory, read-only, session-scoped signal — never a persisted/config flag (per INVARIANT-05) and never from a path that mutates docs or blocks the session (per INVARIANT-06). Injected status stays focused and minimal (per D-027).
+
+### INVARIANT-09 — All lexical-overlap and similarity computations in the engine use the single canonical tokenizer analyze._tokens — there is exactly one token-splitter definition under src/, and the near-duplicate-lesson threshold is single-sourced (analyze._LESSON_DUP_JACCARD), so relevance ranking, the abstract-index token_set, the write-time near-duplicate advisory, and the corpus-health/curator redundancy metric all share one definition of "near-duplicate". Promotes D-041 from a project decision to a hard, machine-checked rule now that tests/test_canonical_tokenizer.py enforces it (exactly one `def _tokens` in src/ + import identity + threshold parity); a second fork makes the suite fail.
+**Introduced by**: D-041
+
+All lexical-overlap and similarity computations in the engine use the single canonical tokenizer analyze._tokens — there is exactly one token-splitter definition under src/, and the near-duplicate-lesson threshold is single-sourced (analyze._LESSON_DUP_JACCARD), so relevance ranking, the abstract-index token_set, the write-time near-duplicate advisory, and the corpus-health/curator redundancy metric all share one definition of "near-duplicate". Promotes D-041 from a project decision to a hard, machine-checked rule now that tests/test_canonical_tokenizer.py enforces it (exactly one `def _tokens` in src/ + import identity + threshold parity); a second fork makes the suite fail.
+
+### INVARIANT-10 — Figures-only, change-triggered `cz_state` notices attached to TOOL RESULTS are a category DISTINCT from status injection — an explicit append-only amendment to INVARIANT-08, which stands unchanged for status injection proper (hook, auto-resource, prompt, AGENTS.md floor, server bootstrap: still at most once per session). Five bounds keep the category honest: (1) FIGURES ONLY — machine-readable keys pinned by a whitelist ratchet test; never prose, never lesson/decision/advisory content (those belong to the injection tiers or the ops' own results); (2) CHANGE-TRIGGERED — attached only when the figure set or revision differs from the last emission in this server session, deduplicated via an in-memory, session-scoped signal, never a persisted/config flag (per INVARIANT-05); (3) ADVISORY-ONLY — nothing reads the stamp to gate, cap, or block (per INVARIANT-05); (4) BYTE-BOUNDED read cost — the stamp path performs no unbounded artifact hashing (the exit-criteria figure counts raw checkboxes; approval-state recompute is excluded); (5) SILENT-BY-DEFAULT until D-064 matrix evidence graduates it — experiment legs arm it per-process via environment, never a persisted toggle. A stamp failure never alters the op result it rides on, in either direction.
+**Introduced by**: D-072
+
+Figures-only, change-triggered `cz_state` notices attached to TOOL RESULTS are a category DISTINCT from status injection — an explicit append-only amendment to INVARIANT-08, which stands unchanged for status injection proper (hook, auto-resource, prompt, AGENTS.md floor, server bootstrap: still at most once per session). Five bounds keep the category honest: (1) FIGURES ONLY — machine-readable keys pinned by a whitelist ratchet test; never prose, never lesson/decision/advisory content (those belong to the injection tiers or the ops' own results); (2) CHANGE-TRIGGERED — attached only when the figure set or revision differs from the last emission in this server session, deduplicated via an in-memory, session-scoped signal, never a persisted/config flag (per INVARIANT-05); (3) ADVISORY-ONLY — nothing reads the stamp to gate, cap, or block (per INVARIANT-05); (4) BYTE-BOUNDED read cost — the stamp path performs no unbounded artifact hashing (the exit-criteria figure counts raw checkboxes; approval-state recompute is excluded); (5) SILENT-BY-DEFAULT until D-064 matrix evidence graduates it — experiment legs arm it per-process via environment, never a persisted toggle. A stamp failure never alters the op result it rides on, in either direction.

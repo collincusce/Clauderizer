@@ -161,19 +161,6 @@ def report(paths: RepoPaths, config: Config, *, cheap: bool = False) -> dict:
                 "action": f"scaffold_preflight_example:{kind_name}",
                 "detail": f".clauderizer/preflight.{kind_name}.toml.example "
                           f"(gates: {', '.join(gates)})"})
-    from . import untangle as _untangle
-    _plan = _untangle.plan(paths, config)
-    if _plan:
-        moves = sum(1 for a in _plan if a["verdict"] == _untangle.MOVE)
-        keeps = sum(1 for a in _plan if a["verdict"] == _untangle.LEAVE_AND_CREATE)
-        mechanical.append({
-            "action": "untangle_docs_layout",
-            "detail": f"separate engine memory from your docs (D-080): "
-                      f"{moves} engine doc(s) move to "
-                      f"{ownership.ENGINE_NAMESPACE}/, {keeps} of YOUR file(s) "
-                      f"stay exactly where they are; a stub is left at every "
-                      f"vacated path. Nothing is split, merged or rewritten — "
-                      f"`clauderize upgrade --report` lists every verdict first"})
     missing_modules = _missing_manifest_modules(config)
     if missing_modules:
         mechanical.append({
@@ -463,13 +450,6 @@ def apply(paths: RepoPaths, config: Config) -> dict:
             example.parent.mkdir(parents=True, exist_ok=True)
             example.write_text(_example_body(kind_name, _wireable_gates(kind)),
                                encoding="utf-8")
-        elif act == "untangle_docs_layout":
-            from . import untangle as _u
-            _res = _u.apply(paths, config)
-            rewrite_config = False   # untangle wrote the config itself
-            item["result"] = {k: _res[k] for k in
-                              ("entries_before", "entries_after",
-                               "entries_conserved")}
         elif act == "ensure_modules_current":
             # Same D-042 TIER-1 rationale as the gitignore action below: without
             # this, a newly-added doc module reaches zero existing installs and

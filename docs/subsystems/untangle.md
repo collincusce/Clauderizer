@@ -43,6 +43,15 @@ human authored stays exactly where it is.
   renders it as drift with the orphan ids.
 - **`STUB_PREFIXES`** — the id prefix and width each numbered register allocates
   from, mirroring `mutations`. Drives the high-water sentinel described below.
+- **`revert(paths, config)`** — the untangle undone: engine docs move back to
+  the legacy layout, the stubs this module wrote are removed, and `docs_layout`
+  returns to `legacy`. Symmetry with `apply` is the safety property — it moves
+  files back and deletes nothing but its own stubs; a doc the migration LEFT in
+  place is untouched here too, and where a stub and a real doc would collide the
+  real one wins (so a project's own `GLOSSARY.md` survives and the engine copy is
+  simply left behind rather than overwriting it). Exists because a migrated repo
+  is unreadable to an older engine, which stopped being hypothetical when
+  3.0.0/3.1.0 were yanked hours after release and six live repos were stranded.
 - **`entry_count(path)`** — append-only entries in a register, using the same
   anchors `model.next_numbered_id` counts, so "does this hold engine memory?" is
   answered by the writer's own grammar rather than a second guess.

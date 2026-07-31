@@ -8,7 +8,7 @@ description: Fan out multiple host-spawned agents over one gameplan with Clauder
 A **fleet** is N host-spawned workers over one gameplan, one **hub** (shared
 memory). Clauderizer never spawns — spawn through the HOST's own primitives
 (Claude Code: the Agent/Workflow tools; other hosts: their subagent facility).
-Full vocabulary: `docs/clauderizer/GLOSSARY.md`; law of record: D-071.
+Full vocabulary: `docs/GLOSSARY.md`; law of record: D-071.
 
 **The hub-and-spoke law (non-negotiable):** every tracked write from every
 worker targets the hub repo's `docs/` — via the hub-rooted MCP server or

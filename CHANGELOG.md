@@ -2,7 +2,60 @@
 
 All notable changes to Clauderizer are documented here.
 
-## [3.1.0] — 2026-07-30
+## [2.0.1] — 2026-07-31
+
+**`doctor` certifies what it launched on the local leg too.** 1.14.0 retired
+"MCP server launchable" — a `shutil.which` presence check standing in for
+identity — but the replacement handshake only ever ran for **portable** wiring.
+A repo wired to a machine-local absolute path (any venv, pipx or `uv tool`
+install) still certified presence and called it green: H-20's false green,
+surviving in the branch nobody looked at.
+
+- Identity now runs on local wiring whenever the host of record is native and
+  the server can therefore be spawned, falling back to the launchability probe
+  only when identity is genuinely unmeasurable — a cross-host target we cannot
+  execute (D-010/L-59). A skewed local install now warns by name.
+- Found by a **fresh-process** test driving the real CLI (L-60: *the test
+  process' import graph is not the CLI's execution leg*). That test also
+  exposed why it hid for three releases: `conftest` sets
+  `CLAUDERIZER_NO_SPAWN_PROBE` suite-wide, so no in-process test could have
+  exercised the probe end-to-end, and a naive subprocess test inherits the guard
+  and passes while measuring nothing. Armed red against the pre-fix branch.
+- Fixed: `_procedure_drift` rendered `m.group(0)` — the whole regex match — so a
+  MAJOR mismatch printed `host procedure vProcedure version**: 2.0.0`.
+- **D-083 — no version floor in the emitted `.mcp.json`** (resolves an open item
+  from 2026-07-24). A floor couples a committed, twelve-host config to release
+  cadence, and bounds only downward, so an older repo meeting a *newer* engine
+  sails through. The handshake catches skew both directions.
+
+### One visible change for NEW repos
+
+`clauderize init` no longer scaffolds generic doc names — `ARCHITECTURE`,
+`VISION`, `TESTING`, `SECURITY`, `SCHEMA`, `DEPLOYMENT`, `REQUIREMENTS`,
+`INCIDENTS`, `DATASOURCES`, `ENGINEERING-PRINCIPLES` — into your `docs/`. Those
+are the project's, and every measured naming collision lived there. They remain
+available via `clauderize init --seed-project-docs`. **Existing repos are
+unaffected**: a repo's recorded module list is preserved, so nothing appears or
+disappears on upgrade.
+
+### Also present but dormant
+
+The engine/project doc separation (`docs/clauderizer/`) is implemented and
+tested but **inert**: `docs_layout` defaults to `legacy`, the identity default
+resolves every path exactly where it always did, and nothing migrates. It ships
+as capability, not as behaviour, and will be activated in a release of its own.
+
+Suite **1599 → 1622**. Procedure stays **1.13.0** — nothing procedural changed.
+
+## [3.1.0] — 2026-07-30 — YANKED
+
+> **Withdrawn from PyPI.** Released and yanked the same day: the version number
+> was wrong. The engine/project doc separation is a breaking layout change that
+> was never signed off as a major, and cutting 3.x stranded six live repos on a
+> layout no installable engine could read. The *content* survives on `main` —
+> dormant — and the doctor fix ships properly in 2.0.1 above. Recorded rather
+> than deleted: these existed on the index and someone may have resolved them.
+
 
 **`doctor` certifies what it launched on the LOCAL leg too.** 1.14.0 retired
 "MCP server launchable" — a `shutil.which` presence check standing in for
@@ -36,7 +89,7 @@ surviving in the branch nobody looked at.
 
 Suite **1618 → 1622**. No procedure change; `PROCEDURE_VERSION` stays 2.0.0.
 
-## [3.0.0] — 2026-07-30
+## [3.0.0] — 2026-07-30 — YANKED
 
 **Clauderizer's docs stop living in yours.** Engine memory moves to
 `docs/clauderizer/`, and the engine stops scaffolding generic names into your

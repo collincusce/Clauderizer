@@ -27,7 +27,7 @@ _(None yet. Append A-NNN entries here once Phase 0 starts.)_
 
 ## Decisions
 
-_(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/clauderizer/DECISIONS.md.)_
+_(Gameplan-internal decisions D1, D2, … . Project-wide ADRs live in docs/DECISIONS.md.)_
 
 ## Open Items
 

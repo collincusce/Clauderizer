@@ -2,7 +2,7 @@
 
 > **Clauderizer's own vocabulary** — engine-owned (D-080), shipped and
 > refreshed by the engine. This is not your project's glossary: your domain
-> terms belong in `docs/clauderizer/GLOSSARY.md`, which the engine never writes. Two
+> terms belong in `docs/GLOSSARY.md`, which the engine never writes. Two
 > glossaries is the intended shape, and they are never merged.
 > Each entry points at the doc that owns the full story — prose here is
 > descriptive, never normative.
@@ -23,10 +23,10 @@
 - **Ending Protocol** — the closing writes of a phase: transition, outputs,
   summary, corrections/lessons, status transitions, next handoff — including
   a "What I did not check" declaration (the negative space of the work).
-- **Decision (D-NNN)** — an ADR in `docs/clauderizer/DECISIONS.md`; append-only,
+- **Decision (D-NNN)** — an ADR in `docs/DECISIONS.md`; append-only,
   supersession-linked. **Invariant (INVARIANT-NN)** — a must-hold rule in
-  `docs/clauderizer/INVARIANTS.md`. **Lesson (L-NN)** — earned, consolidatable experience
-  in `docs/clauderizer/LESSONS.md`. **Finding (H-NN)** — a hardening/audit finding.
+  `docs/INVARIANTS.md`. **Lesson (L-NN)** — earned, consolidatable experience
+  in `docs/LESSONS.md`. **Finding (H-NN)** — a hardening/audit finding.
 - **Open item (O-NN)** — a tracked blocker/question; resolved, never deleted.
 - **Cascade** — the dependency walk over the entity graph after a tracked
   change, ending in a resolved report; never hand-edited.
@@ -46,7 +46,7 @@
   by the dreamer into advisory proposals, then triaged.
 - **Curator** — the memory-maintenance loop (consolidate / promote /
   obsolete / reinforce) keeping the lesson corpus compact under coverage gates.
-- **Enforcement ladder** — `docs/clauderizer/ENFORCEMENT.md`: which tier
+- **Enforcement ladder** — `docs/ENFORCEMENT.md`: which tier
   (hard-NORMALIZE / preflight-blocking / advisory / instructions-floor)
   actually carries each discipline.
 
