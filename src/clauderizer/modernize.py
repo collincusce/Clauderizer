@@ -170,6 +170,19 @@ def report(paths: RepoPaths, config: Config, *, cheap: bool = False) -> dict:
                       f"corpus does not ({', '.join(missing_modules)}) — the "
                       "shipped stanza and skills reference them by path; "
                       "scaffolded only if absent, never clobbered"})
+    # The shipped procedure doc must match this engine's, and the trigger has to
+    # be the DOC's own version — not the config stamp asserting the doc is fine.
+    # A repo whose doc drifted while the stamp stayed current (e.g. a rolled-back
+    # release) could never self-heal: the stamp matched, so nothing refreshed,
+    # and doctor's MAJOR check failed forever on a file the engine owns.
+    _doc_v = _procedure_doc_version(paths)
+    if _doc_v is not None and _doc_v != PROCEDURE_VERSION:
+        if not any(a["action"] == "refresh_procedure_doc" for a in mechanical):
+            mechanical.append({
+                "action": "refresh_procedure_doc",
+                "detail": f"docs/gameplans/GAMEPLAN-PROCEDURE.md is at {_doc_v}; "
+                          f"this engine ships {PROCEDURE_VERSION} (engine-owned "
+                          "file — refreshed in place)"})
     missing_ignores = _missing_local_state_ignores(paths)
     if missing_ignores:
         mechanical.append({

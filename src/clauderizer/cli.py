@@ -731,15 +731,6 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         else:
             print(f"✓ docs layout — engine memory separated into "
                   f"{paths.docs.name}/{_own.ENGINE_NAMESPACE}/")
-    elif _unt.plan(paths, config):
-        # Informational, NOT a warn: the untangle applies automatically on the
-        # next `clauderize upgrade`, so a repo that has simply not upgraded yet
-        # is healthy, not amber. Turning every un-migrated install exit-3 would
-        # spend the unverifiable state on a pending routine action.
-        print(f"· docs layout — engine memory is still interleaved with your "
-              f"own docs in {paths.docs.name}/; `clauderize upgrade` separates "
-              f"them into {_own.ENGINE_NAMESPACE}/ (moves only what the engine "
-              f"owns; `--report` lists every verdict first)")
     _dangling = _modernize.dangling_doc_pointers(paths, config)
     if _dangling:
         warn("engine-referenced docs missing",

@@ -270,3 +270,37 @@ def test_report_paths_are_posix_on_every_platform():
                     assert "\\" not in v, (
                         f"{a['doc']}.{key} carries a backslash: {v}")
                     assert pathlib.PurePosixPath(v).parts[0] == "docs", v
+
+
+def test_a_drifted_procedure_doc_refreshes_even_when_the_stamp_is_current(tmp_path):
+    """Found by upgrading a real repo: the 3.0 rollback left five repos with a
+    procedure DOC at 2.0.0 while their config stamp read 1.13.0 — matching the
+    engine. refresh_procedure_doc keyed on the STAMP, so nothing ever fired and
+    doctor's MAJOR check failed forever on a file the engine owns.
+
+    The trigger must be the doc's own version: check the thing, not the
+    assertion about the thing.
+    """
+    from clauderizer import PROCEDURE_VERSION, modernize
+    from clauderizer.config import Config as _C
+
+    root = tmp_path / "repo"
+    (root / "docs" / "gameplans").mkdir(parents=True)
+    (root / ".clauderizer").mkdir()
+    p = _paths.resolve(root)
+    cfg = _C.for_size("standard")
+    cfg.procedure_version = PROCEDURE_VERSION          # stamp says "current"
+    p.config_file.write_text(cfg.to_toml(), encoding="utf-8")
+    p.procedure_file.write_text(                       # ...but the doc drifted
+        "# Gameplan Procedure\n\n**Procedure version**: 99.0.0\n", encoding="utf-8")
+
+    actions = {a["action"] for a in modernize.report(p, cfg)["mechanical"]}
+    assert "refresh_procedure_doc" in actions, (
+        "a drifted procedure doc must refresh even when the config stamp is current")
+
+    modernize.apply(p, cfg)
+    assert f"**Procedure version**: {PROCEDURE_VERSION}" in \
+        p.procedure_file.read_text(encoding="utf-8")
+    # idempotent
+    assert "refresh_procedure_doc" not in {
+        a["action"] for a in modernize.report(p, cfg)["mechanical"]}
