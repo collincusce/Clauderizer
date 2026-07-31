@@ -2,6 +2,28 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [2.0.2] — 2026-07-31
+
+**Two defects found by upgrading a real repo on published 2.0.1** — the kind
+only a live walk surfaces.
+
+- **A drifted procedure doc can now heal.** `refresh_procedure_doc` triggered on
+  the config *stamp* rather than on the doc's own version. A repo whose
+  `docs/gameplans/GAMEPLAN-PROCEDURE.md` drifted while its stamp stayed current
+  could never recover: the stamp matched the engine, so nothing refreshed, and
+  `doctor` failed its MAJOR check forever on a file the engine owns. The trigger
+  is now the doc's version — which `_procedure_doc_version()` had been computing
+  all along with no caller consulting it. Bites any repo touched by the
+  withdrawn 3.0.0, whose procedure doc was left at 2.0.0.
+- **`doctor` no longer advertises an action `upgrade` does not perform.** With
+  the docs-layout separation dormant in 2.0.1, doctor still told you to run
+  `clauderize upgrade` to separate your docs — and upgrade reported `0
+  mechanical update(s)`. A shipped instruction that no-ops is the dangling-claim
+  class this project keeps building detectors for. The split-layout branch
+  stays, since it reports real state and forked stubs.
+
+Suite **1622 → 1623**. Procedure stays 1.13.0; the separation remains dormant.
+
 ## [2.0.1] — 2026-07-31
 
 **`doctor` certifies what it launched on the local leg too.** 1.14.0 retired
