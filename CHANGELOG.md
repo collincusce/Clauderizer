@@ -2,6 +2,21 @@
 
 All notable changes to Clauderizer are documented here.
 
+## [Unreleased]
+
+- **A Node project with no `build` script no longer blocks every phase.**
+  The `node` profile defaults the build gate to `npm run build`; with no such
+  script npm exits non-zero, the gate failed, and the procedure stopped the
+  phase to ask. Unattended, the agent never started work — a pilot benchmark
+  run spent 8 sessions without writing code. A gate whose `npm run <script>` /
+  `npm test` names a script absent from `package.json` now **skips** (listed in
+  `gates_unrun`, so it never reads as a green it didn't earn). Wired `[gates]`
+  commands are untouched; an existing script still runs and can fail.
+- **Node baseline test count parses node:test, jest and vitest.** The regex
+  only matched mocha's `N passing`; `node --test` prints `ℹ tests N` (TAP:
+  `# tests N`), so the baseline was never recorded. Applies to new
+  `clauderize init`s; an existing `profile.lock.toml` keeps its regex.
+
 ## [2.0.3] — 2026-07-31
 
 **The findings register driven to zero — four fixes, one pin lifted.**

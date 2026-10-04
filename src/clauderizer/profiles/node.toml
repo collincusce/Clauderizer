@@ -11,4 +11,5 @@ lint = "npm run lint"
 typecheck = "npm run typecheck"
 
 [preflight]
-baseline_test_regex = "(\\d+) passing"
+# mocha "N passing" | node:test spec "ℹ tests N" / TAP "# tests N" | jest/vitest "Tests: N passed"
+baseline_test_regex = "(\\d+) passing|(?:ℹ|#) tests (\\d+)|Tests:?\\s+(\\d+) passed"
