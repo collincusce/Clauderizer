@@ -13,6 +13,7 @@ toolchain.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -58,6 +59,33 @@ def _load_preflight_gates(paths: RepoPaths, kind_name: str) -> dict[str, str]:
         return {}
     gates = raw.get("gates", {})
     return {str(k): str(v) for k, v in gates.items() if str(v).strip()}
+
+
+# `npm test` / `npm run <script>` — the node profile's gate commands.
+_NPM_SCRIPT_CMD = re.compile(r"^\s*npm\s+(?:run(?:-script)?\s+(\S+)|(test))\s*$")
+
+
+def _missing_npm_script(root, cmd: str) -> str | None:
+    """Field fix (pilot benchmark): the node profile defaults `build` to
+    `npm run build`, but many Node projects have nothing to build. npm then
+    exits non-zero, the gate FAILS, and the procedure stops the phase to ask —
+    an unattended agent never starts work. Return the script name when `cmd`
+    runs a package.json script that does not exist, so the gate can SKIP
+    (did not run, recorded in gates_unrun) instead of failing. None when the
+    script exists, the command is not an npm script, or package.json is
+    missing/unreadable (then the command runs as before)."""
+    m = _NPM_SCRIPT_CMD.match(cmd)
+    if not m:
+        return None
+    script = m.group(1) or m.group(2)
+    try:
+        pkg = json.loads((Path(root) / "package.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    scripts = pkg.get("scripts") if isinstance(pkg, dict) else None
+    if isinstance(scripts, dict) and script in scripts:
+        return None
+    return script
 
 
 def _generic_profile_hint(root, kind: str):
@@ -448,6 +476,13 @@ def run(
                     f".clauderizer/preflight.{kind_name}.toml (see the shipped "
                     f".clauderizer/preflight.{kind_name}.toml.example) to enable it.")
             return
+        if name in ("tests", "build") and name not in gates:
+            script = _missing_npm_script(root, cmd)
+            if script:
+                result.gates_unrun.append(name)
+                add(name, "skip", f"`{cmd}` not run: package.json has no "
+                    f"\"{script}\" script — nothing to {'test' if name == 'tests' else 'build'}")
+                return
         try:
             code, out = runner(cmd, root)
         except (subprocess.TimeoutExpired, OSError) as e:
@@ -462,8 +497,10 @@ def run(
             count = None
             if profile.baseline_test_regex:
                 m = re.search(profile.baseline_test_regex, out)
-                if m and m.groups():
-                    count = m.group(1)
+                # A profile regex may alternate over several runners' formats
+                # (one group each): take whichever group matched.
+                count = next((g for g in (m.groups() if m else ()) if g), None)
+                if count is not None:
                     result.baseline_tests = count
             if code == 0:
                 detail = f"`{cmd}` ok" + (f" ({count} tests)" if count else "")
